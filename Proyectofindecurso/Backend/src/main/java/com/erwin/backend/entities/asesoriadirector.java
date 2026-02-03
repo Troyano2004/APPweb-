@@ -27,7 +27,7 @@ public class asesoriadirector {
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "id_director", nullable = false)
-    private docente director;
+    private Docente director;
 
     @Column(name="fecha", nullable = false)
     private LocalDateTime fecha;

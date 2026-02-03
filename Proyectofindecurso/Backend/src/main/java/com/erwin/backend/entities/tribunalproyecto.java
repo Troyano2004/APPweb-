@@ -25,7 +25,7 @@ public class tribunalproyecto {
 
     @ManyToOne
     @JoinColumn(name = "id_docente")
-    private docente docente;
+    private Docente docente;
 
     @Column(name = "cargo", length = 20)
     private String cargo; // PRESIDENTE/VOCAL/SUPLENTE

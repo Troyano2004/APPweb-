@@ -23,7 +23,7 @@ public class Dictamenpropuesta {
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "id_docente")
-    private docente docente;
+    private Docente docente;
 
     @Column(name = "decision", length = 15, nullable = false)
     private String decision; // APROBADA/RECHAZADA/OBSERVADA

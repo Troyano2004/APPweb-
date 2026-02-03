@@ -12,7 +12,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Entity
 @Table(name = "docente")
-public class docente {
+public class Docente {
     @Id
     @Column(name = "id_docente")
     private Integer idDocente;

@@ -26,7 +26,7 @@ public class comisionmiembro {
     @ManyToOne(optional = false)
     @MapsId("idDocente")
     @JoinColumn(name = "id_docente")
-    private docente docente;
+    private Docente docente;
 
     @Column(name = "cargo", length = 20, nullable = false)
     private String cargo; // PRESIDENTE/VOCAL/SECRETARIO
