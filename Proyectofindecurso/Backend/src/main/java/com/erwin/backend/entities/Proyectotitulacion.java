@@ -31,7 +31,7 @@ public class Proyectotitulacion {
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "id_director")
-    private docente director;
+    private Docente director;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "id_tipo_trabajo")

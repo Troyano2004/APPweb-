@@ -1,40 +1,45 @@
+<div class="container">
+  <h2>Listado de Estudiantes</h2>
 
-<div class="container" style="padding: 20px; font-family: Arial, sans-serif;">
-  <h2 style="margin-bottom: 20px; color: #333;">Listado de Estudiantes</h2>
-
-  <div *ngIf="cargando" style="padding: 20px; background: #e2e3e5; color: #383d41; margin-bottom: 15px;">
+  <div *ngIf="cargando" class="alert">
     Cargando datos del servidor...
   </div>
 
-  <div style="overflow-x: auto;">
-    <table border="1" style="width: 100%; border-collapse: collapse; text-align: left; border: 1px solid #ddd;">
-      <thead style="background-color: #f8f9fa;">
+  <div *ngIf="!cargando && errorMsg" class="alert error">
+    {{ errorMsg }}
+  </div>
+
+  <!-- DEBUG -->
+  <p class="debug">DEBUG length: {{ listaEstudiantes.length }}</p>
+  <pre class="debug-box">{{ listaEstudiantes | json }}</pre>
+
+  <div class="table-wrap">
+    <table border="1">
+      <thead>
       <tr>
-        <th style="padding: 12px; border-bottom: 2px solid #dee2e6;">ID</th>
-        <th style="padding: 12px; border-bottom: 2px solid #dee2e6;">Cédula</th>
-        <th style="padding: 12px; border-bottom: 2px solid #dee2e6;">Nombres</th>
-        <th style="padding: 12px; border-bottom: 2px solid #dee2e6;">Apellidos</th>
-        <th style="padding: 12px; border-bottom: 2px solid #dee2e6;">Carrera</th>
-        <th style="padding: 12px; border-bottom: 2px solid #dee2e6;">Promedio</th>
-        <th style="padding: 12px; border-bottom: 2px solid #dee2e6;">Discapacidad</th>
+        <th>ID</th>
+        <th>Cédula</th>
+        <th>Nombres</th>
+        <th>Apellidos</th>
+        <th>Carrera</th>
+        <th>Promedio</th>
+        <th>Discapacidad</th>
       </tr>
       </thead>
+
       <tbody>
+      <tr>
+        <td colspan="7" class="debug-row">DEBUG: la tabla está renderizando</td>
+      </tr>
 
-      <tr *ngFor="let est of listaEstudiantes" style="border-bottom: 1px solid #eee;">
-        <td style="padding: 10px;">{{ est.idEstudiante }}</td>
-
-        <td style="padding: 10px;">{{ est.usuario?.cedula || '---' }}</td>
-        <td style="padding: 10px;">{{ est.usuario?.nombres || '---' }}</td>
-        <td style="padding: 10px;">{{ est.usuario?.apellidos || '---' }}</td>
-
-        <td style="padding: 10px;">
-          {{ est.carrera?.nombre || 'Sin Carrera' }}
-        </td>
-
-        <td style="padding: 10px;">{{ est.promedioRecord80 | number:'1.2-2' }}</td>
-
-        <td style="padding: 10px;">
+      <tr *ngFor="let est of listaEstudiantes">
+        <td>{{ est.idEstudiante }}</td>
+        <td>{{ est.usuario?.cedula || '---' }}</td>
+        <td>{{ est.usuario?.nombres || '---' }}</td>
+        <td>{{ est.usuario?.apellidos || '---' }}</td>
+        <td>{{ est.carrera?.nombre || 'Sin Carrera' }}</td>
+        <td>{{ est.promedioRecord80 | number:'1.2-2' }}</td>
+        <td>
             <span [style.color]="est.discapacidad ? 'green' : 'black'">
               {{ est.discapacidad ? 'Sí' : 'No' }}
             </span>
@@ -42,7 +47,7 @@
       </tr>
 
       <tr *ngIf="!cargando && (!listaEstudiantes || listaEstudiantes.length === 0)">
-        <td colspan="7" style="padding: 30px; text-align: center; color: #666; font-style: italic;">
+        <td colspan="7" class="empty">
           No se encontraron datos.
         </td>
       </tr>

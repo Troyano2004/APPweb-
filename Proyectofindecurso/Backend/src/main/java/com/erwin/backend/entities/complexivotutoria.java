@@ -26,7 +26,7 @@ public class complexivotutoria {
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "id_docente", nullable = false)
-    private docente docente;
+    private Docente docente;
 
     @Column(name = "fecha")
     private LocalDateTime fecha = LocalDateTime.now();

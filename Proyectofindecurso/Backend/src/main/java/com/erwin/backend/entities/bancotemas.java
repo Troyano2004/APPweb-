@@ -26,7 +26,7 @@ public class bancotemas {
 
     @ManyToOne
     @JoinColumn(name = "id_docente_proponente")
-    private docente docenteProponente;
+    private Docente docenteProponente;
 
     @Column(name = "titulo", length = 500, nullable = false)
     private String titulo;
