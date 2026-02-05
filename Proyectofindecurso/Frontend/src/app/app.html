@@ -1,1 +1,14 @@
-<router-outlet></router-outlet>
+<!-- BARRA SUPERIOR SGA -->
+<div class="sga-bar">
+  <div class="sga-bar-left">
+    <strong>SGD | Sistema de Gestión Documental</strong>
+  </div>
+  <div class="sga-bar-right">
+    <span class="sga-date">{{ fechaActual }}</span>
+    <span class="sga-time">{{ horaActual }}</span>
+    <span class="sga-user">👤 USUARIO: demo.estudiante</span>
+  </div>
+</div>
+
+<!-- CONTENIDO DINÁMICO -->
+<router-outlet />

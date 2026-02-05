@@ -5,11 +5,13 @@ public class LoginResponse {
     public String rol;
     public String nombres;
     public String apellidos;
+    public String token;
 
-    public LoginResponse(Integer idUsuario, String rol, String nombres, String apellidos) {
+    public LoginResponse(Integer idUsuario, String rol, String nombres, String apellidos, String token) {
         this.idUsuario = idUsuario;
         this.rol = rol;
         this.nombres = nombres;
         this.apellidos = apellidos;
+        this.token = token;
     }
 }

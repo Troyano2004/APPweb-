@@ -1,0 +1,237 @@
+<div class="documento-container">
+  <!-- Encabezado -->
+  <header class="documento-header">
+    <div class="header-content">
+      <div class="header-left">
+        <h1 class="header-title">Documento de Titulación</h1>
+        <p class="header-subtitle">Gestión y revisión de documentos</p>
+      </div>
+
+      <div class="header-right">
+        <span class="badge" [ngClass]="{
+          'badge-borrador': estado() === 'BORRADOR',
+          'badge-revision': estado() === 'EN_REVISION',
+          'badge-correccion': estado() === 'CORRECCION_REQUERIDA',
+          'badge-aprobado': estado() === 'APROBADO_POR_DIRECTOR'
+        }">
+          {{ estado() }}
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Barra de acciones -->
+  <div class="action-bar">
+    <div class="action-buttons">
+      <button class="btn btn-secondary" type="button" (click)="cargar()" [disabled]="loading()">
+        <span class="btn-icon">↻</span>
+        Recargar
+      </button>
+
+      <button class="btn btn-primary" type="button" (click)="guardar()" [disabled]="loading() || !puedeEditar()">
+        <span class="btn-icon">✓</span>
+        Guardar
+      </button>
+
+      <button class="btn btn-accent" type="button" (click)="enviarRevision()" [disabled]="loading() || !puedeEditar()">
+        <span class="btn-icon">→</span>
+        Enviar a revisión
+      </button>
+    </div>
+  </div>
+
+  <!-- Mensaje de error (compatible con Angular clásico) -->
+  <div class="error-banner" *ngIf="error() as msg">
+    <span class="error-icon">⚠</span>
+    <span class="error-text">{{ msg }}</span>
+  </div>
+
+  <!-- Tabs de navegación -->
+  <nav class="tabs-nav">
+    <button class="tab-pill" type="button" [class.active]="activeTab()==='portada'" (click)="setTab('portada')">Portada</button>
+    <button class="tab-pill" type="button" [class.active]="activeTab()==='resumen'" (click)="setTab('resumen')">Resumen/Abstract</button>
+    <button class="tab-pill" type="button" [class.active]="activeTab()==='introduccion'" (click)="setTab('introduccion')">Introducción</button>
+    <button class="tab-pill" type="button" [class.active]="activeTab()==='marco_metodo'" (click)="setTab('marco_metodo')">Marco/Metodología</button>
+    <button class="tab-pill" type="button" [class.active]="activeTab()==='resultados'" (click)="setTab('resultados')">Resultados/Discusión</button>
+    <button class="tab-pill" type="button" [class.active]="activeTab()==='conclusiones'" (click)="setTab('conclusiones')">Conclusiones</button>
+    <button class="tab-pill" type="button" [class.active]="activeTab()==='biblio_anexos'" (click)="setTab('biblio_anexos')">Biblio/Anexos</button>
+  </nav>
+
+  <!-- Contenido del formulario (BLINDADO: solo renderiza si existe form) -->
+  <form class="content-card" *ngIf="form" [formGroup]="form">
+    <ng-container [ngSwitch]="activeTab()">
+
+      <div *ngSwitchCase="'portada'" class="tab-content">
+        <h2 class="section-title">Portada</h2>
+        <div class="form-group">
+          <label class="form-label">Título del documento</label>
+          <textarea
+            class="form-textarea"
+            rows="4"
+            formControlName="titulo"
+            placeholder="Ingrese el título de su trabajo de titulación..."></textarea>
+        </div>
+      </div>
+
+      <div *ngSwitchCase="'resumen'" class="tab-content">
+        <h2 class="section-title">Resumen / Abstract</h2>
+
+        <div class="form-group">
+          <label class="form-label">Resumen (Español)</label>
+          <textarea
+            class="form-textarea"
+            rows="8"
+            formControlName="resumen"
+            placeholder="Escriba el resumen de su investigación en español..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Abstract (English)</label>
+          <textarea
+            class="form-textarea"
+            rows="8"
+            formControlName="abstractText"
+            placeholder="Write the abstract of your research in English..."></textarea>
+        </div>
+      </div>
+
+      <div *ngSwitchCase="'introduccion'" class="tab-content">
+        <h2 class="section-title">Introducción</h2>
+
+        <div class="form-group">
+          <label class="form-label">Introducción</label>
+          <textarea
+            class="form-textarea"
+            rows="10"
+            formControlName="introduccion"
+            placeholder="Describa la introducción de su investigación..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Planteamiento del problema</label>
+          <textarea
+            class="form-textarea"
+            rows="10"
+            formControlName="problema"
+            placeholder="Describa el problema que aborda su investigación..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Objetivo general</label>
+          <textarea
+            class="form-textarea"
+            rows="4"
+            formControlName="objetivosGenerales"
+            placeholder="Defina el objetivo general de su investigación..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Objetivos específicos</label>
+          <textarea
+            class="form-textarea"
+            rows="6"
+            formControlName="objetivosEspecificos"
+            placeholder="Liste los objetivos específicos de su investigación..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Justificación</label>
+          <textarea
+            class="form-textarea"
+            rows="8"
+            formControlName="justificacion"
+            placeholder="Justifique la importancia de su investigación..."></textarea>
+        </div>
+      </div>
+
+      <div *ngSwitchCase="'marco_metodo'" class="tab-content">
+        <h2 class="section-title">Marco teórico / Metodología</h2>
+
+        <div class="form-group">
+          <label class="form-label">Marco teórico</label>
+          <textarea
+            class="form-textarea"
+            rows="12"
+            formControlName="marcoTeorico"
+            placeholder="Desarrolle el marco teórico de su investigación..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Metodología</label>
+          <textarea
+            class="form-textarea"
+            rows="12"
+            formControlName="metodologia"
+            placeholder="Describa la metodología aplicada en su investigación..."></textarea>
+        </div>
+      </div>
+
+      <div *ngSwitchCase="'resultados'" class="tab-content">
+        <h2 class="section-title">Resultados / Discusión</h2>
+
+        <div class="form-group">
+          <label class="form-label">Resultados</label>
+          <textarea
+            class="form-textarea"
+            rows="12"
+            formControlName="resultados"
+            placeholder="Presente los resultados obtenidos en su investigación..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Discusión</label>
+          <textarea
+            class="form-textarea"
+            rows="12"
+            formControlName="discusion"
+            placeholder="Analice y discuta los resultados obtenidos..."></textarea>
+        </div>
+      </div>
+
+      <div *ngSwitchCase="'conclusiones'" class="tab-content">
+        <h2 class="section-title">Conclusiones / Recomendaciones</h2>
+
+        <div class="form-group">
+          <label class="form-label">Conclusiones</label>
+          <textarea
+            class="form-textarea"
+            rows="10"
+            formControlName="conclusiones"
+            placeholder="Redacte las conclusiones de su investigación..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Recomendaciones</label>
+          <textarea
+            class="form-textarea"
+            rows="10"
+            formControlName="recomendaciones"
+            placeholder="Proponga recomendaciones basadas en su investigación..."></textarea>
+        </div>
+      </div>
+
+      <div *ngSwitchCase="'biblio_anexos'" class="tab-content">
+        <h2 class="section-title">Bibliografía / Anexos</h2>
+
+        <div class="form-group">
+          <label class="form-label">Bibliografía</label>
+          <textarea
+            class="form-textarea"
+            rows="10"
+            formControlName="bibliografia"
+            placeholder="Liste las referencias bibliográficas utilizadas..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Anexos</label>
+          <textarea
+            class="form-textarea"
+            rows="10"
+            formControlName="anexos"
+            placeholder="Incluya los anexos relevantes para su investigación..."></textarea>
+        </div>
+      </div>
+
+    </ng-container>
+  </form>
+</div>

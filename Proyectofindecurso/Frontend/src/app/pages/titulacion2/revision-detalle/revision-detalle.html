@@ -1,0 +1,259 @@
+<div class="detalle-container">
+  <!-- Encabezado -->
+  <header class="detalle-header">
+    <div class="header-content">
+      <div class="header-left">
+        <a class="back-link" routerLink="/titulacion2/revision">
+          <span class="back-icon">←</span>
+          Volver a lista
+        </a>
+
+        <h1 class="header-title">Documento #{{ idDocumento }}</h1>
+        <p class="header-subtitle">Revisión y observaciones del documento</p>
+
+        <!-- Opcional: si mandas titulo por queryParam -->
+        <p class="header-subtitle" *ngIf="titulo()">
+          <strong>Título del proyecto:</strong> {{ titulo() }}
+        </p>
+      </div>
+    </div>
+  </header>
+
+  <!-- Barra de acciones principales -->
+  <div class="action-bar">
+    <div class="action-buttons">
+      <button class="btn btn-secondary" type="button" (click)="cargarObs()" [disabled]="loading()">
+        <span class="btn-icon">↻</span>
+        Recargar
+      </button>
+      <button class="btn btn-warning" type="button" (click)="devolver()" [disabled]="loading()">
+        <span class="btn-icon">↩</span>
+        Devolver
+      </button>
+      <button class="btn btn-success" type="button" (click)="aprobar()" [disabled]="loading()">
+        <span class="btn-icon">✓</span>
+        Aprobar
+      </button>
+    </div>
+  </div>
+
+  <!-- Mensaje de error -->
+  <div class="error-banner" *ngIf="error() as msg">
+    <span class="error-icon">⚠</span>
+    <span class="error-text">{{ msg }}</span>
+  </div>
+
+  <!-- Contenido del documento para revisar -->
+  <div class="document-content-section">
+    <div class="section-header">
+      <h2 class="section-title-main">Contenido del Documento</h2>
+      <p class="section-subtitle">Revise el contenido completo antes de agregar observaciones</p>
+    </div>
+
+    <div class="document-viewer">
+      <div class="document-section">
+        <h3 class="doc-section-title">Título</h3>
+        <div class="doc-section-content">
+          <p class="doc-text">
+            {{ documento()?.titulo || titulo() || 'No especificado' }}
+          </p>
+        </div>
+      </div>
+
+      <div class="document-section" *ngIf="documento()?.resumen">
+        <h3 class="doc-section-title">Resumen</h3>
+        <div class="doc-section-content">
+          <p class="doc-text">{{ documento()?.resumen }}</p>
+        </div>
+      </div>
+
+      <div class="document-section" *ngIf="documento()?.abstractText">
+        <h3 class="doc-section-title">Abstract</h3>
+        <div class="doc-section-content">
+          <p class="doc-text">{{ documento()?.abstractText }}</p>
+        </div>
+      </div>
+
+      <div class="document-section" *ngIf="documento()?.introduccion">
+        <h3 class="doc-section-title">Introducción</h3>
+        <div class="doc-section-content">
+          <p class="doc-text">{{ documento()?.introduccion }}</p>
+        </div>
+      </div>
+
+      <div class="document-section" *ngIf="documento()?.problema">
+        <h3 class="doc-section-title">Planteamiento del Problema</h3>
+        <div class="doc-section-content">
+          <p class="doc-text">{{ documento()?.problema }}</p>
+        </div>
+      </div>
+
+      <div class="document-section" *ngIf="documento()?.objetivosGenerales">
+        <h3 class="doc-section-title">Objetivos Generales</h3>
+        <div class="doc-section-content">
+          <p class="doc-text">{{ documento()?.objetivosGenerales }}</p>
+        </div>
+      </div>
+
+      <div class="document-section" *ngIf="documento()?.objetivosEspecificos">
+        <h3 class="doc-section-title">Objetivos Específicos</h3>
+        <div class="doc-section-content">
+          <p class="doc-text">{{ documento()?.objetivosEspecificos }}</p>
+        </div>
+      </div>
+
+      <div class="document-section" *ngIf="documento()?.justificacion">
+        <h3 class="doc-section-title">Justificación</h3>
+        <div class="doc-section-content">
+          <p class="doc-text">{{ documento()?.justificacion }}</p>
+        </div>
+      </div>
+
+      <div class="document-section" *ngIf="documento()?.marcoTeorico">
+        <h3 class="doc-section-title">Marco Teórico</h3>
+        <div class="doc-section-content">
+          <p class="doc-text">{{ documento()?.marcoTeorico }}</p>
+        </div>
+      </div>
+
+      <div class="document-section" *ngIf="documento()?.metodologia">
+        <h3 class="doc-section-title">Metodología</h3>
+        <div class="doc-section-content">
+          <p class="doc-text">{{ documento()?.metodologia }}</p>
+        </div>
+      </div>
+
+      <div class="document-section" *ngIf="documento()?.resultados">
+        <h3 class="doc-section-title">Resultados</h3>
+        <div class="doc-section-content">
+          <p class="doc-text">{{ documento()?.resultados }}</p>
+        </div>
+      </div>
+
+      <div class="document-section" *ngIf="documento()?.discusion">
+        <h3 class="doc-section-title">Discusión</h3>
+        <div class="doc-section-content">
+          <p class="doc-text">{{ documento()?.discusion }}</p>
+        </div>
+      </div>
+
+      <div class="document-section" *ngIf="documento()?.conclusiones">
+        <h3 class="doc-section-title">Conclusiones</h3>
+        <div class="doc-section-content">
+          <p class="doc-text">{{ documento()?.conclusiones }}</p>
+        </div>
+      </div>
+
+      <div class="document-section" *ngIf="documento()?.recomendaciones">
+        <h3 class="doc-section-title">Recomendaciones</h3>
+        <div class="doc-section-content">
+          <p class="doc-text">{{ documento()?.recomendaciones }}</p>
+        </div>
+      </div>
+
+      <div class="document-section" *ngIf="documento()?.bibliografia">
+        <h3 class="doc-section-title">Bibliografía</h3>
+        <div class="doc-section-content">
+          <p class="doc-text">{{ documento()?.bibliografia }}</p>
+        </div>
+      </div>
+
+      <div class="document-section" *ngIf="documento()?.anexos">
+        <h3 class="doc-section-title">Anexos</h3>
+        <div class="doc-section-content">
+          <p class="doc-text">{{ documento()?.anexos }}</p>
+        </div>
+      </div>
+
+      <!-- Estado vacío cuando todavía no carga nada -->
+      <div class="empty-observations" *ngIf="!documento() && !loading() && !error()">
+        <div class="empty-icon">📄</div>
+        <p class="empty-text">No se encontró contenido del documento para mostrar</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Formulario de nueva observación -->
+  <div class="content-card">
+    <div class="card-header-section">
+      <h2 class="section-title">Nueva Observación</h2>
+    </div>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Sección del documento</label>
+        <select class="form-select" [(ngModel)]="seccion" name="seccion">
+          <option value="TITULO">Título</option>
+          <option value="RESUMEN">Resumen</option>
+          <option value="ABSTRACT">Abstract</option>
+          <option value="INTRODUCCION">Introducción</option>
+          <option value="PROBLEMA">Problema</option>
+          <option value="OBJETIVOS">Objetivos</option>
+          <option value="JUSTIFICACION">Justificación</option>
+          <option value="MARCO_TEORICO">Marco Teórico</option>
+          <option value="METODOLOGIA">Metodología</option>
+          <option value="RESULTADOS">Resultados</option>
+          <option value="DISCUSION">Discusión</option>
+          <option value="CONCLUSIONES">Conclusiones</option>
+          <option value="RECOMENDACIONES">Recomendaciones</option>
+          <option value="BIBLIOGRAFIA">Bibliografía</option>
+          <option value="ANEXOS">Anexos</option>
+        </select>
+      </div>
+
+      <div class="form-group form-group-full">
+        <label class="form-label">Comentario de la observación</label>
+        <textarea
+          class="form-textarea"
+          rows="5"
+          [(ngModel)]="comentario"
+          name="comentario"
+          placeholder="Escriba sus observaciones sobre esta sección del documento..."></textarea>
+      </div>
+
+      <div class="form-actions form-group-full">
+        <button
+          class="btn btn-primary"
+          type="button"
+          (click)="agregar()"
+          [disabled]="loading() || !(comentario || '').trim()">
+          <span class="btn-icon">+</span>
+          Agregar observación
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lista de observaciones -->
+  <div class="observations-section">
+    <h2 class="section-title-main">Historial de Observaciones</h2>
+
+    <div class="observations-list" *ngIf="observaciones().length > 0">
+      <div class="observation-card" *ngFor="let o of observaciones()">
+        <div class="observation-header">
+          <span class="observation-section">{{ o.seccion }}</span>
+          <span class="observation-badge" [ngClass]="{
+            'badge-pending': o.estado === 'PENDIENTE',
+            'badge-resolved': o.estado === 'RESUELTA',
+            'badge-rejected': o.estado === 'RECHAZADA'
+          }">
+            {{ o.estado }}
+          </span>
+        </div>
+
+        <div class="observation-body">
+          <p class="observation-text">{{ o.comentario }}</p>
+        </div>
+
+        <div class="observation-footer">
+          <span class="observation-date">{{ o.creadoEn || 'Fecha no disponible' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="empty-observations" *ngIf="observaciones().length === 0 && !loading()">
+      <div class="empty-icon">📝</div>
+      <p class="empty-text">No hay observaciones registradas para este documento</p>
+    </div>
+  </div>
+</div>

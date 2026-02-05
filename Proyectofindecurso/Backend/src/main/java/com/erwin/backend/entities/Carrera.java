@@ -21,7 +21,7 @@ public class Carrera {
 
     @ManyToOne
     @JoinColumn(name = "id_facultad")
-    private facultad facultad;
+    private Facultad facultad;
 
     @Column(name = "nombre", length = 150, nullable = false)
     private String nombre;
