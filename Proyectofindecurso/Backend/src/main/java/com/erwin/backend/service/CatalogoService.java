@@ -34,7 +34,7 @@ public class CatalogoService {
         return modalidadRepo.findAll();
     }
 
-    public Periodotitulacion periodoActivo() {
+    public PeriodoTitulacion periodoActivo() {
         return periodoRepo.findByActivoTrue()
                 .orElseThrow(() -> new RuntimeException("No hay período activo"));
     }

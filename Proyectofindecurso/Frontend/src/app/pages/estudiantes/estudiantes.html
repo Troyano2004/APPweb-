@@ -1,57 +1,37 @@
 <div class="container">
   <h2>Listado de Estudiantes</h2>
 
-  <div *ngIf="cargando" class="alert">
-    Cargando datos del servidor...
-  </div>
+  <!-- 1) Cargando -->
+  <p *ngIf="cargando">Cargando datos...</p>
 
-  <div *ngIf="!cargando && errorMsg" class="alert error">
-    {{ errorMsg }}
-  </div>
+  <!-- 2) Error -->
+  <p *ngIf="!cargando && errorMsg">{{ errorMsg }}</p>
 
-  <!-- DEBUG -->
-  <p class="debug">DEBUG length: {{ listaEstudiantes.length }}</p>
-  <pre class="debug-box">{{ listaEstudiantes | json }}</pre>
+  <!-- 3) Tabla -->
+  <table *ngIf="!cargando && !errorMsg" border="1">
+    <thead>
+    <tr>
+      <th>ID</th>
+      <th>Cédula</th>
+      <th>Nombres</th>
+      <th>Apellidos</th>
+      <th>Carrera</th>
+    </tr>
+    </thead>
 
-  <div class="table-wrap">
-    <table border="1">
-      <thead>
-      <tr>
-        <th>ID</th>
-        <th>Cédula</th>
-        <th>Nombres</th>
-        <th>Apellidos</th>
-        <th>Carrera</th>
-        <th>Promedio</th>
-        <th>Discapacidad</th>
-      </tr>
-      </thead>
+    <tbody>
+    <tr *ngFor="let est of listaEstudiantes">
+      <td>{{ est.idEstudiante }}</td>
+      <td>{{ est.usuario?.cedula }}</td>
+      <td>{{ est.usuario?.nombres }}</td>
+      <td>{{ est.usuario?.apellidos }}</td>
+      <td>{{ est.carrera?.nombre }}</td>
+    </tr>
 
-      <tbody>
-      <tr>
-        <td colspan="7" class="debug-row">DEBUG: la tabla está renderizando</td>
-      </tr>
-
-      <tr *ngFor="let est of listaEstudiantes">
-        <td>{{ est.idEstudiante }}</td>
-        <td>{{ est.usuario?.cedula || '---' }}</td>
-        <td>{{ est.usuario?.nombres || '---' }}</td>
-        <td>{{ est.usuario?.apellidos || '---' }}</td>
-        <td>{{ est.carrera?.nombre || 'Sin Carrera' }}</td>
-        <td>{{ est.promedioRecord80 | number:'1.2-2' }}</td>
-        <td>
-            <span [style.color]="est.discapacidad ? 'green' : 'black'">
-              {{ est.discapacidad ? 'Sí' : 'No' }}
-            </span>
-        </td>
-      </tr>
-
-      <tr *ngIf="!cargando && (!listaEstudiantes || listaEstudiantes.length === 0)">
-        <td colspan="7" class="empty">
-          No se encontraron datos.
-        </td>
-      </tr>
-      </tbody>
-    </table>
-  </div>
+    <!-- Si no hay datos -->
+    <tr *ngIf="listaEstudiantes.length === 0">
+      <td colspan="5">No hay estudiantes.</td>
+    </tr>
+    </tbody>
+  </table>
 </div>

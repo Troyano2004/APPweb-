@@ -46,11 +46,9 @@ export class EstudiantesComponent implements OnInit {
         // fuerza refresco de vista
         this.cdr.detectChanges();
       },
-      error: (e) => {
-        console.error('❌ ERROR API:', e);
+      error: (e)=>{
         this.errorMsg = `Error al cargar (status: ${e?.status ?? '??'})`;
         this.cargando = false;
-        this.cdr.detectChanges();
       }
     });
   }

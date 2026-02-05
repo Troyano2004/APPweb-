@@ -9,14 +9,15 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/auth")
 @CrossOrigin(origins = "http://localhost:4200")
 public class AuthController {
-    private final AuthService service;
 
-    public AuthController(AuthService service) {
-        this.service = service;
+    private final AuthService authService;
+
+    public AuthController(AuthService authService) {
+        this.authService = authService;
     }
 
     @PostMapping("/login")
     public LoginResponse login(@RequestBody LoginRequest req) {
-        return service.login(req);
+        return authService.login(req);
     }
 }

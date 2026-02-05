@@ -2,7 +2,7 @@ package com.erwin.backend.controller;
 
 import com.erwin.backend.entities.Carrera;
 import com.erwin.backend.entities.Modalidadtitulacion;
-import com.erwin.backend.entities.Periodotitulacion;
+import com.erwin.backend.entities.PeriodoTitulacion;
 import com.erwin.backend.service.CatalogoService;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,7 +29,7 @@ public class CatalogoController {
     }
 
     @GetMapping("/periodo-activo")
-    public Periodotitulacion periodoActivo() {
+    public PeriodoTitulacion periodoActivo() {
         return service.periodoActivo();
     }
 

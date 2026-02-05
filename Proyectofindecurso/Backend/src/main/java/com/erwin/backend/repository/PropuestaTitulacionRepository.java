@@ -1,15 +1,14 @@
 package com.erwin.backend.repository;
 
-import com.erwin.backend.entities.Elecciontitulacion;
-import com.erwin.backend.entities.Propuestatitulacion;
+import com.erwin.backend.entities.PropuestaTitulacion;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 import java.util.Optional;
 
-public interface PropuestaTitulacionRepository extends JpaRepository<Propuestatitulacion, Integer> {
-    List<Propuestatitulacion> findByEstudiante_IdEstudiante(Integer IdEstudiante);
-    List<Propuestatitulacion> findByEstado(String estado);
+public interface PropuestaTitulacionRepository extends JpaRepository<PropuestaTitulacion, Integer> {
+    List<PropuestaTitulacion> findByEstudiante_IdEstudiante(Integer IdEstudiante);
+    List<PropuestaTitulacion> findByEstado(String estado);
 
-    Optional<Propuestatitulacion> findByEleccion_IdEleccion(Integer IdEleccion);
+    Optional<PropuestaTitulacion> findByEleccion_IdEleccion(Integer IdEleccion);
 }

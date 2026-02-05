@@ -1,6 +1,6 @@
 package com.erwin.backend.service;
 
-import com.erwin.backend.entities.Elecciontitulacion;
+import com.erwin.backend.entities.EleccionTitulacion;
 import com.erwin.backend.repository.*;
 import org.springframework.stereotype.Service;
 
@@ -29,7 +29,7 @@ public class EleccionService {
         this.periodoRepo = periodoRepo;
     }
 
-    public Elecciontitulacion elegir(Integer idEstudiante,
+    public EleccionTitulacion elegir(Integer idEstudiante,
                                      Integer idCarrera,
                                      Integer idModalidad,
                                      Integer idPeriodo) {
@@ -44,7 +44,7 @@ public class EleccionService {
             throw new RuntimeException("Modalidad no permitida para la carrera");
         }
 
-        Elecciontitulacion e = new Elecciontitulacion();
+        EleccionTitulacion e = new EleccionTitulacion();
         e.setEstudiante(estudianteRepo.findById(idEstudiante).orElseThrow());
         e.setCarrera(carreraRepo.findById(idCarrera).orElseThrow());
         e.setModalidad(modalidadRepo.findById(idModalidad).orElseThrow());
