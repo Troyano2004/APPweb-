@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 // CORRECCIÓN 1: Importamos 'EstudiantesComponent' (asegúrate que así se llame en estudiantes.ts)
 import { EstudiantesComponent } from './estudiantes';
-import { EstudianteService } from '../../services/estudiante';
+import EstudianteService from '../../services/estudiante';
 import { of } from 'rxjs';
 
 describe('EstudiantesComponent', () => {

@@ -46,10 +46,7 @@ export class EstudiantesComponent implements OnInit {
         // fuerza refresco de vista
         this.cdr.detectChanges();
       },
-      error: (e)=>{
-        this.errorMsg = `Error al cargar (status: ${e?.status ?? '??'})`;
-        this.cargando = false;
-      }
+
     });
   }
 }
