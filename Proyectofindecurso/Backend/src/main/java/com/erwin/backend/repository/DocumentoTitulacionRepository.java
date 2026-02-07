@@ -10,4 +10,5 @@ import java.util.Optional;
 public interface DocumentoTitulacionRepository extends JpaRepository<DocumentoTitulacion, Integer> {
     Optional<DocumentoTitulacion> findByEstudiante_IdEstudiante(Integer idEstudiante);
     List<DocumentoTitulacion> findByDirector_IdDocenteAndEstado(Integer idDocente, EstadoDocumento estado);
+    long countByEstado(EstadoDocumento estado);
 }

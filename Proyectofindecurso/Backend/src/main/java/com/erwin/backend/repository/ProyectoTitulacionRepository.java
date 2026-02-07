@@ -9,4 +9,5 @@ import java.util.Optional;
 public interface ProyectoTitulacionRepository extends JpaRepository<ProyectoTitulacion, Integer> {
     Optional<ProyectoTitulacion> findByPropuesta_IdPropuesta(Integer idPropuesta);
     List<ProyectoTitulacion> findByDirector_IdDocente(Integer IdDocente);
+    long countByEstado(String estado);
 }
