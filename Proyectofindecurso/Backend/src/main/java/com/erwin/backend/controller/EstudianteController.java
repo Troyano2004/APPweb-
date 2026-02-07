@@ -1,5 +1,13 @@
 package com.erwin.backend.controller;
 
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+
+
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+
+
 import com.erwin.backend.entities.Estudiante;
 import com.erwin.backend.repository.EstudianteRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,4 +31,15 @@ public class EstudianteController {
         // Esto hace la consulta "SELECT * FROM estudiante" automáticamente
         return estudianteRepository.findAll();
     }
+    @PostMapping
+    public Estudiante crear(@RequestBody Estudiante estudiante) {
+        return estudianteRepository.save(estudiante);
+    }
+    @PostMapping("/crear-completo")
+    public Estudiante crearCompleto(@RequestBody Estudiante e) {
+        return estudianteRepository.save(e);
+    }
+
+
+
 }
