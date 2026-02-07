@@ -1,0 +1,70 @@
+<div class="shell" [class.is-collapsed]="isCollapsed">
+  <aside class="sidebar" [class.collapsed]="isCollapsed" [class.mobile-open]="isMobileOpen">
+    <div class="sidebar-header">
+      <div class="brand">
+        <span class="brand-icon">SGA</span>
+        <div class="brand-text" *ngIf="!isCollapsed">
+          <strong>Gestión del Proceso</strong>
+          <span>de Titulación</span>
+        </div>
+      </div>
+      <button class="collapse-toggle" type="button" (click)="toggleCollapse()">
+        {{ isCollapsed ? '»' : '«' }}
+      </button>
+    </div>
+
+    <nav class="menu">
+      <div class="menu-section" *ngFor="let section of menuSections; let i = index">
+        <button class="section-title" type="button" (click)="toggleSection(i)">
+          <span class="section-icon">{{ section.icon }}</span>
+          <span class="section-text" *ngIf="!isCollapsed">{{ section.title }}</span>
+          <span class="chevron" [class.open]="openSectionIndex === i" *ngIf="!isCollapsed">▾</span>
+        </button>
+        <div class="section-items" [class.open]="openSectionIndex === i" [class.collapsed]="isCollapsed">
+          <a
+            *ngFor="let item of section.items"
+            [routerLink]="item.path"
+            routerLinkActive="active"
+            (click)="closeMobile()"
+          >
+            <span class="bullet"></span>
+            <span class="item-text">{{ item.label }}</span>
+          </a>
+        </div>
+      </div>
+    </nav>
+  </aside>
+
+  <div class="overlay" *ngIf="isMobileOpen" (click)="closeMobile()"></div>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="icon-button mobile-only" type="button" (click)="toggleMobile()">☰</button>
+        <div class="breadcrumb">{{ breadcrumb }}</div>
+        <div class="module-title">{{ currentTitle }}</div>
+      </div>
+      <div class="topbar-center">
+        <label class="search">
+          <span>Buscar</span>
+          <input type="text" placeholder="Buscar..." />
+        </label>
+      </div>
+      <div class="topbar-right">
+        <button class="icon-button" type="button">🔔</button>
+        <div class="avatar">
+          <span class="avatar-circle">AG</span>
+          <div class="avatar-info">
+            <strong>Andrea Gómez</strong>
+            <span>Coordinación</span>
+          </div>
+        </div>
+        <button class="logout" type="button">Cerrar sesión</button>
+      </div>
+    </header>
+
+    <main class="content">
+      <router-outlet />
+    </main>
+  </div>
+</div>
