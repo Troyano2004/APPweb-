@@ -9,6 +9,8 @@ import java.util.Optional;
 public interface PropuestaTitulacionRepository extends JpaRepository<PropuestaTitulacion, Integer> {
     List<PropuestaTitulacion> findByEstudiante_IdEstudiante(Integer IdEstudiante);
     List<PropuestaTitulacion> findByEstado(String estado);
+    long countByEstado(String estado);
+    List<PropuestaTitulacion> findTop5ByEstadoOrderByFechaRevisionDesc(String estado);
 
     Optional<PropuestaTitulacion> findByEleccion_IdEleccion(Integer IdEleccion);
 }

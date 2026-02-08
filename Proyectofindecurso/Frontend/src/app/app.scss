@@ -1,32 +1,6 @@
-.sga-bar {
-  background-color: #006400;
-  color: white;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.75rem 1.5rem;
-  font-size: 0.95rem;
-  font-weight: 500;
-  font-family: 'Roboto', sans-serif;
-
-  .sga-bar-left {
-    font-size: 1.05rem;
-  }
-
-  .sga-bar-right {
-    display: flex;
-    gap: 1.2rem;
-    align-items: center;
-
-    .sga-time {
-      font-weight: bold;
-      font-family: monospace;
-    }
-
-    .sga-user {
-      background-color: rgba(255, 255, 255, 0.15);
-      padding: 0.25rem 0.6rem;
-      border-radius: 6px;
-    }
-  }
+:host {
+  display: block;
+  min-height: 100vh;
+  background: #f9fafb;
+  font-family: 'Segoe UI', 'Roboto', system-ui, -apple-system, sans-serif;
 }
