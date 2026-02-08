@@ -8,6 +8,13 @@ import { EstudiantesComponent } from './pages/estudiantes/estudiantes';
 import { Documento } from './pages/titulacion2/documento/documento';
 import { Revision } from './pages/titulacion2/revision/revision';
 import { RevisionDetalle } from './pages/titulacion2/revision-detalle/revision-detalle';
+import { SeguimientoProyectosComponent } from './pages/coordinador/seguimiento-proyectos/seguimiento-proyectos.component';
+import { DirectoresComponent } from './pages/coordinador/directores/directores.component';
+import { ValidacionComponent } from './pages/coordinador/validacion/validacion.component';
+import { TutoriasControlComponent } from './pages/coordinador/tutorias-control/tutorias-control.component';
+import { ObservacionesAdminComponent } from './pages/coordinador/observaciones-admin/observaciones-admin.component';
+import { ReportesCoordinacionComponent } from './pages/coordinador/reportes/reportes.component';
+import { ComisionFormativaComponent } from './pages/coordinador/comision-formativa/comision-formativa.component';
 
 export const routes: Routes = [
   {
@@ -90,6 +97,42 @@ export const routes: Routes = [
       { path: 'admin/usuarios', component: PlaceholderPageComponent, data: { title: 'Usuarios' } },
       { path: 'admin/roles', component: PlaceholderPageComponent, data: { title: 'Roles y permisos' } },
       { path: 'admin/parametros', component: PlaceholderPageComponent, data: { title: 'Parámetros' } },
+
+      {
+        path: 'coordinador/seguimiento',
+        component: SeguimientoProyectosComponent,
+        data: { title: 'Seguimiento de proyectos' }
+      },
+      {
+        path: 'coordinador/directores',
+        component: DirectoresComponent,
+        data: { title: 'Control de directores' }
+      },
+      {
+        path: 'coordinador/validacion',
+        component: ValidacionComponent,
+        data: { title: 'Validación administrativa' }
+      },
+      {
+        path: 'coordinador/tutorias',
+        component: TutoriasControlComponent,
+        data: { title: 'Control de tutorías' }
+      },
+      {
+        path: 'coordinador/observaciones',
+        component: ObservacionesAdminComponent,
+        data: { title: 'Observaciones administrativas' }
+      },
+      {
+        path: 'coordinador/reportes',
+        component: ReportesCoordinacionComponent,
+        data: { title: 'Reportes de coordinación' }
+      },
+      {
+        path: 'coordinador/comision',
+        component: ComisionFormativaComponent,
+        data: { title: 'Comisión formativa' }
+      },
 
       { path: '**', redirectTo: 'dashboard' }
     ]
