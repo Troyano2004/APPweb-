@@ -11,4 +11,6 @@ public interface DocumentoTitulacionRepository extends JpaRepository<DocumentoTi
     Optional<DocumentoTitulacion> findByEstudiante_IdEstudiante(Integer idEstudiante);
     List<DocumentoTitulacion> findByDirector_IdDocenteAndEstado(Integer idDocente, EstadoDocumento estado);
     long countByEstado(EstadoDocumento estado);
+    Optional<DocumentoTitulacion> findByProyecto_IdProyecto(Integer idProyecto);
+    List<DocumentoTitulacion> findByDirectorIsNull();
 }

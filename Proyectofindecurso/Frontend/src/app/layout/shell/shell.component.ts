@@ -122,6 +122,19 @@ export class ShellComponent implements OnInit, OnDestroy {
         { label: 'Roles y permisos', path: '/admin/roles' },
         { label: 'Parámetros', path: '/admin/parametros' }
       ]
+    },
+    {
+      title: 'Coordinación',
+      icon: '🧭',
+      items: [
+        { label: 'Seguimiento de proyectos', path: '/coordinador/seguimiento' },
+        { label: 'Control de directores', path: '/coordinador/directores' },
+        { label: 'Validación administrativa', path: '/coordinador/validacion' },
+        { label: 'Control de tutorías', path: '/coordinador/tutorias' },
+        { label: 'Observaciones administrativas', path: '/coordinador/observaciones' },
+        { label: 'Reportes', path: '/coordinador/reportes' },
+        { label: 'Comisión formativa', path: '/coordinador/comision' }
+      ]
     }
   ];
 
