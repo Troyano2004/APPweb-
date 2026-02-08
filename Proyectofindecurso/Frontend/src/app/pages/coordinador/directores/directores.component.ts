@@ -228,5 +228,6 @@ export class DirectoresComponent implements OnInit {
         this.asignacion = { idDocumento: null, idDocente: null, motivo: '' };
         this.cargarListas();
       });
+    //
   }
 }
