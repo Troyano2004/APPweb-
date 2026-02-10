@@ -32,21 +32,21 @@ import { CoordinadorService, DirectorCarga, EstudianteSinDirector } from '../../
           <h3>Carga de directores</h3>
           <table>
             <thead>
-              <tr>
-                <th>Director</th>
-                <th>Proyectos</th>
-                <th>Acción</th>
-              </tr>
+            <tr>
+              <th>Director</th>
+              <th>Proyectos</th>
+              <th>Acción</th>
+            </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let director of cargaDirectores">
-                <td>{{ director.director }}</td>
-                <td>{{ director.proyectosAsignados }}</td>
-                <td><button type="button" (click)="seleccionarDirector(director)">Reasignar</button></td>
-              </tr>
-              <tr *ngIf="cargaDirectores.length === 0">
-                <td colspan="3" class="empty">No hay carga de directores disponible.</td>
-              </tr>
+            <tr *ngFor="let director of cargaDirectores">
+              <td>{{ director.director }}</td>
+              <td>{{ director.proyectosAsignados }}</td>
+              <td><button type="button" (click)="seleccionarDirector(director)">Reasignar</button></td>
+            </tr>
+            <tr *ngIf="cargaDirectores.length === 0">
+              <td colspan="3" class="empty">No hay carga de directores disponible.</td>
+            </tr>
             </tbody>
           </table>
         </article>
@@ -57,19 +57,27 @@ import { CoordinadorService, DirectorCarga, EstudianteSinDirector } from '../../
         <div class="form">
           <div class="field">
             <label>Estudiante / proyecto</label>
-            <input
-              type="text"
-              placeholder="Seleccionar estudiante"
-              [(ngModel)]="asignacion.idDocumento"
-            />
+            <select [(ngModel)]="asignacion.idDocumento">
+              <option [ngValue]="null">Seleccionar estudiante</option>
+              <option *ngFor="let estudiante of estudiantesSinDirector" [ngValue]="estudiante.idDocumento">
+                {{ estudiante.estudiante }} · {{ estudiante.proyecto || 'Sin proyecto' }}
+              </option>
+            </select>
+            <small *ngIf="estudianteSeleccionado" class="hint">
+              Carrera: {{ estudianteSeleccionado.carrera || 'Sin carrera' }}
+            </small>
           </div>
           <div class="field">
             <label>Nuevo director</label>
-            <input
-              type="text"
-              placeholder="Seleccionar director"
-              [(ngModel)]="asignacion.idDocente"
-            />
+            <select [(ngModel)]="asignacion.idDocente">
+              <option [ngValue]="null">Seleccionar director</option>
+              <option *ngFor="let director of cargaDirectores" [ngValue]="director.idDocente">
+                {{ director.director }} ({{ director.proyectosAsignados }} proyectos)
+              </option>
+            </select>
+            <small *ngIf="directorSeleccionado" class="hint">
+              Carga actual: {{ directorSeleccionado.proyectosAsignados }} proyectos
+            </small>
           </div>
           <div class="field">
             <label>Motivo del cambio</label>
@@ -168,6 +176,7 @@ import { CoordinadorService, DirectorCarga, EstudianteSinDirector } from '../../
       }
 
       input,
+      select,
       textarea {
         border: 1px solid #e5e7eb;
         border-radius: 0.6rem;
@@ -178,6 +187,11 @@ import { CoordinadorService, DirectorCarga, EstudianteSinDirector } from '../../
       .empty {
         color: #6b7280;
         font-size: 0.9rem;
+      }
+
+      .hint {
+        color: #6b7280;
+        font-size: 0.82rem;
       }
     `
   ]
@@ -228,6 +242,15 @@ export class DirectoresComponent implements OnInit {
         this.asignacion = { idDocumento: null, idDocente: null, motivo: '' };
         this.cargarListas();
       });
-    //
+  }
+
+  get estudianteSeleccionado(): EstudianteSinDirector | undefined {
+    return this.estudiantesSinDirector.find(
+      (estudiante) => estudiante.idDocumento === this.asignacion.idDocumento
+    );
+  }
+
+  get directorSeleccionado(): DirectorCarga | undefined {
+    return this.cargaDirectores.find((director) => director.idDocente === this.asignacion.idDocente);
   }
 }

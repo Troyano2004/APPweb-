@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { CoordinadorService, SeguimientoProyecto } from '../../../services/coordinador';
 
 @Component({
@@ -36,38 +37,38 @@ import { CoordinadorService, SeguimientoProyecto } from '../../../services/coord
       <div class="card">
         <table>
           <thead>
-            <tr>
-              <th>Estudiante</th>
-              <th>Título del proyecto</th>
-              <th>Director</th>
-              <th>Estado</th>
-              <th>Última revisión</th>
-              <th>Avance</th>
-              <th>Acciones</th>
-            </tr>
+          <tr>
+            <th>Estudiante</th>
+            <th>Título del proyecto</th>
+            <th>Director</th>
+            <th>Estado</th>
+            <th>Última revisión</th>
+            <th>Avance</th>
+            <th>Acciones</th>
+          </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let seguimiento of seguimientosFiltrados">
-              <td>{{ seguimiento.estudiante }}</td>
-              <td>{{ seguimiento.tituloProyecto }}</td>
-              <td>{{ seguimiento.director || 'Sin director' }}</td>
-              <td>
+          <tr *ngFor="let seguimiento of seguimientosFiltrados">
+            <td>{{ seguimiento.estudiante }}</td>
+            <td>{{ seguimiento.tituloProyecto }}</td>
+            <td>{{ seguimiento.director || 'Sin director' }}</td>
+            <td>
                 <span class="status" [class.warning]="esEstadoPendiente(seguimiento.estado)">
                   {{ seguimiento.estado || 'Sin estado' }}
                 </span>
-              </td>
-              <td>{{ formatFecha(seguimiento.ultimaRevision) }}</td>
-              <td>{{ seguimiento.avance ?? 0 }}%</td>
-              <td class="actions">
-                <button type="button">Ver proyecto</button>
-                <button type="button">Historial</button>
-                <button type="button">Tutorías</button>
-                <button type="button">Observación</button>
-              </td>
-            </tr>
-            <tr *ngIf="seguimientosFiltrados.length === 0">
-              <td colspan="7" class="empty">No hay proyectos para mostrar.</td>
-            </tr>
+            </td>
+            <td>{{ formatFecha(seguimiento.ultimaRevision) }}</td>
+            <td>{{ seguimiento.avance ?? 0 }}%</td>
+            <td class="actions">
+              <button type="button" (click)="verProyecto(seguimiento)">Ver proyecto</button>
+              <button type="button" (click)="verHistorial(seguimiento)">Historial</button>
+              <button type="button" (click)="verTutorias(seguimiento)">Tutorías</button>
+              <button type="button" (click)="verObservaciones(seguimiento)">Observación</button>
+            </td>
+          </tr>
+          <tr *ngIf="seguimientosFiltrados.length === 0">
+            <td colspan="7" class="empty">No hay proyectos para mostrar.</td>
+          </tr>
           </tbody>
         </table>
       </div>
@@ -192,7 +193,10 @@ export class SeguimientoProyectosComponent implements OnInit {
   estadoFiltro = 'Todos';
   textoFiltro = '';
 
-  constructor(private coordinadorService: CoordinadorService) {}
+  constructor(
+    private coordinadorService: CoordinadorService,
+    private router: Router
+  ) {}
 
   get estadosDisponibles(): string[] {
     const estados = new Set(this.seguimientos.map((item) => item.estado).filter(Boolean) as string[]);
@@ -243,5 +247,29 @@ export class SeguimientoProyectosComponent implements OnInit {
       month: '2-digit',
       year: 'numeric'
     }).format(date);
+  }
+
+  verProyecto(seguimiento: SeguimientoProyecto): void {
+    this.router.navigate(['/coordinador/proyecto'], {
+      queryParams: { idProyecto: seguimiento.idProyecto }
+    });
+  }
+
+  verHistorial(seguimiento: SeguimientoProyecto): void {
+    this.router.navigate(['/propuesta/historial'], {
+      queryParams: { idProyecto: seguimiento.idProyecto }
+    });
+  }
+
+  verTutorias(seguimiento: SeguimientoProyecto): void {
+    this.router.navigate(['/coordinador/tutorias'], {
+      queryParams: { idProyecto: seguimiento.idProyecto }
+    });
+  }
+
+  verObservaciones(seguimiento: SeguimientoProyecto): void {
+    this.router.navigate(['/coordinador/observaciones'], {
+      queryParams: { idProyecto: seguimiento.idProyecto }
+    });
   }
 }
