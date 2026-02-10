@@ -15,6 +15,8 @@ import { TutoriasControlComponent } from './pages/coordinador/tutorias-control/t
 import { ObservacionesAdminComponent } from './pages/coordinador/observaciones-admin/observaciones-admin.component';
 import { ReportesCoordinacionComponent } from './pages/coordinador/reportes/reportes.component';
 import { ComisionFormativaComponent } from './pages/coordinador/comision-formativa/comision-formativa.component';
+import { VisualizarProyectoComponent } from './pages/coordinador/visualizar-proyecto/visualizar-proyecto.component';
+
 
 export const routes: Routes = [
   {
@@ -132,6 +134,11 @@ export const routes: Routes = [
         path: 'coordinador/comision',
         component: ComisionFormativaComponent,
         data: { title: 'Comisión formativa' }
+      },
+      {
+        path: 'coordinador/proyecto',
+        component: VisualizarProyectoComponent,
+        data: { title: 'Visualización de proyecto' }
       },
 
       { path: '**', redirectTo: 'dashboard' }

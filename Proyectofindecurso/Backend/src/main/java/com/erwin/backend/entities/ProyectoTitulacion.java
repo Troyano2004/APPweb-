@@ -29,7 +29,7 @@ public class ProyectoTitulacion {
     @JoinColumn(name = "id_periodo")
     private PeriodoTitulacion periodo;
 
-    @ManyToOne(optional = false)
+    @ManyToOne(optional = true)
     @JoinColumn(name = "id_director")
     private Docente director;
 
