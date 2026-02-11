@@ -1,9 +1,11 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { DocumentoTitulacionDto } from './documento-titulacion';
 
 export interface SeguimientoProyecto {
   idProyecto: number;
+  idEstudiante: number | null;
   estudiante: string;
   tituloProyecto: string;
   director: string;
@@ -37,10 +39,16 @@ export interface ObservacionAdministrativa {
 
 export interface ComisionFormativa {
   idComision: number;
+  idCarrera?: number | null;
   carrera: string;
   periodoAcademico: string;
   estado: string;
   miembros: Array<{ idDocente: number; docente: string; cargo: string }>;
+}
+
+export interface CatalogoCarrera {
+  idCarrera: number;
+  nombre: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -69,6 +77,10 @@ export class CoordinadorService {
     return this.http.post<void>(`${this.API_URL}/validacion/${idProyecto}`, {});
   }
 
+  getDocumentoProyecto(idProyecto: number): Observable<DocumentoTitulacionDto> {
+    return this.http.get<DocumentoTitulacionDto>(`${this.API_URL}/proyecto/${idProyecto}/documento`);
+  }
+
   getObservaciones(idProyecto?: number): Observable<ObservacionAdministrativa[]> {
     const params = idProyecto ? `?idProyecto=${idProyecto}` : '';
     return this.http.get<ObservacionAdministrativa[]>(`${this.API_URL}/observaciones${params}`);
@@ -87,6 +99,10 @@ export class CoordinadorService {
     return this.http.get<ComisionFormativa[]>(`${this.API_URL}/comisiones`);
   }
 
+  getCarreras(): Observable<CatalogoCarrera[]> {
+    return this.http.get<CatalogoCarrera[]>(`${this.API_URL}/catalogos/carreras`);
+  }
+
   crearComision(payload: {
     idCarrera: number;
     periodoAcademico: string;
@@ -97,6 +113,10 @@ export class CoordinadorService {
 
   asignarMiembros(idComision: number, miembros: Array<{ idDocente: number; cargo: string }>): Observable<void> {
     return this.http.post<void>(`${this.API_URL}/comisiones/${idComision}/miembros`, { miembros });
+  }
+
+  eliminarComision(idComision: number): Observable<void> {
+    return this.http.delete<void>(`${this.API_URL}/comisiones/${idComision}`);
   }
 
   asignarComisionProyecto(payload: {

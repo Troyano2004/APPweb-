@@ -1,3 +1,4 @@
+// Proyectofindecurso/Frontend/src/app/pages/coordinador/seguimiento-proyectos/seguimiento-proyectos.component.ts
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -209,9 +210,35 @@ export class SeguimientoProyectosComponent implements OnInit {
 
   cargarSeguimiento(): void {
     this.coordinadorService.getSeguimiento().subscribe((data) => {
-      this.seguimientos = data;
+      this.seguimientos = data.map((item) => this.normalizarSeguimiento(item));
       this.aplicarFiltros();
     });
+  }
+
+  normalizarSeguimiento(item: SeguimientoProyecto): SeguimientoProyecto {
+    const raw = item as SeguimientoProyecto & {
+      id?: number | string | null;
+      id_proyecto?: number | string | null;
+      idEstudiante?: number | string | null;
+      id_estudiante?: number | string | null;
+    };
+
+    const idProyecto = this.toNumberOrNull(raw.idProyecto) ?? this.toNumberOrNull(raw.id) ?? this.toNumberOrNull(raw.id_proyecto);
+    const idEstudiante = this.toNumberOrNull(raw.idEstudiante) ?? this.toNumberOrNull(raw.id_estudiante);
+
+    return {
+      ...item,
+      idProyecto: idProyecto ?? 0,
+      idEstudiante
+    };
+  }
+
+  toNumberOrNull(value: unknown): number | null {
+    if (value === null || value === undefined || value === '') {
+      return null;
+    }
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
   }
 
   aplicarFiltros(): void {
@@ -250,8 +277,18 @@ export class SeguimientoProyectosComponent implements OnInit {
   }
 
   verProyecto(seguimiento: SeguimientoProyecto): void {
+    const idProyecto = this.toNumberOrNull(seguimiento.idProyecto);
+    const idEstudiante = this.toNumberOrNull(seguimiento.idEstudiante);
+
+    if (!idProyecto && !idEstudiante) {
+      return;
+    }
+
     this.router.navigate(['/coordinador/proyecto'], {
-      queryParams: { idProyecto: seguimiento.idProyecto }
+      queryParams: {
+        idProyecto: idProyecto ?? undefined,
+        idEstudiante: idEstudiante ?? undefined
+      }
     });
   }
 

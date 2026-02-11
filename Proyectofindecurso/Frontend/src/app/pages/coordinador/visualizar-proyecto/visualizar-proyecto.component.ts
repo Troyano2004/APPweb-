@@ -1,3 +1,4 @@
+// Proyectofindecurso/Frontend/src/app/pages/coordinador/visualizar-proyecto/visualizar-proyecto.component.ts
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
@@ -6,6 +7,8 @@ import {
   ObservacionAdministrativa,
   SeguimientoProyecto
 } from '../../../services/coordinador';
+import { DocumentoTitulacionDto, DocumentoTitulacionService } from '../../../services/documento-titulacion';
+import { catchError, finalize, of, timeout } from 'rxjs';
 
 @Component({
   selector: 'app-visualizar-proyecto',
@@ -25,10 +28,10 @@ import {
         <div class="hero-content">
           <div>
             <span class="label">Proyecto</span>
-            <h2>{{ proyecto?.tituloProyecto || 'Proyecto sin título' }}</h2>
+            <h2>{{ proyecto?.tituloProyecto || documento?.titulo || 'Proyecto sin título' }}</h2>
             <p class="subtitle">
-              {{ proyecto?.estudiante || 'Sin estudiante asignado' }} ·
-              {{ proyecto?.director || 'Sin director' }}
+              {{ proyecto?.estudiante || estudianteLabel() }} ·
+              {{ proyecto?.director || directorLabel() }}
             </p>
           </div>
           <div class="pill">Estado: {{ proyecto?.estado || 'En seguimiento' }}</div>
@@ -53,27 +56,20 @@ import {
         </div>
       </div>
 
-      <div class="grid">
-        <article class="card">
-          <h3>Resumen</h3>
-          <p>
-            Información consolidada del avance, observaciones y estado de seguimiento.
-          </p>
-          <ul>
-            <li>Estado actual: {{ proyecto?.estado || 'Sin estado' }}.</li>
-            <li>Última revisión: {{ formatFecha(proyecto?.ultimaRevision) }}.</li>
-            <li>Avance reportado: {{ proyecto?.avance ?? 0 }}%.</li>
-          </ul>
-        </article>
-        <article class="card">
-          <h3>Próximas acciones</h3>
-          <ol>
-            <li>Confirmar director asignado.</li>
-            <li>Revisar observaciones pendientes.</li>
-            <li>Programar tutoría de seguimiento.</li>
-          </ol>
-          <button type="button">Registrar acción</button>
-        </article>
+      <div class="card">
+        <h3>Contenido del documento</h3>
+        <p *ngIf="cargandoDocumento" class="doc-help">Cargando documento...</p>
+        <p *ngIf="errorDocumento" class="error">{{ errorDocumento }}</p>
+        <p class="doc-help">Se muestran todas las secciones registradas del documento de titulación.</p>
+        <div class="doc-sections" *ngIf="documento; else sinDocumento">
+          <article class="doc-item" *ngFor="let seccion of seccionesDocumento()">
+            <h4>{{ seccion.titulo }}</h4>
+            <p>{{ seccion.contenido }}</p>
+          </article>
+        </div>
+        <ng-template #sinDocumento>
+          <p class="empty">No hay documento cargado para este proyecto.</p>
+        </ng-template>
       </div>
 
       <div class="card">
@@ -199,28 +195,31 @@ import {
         font-size: 1.05rem;
       }
 
-      .grid {
+      .doc-help {
+        margin-top: 0;
+        color: #6b7280;
+      }
+
+      .doc-sections {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-        gap: 1rem;
+        gap: 0.85rem;
       }
 
-      ul,
-      ol {
-        margin: 0.75rem 0 0;
-        padding-left: 1.2rem;
-        color: #4b5563;
+      .doc-item {
+        border: 1px solid #e5e7eb;
+        border-radius: 0.65rem;
+        padding: 0.85rem;
+        background: #f9fafb;
       }
 
-      button {
-        margin-top: 1rem;
-        border: none;
-        border-radius: 0.6rem;
-        padding: 0.55rem 0.9rem;
-        background: linear-gradient(135deg, #0f7a3a 0%, #0c6a32 100%);
-        color: #ffffff;
-        cursor: pointer;
-        font-weight: 600;
+      .doc-item h4 {
+        margin: 0 0 0.35rem;
+      }
+
+      .doc-item p {
+        margin: 0;
+        color: #374151;
+        white-space: pre-wrap;
       }
 
       .timeline {
@@ -253,36 +252,136 @@ import {
         color: #6b7280;
         margin: 0;
       }
+
+      .error {
+        margin: 0.5rem 0;
+        color: #b91c1c;
+        font-weight: 600;
+      }
     `
   ]
 })
 export class VisualizarProyectoComponent implements OnInit {
   idProyecto: number | null = null;
+  idEstudianteQuery: number | null = null;
   proyecto: SeguimientoProyecto | null = null;
+  documento: DocumentoTitulacionDto | null = null;
   observaciones: ObservacionAdministrativa[] = [];
+  cargandoDocumento = false;
+  errorDocumento: string | null = null;
 
   constructor(
     private route: ActivatedRoute,
-    private coordinadorService: CoordinadorService
+    private coordinadorService: CoordinadorService,
+    private documentoService: DocumentoTitulacionService
   ) {}
 
   ngOnInit(): void {
     this.route.queryParamMap.subscribe((params) => {
       const id = params.get('idProyecto');
       this.idProyecto = id ? Number(id) : null;
-      this.cargarProyecto();
+      const idEst = params.get('idEstudiante');
+      this.idEstudianteQuery = idEst ? Number(idEst) : null;
+      this.cargarProyectoYDocumento();
       this.cargarObservaciones();
     });
   }
 
-  cargarProyecto(): void {
-    if (!this.idProyecto) {
+  cargarProyectoYDocumento(): void {
+    if (!this.idProyecto && !this.idEstudianteQuery) {
       this.proyecto = null;
+      this.documento = null;
       return;
     }
-    this.coordinadorService.getSeguimiento().subscribe((data) => {
-      this.proyecto = data.find((item) => item.idProyecto === this.idProyecto) ?? null;
+
+    if (!this.idProyecto && this.idEstudianteQuery) {
+      this.proyecto = null;
+      this.cargarDocumento(this.idEstudianteQuery);
+      return;
+    }
+
+    this.coordinadorService.getSeguimiento().subscribe({
+      next: (data) => {
+        this.proyecto =
+          data.find((item) => item.idProyecto === this.idProyecto) ??
+          data.find((item) => String(item.idProyecto) === String(this.idProyecto)) ??
+          null;
+
+        this.cargarDocumento(this.proyecto?.idEstudiante ?? this.idEstudianteQuery);
+      },
+      error: () => {
+        this.proyecto = null;
+        this.cargarDocumento(this.idEstudianteQuery);
+      }
     });
+  }
+
+  cargarDocumento(idEstudiante: number | null): void {
+    if (!this.idProyecto && !idEstudiante) {
+      this.documento = null;
+      this.cargandoDocumento = false;
+      return;
+    }
+
+    this.cargandoDocumento = true;
+    this.errorDocumento = null;
+
+    const fallbackPorEstudiante = () => {
+      if (!idEstudiante) {
+        return of(null);
+      }
+      return this.documentoService.getDocumento(idEstudiante).pipe(
+        timeout(8000),
+        catchError(() => of(null))
+      );
+    };
+
+    const request$ = this.idProyecto
+      ? this.coordinadorService.getDocumentoProyecto(this.idProyecto).pipe(
+        timeout(8000),
+        catchError(() => fallbackPorEstudiante())
+      )
+      : fallbackPorEstudiante();
+
+    request$
+      .pipe(
+        finalize(() => {
+          this.cargandoDocumento = false;
+        })
+      )
+      .subscribe((data) => {
+        this.documento = data;
+        if (!data) {
+          this.errorDocumento = 'No se pudo cargar el documento para este proyecto.';
+        }
+      });
+  }
+
+  seccionesDocumento(): Array<{ titulo: string; contenido: string }> {
+    if (!this.documento) {
+      return [];
+    }
+
+    const secciones = [
+      { titulo: 'Título', contenido: this.documento.titulo },
+      { titulo: 'Resumen', contenido: this.documento.resumen },
+      { titulo: 'Abstract', contenido: this.documento.abstractText },
+      { titulo: 'Introducción', contenido: this.documento.introduccion },
+      { titulo: 'Planteamiento del problema', contenido: this.documento.planteamientoProblema || this.documento.problema },
+      { titulo: 'Objetivo general', contenido: this.documento.objetivoGeneral || this.documento.objetivosGenerales },
+      { titulo: 'Objetivos específicos', contenido: this.documento.objetivosEspecificos },
+      { titulo: 'Justificación', contenido: this.documento.justificacion },
+      { titulo: 'Marco teórico', contenido: this.documento.marcoTeorico },
+      { titulo: 'Metodología', contenido: this.documento.metodologia },
+      { titulo: 'Resultados', contenido: this.documento.resultados },
+      { titulo: 'Discusión', contenido: this.documento.discusion },
+      { titulo: 'Conclusiones', contenido: this.documento.conclusiones },
+      { titulo: 'Recomendaciones', contenido: this.documento.recomendaciones },
+      { titulo: 'Bibliografía', contenido: this.documento.bibliografia },
+      { titulo: 'Anexos', contenido: this.documento.anexos }
+    ];
+
+    return secciones.filter((item): item is { titulo: string; contenido: string } => !!item.contenido?.trim());
   }
 
   cargarObservaciones(): void {
@@ -293,6 +392,20 @@ export class VisualizarProyectoComponent implements OnInit {
     this.coordinadorService.getObservaciones(this.idProyecto).subscribe((data) => {
       this.observaciones = data;
     });
+  }
+
+  estudianteLabel(): string {
+    if (this.proyecto?.estudiante) {
+      return this.proyecto.estudiante;
+    }
+    return this.documento?.idEstudiante ? `Estudiante #${this.documento.idEstudiante}` : 'Sin estudiante asignado';
+  }
+
+  directorLabel(): string {
+    if (this.proyecto?.director) {
+      return this.proyecto.director;
+    }
+    return this.documento?.idDirector ? `Director #${this.documento.idDirector}` : 'Sin director';
   }
 
   formatFecha(fecha?: string | null): string {

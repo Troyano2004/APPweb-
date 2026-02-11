@@ -9,7 +9,10 @@ export type EstadoDocumento =
   | 'APROBADO_POR_DIRECTOR';
 
 export interface DocumentoTitulacionDto {
-  idDocumento: number;
+  idDocumento?: number;
+  id?: number;
+  idEstudiante?: number | null;
+  idDirector?: number | null;
   estado: EstadoDocumento;
 
   titulo: string | null;
@@ -18,7 +21,9 @@ export interface DocumentoTitulacionDto {
 
   introduccion: string | null;
   problema: string | null;
+  planteamientoProblema?: string | null;
   objetivosGenerales: string | null;
+  objetivoGeneral?: string | null;
   objetivosEspecificos: string | null;
   justificacion: string | null;
 

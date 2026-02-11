@@ -7,6 +7,7 @@ import java.util.List;
 public class CoordinadorDtos {
     public static class SeguimientoProyectoDto {
         private Integer idProyecto;
+        private Integer idEstudiante;
         private String estudiante;
         private String tituloProyecto;
         private String director;
@@ -24,6 +25,14 @@ public class CoordinadorDtos {
 
         public String getEstudiante() {
             return estudiante;
+        }
+
+        public Integer getIdEstudiante() {
+            return idEstudiante;
+        }
+
+        public void setIdEstudiante(Integer idEstudiante) {
+            this.idEstudiante = idEstudiante;
         }
 
         public void setEstudiante(String estudiante) {
@@ -277,6 +286,7 @@ public class CoordinadorDtos {
 
     public static class ComisionFormativaDto {
         private Integer idComision;
+        private Integer idCarrera;
         private String carrera;
         private String periodoAcademico;
         private String estado;
@@ -288,6 +298,14 @@ public class CoordinadorDtos {
 
         public void setIdComision(Integer idComision) {
             this.idComision = idComision;
+        }
+
+        public Integer getIdCarrera() {
+            return idCarrera;
+        }
+
+        public void setIdCarrera(Integer idCarrera) {
+            this.idCarrera = idCarrera;
         }
 
         public String getCarrera() {
@@ -392,6 +410,27 @@ public class CoordinadorDtos {
 
         public void setMiembros(List<ComisionMiembroDto> miembros) {
             this.miembros = miembros;
+        }
+    }
+
+    public static class CatalogoCarreraDto {
+        private Integer idCarrera;
+        private String nombre;
+
+        public Integer getIdCarrera() {
+            return idCarrera;
+        }
+
+        public void setIdCarrera(Integer idCarrera) {
+            this.idCarrera = idCarrera;
+        }
+
+        public String getNombre() {
+            return nombre;
+        }
+
+        public void setNombre(String nombre) {
+            this.nombre = nombre;
         }
     }
 
