@@ -16,12 +16,18 @@ import { ObservacionesAdminComponent } from './pages/coordinador/observaciones-a
 import { ReportesCoordinacionComponent } from './pages/coordinador/reportes/reportes.component';
 import { ComisionFormativaComponent } from './pages/coordinador/comision-formativa/comision-formativa.component';
 import { VisualizarProyectoComponent } from './pages/coordinador/visualizar-proyecto/visualizar-proyecto.component';
-
+import { LoginComponent } from './pages/login/login';
+import { AdminUsuariosComponent } from './pages/admin-usuario/admin-usuarios';
+import { RolesComponent } from './pages/roles/roles';
+import { authGuard, loginGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
+  { path: '', pathMatch: 'full', redirectTo: 'login' },
+  { path: 'login', component: LoginComponent, canActivate: [loginGuard], data: { title: 'Login' } },
   {
-    path: '',
+    path: 'app',
     component: ShellComponent,
+    canActivate: [authGuard],
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
       { path: 'dashboard', component: DashboardComponent, data: { title: 'Dashboard' } },
@@ -96,8 +102,8 @@ export const routes: Routes = [
       { path: 'reportes/periodo', component: PlaceholderPageComponent, data: { title: 'Reportes por período' } },
       { path: 'reportes/actas', component: PlaceholderPageComponent, data: { title: 'Actas y constancias' } },
 
-      { path: 'admin/usuarios', component: PlaceholderPageComponent, data: { title: 'Usuarios' } },
-      { path: 'admin/roles', component: PlaceholderPageComponent, data: { title: 'Roles y permisos' } },
+      { path: 'admin/usuarios', component: AdminUsuariosComponent, data: { title: 'Usuarios' } },
+      { path: 'admin/roles', component: RolesComponent, data: { title: 'Roles del aplicativo' } },
       { path: 'admin/parametros', component: PlaceholderPageComponent, data: { title: 'Parámetros' } },
 
       {
@@ -143,5 +149,6 @@ export const routes: Routes = [
 
       { path: '**', redirectTo: 'dashboard' }
     ]
-  }
+  },
+  { path: '**', redirectTo: 'login' }
 ];

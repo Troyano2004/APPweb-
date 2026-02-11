@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { finalize, timeout } from 'rxjs/operators';
 import { AuthService } from '../../services/auth';
+import { getRoleHomeRoute, setSessionUser } from '../../services/session';
 
 @Component({
   selector: 'app-login',
@@ -47,24 +48,15 @@ export class LoginComponent {
       )
       .subscribe({
         next: (resp: any) => {
-          localStorage.setItem('usuario', JSON.stringify(resp));
+          setSessionUser(resp || {});
 
-          const rol = String(resp?.rol || '').trim().toUpperCase();
-
-          if (rol === 'ROLE_ADMIN') {
-            this.router.navigate(['/admin/usuarios']);
-            return;
-          }
-          if (rol === 'ROLE_DOCENTE') {
-            this.router.navigate(['/docente']);
-            return;
-          }
-          if (rol === 'ROLE_ESTUDIANTE') {
-            this.router.navigate(['/estudiante']);
+          const homeRoute = getRoleHomeRoute(resp?.rol);
+          if (!homeRoute) {
+            this.errorMessage = 'Rol no reconocido: ' + (resp?.rol ?? '');
             return;
           }
 
-          this.errorMessage = 'Rol no reconocido: ' + (resp?.rol ?? '');
+          this.router.navigate([homeRoute]);
         },
         error: (err) => {
           // ✅ Si fue timeout
