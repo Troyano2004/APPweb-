@@ -1,6 +1,7 @@
 package com.erwin.backend.service;
 
 import com.erwin.backend.dtos.CoordinadorDtos.*;
+import com.erwin.backend.dtos.DocumentoTitulacionDto;
 import com.erwin.backend.entities.*;
 import com.erwin.backend.enums.EstadoDocumento;
 import com.erwin.backend.repository.*;
@@ -52,6 +53,7 @@ public class CoordinadorService {
 
             if (proyecto.getPropuesta() != null && proyecto.getPropuesta().getEstudiante() != null) {
                 Estudiante est = proyecto.getPropuesta().getEstudiante();
+                dto.setIdEstudiante(est.getIdEstudiante());
                 Usuario u = est.getUsuario();
                 dto.setEstudiante(u.getNombres() + " " + u.getApellidos());
             }
@@ -143,6 +145,43 @@ public class CoordinadorService {
         proyectoRepo.save(proyecto);
     }
 
+    public DocumentoTitulacionDto documentoPorProyecto(Integer idProyecto) {
+        DocumentoTitulacion doc = documentoRepo.findByProyecto_IdProyecto(idProyecto)
+                .orElseThrow(() -> new RuntimeException("Documento no encontrado para el proyecto"));
+        return toDocumentoDto(doc);
+    }
+
+    private DocumentoTitulacionDto toDocumentoDto(DocumentoTitulacion d) {
+        DocumentoTitulacionDto dto = new DocumentoTitulacionDto();
+        dto.setId(d.getId());
+        dto.setEstado(d.getEstado());
+
+        dto.setIdEstudiante(d.getEstudiante() != null ? d.getEstudiante().getIdEstudiante() : null);
+        dto.setIdDirector(d.getDirector() != null ? d.getDirector().getIdDocente() : null);
+
+        dto.setTitulo(d.getTitulo());
+        dto.setCiudad(d.getCiudad());
+        dto.setAnio(d.getAnio());
+
+        dto.setResumen(d.getResumen());
+        dto.setAbstractText(d.getAbstractText());
+        dto.setIntroduccion(d.getIntroduccion());
+        dto.setPlanteamientoProblema(d.getPlanteamientoProblema());
+        dto.setObjetivoGeneral(d.getObjetivoGeneral());
+        dto.setObjetivosEspecificos(d.getObjetivosEspecificos());
+        dto.setJustificacion(d.getJustificacion());
+        dto.setMarcoTeorico(d.getMarcoTeorico());
+        dto.setMetodologia(d.getMetodologia());
+        dto.setResultados(d.getResultados());
+        dto.setDiscusion(d.getDiscusion());
+        dto.setConclusiones(d.getConclusiones());
+        dto.setRecomendaciones(d.getRecomendaciones());
+        dto.setBibliografia(d.getBibliografia());
+        dto.setAnexos(d.getAnexos());
+
+        return dto;
+    }
+
     public List<ObservacionAdministrativaDto> observaciones(Integer idProyecto) {
         List<ObservacionAdministrativa> observaciones =
                 idProyecto == null
@@ -191,6 +230,7 @@ public class CoordinadorService {
         for (ComisionFormativa comision : comisionRepo.findAll()) {
             ComisionFormativaDto dto = new ComisionFormativaDto();
             dto.setIdComision(comision.getIdComision());
+            dto.setIdCarrera(comision.getCarrera() != null ? comision.getCarrera().getIdCarrera() : null);
             dto.setPeriodoAcademico(comision.getPeriodoAcademico());
             dto.setEstado(comision.getEstado());
             if (comision.getCarrera() != null) {
@@ -220,13 +260,14 @@ public class CoordinadorService {
 
         ComisionFormativa comision = new ComisionFormativa();
         comision.setCarrera(carrera);
-        comision.setPeriodoAcademico(request.getPeriodoAcademico());
+        comision.setPeriodoAcademico(request.getPeriodoAcademico().trim());
         comision.setFechaInicio(LocalDate.now());
-        comision.setEstado(request.getEstado() != null ? request.getEstado() : "ACTIVA");
+        comision.setEstado(normalizarEstadoComision(request.getEstado()));
         comision = comisionRepo.save(comision);
 
         ComisionFormativaDto dto = new ComisionFormativaDto();
         dto.setIdComision(comision.getIdComision());
+        dto.setIdCarrera(carrera.getIdCarrera());
         dto.setCarrera(carrera.getNombre());
         dto.setPeriodoAcademico(comision.getPeriodoAcademico());
         dto.setEstado(comision.getEstado());
@@ -238,17 +279,63 @@ public class CoordinadorService {
         ComisionFormativa comision = comisionRepo.findById(idComision)
                 .orElseThrow(() -> new RuntimeException("Comisión no encontrada"));
 
+        if (request.getMiembros() == null || request.getMiembros().isEmpty()) {
+            return;
+        }
+
         for (ComisionMiembroDto miembroDto : request.getMiembros()) {
+            if (miembroDto.getIdDocente() == null || miembroDto.getCargo() == null || miembroDto.getCargo().trim().isEmpty()) {
+                continue;
+            }
+
             Docente docente = docenteRepo.findById(miembroDto.getIdDocente())
                     .orElseThrow(() -> new RuntimeException("Docente no encontrado"));
             comisionmiembroid id = new comisionmiembroid(comision.getIdComision(), docente.getIdDocente());
-            ComisionMiembro miembro = new ComisionMiembro();
+
+            ComisionMiembro miembro = miembroRepo.findById(id).orElseGet(ComisionMiembro::new);
             miembro.setId(id);
             miembro.setIdcomision(comision);
             miembro.setDocente(docente);
-            miembro.setCargo(miembroDto.getCargo());
+            miembro.setCargo(miembroDto.getCargo().trim().toUpperCase());
             miembroRepo.save(miembro);
         }
+    }
+
+    public List<CatalogoCarreraDto> carreras() {
+        List<CatalogoCarreraDto> salida = new ArrayList<>();
+        for (Carrera carrera : carreraRepo.findAll()) {
+            CatalogoCarreraDto dto = new CatalogoCarreraDto();
+            dto.setIdCarrera(carrera.getIdCarrera());
+            dto.setNombre(carrera.getNombre());
+            salida.add(dto);
+        }
+        return salida;
+    }
+
+    private String normalizarEstadoComision(String estado) {
+        if (estado == null || estado.trim().isEmpty()) {
+            return "ACTIVA";
+        }
+        String estadoNormalizado = estado.trim().toUpperCase();
+        return estadoNormalizado.equals("INACTIVA") ? "INACTIVA" : "ACTIVA";
+    }
+
+    @Transactional
+    public void eliminarComision(Integer idComision) {
+        ComisionFormativa comision = comisionRepo.findById(idComision)
+                .orElseThrow(() -> new RuntimeException("Comisión no encontrada"));
+
+        List<ComisionProyecto> comisionesProyecto = comisionProyectoRepo.findByComision_IdComision(idComision);
+        if (!comisionesProyecto.isEmpty()) {
+            comisionProyectoRepo.deleteAll(comisionesProyecto);
+        }
+
+        List<ComisionMiembro> miembros = miembroRepo.findByIdcomision_IdComision(idComision);
+        if (!miembros.isEmpty()) {
+            miembroRepo.deleteAll(miembros);
+        }
+
+        comisionRepo.delete(comision);
     }
 
     @Transactional

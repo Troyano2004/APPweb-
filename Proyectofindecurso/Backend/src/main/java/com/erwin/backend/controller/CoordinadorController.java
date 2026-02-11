@@ -1,6 +1,7 @@
 package com.erwin.backend.controller;
 
 import com.erwin.backend.dtos.CoordinadorDtos.*;
+import com.erwin.backend.dtos.DocumentoTitulacionDto;
 import com.erwin.backend.entities.ComisionProyecto;
 import com.erwin.backend.service.CoordinadorService;
 import org.springframework.web.bind.annotation.*;
@@ -47,6 +48,11 @@ public class CoordinadorController {
         return service.observaciones(idProyecto);
     }
 
+    @GetMapping("/proyecto/{idProyecto}/documento")
+    public DocumentoTitulacionDto documentoProyecto(@PathVariable Integer idProyecto) {
+        return service.documentoPorProyecto(idProyecto);
+    }
+
     @PostMapping("/observaciones")
     public ObservacionAdministrativaDto crearObservacion(@RequestBody CrearObservacionAdministrativaRequest request) {
         return service.crearObservacion(request);
@@ -55,6 +61,16 @@ public class CoordinadorController {
     @GetMapping("/comisiones")
     public List<ComisionFormativaDto> comisiones() {
         return service.listarComisiones();
+    }
+
+    @GetMapping("/catalogos/carreras")
+    public List<CatalogoCarreraDto> carreras() {
+        return service.carreras();
+    }
+
+    @DeleteMapping("/comisiones/{idComision}")
+    public void eliminarComision(@PathVariable Integer idComision) {
+        service.eliminarComision(idComision);
     }
 
     @PostMapping("/comisiones")
