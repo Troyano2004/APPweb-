@@ -55,11 +55,11 @@
         <div class="avatar">
           <span class="avatar-circle">AG</span>
           <div class="avatar-info">
-            <strong>Andrea Gómez</strong>
-            <span>Coordinación</span>
+            <strong>{{ userName }}</strong>
+            <span>{{ userRole }}</span>
           </div>
         </div>
-        <button class="logout" type="button">Cerrar sesión</button>
+        <button class="logout" type="button" (click)="logout()">Cerrar sesión</button>
       </div>
     </header>
 

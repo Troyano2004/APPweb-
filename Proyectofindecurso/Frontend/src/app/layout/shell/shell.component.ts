@@ -2,6 +2,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { filter, Subscription } from 'rxjs';
+import { getSessionUser } from '../../services/session';
 
 interface MenuItem {
   label: string;
@@ -27,6 +28,8 @@ export class ShellComponent implements OnInit, OnDestroy {
   openSectionIndex = 0;
   currentTitle = 'Dashboard';
   breadcrumb = 'Inicio / Dashboard';
+  userName = 'Usuario';
+  userRole = 'Sistema';
 
   private readonly subscriptions = new Subscription();
 
@@ -34,106 +37,106 @@ export class ShellComponent implements OnInit, OnDestroy {
     {
       title: 'Dashboard',
       icon: '🏠',
-      items: [{ label: 'Resumen general', path: '/dashboard' }]
+      items: [{ label: 'Resumen general', path: '/app/dashboard' }]
     },
     {
       title: 'Catálogos Académicos',
       icon: '🎓',
       items: [
-        { label: 'Universidad', path: '/catalogos/universidad' },
-        { label: 'Facultad', path: '/catalogos/facultad' },
-        { label: 'Carrera', path: '/catalogos/carrera' },
-        { label: 'Modalidad Titulación', path: '/catalogos/modalidad' },
-        { label: 'Período Académico', path: '/catalogos/periodo' },
-        { label: 'Tipo Trabajo Titulación', path: '/catalogos/tipo-trabajo' },
-        { label: 'Carrera-Modalidad', path: '/catalogos/carrera-modalidad' }
+        { label: 'Universidad', path: '/app/catalogos/universidad' },
+        { label: 'Facultad', path: '/app/catalogos/facultad' },
+        { label: 'Carrera', path: '/app/catalogos/carrera' },
+        { label: 'Modalidad Titulación', path: '/app/catalogos/modalidad' },
+        { label: 'Período Académico', path: '/app/catalogos/periodo' },
+        { label: 'Tipo Trabajo Titulación', path: '/app/catalogos/tipo-trabajo' },
+        { label: 'Carrera-Modalidad', path: '/app/catalogos/carrera-modalidad' }
       ]
     },
     {
       title: 'Banco de Temas',
       icon: '📚',
       items: [
-        { label: 'Listado de temas', path: '/temas' },
-        { label: 'Registrar tema', path: '/temas/nuevo' },
-        { label: 'Aprobación temas', path: '/temas/aprobacion' }
+        { label: 'Listado de temas', path: '/app/temas' },
+        { label: 'Registrar tema', path: '/app/temas/nuevo' },
+        { label: 'Aprobación temas', path: '/app/temas/aprobacion' }
       ]
     },
     {
       title: 'Propuesta y Anteproyecto',
       icon: '📝',
       items: [
-        { label: 'Propuestas pendientes', path: '/propuesta/pendientes' },
-        { label: 'Registrar propuesta', path: '/propuesta/nueva' },
-        { label: 'Revisión por director', path: '/propuesta/revision' },
-        { label: 'Historial observaciones', path: '/propuesta/historial' }
+        { label: 'Propuestas pendientes', path: '/app/propuesta/pendientes' },
+        { label: 'Registrar propuesta', path: '/app/propuesta/nueva' },
+        { label: 'Revisión por director', path: '/app/propuesta/revision' },
+        { label: 'Historial observaciones', path: '/app/propuesta/historial' }
       ]
     },
     {
       title: 'Tutorías',
       icon: '🤝',
       items: [
-        { label: 'Registrar tutoría', path: '/tutorias/nueva' },
-        { label: 'Actas de tutoría', path: '/tutorias/actas' },
-        { label: 'Historial', path: '/tutorias/historial' }
+        { label: 'Registrar tutoría', path: '/app/tutorias/nueva' },
+        { label: 'Actas de tutoría', path: '/app/tutorias/actas' },
+        { label: 'Historial', path: '/app/tutorias/historial' }
       ]
     },
     {
       title: 'Proyecto de Titulación',
       icon: '📄',
       items: [
-        { label: 'Documento por secciones', path: '/proyecto/documento' },
-        { label: 'Revisión por secciones', path: '/proyecto/revision' },
-        { label: 'Correcciones', path: '/proyecto/correcciones' },
-        { label: 'Estado del proyecto', path: '/proyecto/estado' }
+        { label: 'Documento por secciones', path: '/app/proyecto/documento' },
+        { label: 'Revisión por secciones', path: '/app/proyecto/revision' },
+        { label: 'Correcciones', path: '/app/proyecto/correcciones' },
+        { label: 'Estado del proyecto', path: '/app/proyecto/estado' }
       ]
     },
     {
       title: 'Documentos',
       icon: '🗂️',
       items: [
-        { label: 'Habilitantes', path: '/documentos/habilitantes' },
-        { label: 'Versiones', path: '/documentos/versiones' },
-        { label: 'Expediente', path: '/documentos/expediente' }
+        { label: 'Habilitantes', path: '/app/documentos/habilitantes' },
+        { label: 'Versiones', path: '/app/documentos/versiones' },
+        { label: 'Expediente', path: '/app/documentos/expediente' }
       ]
     },
     {
       title: 'Legalización',
       icon: '⚖️',
       items: [
-        { label: 'Validación legal', path: '/legalizacion/validacion' },
-        { label: 'Checklist', path: '/legalizacion/checklist' },
-        { label: 'Aprobación final', path: '/legalizacion/aprobacion' }
+        { label: 'Validación legal', path: '/app/legalizacion/validacion' },
+        { label: 'Checklist', path: '/app/legalizacion/checklist' },
+        { label: 'Aprobación final', path: '/app/legalizacion/aprobacion' }
       ]
     },
     {
       title: 'Reportes',
       icon: '📊',
       items: [
-        { label: 'Expediente por estudiante', path: '/reportes/expediente' },
-        { label: 'Por período', path: '/reportes/periodo' },
-        { label: 'Actas y constancias', path: '/reportes/actas' }
+        { label: 'Expediente por estudiante', path: '/app/reportes/expediente' },
+        { label: 'Por período', path: '/app/reportes/periodo' },
+        { label: 'Actas y constancias', path: '/app/reportes/actas' }
       ]
     },
     {
-      title: 'Administración',
+      title: 'Administración del aplicativo',
       icon: '🛠️',
       items: [
-        { label: 'Usuarios', path: '/admin/usuarios' },
-        { label: 'Roles y permisos', path: '/admin/roles' },
-        { label: 'Parámetros', path: '/admin/parametros' }
+        { label: 'Usuarios', path: '/app/admin/usuarios' },
+        { label: 'Roles y permisos', path: '/app/admin/roles' },
+        { label: 'Parámetros', path: '/app/admin/parametros' }
       ]
     },
     {
       title: 'Coordinación',
       icon: '🧭',
       items: [
-        { label: 'Seguimiento de proyectos', path: '/coordinador/seguimiento' },
-        { label: 'Control de directores', path: '/coordinador/directores' },
-        { label: 'Validación administrativa', path: '/coordinador/validacion' },
-        { label: 'Control de tutorías', path: '/coordinador/tutorias' },
-        { label: 'Observaciones administrativas', path: '/coordinador/observaciones' },
-        { label: 'Reportes', path: '/coordinador/reportes' },
-        { label: 'Comisión formativa', path: '/coordinador/comision' }
+        { label: 'Seguimiento de proyectos', path: '/app/coordinador/seguimiento' },
+        { label: 'Control de directores', path: '/app/coordinador/directores' },
+        { label: 'Validación administrativa', path: '/app/coordinador/validacion' },
+        { label: 'Control de tutorías', path: '/app/coordinador/tutorias' },
+        { label: 'Observaciones administrativas', path: '/app/coordinador/observaciones' },
+        { label: 'Reportes', path: '/app/coordinador/reportes' },
+        { label: 'Comisión formativa', path: '/app/coordinador/comision' }
       ]
     }
   ];
@@ -141,6 +144,7 @@ export class ShellComponent implements OnInit, OnDestroy {
   constructor(private readonly router: Router, private readonly route: ActivatedRoute) {}
 
   ngOnInit(): void {
+    this.loadUserData();
     this.updateTitles();
     const sub = this.router.events
       .pipe(filter((event) => event instanceof NavigationEnd))
@@ -166,6 +170,30 @@ export class ShellComponent implements OnInit, OnDestroy {
 
   toggleSection(index: number): void {
     this.openSectionIndex = this.openSectionIndex === index ? -1 : index;
+  }
+
+
+  logout(): void {
+    localStorage.removeItem('usuario');
+    localStorage.removeItem('token');
+    this.router.navigate(['/login']);
+  }
+
+  private loadUserData(): void {
+    const user = getSessionUser();
+    if (!user) {
+      return;
+    }
+
+    const names = [user['nombres'], user['apellidos']]
+      .map((value) => (value ?? '').toString().trim())
+      .filter((value) => value.length > 0);
+
+    const username = (user['username'] ?? user['usuarioLogin'] ?? '').toString().trim();
+    this.userName = names.length ? names.join(' ') : (username || 'Usuario');
+
+    const role = (user['rol'] ?? '').toString().replace('ROLE_', '').trim();
+    this.userRole = role || 'Sistema';
   }
 
   private updateTitles(): void {
