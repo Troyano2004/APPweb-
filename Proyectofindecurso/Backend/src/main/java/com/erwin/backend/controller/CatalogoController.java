@@ -38,4 +38,5 @@ public class CatalogoController {
                                  @RequestParam Integer idModalidad) {
         service.asignarModalidad(idCarrera, idModalidad);
     }
+
 }

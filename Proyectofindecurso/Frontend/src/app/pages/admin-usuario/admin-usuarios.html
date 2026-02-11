@@ -1,0 +1,180 @@
+<div class="page">
+  <div class="wrap">
+
+    <div class="hero">
+      <div class="hero-left">
+        <h1>Control de Usuarios</h1>
+        <p>Administración de usuarios del sistema (roles, estado y datos generales)</p>
+      </div>
+
+      <div class="hero-right">
+        <button type="button" class="back-link" (click)="volver()">Volver</button>
+      </div>
+    </div>
+
+    <!-- ================== CARD USUARIOS ================== -->
+    <div class="card">
+
+      <div class="section-title">
+        <h2>Usuarios del sistema</h2>
+        <p>Gestión: crear, editar, asignar roles y activar/desactivar cuentas</p>
+      </div>
+
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <button type="button" class="btn btn-success" (click)="abrirNuevo()">
+            ＋ Nuevo usuario
+          </button>
+
+          <button type="button" class="btn btn-secondary" (click)="recargar()">
+            ↻ Recargar
+          </button>
+        </div>
+
+        <div class="toolbar-right">
+          <input
+            type="text"
+            [(ngModel)]="filtro"
+            placeholder="Buscar (usuario, nombre, rol, estado...)" />
+        </div>
+      </div>
+
+      <!-- mensajes -->
+      <div *ngIf="cargando" style="margin: 0.75rem 0; font-weight: 800;">Cargando...</div>
+      <div *ngIf="errorMsg" style="margin: 0.75rem 0; color: #b91c1c; font-weight: 800;">
+        {{ errorMsg }}
+      </div>
+
+      <div class="table-card">
+        <table class="table">
+          <thead>
+          <tr>
+            <th style="width: 70px;">ID</th>
+            <th>Usuario</th>
+            <th>Nombres</th>
+            <th>Apellidos</th>
+            <th style="width: 140px;">Rol</th>
+            <th style="width: 140px;">Estado</th>
+            <th style="width: 220px;">Acciones</th>
+          </tr>
+          </thead>
+
+          <tbody>
+          <tr *ngFor="let u of usuariosFiltrados">
+            <td>{{ u.idUsuario }}</td>
+            <td class="mono">{{ u.username }}</td>
+            <td>{{ u.nombres }}</td>
+            <td>{{ u.apellidos }}</td>
+
+            <td>
+              <span class="badge badge-info">{{ u.rol }}</span>
+            </td>
+
+            <td>
+              <span class="badge" [ngClass]="u.activo ? 'badge-success' : 'badge-pending'">
+                {{ u.activo ? 'ACTIVO' : 'INACTIVO' }}
+              </span>
+            </td>
+
+            <td class="actions">
+              <button type="button" class="btn btn-outline" (click)="abrirEditar(u)">
+                ✏️ Editar
+              </button>
+
+              <button
+                type="button"
+                class="btn"
+                [ngClass]="u.activo ? 'btn-warning' : 'btn-primary'"
+                (click)="toggleActivo(u)">
+                {{ u.activo ? 'Desactivar' : 'Activar' }}
+              </button>
+            </td>
+          </tr>
+
+          <tr *ngIf="!cargando && usuariosFiltrados.length === 0">
+            <td colspan="7" style="padding: 1rem; text-align: center; opacity: .7;">
+              No hay usuarios para mostrar.
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+    <!-- ================== FIN CARD USUARIOS ================== -->
+
+
+    <!-- ================== MODAL ================== -->
+    <div class="modal-backdrop" *ngIf="modalAbierto" (click)="cerrarModal()"></div>
+
+    <div class="modal" *ngIf="modalAbierto">
+      <div class="modal-card">
+
+        <div class="modal-header">
+          <h3>{{ modoEdicion ? 'Editar usuario' : 'Nuevo usuario' }}</h3>
+          <button type="button" class="btn btn-secondary" (click)="cerrarModal()">✕</button>
+        </div>
+
+        <!-- NUEVO -->
+        <div class="modal-body" *ngIf="!modoEdicion">
+          <div class="grid">
+            <label>Cédula * <input [(ngModel)]="formCreate.cedula" /></label>
+
+            <label>Correo institucional *
+              <input [(ngModel)]="formCreate.correoInstitucional" placeholder="algo@uteq.edu.ec" />
+            </label>
+
+            <label>Username * <input [(ngModel)]="formCreate.username" /></label>
+            <label>Password * <input type="password" [(ngModel)]="formCreate.password" /></label>
+
+            <label>Nombres * <input [(ngModel)]="formCreate.nombres" /></label>
+            <label>Apellidos * <input [(ngModel)]="formCreate.apellidos" /></label>
+
+            <label>Rol *
+              <select [(ngModel)]="formCreate.rol">
+                <option *ngFor="let r of rolesUsuario" [value]="r">{{ r }}</option>
+              </select>
+            </label>
+
+            <label class="check">
+              <input type="checkbox" [(ngModel)]="formCreate.activo" /> Activo
+            </label>
+          </div>
+        </div>
+
+        <!-- EDITAR -->
+        <div class="modal-body" *ngIf="modoEdicion">
+          <div class="grid">
+            <label>Nombres <input [(ngModel)]="formUpdate.nombres" /></label>
+            <label>Apellidos <input [(ngModel)]="formUpdate.apellidos" /></label>
+
+            <label>Rol
+              <select [(ngModel)]="formUpdate.rol">
+                <option *ngFor="let r of rolesUsuario" [value]="r">{{ r }}</option>
+              </select>
+            </label>
+
+            <label class="check">
+              <input type="checkbox" [(ngModel)]="formUpdate.activo" /> Activo
+            </label>
+
+            <label>Password (opcional)
+              <input
+                type="password"
+                [(ngModel)]="formUpdate.password"
+                placeholder="dejar vacío para no cambiar" />
+            </label>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="cerrarModal()">Cancelar</button>
+          <button type="button" class="btn btn-success" (click)="guardar()">Guardar</button>
+        </div>
+
+      </div>
+    </div>
+    <!-- ================== FIN MODAL ================== -->
+
+  </div>
+</div>

@@ -1,0 +1,188 @@
+<div class="page">
+  <div class="wrap">
+
+    <div class="hero">
+      <div class="hero-left">
+        <h1>Control de Roles</h1>
+        <p>Administración de <b>roles del aplicativo</b> y asignación de permisos (BD)</p>
+      </div>
+
+      <div class="hero-right">
+        <button type="button" class="back-link" (click)="volver()">Volver</button>
+      </div>
+    </div>
+
+    <!-- ================== CARD ROLES APP ================== -->
+    <div class="card">
+
+      <div class="section-title">
+        <h2>Roles del aplicativo</h2>
+        <p>Gestión: crear, editar, asignar permisos y activar/desactivar roles</p>
+      </div>
+
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <button type="button" class="btn btn-success" (click)="openCreate()">
+            ＋ Nuevo rol
+          </button>
+
+          <button type="button" class="btn btn-secondary" (click)="cargarTodo()">
+            ↻ Recargar
+          </button>
+        </div>
+
+        <div class="toolbar-right">
+          <div class="search">
+            <span class="search-icon">🔎</span>
+            <input
+              type="text"
+              [(ngModel)]="q"
+              placeholder="Buscar (rol, descripción, permisos, estado...)"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- mensajes -->
+      <div *ngIf="loading" style="margin: 0.75rem 0; font-weight: 800;">Cargando...</div>
+
+      <div *ngIf="errorMsg" style="margin: 0.75rem 0; color: #b91c1c; font-weight: 800;">
+        {{ errorMsg }}
+      </div>
+
+      <div class="table-card">
+        <table class="table">
+          <thead>
+          <tr>
+            <th style="width: 70px;">ID</th>
+            <th>Rol</th>
+            <th>Descripción</th>
+            <th>Permisos</th>
+            <th style="width: 140px;">Estado</th>
+            <th style="width: 220px;">Acciones</th>
+          </tr>
+          </thead>
+
+          <tbody>
+          <!-- ✅ trackBy existente en roles.ts: trackByRolId -->
+          <tr *ngFor="let r of rolesFiltrados; trackBy: trackByRolId">
+            <td>{{ r.idRolApp }}</td>
+
+            <td class="mono">{{ r.nombre }}</td>
+
+            <td>{{ r.descripcion || '-' }}</td>
+
+            <td class="perms-cell">
+              <span class="perms-text" [title]="permisosLabel(r)">
+                {{ permisosLabel(r) || '-' }}
+              </span>
+            </td>
+
+            <td>
+              <span class="badge" [ngClass]="r.activo ? 'badge-success' : 'badge-pending'">
+                {{ r.activo ? 'ACTIVO' : 'INACTIVO' }}
+              </span>
+            </td>
+
+            <td class="actions">
+              <button type="button" class="btn btn-outline" (click)="openEdit(r)">
+                ✏️ Editar
+              </button>
+
+              <button
+                type="button"
+                class="btn"
+                [ngClass]="r.activo ? 'btn-warning' : 'btn-primary'"
+                (click)="cambiarEstado(r)">
+                {{ r.activo ? 'Desactivar' : 'Activar' }}
+              </button>
+            </td>
+          </tr>
+
+          <tr *ngIf="!loading && rolesFiltrados.length === 0">
+            <td colspan="6" style="padding: 1rem; text-align: center; opacity: .7;">
+              No hay roles del aplicativo para mostrar.
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+    <!-- ================== FIN CARD ================== -->
+
+
+    <!-- ================== MODAL ================== -->
+    <div class="modal-backdrop" *ngIf="modalOpen" (click)="closeModal()"></div>
+
+    <div class="modal" *ngIf="modalOpen">
+      <div class="modal-card">
+
+        <div class="modal-header">
+          <h3>{{ editMode ? 'Editar rol del aplicativo' : 'Nuevo rol del aplicativo' }}</h3>
+          <button type="button" class="btn btn-secondary" (click)="closeModal()">✕</button>
+        </div>
+
+        <form class="modal-body" [formGroup]="form" (submit)="$event.preventDefault()">
+
+          <div class="grid">
+            <label>Nombre del rol *
+              <input formControlName="nombre" placeholder="Ej: BECADO, TESISTA, COORDINADOR..." />
+            </label>
+
+            <label>Estado *
+              <select formControlName="activo">
+                <option [ngValue]="true">Activo</option>
+                <option [ngValue]="false">Inactivo</option>
+              </select>
+            </label>
+
+            <label style="grid-column: 1 / -1;">Descripción
+              <input formControlName="descripcion" placeholder="Describe para qué sirve este rol" />
+            </label>
+          </div>
+
+          <div class="perm-box">
+            <div class="perm-head">
+              <div class="perm-title">Permisos del rol *</div>
+              <div class="perm-sub">(Seleccione al menos uno)</div>
+            </div>
+
+            <div class="perm-grid">
+              <div
+                class="perm-card"
+                *ngFor="let p of permisos; trackBy: trackByPermisoId"
+                [class.checked]="isPermisoChecked(p.idPermiso)"
+                (click)="togglePermiso(p.idPermiso)"
+              >
+                <div class="perm-top">
+                  <input
+                    type="checkbox"
+                    [checked]="isPermisoChecked(p.idPermiso)"
+                    (click)="$event.stopPropagation()"
+                    (change)="togglePermiso(p.idPermiso)"
+                  />
+                  <span class="perm-code">{{ p.codigo }}</span>
+                </div>
+                <div class="perm-desc">{{ p.descripcion }}</div>
+              </div>
+            </div>
+
+            <div class="perm-error" *ngIf="permTouched && selectedPermisos.length === 0">
+              Debes seleccionar al menos un permiso.
+            </div>
+          </div>
+
+        </form>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeModal()">Cancelar</button>
+          <button type="button" class="btn btn-success" (click)="guardar()">Guardar</button>
+        </div>
+
+      </div>
+    </div>
+    <!-- ================== FIN MODAL ================== -->
+
+  </div>
+</div>

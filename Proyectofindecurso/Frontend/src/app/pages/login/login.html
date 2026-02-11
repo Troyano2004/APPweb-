@@ -1,0 +1,57 @@
+<div class="login-page">
+  <div class="login-card">
+
+    <div class="logo-box">
+      <span class="icon">🎓</span>
+    </div>
+
+    <h1>Titulación UTEQ</h1>
+    <p class="subtitle">Sistema de Gestión de Sustentación de Grado</p>
+
+    <div class="login-header">
+      <div>
+        <h2>Acceso al Sistema</h2>
+        <p class="hint">Ingrese su usuario y contraseña</p>
+      </div>
+    </div>
+
+    <!-- ✅ error arriba -->
+    <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>
+
+    <div class="form-group">
+      <label>Usuario</label>
+      <input
+        type="text"
+        placeholder="Ingrese su usuario"
+        [(ngModel)]="usuarioLogin"
+        [disabled]="isLoading"
+        (keydown.enter)="login()"
+      />
+    </div>
+
+    <div class="form-group">
+      <label>Contraseña</label>
+      <div class="password-wrapper">
+        <input
+          [type]="showPassword ? 'text' : 'password'"
+          placeholder="Ingrese su contraseña"
+          [(ngModel)]="password"
+          [disabled]="isLoading"
+          (keydown.enter)="login()"
+        />
+        <span class="eye-icon" (click)="togglePassword()">
+          {{ showPassword ? '👁️' : '👁️‍🗨️' }}
+        </span>
+      </div>
+    </div>
+
+    <button class="btn-login" (click)="login()" [disabled]="isLoading">
+      {{ isLoading ? 'Cargando...' : 'Iniciar Sesión' }}
+    </button>
+  </div>
+
+  <footer>
+    Universidad Técnica Estatal de Quevedo<br>
+    Sistema de Titulación 2026
+  </footer>
+</div>
