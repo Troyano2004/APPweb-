@@ -2,63 +2,53 @@ package com.erwin.backend.service;
 
 import com.erwin.backend.dtos.LoginRequest;
 import com.erwin.backend.dtos.LoginResponse;
-import com.erwin.backend.entities.Loginaplicativo;
 import com.erwin.backend.entities.Usuario;
-import com.erwin.backend.repository.LoginAplicativoRepository;
-import com.erwin.backend.security.JwtService;
-import org.springframework.http.HttpStatus;
+import com.erwin.backend.repository.UsuarioRepository;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class AuthService {
-    private final LoginAplicativoRepository loginRepo;
-    private final JwtService jwtService;
 
-    public AuthService(LoginAplicativoRepository loginRepo, JwtService jwtService) {
-        this.loginRepo = loginRepo;
-        this.jwtService = jwtService;
+    private final UsuarioRepository usuarioRepo;
+
+    public AuthService(UsuarioRepository usuarioRepo) {
+        this.usuarioRepo = usuarioRepo;
     }
 
     public LoginResponse login(LoginRequest req) {
 
-        if (req == null || req.usuarioLogin == null || req.password == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Faltan datos de login");
+        if (req == null || req.getUsuarioLogin() == null || req.getPassword() == null) {
+            throw new RuntimeException("Faltan datos de login");
         }
 
-        String user = req.usuarioLogin.trim();
-        String pass = req.password; // si quieres: req.password.trim()
+        Usuario usuario = usuarioRepo
+                .findByUsername(req.getUsuarioLogin())
+                .orElseThrow(() -> new RuntimeException("Usuario no existe"));
 
-        Loginaplicativo login = loginRepo.findByUsuarioLoginIgnoreCase(user)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.UNAUTHORIZED, "Usuario o contraseña incorrectos"
-                ));
-
-        if (login.getEstado() == null || !login.getEstado()) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Usuario inactivo");
+        if (!usuario.getPasswordHash().equals(req.getPassword())) {
+            throw new RuntimeException("Contraseña incorrecta");
         }
 
-        // ⚠️ Comparación simple (texto plano). Si usas BCrypt, avísame y te lo cambio.
-        if (login.getPasswordLogin() == null || !login.getPasswordLogin().equals(pass)) {
-            throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED, "Usuario o contraseña incorrectos"
-            );
-        }
-
-        Usuario u = login.getUsuario();
-        if (u == null) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Login sin usuario asociado");
-        }
-
-        // ✅ Generar token
-        String token = jwtService.generateToken(login.getUsuarioLogin());
+        // ✅ CONVERTIR ROL A FORMATO ROLE_...
+        String rolFrontend = convertirRol(usuario.getRolAsignado());
 
         return new LoginResponse(
-                u.getIdUsuario(),
-                u.getRol(),
-                u.getNombres(),
-                u.getApellidos(),
-                token
+                usuario.getIdUsuario(),
+                rolFrontend,
+                usuario.getNombres(),
+                usuario.getApellidos()
         );
+    }
+
+    private String convertirRol(String rolAsignado) {
+        if (rolAsignado == null) return "";
+
+        String rol = rolAsignado.trim().toUpperCase();
+
+        if (rol.equals("ADMIN")) return "ROLE_ADMIN";
+        if (rol.equals("DOCENTE")) return "ROLE_DOCENTE";
+        if (rol.equals("ESTUDIANTE")) return "ROLE_ESTUDIANTE";
+
+        return rol;
     }
 }
