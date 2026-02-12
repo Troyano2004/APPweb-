@@ -28,9 +28,22 @@ public class CatalogoController {
         return service.modalidades();
     }
 
+    @PostMapping("/modalidades")
+    public Modalidadtitulacion crearModalidad(@RequestBody CrearModalidadRequest req) {
+        if (req == null) {
+            throw new RuntimeException("Body requerido");
+        }
+        return service.crearModalidad(req.nombre);
+    }
+
     @GetMapping("/periodo-activo")
     public PeriodoTitulacion periodoActivo() {
         return service.periodoActivo();
+    }
+
+    @GetMapping("/carrera-modalidad")
+    public List<CatalogoService.CarreraModalidadDto> carreraModalidad() {
+        return service.carreraModalidad();
     }
 
     @PostMapping("/carrera-modalidad")
@@ -39,4 +52,7 @@ public class CatalogoController {
         service.asignarModalidad(idCarrera, idModalidad);
     }
 
+    public static class CrearModalidadRequest {
+        public String nombre;
+    }
 }
