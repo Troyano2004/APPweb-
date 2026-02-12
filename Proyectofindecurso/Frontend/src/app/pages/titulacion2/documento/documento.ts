@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 
 import { DocumentoTitulacionService, DocumentoTitulacionDto } from '../../../services/documento-titulacion';
+import { getSessionEntityId, getSessionUser } from '../../../services/session';
 
 type TabKey =
   | 'portada'
@@ -21,7 +22,7 @@ type TabKey =
   styleUrl: './documento.scss'
 })
 export class Documento implements OnInit {
-  private readonly idEstudiante = 1;
+  private readonly idEstudiante = getSessionEntityId(getSessionUser(), 'estudiante');
 
   // ✅ señales para el HTML
   loading = signal(false);
@@ -76,6 +77,11 @@ export class Documento implements OnInit {
 
   // ✅ tu HTML llama cargar()
   cargar(): void {
+    if (!this.idEstudiante) {
+      this.error.set('No se pudo identificar al estudiante autenticado.');
+      return;
+    }
+
     this.loading.set(true);
     this.error.set(null);
 
@@ -122,6 +128,7 @@ export class Documento implements OnInit {
   // ✅ tu HTML llama guardar()
   guardar(): void {
     if (!this.puedeEditar()) return;
+    if (!this.idEstudiante) return;
 
     this.loading.set(true);
     this.error.set(null);
@@ -141,6 +148,7 @@ export class Documento implements OnInit {
   // ✅ tu HTML llama enviarRevision()
   enviarRevision(): void {
     if (!this.puedeEditar()) return;
+    if (!this.idEstudiante) return;
 
     this.loading.set(true);
     this.error.set(null);

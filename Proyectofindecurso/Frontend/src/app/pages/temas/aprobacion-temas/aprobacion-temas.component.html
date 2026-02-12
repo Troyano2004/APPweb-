@@ -1,0 +1,32 @@
+<section class="module-page">
+  <header class="module-header">
+    <div>
+      <h1>Aprobar / rechazar propuestas</h1>
+      <p>Revisa los temas presentados por estudiantes y toma una decisión.</p>
+    </div>
+    <button class="btn secondary" (click)="cargar()" [disabled]="loading()">Recargar</button>
+  </header>
+
+  <div class="alert error" *ngIf="error()">{{ error() }}</div>
+
+  <div class="empty" *ngIf="!loading() && propuestas().length === 0">No hay propuestas por revisar.</div>
+
+  <div class="cards" *ngIf="propuestas().length > 0">
+    <article class="card" *ngFor="let p of propuestas()">
+      <h3>{{ p.titulo }}</h3>
+      <p><strong>Tema:</strong> {{ p.tema || 'No definido' }}</p>
+      <p><strong>Estudiante:</strong> {{ p.estudiante }}</p>
+      <p><strong>Carrera:</strong> {{ p.carrera }}</p>
+      <p><strong>Estado actual:</strong> {{ p.estado }}</p>
+
+      <label>Observaciones de comisión
+        <textarea rows="3" [(ngModel)]="observaciones[p.idPropuesta]"></textarea>
+      </label>
+
+      <div class="actions">
+        <button class="btn ok" (click)="decidir(p, 'APROBADA')">Aprobar</button>
+        <button class="btn danger" (click)="decidir(p, 'RECHAZADA')">Rechazar</button>
+      </div>
+    </article>
+  </div>
+</section>

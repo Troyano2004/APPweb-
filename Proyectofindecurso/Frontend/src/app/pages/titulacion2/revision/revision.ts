@@ -2,6 +2,7 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { RevisionDirectorService, DocumentoPendienteDto } from '../../../services/revision-director';
+import { getSessionEntityId, getSessionUser } from '../../../services/session';
 
 @Component({
   selector: 'app-revision',
@@ -11,8 +12,7 @@ import { RevisionDirectorService, DocumentoPendienteDto } from '../../../service
   styleUrl: './revision.scss'
 })
 export class Revision implements OnInit {
-  // por ahora fijo a 1 (luego sale del login)
-  idDocente = 1;
+  idDocente = getSessionEntityId(getSessionUser(), 'docente');
 
   loading = signal(false);
   error = signal<string | null>(null);
@@ -25,6 +25,11 @@ export class Revision implements OnInit {
   }
 
   cargar(): void {
+    if (!this.idDocente) {
+      this.error.set('No se pudo identificar al docente autenticado.');
+      return;
+    }
+
     this.loading.set(true);
     this.error.set(null);
 

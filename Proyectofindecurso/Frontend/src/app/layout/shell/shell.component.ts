@@ -2,7 +2,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { filter, Subscription } from 'rxjs';
-import { getSessionUser } from '../../services/session';
+import { getSessionUser, hasRole, normalizeRole } from '../../services/session';
 
 interface MenuItem {
   label: string;
@@ -33,7 +33,7 @@ export class ShellComponent implements OnInit, OnDestroy {
 
   private readonly subscriptions = new Subscription();
 
-  menuSections: MenuSection[] = [
+  private readonly fullMenuSections: MenuSection[] = [
     {
       title: 'Dashboard',
       icon: '🏠',
@@ -141,6 +141,8 @@ export class ShellComponent implements OnInit, OnDestroy {
     }
   ];
 
+  menuSections: MenuSection[] = [];
+
   constructor(private readonly router: Router, private readonly route: ActivatedRoute) {}
 
   ngOnInit(): void {
@@ -192,8 +194,63 @@ export class ShellComponent implements OnInit, OnDestroy {
     const username = (user['username'] ?? user['usuarioLogin'] ?? '').toString().trim();
     this.userName = names.length ? names.join(' ') : (username || 'Usuario');
 
-    const role = (user['rol'] ?? '').toString().replace('ROLE_', '').trim();
+    const roleValue = (user['rol'] ?? '').toString();
+    const role = roleValue.replace('ROLE_', '').trim();
     this.userRole = role || 'Sistema';
+
+    const normalizedRole = normalizeRole(roleValue);
+
+    if (hasRole(normalizedRole, 'ROLE_COORDINADOR')) {
+      this.menuSections = this.fullMenuSections.filter((section) =>
+        ['Dashboard', 'Administración del aplicativo', 'Coordinación'].includes(section.title)
+      );
+      return;
+    }
+
+    if (hasRole(normalizedRole, 'ROLE_ESTUDIANTE')) {
+      this.menuSections = [
+        {
+          title: 'Dashboard',
+          icon: '🏠',
+          items: [{ label: 'Mi panel', path: '/app/dashboard' }]
+        },
+        {
+          title: 'Mi Proyecto de Titulación',
+          icon: '📘',
+          items: [
+            { label: 'Documento de titulación', path: '/app/titulacion2/documento' },
+            { label: 'Registrar propuesta', path: '/app/propuesta/nueva' }
+          ]
+        }
+      ];
+      return;
+    }
+
+    if (hasRole(normalizedRole, 'ROLE_DOCENTE')) {
+      this.menuSections = [
+        {
+          title: 'Dashboard',
+          icon: '🏠',
+          items: [{ label: 'Mi panel docente', path: '/app/dashboard' }]
+        },
+        {
+          title: 'Comisión formativa',
+          icon: '🧩',
+          items: [
+            { label: 'Banco de temas', path: '/app/temas/nuevo' },
+            { label: 'Revisión de propuestas', path: '/app/temas/aprobacion' }
+          ]
+        },
+        {
+          title: 'Revisión',
+          icon: '🧐',
+          items: [{ label: 'Documentos pendientes', path: '/app/titulacion2/revision' }]
+        }
+      ];
+      return;
+    }
+
+    this.menuSections = this.fullMenuSections;
   }
 
   private updateTitles(): void {
