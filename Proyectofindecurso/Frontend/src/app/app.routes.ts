@@ -4,6 +4,9 @@ import { DashboardComponent } from './pages/dashboard/dashboard.component';
 import { PropuestasPendientesComponent } from './pages/propuestas-pendientes/propuestas-pendientes.component';
 import { DocumentoSeccionesComponent } from './pages/documento-secciones/documento-secciones.component';
 import { PlaceholderPageComponent } from './pages/dashboard/placeholder/placeholder.component';
+import { BancoTemasComponent } from './pages/temas/banco-temas/banco-temas.component';
+import { AprobacionTemasComponent } from './pages/temas/aprobacion-temas/aprobacion-temas.component';
+import { PropuestaNuevaComponent } from './pages/propuesta/propuesta-nueva/propuesta-nueva.component';
 import { EstudiantesComponent } from './pages/estudiantes/estudiantes';
 import { Documento } from './pages/titulacion2/documento/documento';
 import { Revision } from './pages/titulacion2/revision/revision';
@@ -60,16 +63,16 @@ export const routes: Routes = [
         data: { title: 'Carrera-Modalidad' }
       },
 
-      { path: 'temas', component: PlaceholderPageComponent, data: { title: 'Listado de temas' } },
-      { path: 'temas/nuevo', component: PlaceholderPageComponent, data: { title: 'Registrar tema' } },
-      { path: 'temas/aprobacion', component: PlaceholderPageComponent, data: { title: 'Aprobación temas' } },
+      { path: 'temas', component: BancoTemasComponent, data: { title: 'Banco de temas' } },
+      { path: 'temas/nuevo', component: BancoTemasComponent, data: { title: 'Registrar tema' } },
+      { path: 'temas/aprobacion', component: AprobacionTemasComponent, data: { title: 'Aprobación de propuestas' } },
 
       {
         path: 'propuesta/pendientes',
         component: PropuestasPendientesComponent,
         data: { title: 'Propuestas pendientes' }
       },
-      { path: 'propuesta/nueva', component: PlaceholderPageComponent, data: { title: 'Registrar propuesta' } },
+      { path: 'propuesta/nueva', component: PropuestaNuevaComponent, data: { title: 'Registrar propuesta' } },
       { path: 'propuesta/revision', component: PlaceholderPageComponent, data: { title: 'Revisión por director' } },
       { path: 'propuesta/historial', component: PlaceholderPageComponent, data: { title: 'Historial observaciones' } },
 

@@ -1,0 +1,59 @@
+<section class="module-page">
+  <header class="module-header">
+    <div>
+      <h1>Registrar propuesta</h1>
+      <p>Presenta tu propuesta de titulación para revisión de la comisión.</p>
+    </div>
+  </header>
+
+  <div class="alert error" *ngIf="error()">{{ error() }}</div>
+  <div class="alert ok" *ngIf="ok()">{{ ok() }}</div>
+
+  <div class="grid">
+    <article class="card">
+      <h2>Nueva propuesta</h2>
+      <label>Carrera (id)
+        <input type="number" [(ngModel)]="form.idCarrera" min="1" />
+      </label>
+      <label>Título
+        <input type="text" [(ngModel)]="form.titulo" />
+      </label>
+      <label>Tema de investigación
+        <textarea rows="2" [(ngModel)]="form.temaInvestigacion"></textarea>
+      </label>
+      <label>Planteamiento del problema
+        <textarea rows="3" [(ngModel)]="form.planteamientoProblema"></textarea>
+      </label>
+      <label>Objetivos generales
+        <textarea rows="2" [(ngModel)]="form.objetivosGenerales"></textarea>
+      </label>
+      <label>Objetivos específicos
+        <textarea rows="3" [(ngModel)]="form.objetivosEspecificos"></textarea>
+      </label>
+      <label>Metodología
+        <textarea rows="2" [(ngModel)]="form.metodologia"></textarea>
+      </label>
+      <label>Resultados esperados
+        <textarea rows="2" [(ngModel)]="form.resultadosEsperados"></textarea>
+      </label>
+      <label>Bibliografía
+        <textarea rows="2" [(ngModel)]="form.bibliografia"></textarea>
+      </label>
+      <button class="btn primary" (click)="enviar()" [disabled]="saving()">Enviar propuesta</button>
+    </article>
+
+    <article class="card">
+      <h2>Mis propuestas</h2>
+      <button class="btn secondary" (click)="cargarHistorial()" [disabled]="loading()">Recargar historial</button>
+      <div class="empty" *ngIf="!loading() && historial().length === 0">Aún no has enviado propuestas.</div>
+      <ul class="list" *ngIf="historial().length > 0">
+        <li *ngFor="let p of historial()">
+          <strong>{{ p.titulo }}</strong>
+          <p>{{ p.tema || 'Sin tema' }}</p>
+          <small>Estado: {{ p.estado }} · {{ p.fechaEnvio || 'Sin fecha' }}</small>
+          <p *ngIf="p.observaciones"><em>Observación: {{ p.observaciones }}</em></p>
+        </li>
+      </ul>
+    </article>
+  </div>
+</section>

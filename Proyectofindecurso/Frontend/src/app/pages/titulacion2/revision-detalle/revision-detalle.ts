@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { DocumentoTitulacionService, DocumentoTitulacionDto } from '../../../services/documento-titulacion';
 
 import { RevisionDirectorService, ObservacionDto } from '../../../services/revision-director';
+import { getSessionEntityId, getSessionUser } from '../../../services/session';
 
 @Component({
   selector: 'app-revision-detalle',
@@ -14,7 +15,7 @@ import { RevisionDirectorService, ObservacionDto } from '../../../services/revis
   styleUrl: './revision-detalle.scss'
 })
 export class RevisionDetalle implements OnInit {
-  idDocente = 1;
+  idDocente = getSessionEntityId(getSessionUser(), 'docente');
 
   idDocumento = 0;
   documento = signal<DocumentoTitulacionDto | null>(null);
@@ -91,7 +92,7 @@ export class RevisionDetalle implements OnInit {
 
 
   agregar(): void {
-    if (!this.comentario.trim()) return;
+    if (!this.comentario.trim() || !this.idDocente) return;
 
     this.loading.set(true);
     this.error.set(null);
@@ -113,6 +114,7 @@ export class RevisionDetalle implements OnInit {
   }
 
   devolver(): void {
+    if (!this.idDocente) return;
     this.loading.set(true);
     this.error.set(null);
 
@@ -126,6 +128,7 @@ export class RevisionDetalle implements OnInit {
   }
 
   aprobar(): void {
+    if (!this.idDocente) return;
     this.loading.set(true);
     this.error.set(null);
 

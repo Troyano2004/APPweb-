@@ -1,0 +1,43 @@
+<section class="module-page">
+  <header class="module-header">
+    <div>
+      <h1>Banco de temas (Comisión)</h1>
+      <p>Registra nuevos temas y mantén actualizado el banco para los estudiantes.</p>
+    </div>
+    <button class="btn secondary" (click)="cargar()" [disabled]="loading()">Recargar</button>
+  </header>
+
+  <div class="alert error" *ngIf="error()">{{ error() }}</div>
+  <div class="alert ok" *ngIf="ok()">{{ ok() }}</div>
+
+  <div class="grid">
+    <article class="card">
+      <h2>Nuevo tema</h2>
+      <label>Carrera (id)
+        <input type="number" [(ngModel)]="form.idCarrera" min="1" />
+      </label>
+      <label>Título
+        <input type="text" [(ngModel)]="form.titulo" placeholder="Ej: IA aplicada a educación" />
+      </label>
+      <label>Descripción
+        <textarea rows="4" [(ngModel)]="form.descripcion" placeholder="Describe alcance y contexto"></textarea>
+      </label>
+      <label>Observaciones (opcional)
+        <textarea rows="3" [(ngModel)]="form.observaciones"></textarea>
+      </label>
+      <button class="btn primary" (click)="guardarTema()" [disabled]="saving()">Agregar al banco</button>
+    </article>
+
+    <article class="card">
+      <h2>Temas registrados</h2>
+      <div class="empty" *ngIf="!loading() && temas().length === 0">No hay temas registrados aún.</div>
+      <ul class="list" *ngIf="temas().length > 0">
+        <li *ngFor="let tema of temas()">
+          <strong>{{ tema.titulo }}</strong>
+          <p>{{ tema.descripcion }}</p>
+          <small>{{ tema.carrera }} · {{ tema.docente }} · {{ tema.estado }}</small>
+        </li>
+      </ul>
+    </article>
+  </div>
+</section>
