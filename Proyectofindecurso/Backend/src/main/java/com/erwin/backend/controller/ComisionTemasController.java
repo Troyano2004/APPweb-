@@ -137,7 +137,6 @@ public class ComisionTemasController {
         propuesta.setResultadosEsperados(valueOrDefault(req.resultadosEsperados, "Pendiente de definir"));
         propuesta.setBibliografia(valueOrDefault(req.bibliografia, "Pendiente de definir"));
 
-
         propuesta.setEstado("EN_REVISION");
         propuesta.setFechaEnvio(LocalDate.now());
 
@@ -159,6 +158,21 @@ public class ComisionTemasController {
                 .stream()
                 .sorted(Comparator.comparing(PropuestaTitulacion::getIdPropuesta).reversed())
                 .map(this::toPropuestaDto)
+                .toList();
+    }
+
+    @GetMapping("/estudiante/{idEstudiante}/temas-disponibles")
+    public List<TemaDto> temasDisponiblesEstudiante(@PathVariable Integer idEstudiante) {
+        Estudiante estudiante = estudianteRepository.findById(idEstudiante)
+                .orElseThrow(() -> new RuntimeException("Estudiante no encontrado"));
+
+        Integer idCarreraEstudiante = estudiante.getCarrera() != null ? estudiante.getCarrera().getIdCarrera() : null;
+
+        return bancoTemasRepository.findAll().stream()
+                .filter(t -> idCarreraEstudiante == null
+                        || (t.getCarrera() != null && idCarreraEstudiante.equals(t.getCarrera().getIdCarrera())))
+                .sorted(Comparator.comparing(BancoTemas::getIdTema).reversed())
+                .map(this::toTemaDto)
                 .toList();
     }
 

@@ -12,6 +12,17 @@
   <div class="grid">
     <article class="card">
       <h2>Nueva propuesta</h2>
+      <label>Tema sugerido por comisión
+        <select [(ngModel)]="form.idTema" (ngModelChange)="onSeleccionTema()">
+          <option [ngValue]="null">-- Selecciona un tema --</option>
+          <option *ngFor="let t of temasDisponibles()" [ngValue]="t.idTema">
+            {{ t.titulo }} ({{ t.carrera }})
+          </option>
+        </select>
+      </label>
+      <small *ngIf="loadingTemas()">Cargando temas disponibles...</small>
+      <small *ngIf="!loadingTemas() && temasDisponibles().length === 0">No hay temas cargados por la comisión para tu carrera.</small>
+
       <label>Carrera (id)
         <input type="number" [(ngModel)]="form.idCarrera" min="1" />
       </label>
@@ -45,6 +56,7 @@
     <article class="card">
       <h2>Mis propuestas</h2>
       <button class="btn secondary" (click)="cargarHistorial()" [disabled]="loading()">Recargar historial</button>
+      <button class="btn secondary" (click)="cargarTemasDisponibles()" [disabled]="loadingTemas()">Recargar temas</button>
       <div class="empty" *ngIf="!loading() && historial().length === 0">Aún no has enviado propuestas.</div>
       <ul class="list" *ngIf="historial().length > 0">
         <li *ngFor="let p of historial()">
