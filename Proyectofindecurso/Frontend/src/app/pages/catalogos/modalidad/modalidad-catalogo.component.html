@@ -1,0 +1,60 @@
+<section class="module-page">
+  <header class="module-header">
+    <div>
+      <h1>Modalidades de Titulación</h1>
+      <p>Administra las modalidades disponibles para luego asignarlas a las carreras.</p>
+    </div>
+  </header>
+
+  <div class="alert error" *ngIf="error()">{{ error() }}</div>
+  <div class="alert ok" *ngIf="ok()">{{ ok() }}</div>
+
+  <article class="card" *ngIf="!canManage()">
+    <h2>Acceso restringido</h2>
+    <p>Solo coordinador o administrador pueden crear modalidades.</p>
+  </article>
+
+  <div class="grid" *ngIf="canManage()">
+    <article class="card">
+      <h2>Nueva modalidad</h2>
+      <label>Nombre
+        <input
+          type="text"
+          [ngModel]="nombreNueva()"
+          (ngModelChange)="nombreNueva.set($event)"
+          placeholder="Ejemplo: EXAMEN_COMPLEXIVO" />
+      </label>
+
+      <button class="btn primary" (click)="guardar()" [disabled]="saving() || loading()">
+        {{ saving() ? 'Guardando...' : 'Crear modalidad' }}
+      </button>
+    </article>
+
+    <article class="card table-card">
+      <h2>Modalidades registradas</h2>
+
+      <div class="empty" *ngIf="!loading() && modalidades().length === 0">
+        No hay modalidades registradas.
+      </div>
+
+      <div class="table-wrapper" *ngIf="modalidades().length > 0">
+        <table>
+          <thead>
+          <tr>
+            <th>ID</th>
+            <th>Modalidad</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr *ngFor="let m of modalidades()">
+            <td>{{ m.idModalidad }}</td>
+            <td>{{ m.nombre }}</td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <small *ngIf="loading()">Cargando modalidades...</small>
+    </article>
+  </div>
+</section>

@@ -1,0 +1,72 @@
+<section class="module-page">
+  <header class="module-header">
+    <div>
+      <h1>Catálogo Carrera - Modalidad</h1>
+      <p>Configura qué modalidades de titulación están disponibles para cada carrera.</p>
+    </div>
+  </header>
+
+  <div class="alert error" *ngIf="error()">{{ error() }}</div>
+  <div class="alert ok" *ngIf="ok()">{{ ok() }}</div>
+
+  <article class="card" *ngIf="!canManage()">
+    <h2>Acceso restringido</h2>
+    <p>Solo coordinador o administrador pueden realizar cambios en este módulo.</p>
+  </article>
+
+  <div class="grid" *ngIf="canManage()">
+    <article class="card">
+      <h2>Nueva asignación</h2>
+
+      <label>Carrera
+        <select [ngModel]="idCarrera()" (ngModelChange)="idCarrera.set($event)">
+          <option [ngValue]="null">-- Selecciona una carrera --</option>
+          <option *ngFor="let carrera of carreras()" [ngValue]="carrera.idCarrera">
+            {{ carrera.nombre }}
+          </option>
+        </select>
+      </label>
+
+      <label>Modalidad
+        <select [ngModel]="idModalidad()" (ngModelChange)="idModalidad.set($event)">
+          <option [ngValue]="null">-- Selecciona una modalidad --</option>
+          <option *ngFor="let modalidad of modalidades()" [ngValue]="modalidad.idModalidad">
+            {{ modalidad.nombre }}
+          </option>
+        </select>
+      </label>
+
+      <button class="btn primary" (click)="guardar()" [disabled]="saving() || loading()">
+        {{ saving() ? 'Guardando...' : 'Agregar modalidad a carrera' }}
+      </button>
+    </article>
+
+    <article class="card table-card">
+      <h2>Asignaciones activas</h2>
+      <div class="empty" *ngIf="!loading() && relacionesActivas().length === 0">
+        No hay asignaciones registradas.
+      </div>
+
+      <div class="table-wrapper" *ngIf="relacionesActivas().length > 0">
+        <table>
+          <thead>
+          <tr>
+            <th>Carrera</th>
+            <th>Modalidad</th>
+            <th>Estado</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr *ngFor="let item of relacionesActivas()">
+            <td>{{ item.carrera }}</td>
+            <td>{{ item.modalidad }}</td>
+            <td><span class="status active">Activa</span></td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <small *ngIf="loading()">Cargando catálogo...</small>
+    </article>
+  </div>
+</section>
