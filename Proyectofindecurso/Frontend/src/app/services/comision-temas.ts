@@ -81,4 +81,8 @@ export class ComisionTemasService {
   listarPropuestasEstudiante(idEstudiante: number): Observable<PropuestaTemaDto[]> {
     return this.http.get<PropuestaTemaDto[]>(`${this.API_URL}/estudiante/${idEstudiante}/propuestas`);
   }
+
+  listarTemasDisponiblesEstudiante(idEstudiante: number): Observable<TemaBancoDto[]> {
+    return this.http.get<TemaBancoDto[]>(`${this.API_URL}/estudiante/${idEstudiante}/temas-disponibles`);
+  }
 }
