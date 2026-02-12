@@ -1,7 +1,12 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ComisionTemasService, PropuestaTemaDto, TemaBancoDto } from '../../../services/comision-temas';
+import {
+  ComisionTemasService,
+  EstadoModalidadDto,
+  PropuestaTemaDto,
+  TemaBancoDto
+} from '../../../services/comision-temas';
 import { getSessionEntityId, getSessionUser } from '../../../services/session';
 
 @Component({
@@ -18,9 +23,13 @@ export class PropuestaNuevaComponent implements OnInit {
   temasDisponibles = signal<TemaBancoDto[]>([]);
   loading = signal(false);
   loadingTemas = signal(false);
+  loadingModalidad = signal(false);
   saving = signal(false);
+  guardandoModalidad = signal(false);
   error = signal<string | null>(null);
   ok = signal<string | null>(null);
+  estadoModalidad = signal<EstadoModalidadDto | null>(null);
+  modalidadSeleccionada = signal<number | null>(null);
 
   form = {
     idCarrera: 1,
@@ -38,8 +47,68 @@ export class PropuestaNuevaComponent implements OnInit {
   constructor(private readonly api: ComisionTemasService) {}
 
   ngOnInit(): void {
+    this.cargarEstadoModalidad();
     this.cargarTemasDisponibles();
     this.cargarHistorial();
+  }
+
+  get tieneModalidadSeleccionada(): boolean {
+    if (this.loadingModalidad()) {
+      return false;
+    }
+    return this.estadoModalidad()?.tieneModalidad ?? false;
+  }
+
+  cargarEstadoModalidad(): void {
+    if (!this.idEstudiante) {
+      this.error.set('No se pudo identificar al estudiante autenticado.');
+      return;
+    }
+
+    this.loadingModalidad.set(true);
+    this.api.obtenerEstadoModalidad(this.idEstudiante).subscribe({
+      next: (estado) => {
+        this.estadoModalidad.set(estado);
+        this.modalidadSeleccionada.set(estado.idModalidad);
+        if (estado.idCarrera) {
+          this.form.idCarrera = estado.idCarrera;
+        }
+        this.loadingModalidad.set(false);
+      },
+      error: (err) => {
+        this.error.set(err?.error?.message ?? 'No se pudo validar la modalidad de titulación.');
+        this.loadingModalidad.set(false);
+      }
+    });
+  }
+
+  guardarModalidad(): void {
+    if (!this.idEstudiante) {
+      this.error.set('No se pudo identificar al estudiante autenticado.');
+      return;
+    }
+
+    const idModalidad = this.modalidadSeleccionada();
+    if (!idModalidad) {
+      this.error.set('Selecciona una modalidad para continuar.');
+      return;
+    }
+
+    this.guardandoModalidad.set(true);
+    this.error.set(null);
+    this.ok.set(null);
+
+    this.api.seleccionarModalidad(this.idEstudiante, idModalidad).subscribe({
+      next: (estado) => {
+        this.estadoModalidad.set(estado);
+        this.ok.set(`Modalidad registrada correctamente: ${estado.modalidad}. Ya puedes enviar tu propuesta.`);
+        this.guardandoModalidad.set(false);
+      },
+      error: (err) => {
+        this.error.set(err?.error?.message ?? 'No se pudo guardar la modalidad seleccionada.');
+        this.guardandoModalidad.set(false);
+      }
+    });
   }
 
   cargarTemasDisponibles(): void {
@@ -101,6 +170,11 @@ export class PropuestaNuevaComponent implements OnInit {
       return;
     }
 
+    if (!this.tieneModalidadSeleccionada) {
+      this.error.set('Antes de registrar la propuesta debes seleccionar tu modalidad de titulación.');
+      return;
+    }
+
     if (!this.form.titulo.trim()) {
       this.error.set('El título es obligatorio.');
       return;
@@ -144,6 +218,7 @@ export class PropuestaNuevaComponent implements OnInit {
         error: (err) => {
           this.error.set(err?.error?.message ?? 'No se pudo enviar la propuesta.');
           this.saving.set(false);
+          this.cargarEstadoModalidad();
         }
       });
   }

@@ -20,6 +20,9 @@ public class ComisionTemasController {
     private final EstudianteRepository estudianteRepository;
     private final CarreraRepository carreraRepository;
     private final EleccionTitulacionRepository eleccionRepository;
+    private final ModalidadTitulacionRepository modalidadRepository;
+    private final CarreraModalidadRepository carreraModalidadRepository;
+    private final PeriodoTitulacionRepository periodoRepository;
 
     public ComisionTemasController(BancoTemasRepository bancoTemasRepository,
                                    PropuestaTitulacionRepository propuestaRepository,
@@ -27,7 +30,10 @@ public class ComisionTemasController {
                                    DocenteRepository docenteRepository,
                                    EstudianteRepository estudianteRepository,
                                    CarreraRepository carreraRepository,
-                                   EleccionTitulacionRepository eleccionRepository) {
+                                   EleccionTitulacionRepository eleccionRepository,
+                                   ModalidadTitulacionRepository modalidadRepository,
+                                   CarreraModalidadRepository carreraModalidadRepository,
+                                   PeriodoTitulacionRepository periodoRepository) {
         this.bancoTemasRepository = bancoTemasRepository;
         this.propuestaRepository = propuestaRepository;
         this.comisionMiembroRepository = comisionMiembroRepository;
@@ -35,6 +41,99 @@ public class ComisionTemasController {
         this.estudianteRepository = estudianteRepository;
         this.carreraRepository = carreraRepository;
         this.eleccionRepository = eleccionRepository;
+        this.modalidadRepository = modalidadRepository;
+        this.carreraModalidadRepository = carreraModalidadRepository;
+        this.periodoRepository = periodoRepository;
+    }
+
+    @GetMapping("/estudiante/{idEstudiante}/estado-modalidad")
+    public EstadoModalidadDto estadoModalidad(@PathVariable Integer idEstudiante) {
+        Estudiante estudiante = estudianteRepository.findById(idEstudiante)
+                .orElseThrow(() -> new RuntimeException("Estudiante no encontrado"));
+
+        EleccionTitulacion eleccion = obtenerEleccionVigente(idEstudiante);
+
+        Integer idCarrera = estudiante.getCarrera() != null ? estudiante.getCarrera().getIdCarrera() : null;
+        List<ModalidadSimpleDto> modalidadesDisponibles = obtenerModalidadesDisponibles(idCarrera);
+
+        return new EstadoModalidadDto(
+                eleccion != null,
+                eleccion != null ? eleccion.getIdEleccion() : null,
+                eleccion != null && eleccion.getModalidad() != null ? eleccion.getModalidad().getIdModalidad() : null,
+                eleccion != null && eleccion.getModalidad() != null ? eleccion.getModalidad().getNombre() : null,
+                idCarrera,
+                modalidadesDisponibles
+        );
+    }
+
+    @PostMapping("/estudiante/{idEstudiante}/seleccionar-modalidad")
+    public EstadoModalidadDto seleccionarModalidad(@PathVariable Integer idEstudiante,
+                                                   @RequestBody SeleccionarModalidadRequest req) {
+        if (req == null || req.idModalidad == null) {
+            throw new RuntimeException("Debes seleccionar una modalidad de titulación");
+        }
+
+        Estudiante estudiante = estudianteRepository.findById(idEstudiante)
+                .orElseThrow(() -> new RuntimeException("Estudiante no encontrado"));
+
+        if (estudiante.getCarrera() == null || estudiante.getCarrera().getIdCarrera() == null) {
+            throw new RuntimeException("El estudiante no tiene una carrera registrada");
+        }
+
+        Integer idCarrera = estudiante.getCarrera().getIdCarrera();
+        Integer idModalidad = req.idModalidad;
+
+        boolean esPermitida = carreraModalidadRepository
+                .existsById_IdCarreraAndId_IdModalidadAndActivoTrue(idCarrera, idModalidad);
+
+        if (!esPermitida) {
+            throw new RuntimeException("La modalidad seleccionada no está habilitada para tu carrera");
+        }
+
+        Modalidadtitulacion modalidad = modalidadRepository.findById(idModalidad)
+                .orElseThrow(() -> new RuntimeException("Modalidad no encontrada"));
+
+        PeriodoTitulacion periodoActivo = periodoRepository.findByActivoTrue()
+                .orElseThrow(() -> new RuntimeException("No hay un período de titulación activo"));
+
+        EleccionTitulacion eleccion = eleccionRepository
+                .findByEstudiante_IdEstudianteAndPeriodo_IdPeriodo(idEstudiante, periodoActivo.getIdPeriodo())
+                .orElseGet(EleccionTitulacion::new);
+
+        eleccion.setEstudiante(estudiante);
+        eleccion.setCarrera(estudiante.getCarrera());
+        eleccion.setModalidad(modalidad);
+        eleccion.setPeriodo(periodoActivo);
+        eleccion.setFechaEleccion(LocalDate.now());
+        eleccion.setEstado("ACTIVA");
+
+        EleccionTitulacion guardada = eleccionRepository.save(eleccion);
+
+        return estadoModalidad(idEstudiante).withEleccion(guardada.getIdEleccion(), modalidad.getIdModalidad(), modalidad.getNombre());
+    }
+
+
+    private EleccionTitulacion obtenerEleccionVigente(Integer idEstudiante) {
+        return periodoRepository.findByActivoTrue()
+                .flatMap(periodo -> eleccionRepository.findByEstudiante_IdEstudianteAndPeriodo_IdPeriodo(idEstudiante, periodo.getIdPeriodo()))
+                .orElseGet(() -> eleccionRepository.findByEstudiante_IdEstudiante(idEstudiante)
+                        .stream()
+                        .max(Comparator.comparing(EleccionTitulacion::getIdEleccion))
+                        .orElse(null));
+    }
+
+    private List<ModalidadSimpleDto> obtenerModalidadesDisponibles(Integer idCarrera) {
+        if (idCarrera == null) {
+            return List.of();
+        }
+
+        return carreraModalidadRepository.findById_IdCarreraAndActivoTrue(idCarrera)
+                .stream()
+                .map(cm -> new ModalidadSimpleDto(
+                        cm.getModalidad().getIdModalidad(),
+                        cm.getModalidad().getNombre()
+                ))
+                .toList();
     }
 
     @GetMapping("/docente/{idDocente}/banco")
@@ -113,10 +212,10 @@ public class ComisionTemasController {
             throw new RuntimeException("El título de la propuesta es obligatorio");
         }
 
-        EleccionTitulacion eleccion = eleccionRepository.findByEstudiante_IdEstudiante(idEstudiante)
-                .stream()
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("El estudiante no tiene elección de titulación registrada"));
+        EleccionTitulacion eleccion = obtenerEleccionVigente(idEstudiante);
+        if (eleccion == null) {
+            throw new RuntimeException("El estudiante no tiene elección de titulación registrada");
+        }
 
         Carrera carrera = estudiante.getCarrera() != null
                 ? estudiante.getCarrera()
@@ -257,6 +356,10 @@ public class ComisionTemasController {
         public String bibliografia;
     }
 
+    public static class SeleccionarModalidadRequest {
+        public Integer idModalidad;
+    }
+
     public record TemaDto(
             Integer idTema,
             String titulo,
@@ -278,5 +381,24 @@ public class ComisionTemasController {
             LocalDate fechaEnvio,
             String observaciones
     ) {
+    }
+
+    public record ModalidadSimpleDto(
+            Integer idModalidad,
+            String nombre
+    ) {
+    }
+
+    public record EstadoModalidadDto(
+            boolean tieneModalidad,
+            Integer idEleccion,
+            Integer idModalidad,
+            String modalidad,
+            Integer idCarrera,
+            List<ModalidadSimpleDto> modalidadesDisponibles
+    ) {
+        public EstadoModalidadDto withEleccion(Integer nuevoIdEleccion, Integer nuevaIdModalidad, String nuevaModalidad) {
+            return new EstadoModalidadDto(true, nuevoIdEleccion, nuevaIdModalidad, nuevaModalidad, idCarrera, modalidadesDisponibles);
+        }
     }
 }

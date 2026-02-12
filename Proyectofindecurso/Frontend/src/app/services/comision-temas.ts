@@ -44,6 +44,20 @@ export interface CrearPropuestaRequest {
   bibliografia?: string;
 }
 
+export interface ModalidadSimpleDto {
+  idModalidad: number;
+  nombre: string;
+}
+
+export interface EstadoModalidadDto {
+  tieneModalidad: boolean;
+  idEleccion: number | null;
+  idModalidad: number | null;
+  modalidad: string | null;
+  idCarrera: number | null;
+  modalidadesDisponibles: ModalidadSimpleDto[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class ComisionTemasService {
   private readonly API_URL = 'http://localhost:8080/api/comision-temas';
@@ -84,5 +98,15 @@ export class ComisionTemasService {
 
   listarTemasDisponiblesEstudiante(idEstudiante: number): Observable<TemaBancoDto[]> {
     return this.http.get<TemaBancoDto[]>(`${this.API_URL}/estudiante/${idEstudiante}/temas-disponibles`);
+  }
+
+  obtenerEstadoModalidad(idEstudiante: number): Observable<EstadoModalidadDto> {
+    return this.http.get<EstadoModalidadDto>(`${this.API_URL}/estudiante/${idEstudiante}/estado-modalidad`);
+  }
+
+  seleccionarModalidad(idEstudiante: number, idModalidad: number): Observable<EstadoModalidadDto> {
+    return this.http.post<EstadoModalidadDto>(`${this.API_URL}/estudiante/${idEstudiante}/seleccionar-modalidad`, {
+      idModalidad
+    });
   }
 }

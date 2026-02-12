@@ -9,11 +9,44 @@
   <div class="alert error" *ngIf="error()">{{ error() }}</div>
   <div class="alert ok" *ngIf="ok()">{{ ok() }}</div>
 
+  <article class="card modalidad-card" *ngIf="estadoModalidad() as estado">
+    <h2>Paso 1: Modalidad de titulación</h2>
+
+    <div class="alert ok" *ngIf="estado.tieneModalidad">
+      Modalidad registrada: <strong>{{ estado.modalidad }}</strong>. Ya puedes continuar con tu propuesta.
+    </div>
+
+    <div class="modalidad-form" *ngIf="!estado.tieneModalidad">
+      <p class="hint">
+        Para enviar tu propuesta primero debes escoger una modalidad de titulación.
+      </p>
+
+      <label>Selecciona modalidad
+        <select [ngModel]="modalidadSeleccionada()" (ngModelChange)="modalidadSeleccionada.set($event)">
+          <option [ngValue]="null">-- Selecciona una modalidad --</option>
+          <option *ngFor="let modalidad of estado.modalidadesDisponibles" [ngValue]="modalidad.idModalidad">
+            {{ modalidad.nombre }}
+          </option>
+        </select>
+      </label>
+
+      <small *ngIf="estado.modalidadesDisponibles.length === 0" class="warn-inline">
+        No hay modalidades activas para tu carrera. Comunícate con coordinación.
+      </small>
+
+      <button class="btn primary" (click)="guardarModalidad()" [disabled]="guardandoModalidad() || estado.modalidadesDisponibles.length === 0">
+        {{ guardandoModalidad() ? 'Guardando...' : 'Guardar modalidad' }}
+      </button>
+    </div>
+
+    <small *ngIf="loadingModalidad()">Validando modalidad actual...</small>
+  </article>
+
   <div class="grid">
-    <article class="card">
-      <h2>Nueva propuesta</h2>
+    <article class="card" [class.card-disabled]="!tieneModalidadSeleccionada">
+      <h2>Paso 2: Nueva propuesta</h2>
       <label>Tema sugerido por comisión
-        <select [(ngModel)]="form.idTema" (ngModelChange)="onSeleccionTema()">
+        <select [(ngModel)]="form.idTema" (ngModelChange)="onSeleccionTema()" [disabled]="!tieneModalidadSeleccionada">
           <option [ngValue]="null">-- Selecciona un tema --</option>
           <option *ngFor="let t of temasDisponibles()" [ngValue]="t.idTema">
             {{ t.titulo }} ({{ t.carrera }})
@@ -24,33 +57,34 @@
       <small *ngIf="!loadingTemas() && temasDisponibles().length === 0">No hay temas cargados por la comisión para tu carrera.</small>
 
       <label>Carrera (id)
-        <input type="number" [(ngModel)]="form.idCarrera" min="1" />
+        <input type="number" [(ngModel)]="form.idCarrera" min="1" [disabled]="!tieneModalidadSeleccionada" />
       </label>
       <label>Título
-        <input type="text" [(ngModel)]="form.titulo" />
+        <input type="text" [(ngModel)]="form.titulo" [disabled]="!tieneModalidadSeleccionada" />
       </label>
       <label>Tema de investigación
-        <textarea rows="2" [(ngModel)]="form.temaInvestigacion"></textarea>
+        <textarea rows="2" [(ngModel)]="form.temaInvestigacion" [disabled]="!tieneModalidadSeleccionada"></textarea>
       </label>
       <label>Planteamiento del problema
-        <textarea rows="3" [(ngModel)]="form.planteamientoProblema"></textarea>
+        <textarea rows="3" [(ngModel)]="form.planteamientoProblema" [disabled]="!tieneModalidadSeleccionada"></textarea>
       </label>
       <label>Objetivos generales
-        <textarea rows="2" [(ngModel)]="form.objetivosGenerales"></textarea>
+        <textarea rows="2" [(ngModel)]="form.objetivosGenerales" [disabled]="!tieneModalidadSeleccionada"></textarea>
       </label>
       <label>Objetivos específicos
-        <textarea rows="3" [(ngModel)]="form.objetivosEspecificos"></textarea>
+        <textarea rows="3" [(ngModel)]="form.objetivosEspecificos" [disabled]="!tieneModalidadSeleccionada"></textarea>
       </label>
       <label>Metodología
-        <textarea rows="2" [(ngModel)]="form.metodologia"></textarea>
+        <textarea rows="2" [(ngModel)]="form.metodologia" [disabled]="!tieneModalidadSeleccionada"></textarea>
       </label>
       <label>Resultados esperados
-        <textarea rows="2" [(ngModel)]="form.resultadosEsperados"></textarea>
+        <textarea rows="2" [(ngModel)]="form.resultadosEsperados" [disabled]="!tieneModalidadSeleccionada"></textarea>
       </label>
       <label>Bibliografía
-        <textarea rows="2" [(ngModel)]="form.bibliografia"></textarea>
+        <textarea rows="2" [(ngModel)]="form.bibliografia" [disabled]="!tieneModalidadSeleccionada"></textarea>
       </label>
-      <button class="btn primary" (click)="enviar()" [disabled]="saving()">Enviar propuesta</button>
+      <small class="warn-inline" *ngIf="!tieneModalidadSeleccionada">Debes registrar tu modalidad antes de enviar tu propuesta.</small>
+      <button class="btn primary" (click)="enviar()" [disabled]="saving() || !tieneModalidadSeleccionada">Enviar propuesta</button>
     </article>
 
     <article class="card">
