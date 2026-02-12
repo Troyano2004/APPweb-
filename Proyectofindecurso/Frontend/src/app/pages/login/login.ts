@@ -31,7 +31,7 @@ export class LoginComponent {
   }
 
   login() {
-    // ✅ limpia error antes de intentar
+
     this.errorMessage = '';
 
     if (!this.usuarioLogin || !this.password) {
@@ -65,7 +65,7 @@ export class LoginComponent {
             return;
           }
 
-          // ✅ Mensaje del backend si existe
+          // ✅ Mensaje del backend s'i existe
           this.errorMessage = err?.error?.message || 'Usuario o contraseña incorrectos';
         }
       });

@@ -284,7 +284,7 @@ export class SeguimientoProyectosComponent implements OnInit {
       return;
     }
 
-    this.router.navigate(['/coordinador/proyecto'], {
+    this.router.navigate(['/app/coordinador/proyecto'], {
       queryParams: {
         idProyecto: idProyecto ?? undefined,
         idEstudiante: idEstudiante ?? undefined
