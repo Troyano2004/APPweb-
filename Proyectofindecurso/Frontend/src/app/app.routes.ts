@@ -24,8 +24,6 @@ import { AdminUsuariosComponent } from './pages/admin-usuario/admin-usuarios';
 import { RolesComponent } from './pages/roles/roles';
 import { authGuard, loginGuard } from './guards/auth.guard';
 import { CarreraModalidadComponent } from './pages/catalogos/carrera-modalidad/carrera-modalidad.component';
-import { ModalidadCatalogoComponent } from './pages/catalogos/modalidad/modalidad-catalogo.component';
-
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'login' },
@@ -53,8 +51,7 @@ export const routes: Routes = [
       { path: 'catalogos/universidad', component: PlaceholderPageComponent, data: { title: 'Universidad' } },
       { path: 'catalogos/facultad', component: PlaceholderPageComponent, data: { title: 'Facultad' } },
       { path: 'catalogos/carrera', component: PlaceholderPageComponent, data: { title: 'Carrera' } },
-      { path: 'catalogos/modalidad', component: ModalidadCatalogoComponent, data: { title: 'Modalidad Titulación' } },
-
+      { path: 'catalogos/modalidad', component: PlaceholderPageComponent, data: { title: 'Modalidad Titulación' } },
       { path: 'catalogos/periodo', component: PlaceholderPageComponent, data: { title: 'Período Académico' } },
       {
         path: 'catalogos/tipo-trabajo',
@@ -153,8 +150,6 @@ export const routes: Routes = [
         component: VisualizarProyectoComponent,
         data: { title: 'Visualización de proyecto' }
       },
-      { path: 'catalogos/modalidad', component: ModalidadCatalogoComponent, data: { title: 'Modalidad Titulación' } },
-
 
       { path: '**', redirectTo: 'dashboard' }
     ]

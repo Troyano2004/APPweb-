@@ -48,6 +48,7 @@ public class AuthService {
         if (rol.equals("ADMIN")) return "ROLE_ADMIN";
         if (rol.equals("DOCENTE")) return "ROLE_DOCENTE";
         if (rol.equals("ESTUDIANTE")) return "ROLE_ESTUDIANTE";
+        if (rol.equals("COORDINADOR")) return "ROLE_COORDINADOR";
 
         return rol;
     }

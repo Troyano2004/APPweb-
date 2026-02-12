@@ -130,6 +130,7 @@ export class ShellComponent implements OnInit, OnDestroy {
       title: 'Coordinación',
       icon: '🧭',
       items: [
+        { label: 'Modalidad de titulación', path: '/app/catalogos/carrera-modalidad' },
         { label: 'Seguimiento de proyectos', path: '/app/coordinador/seguimiento' },
         { label: 'Control de directores', path: '/app/coordinador/directores' },
         { label: 'Validación administrativa', path: '/app/coordinador/validacion' },
@@ -174,7 +175,6 @@ export class ShellComponent implements OnInit, OnDestroy {
     this.openSectionIndex = this.openSectionIndex === index ? -1 : index;
   }
 
-
   logout(): void {
     localStorage.removeItem('usuario');
     localStorage.removeItem('token');
@@ -192,7 +192,7 @@ export class ShellComponent implements OnInit, OnDestroy {
       .filter((value) => value.length > 0);
 
     const username = (user['username'] ?? user['usuarioLogin'] ?? '').toString().trim();
-    this.userName = names.length ? names.join(' ') : (username || 'Usuario');
+    this.userName = names.length ? names.join(' ') : username || 'Usuario';
 
     const roleValue = (user['rol'] ?? '').toString();
     const role = roleValue.replace('ROLE_', '').trim();
