@@ -66,7 +66,7 @@ public class DocumentoTitulacionService {
 
     // ====== DIRECTOR ======
     public List<DocumentoTitulacionDto> listarPendientesDirector(Integer idDocente) {
-        return docRepo.findByDirector_IdDocenteAndEstado(idDocente, EstadoDocumento.EN_REVISION)
+        return docRepo.findByDirector_IdDocente(idDocente)
                 .stream().map(this::toDto).toList();
     }
 
@@ -174,19 +174,53 @@ public class DocumentoTitulacionService {
         dto.setResumen(d.getResumen());
         dto.setAbstractText(d.getAbstractText());
         dto.setIntroduccion(d.getIntroduccion());
-        dto.setPlanteamientoProblema(d.getPlanteamientoProblema());
-        dto.setObjetivoGeneral(d.getObjetivoGeneral());
-        dto.setObjetivosEspecificos(d.getObjetivosEspecificos());
+        PropuestaTitulacion propuesta = d.getProyecto() != null ? d.getProyecto().getPropuesta() : null;
+
+        dto.setPlanteamientoProblema(firstNonBlank(
+                d.getPlanteamientoProblema(),
+                propuesta != null ? propuesta.getPlanteamientoProblema() : null
+        ));
+        dto.setObjetivoGeneral(firstNonBlank(
+                d.getObjetivoGeneral(),
+                propuesta != null ? propuesta.getObjetivosGenerales() : null
+        ));
+        dto.setObjetivosEspecificos(firstNonBlank(
+                d.getObjetivosEspecificos(),
+                propuesta != null ? propuesta.getObjetivosEspecificos() : null
+        ));
         dto.setJustificacion(d.getJustificacion());
-        dto.setMarcoTeorico(d.getMarcoTeorico());
-        dto.setMetodologia(d.getMetodologia());
-        dto.setResultados(d.getResultados());
+        dto.setMarcoTeorico(firstNonBlank(
+                d.getMarcoTeorico(),
+                propuesta != null ? propuesta.getMarcoTeorico() : null
+        ));
+        dto.setMetodologia(firstNonBlank(
+                d.getMetodologia(),
+                propuesta != null ? propuesta.getMetodologia() : null
+        ));
+        dto.setResultados(firstNonBlank(
+                d.getResultados(),
+                propuesta != null ? propuesta.getResultadosEsperados() : null
+        ));
         dto.setDiscusion(d.getDiscusion());
         dto.setConclusiones(d.getConclusiones());
         dto.setRecomendaciones(d.getRecomendaciones());
-        dto.setBibliografia(d.getBibliografia());
+        dto.setBibliografia(firstNonBlank(
+                d.getBibliografia(),
+                propuesta != null ? propuesta.getBibliografia() : null
+        ));
         dto.setAnexos(d.getAnexos());
         return dto;
+    }
+
+
+
+    private String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.trim().isEmpty()) {
+                return value;
+            }
+        }
+        return null;
     }
 
     private ObservacionDto toObsDto(ObservacionDocumento o) {
