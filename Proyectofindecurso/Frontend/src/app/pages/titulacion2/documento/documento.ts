@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 
 import { DocumentoTitulacionService, DocumentoTitulacionDto } from '../../../services/documento-titulacion';
+import { RevisionDirectorService, ObservacionDto } from '../../../services/revision-director';
 import { getSessionEntityId, getSessionUser } from '../../../services/session';
 
 type TabKey =
@@ -29,6 +30,7 @@ export class Documento implements OnInit {
   error = signal<string | null>(null);
 
   documento = signal<DocumentoTitulacionDto | null>(null);
+  observaciones = signal<ObservacionDto[]>([]);
 
   // ✅ en tu HTML estás usando activeTab() y setTab('x')
   activeTab = signal<TabKey>('portada');
@@ -45,7 +47,11 @@ export class Documento implements OnInit {
   // ✅ form en constructor para evitar error fb
   form!: FormGroup;
 
-  constructor(private fb: FormBuilder, private api: DocumentoTitulacionService) {
+  constructor(
+    private fb: FormBuilder,
+    private api: DocumentoTitulacionService,
+    private revisionApi: RevisionDirectorService
+  ) {
     this.form = this.fb.group({
       titulo: [''],
       resumen: [''],
@@ -95,8 +101,8 @@ export class Documento implements OnInit {
           abstractText: doc.abstractText ?? '',
 
           introduccion: doc.introduccion ?? '',
-          problema: doc.problema ?? '',
-          objetivosGenerales: doc.objetivosGenerales ?? '',
+          problema: doc.planteamientoProblema ?? doc.problema ?? '',
+          objetivosGenerales: doc.objetivoGeneral ?? doc.objetivosGenerales ?? '',
           objetivosEspecificos: doc.objetivosEspecificos ?? '',
           justificacion: doc.justificacion ?? '',
 
@@ -116,12 +122,27 @@ export class Documento implements OnInit {
         if (this.puedeEditar()) this.form.enable();
         else this.form.disable();
 
+        this.cargarObservaciones(doc);
         this.loading.set(false);
       },
       error: (err) => {
         this.loading.set(false);
         this.error.set(err?.error?.message ?? 'Error cargando documento');
       }
+    });
+  }
+
+
+  private cargarObservaciones(doc: DocumentoTitulacionDto | null): void {
+    const idDocumento = Number(doc?.id ?? doc?.idDocumento ?? 0);
+    if (!idDocumento) {
+      this.observaciones.set([]);
+      return;
+    }
+
+    this.revisionApi.observaciones(idDocumento).subscribe({
+      next: (list) => this.observaciones.set(list ?? []),
+      error: () => this.observaciones.set([])
     });
   }
 
@@ -133,7 +154,27 @@ export class Documento implements OnInit {
     this.loading.set(true);
     this.error.set(null);
 
-    this.api.updateDocumento(this.idEstudiante, this.form.getRawValue()).subscribe({
+    const raw = this.form.getRawValue();
+    const payload = {
+      titulo: raw.titulo,
+      resumen: raw.resumen,
+      abstractText: raw.abstractText,
+      introduccion: raw.introduccion,
+      planteamientoProblema: raw.problema,
+      objetivoGeneral: raw.objetivosGenerales,
+      objetivosEspecificos: raw.objetivosEspecificos,
+      justificacion: raw.justificacion,
+      marcoTeorico: raw.marcoTeorico,
+      metodologia: raw.metodologia,
+      resultados: raw.resultados,
+      discusion: raw.discusion,
+      conclusiones: raw.conclusiones,
+      recomendaciones: raw.recomendaciones,
+      bibliografia: raw.bibliografia,
+      anexos: raw.anexos
+    };
+
+    this.api.updateDocumento(this.idEstudiante, payload).subscribe({
       next: (doc) => {
         this.documento.set(doc);
         this.loading.set(false);

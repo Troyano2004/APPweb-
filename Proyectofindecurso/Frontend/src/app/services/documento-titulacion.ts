@@ -47,7 +47,9 @@ export interface DocumentoUpdateRequest {
 
   introduccion?: string | null;
   problema?: string | null;
+  planteamientoProblema?: string | null;
   objetivosGenerales?: string | null;
+  objetivoGeneral?: string | null;
   objetivosEspecificos?: string | null;
   justificacion?: string | null;
 

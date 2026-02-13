@@ -22,7 +22,7 @@
   <!-- Barra de acciones principales -->
   <div class="action-bar">
     <div class="action-buttons">
-      <button class="btn btn-secondary" type="button" (click)="cargarObs()" [disabled]="loading()">
+      <button class="btn btn-secondary" type="button" (click)="cargarDocumento(); cargarObs()" [disabled]="loading()">
         <span class="btn-icon">↻</span>
         Recargar
       </button>
@@ -81,17 +81,17 @@
         </div>
       </div>
 
-      <div class="document-section" *ngIf="documento()?.problema">
+      <div class="document-section" *ngIf="documento()?.planteamientoProblema || documento()?.problema">
         <h3 class="doc-section-title">Planteamiento del Problema</h3>
         <div class="doc-section-content">
-          <p class="doc-text">{{ documento()?.problema }}</p>
+          <p class="doc-text">{{ documento()?.planteamientoProblema || documento()?.problema }}</p>
         </div>
       </div>
 
-      <div class="document-section" *ngIf="documento()?.objetivosGenerales">
+      <div class="document-section" *ngIf="documento()?.objetivoGeneral || documento()?.objetivosGenerales">
         <h3 class="doc-section-title">Objetivos Generales</h3>
         <div class="doc-section-content">
-          <p class="doc-text">{{ documento()?.objetivosGenerales }}</p>
+          <p class="doc-text">{{ documento()?.objetivoGeneral || documento()?.objetivosGenerales }}</p>
         </div>
       </div>
 
