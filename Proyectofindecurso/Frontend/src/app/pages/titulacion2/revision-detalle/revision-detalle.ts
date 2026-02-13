@@ -19,7 +19,6 @@ export class RevisionDetalle implements OnInit {
 
   idDocumento = 0;
   documento = signal<DocumentoTitulacionDto | null>(null);
-  idEstudiante = 0;
 
   titulo = signal<string>('');
 
@@ -39,10 +38,8 @@ export class RevisionDetalle implements OnInit {
 
   ngOnInit(): void {
     const idDocParam = Number(this.route.snapshot.paramMap.get('idDocumento'));
-    const idEstQ = Number(this.route.snapshot.queryParamMap.get('idEstudiante'));
 
     this.idDocumento = Number.isFinite(idDocParam) && idDocParam > 0 ? idDocParam : 0;
-    this.idEstudiante = Number.isFinite(idEstQ) && idEstQ > 0 ? idEstQ : 0;
 
     if (!this.idDocumento) {
       this.error.set('No se envió idDocumento en la URL.');
@@ -75,11 +72,7 @@ export class RevisionDetalle implements OnInit {
     this.loading.set(true);
     this.error.set(null);
 
-    const request$ = this.idEstudiante > 0
-      ? this.docApi.getDocumento(this.idEstudiante)
-      : this.docApi.getDocumentoPorId(this.idDocumento);
-
-    request$.subscribe({
+    this.docApi.getDocumentoPorId(this.idDocumento).subscribe({
       next: (doc) => {
         this.documento.set(doc);
         this.loading.set(false);
@@ -141,5 +134,4 @@ export class RevisionDetalle implements OnInit {
     });
   }
 
-  protected readonly document = document;
 }

@@ -234,4 +234,28 @@
 
     </ng-container>
   </form>
+
+
+  <section class="content-card">
+    <div class="card-header-section">
+      <h2 class="section-title">Historial de observaciones</h2>
+      <p class="section-subtitle">Comentarios registrados por el director sobre tu documento.</p>
+    </div>
+
+    <div class="observations-list" *ngIf="observaciones().length > 0; else emptyObservaciones">
+      <div class="observation-item" *ngFor="let o of observaciones()">
+        <div class="observation-head">
+          <strong>{{ o.seccion }}</strong>
+          <span>{{ o.estado }}</span>
+        </div>
+        <p>{{ o.comentario }}</p>
+        <small>{{ o.creadoEn || 'Fecha no disponible' }}</small>
+      </div>
+    </div>
+
+    <ng-template #emptyObservaciones>
+      <p class="empty-text">Aún no existen observaciones registradas.</p>
+    </ng-template>
+  </section>
+
 </div>
