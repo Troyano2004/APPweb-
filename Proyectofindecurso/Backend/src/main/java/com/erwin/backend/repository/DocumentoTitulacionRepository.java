@@ -10,6 +10,7 @@ import java.util.Optional;
 public interface DocumentoTitulacionRepository extends JpaRepository<DocumentoTitulacion, Integer> {
     Optional<DocumentoTitulacion> findByEstudiante_IdEstudiante(Integer idEstudiante);
     List<DocumentoTitulacion> findByDirector_IdDocenteAndEstado(Integer idDocente, EstadoDocumento estado);
+    List<DocumentoTitulacion> findByDirector_IdDocente(Integer idDocente);
     long countByEstado(EstadoDocumento estado);
     Optional<DocumentoTitulacion> findByProyecto_IdProyecto(Integer idProyecto);
     List<DocumentoTitulacion> findByDirectorIsNull();
