@@ -41,11 +41,11 @@ export class RevisionDetalle implements OnInit {
     const idDocParam = Number(this.route.snapshot.paramMap.get('idDocumento'));
     const idEstQ = Number(this.route.snapshot.queryParamMap.get('idEstudiante'));
 
-    this.idDocumento = Number.isFinite(idDocParam) ? idDocParam : 0;
+    this.idDocumento = Number.isFinite(idDocParam) && idDocParam > 0 ? idDocParam : 0;
     this.idEstudiante = Number.isFinite(idEstQ) && idEstQ > 0 ? idEstQ : 0;
 
-    if (!this.idEstudiante) {
-      this.error.set('No se envió idEstudiante en la URL. No se puede cargar el documento.');
+    if (!this.idDocumento) {
+      this.error.set('No se envió idDocumento en la URL.');
       return;
     }
 
@@ -55,9 +55,6 @@ export class RevisionDetalle implements OnInit {
     this.cargarDocumento();
     this.cargarObs();
   }
-
-
-
 
   cargarObs(): void {
     this.loading.set(true);
@@ -78,7 +75,11 @@ export class RevisionDetalle implements OnInit {
     this.loading.set(true);
     this.error.set(null);
 
-    this.docApi.getDocumento(this.idEstudiante).subscribe({
+    const request$ = this.idEstudiante > 0
+      ? this.docApi.getDocumento(this.idEstudiante)
+      : this.docApi.getDocumentoPorId(this.idDocumento);
+
+    request$.subscribe({
       next: (doc) => {
         this.documento.set(doc);
         this.loading.set(false);
@@ -89,7 +90,6 @@ export class RevisionDetalle implements OnInit {
       }
     });
   }
-
 
   agregar(): void {
     if (!this.comentario.trim() || !this.idDocente) return;

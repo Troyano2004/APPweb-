@@ -77,6 +77,12 @@ export class DocumentoTitulacionService {
     );
   }
 
+  getDocumentoPorId(idDocumento: number): Observable<DocumentoTitulacionDto> {
+    return this.http.get<DocumentoTitulacionDto>(
+      `${this.baseUrl}/documento/${idDocumento}`
+    );
+  }
+
   updateDocumento(idEstudiante: number, payload: DocumentoUpdateRequest): Observable<DocumentoTitulacionDto> {
     return this.http.put<DocumentoTitulacionDto>(
       `${this.baseUrl}/estudiante/${idEstudiante}/documento`,

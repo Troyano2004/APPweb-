@@ -41,6 +41,11 @@ public class DocumentoTitulacionController {
         return service.listarObservaciones(idDocumento);
     }
 
+    @GetMapping("/documento/{idDocumento}")
+    public DocumentoTitulacionDto documentoPorId(@PathVariable Integer idDocumento) {
+        return service.obtenerPorIdDocumento(idDocumento);
+    }
+
     // ====== DIRECTOR ======
     @GetMapping("/director/{idDocente}/pendientes")
     public List<DocumentoTitulacionDto> pendientes(@PathVariable Integer idDocente) {

@@ -41,11 +41,17 @@ export const routes: Routes = [
         component: Documento,
         data: { title: 'Documento de titulación' }
       },
-      { path: 'titulacion2/revision', component: Revision, data: { title: 'Revisión de director' } },
+      { path: 'titulacion2/revisar', component: Revision, data: { title: 'Revisión de director' } },
       {
-        path: 'titulacion2/revision/:idDocumento',
+        path: 'titulacion2/revisar/:idDocumento',
         component: RevisionDetalle,
         data: { title: 'Detalle de revisión' }
+      },
+      { path: 'titulacion2/revision', pathMatch: 'full', redirectTo: 'titulacion2/revisar' },
+      {
+        path: 'titulacion2/revision/:idDocumento',
+        pathMatch: 'full',
+        redirectTo: 'titulacion2/revisar/:idDocumento'
       },
 
       { path: 'catalogos/universidad', component: PlaceholderPageComponent, data: { title: 'Universidad' } },

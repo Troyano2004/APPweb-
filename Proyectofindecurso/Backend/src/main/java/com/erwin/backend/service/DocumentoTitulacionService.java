@@ -204,4 +204,10 @@ public class DocumentoTitulacionService {
         }
         return dto;
     }
+    public DocumentoTitulacionDto obtenerPorIdDocumento(Integer idDocumento) {
+        DocumentoTitulacion doc = docRepo.findById(idDocumento)
+                .orElseThrow(() -> new RuntimeException("Documento no existe"));
+        return toDto(doc);
+    }
+
 }
