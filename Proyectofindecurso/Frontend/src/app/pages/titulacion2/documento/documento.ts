@@ -5,6 +5,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { DocumentoTitulacionService, DocumentoTitulacionDto } from '../../../services/documento-titulacion';
 import { RevisionDirectorService, ObservacionDto } from '../../../services/revision-director';
 import { getSessionEntityId, getSessionUser } from '../../../services/session';
+import { RichTextEditorComponent } from './rich-text-editor.component';
 
 type TabKey =
   | 'portada'
@@ -18,33 +19,28 @@ type TabKey =
 @Component({
   selector: 'app-documento',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, RichTextEditorComponent],
   templateUrl: './documento.html',
   styleUrl: './documento.scss'
 })
 export class Documento implements OnInit {
   private readonly idEstudiante = getSessionEntityId(getSessionUser(), 'estudiante');
 
-  // ✅ señales para el HTML
   loading = signal(false);
   error = signal<string | null>(null);
 
   documento = signal<DocumentoTitulacionDto | null>(null);
   observaciones = signal<ObservacionDto[]>([]);
 
-  // ✅ en tu HTML estás usando activeTab() y setTab('x')
   activeTab = signal<TabKey>('portada');
 
-  // ✅ estado() en el HTML
   estado = computed(() => this.documento()?.estado ?? 'BORRADOR');
 
-  // ✅ puedeEditar() en el HTML
   puedeEditar = computed(() => {
     const e = this.estado();
     return e === 'BORRADOR' || e === 'CORRECCION_REQUERIDA';
   });
 
-  // ✅ form en constructor para evitar error fb
   form!: FormGroup;
 
   constructor(
@@ -81,7 +77,6 @@ export class Documento implements OnInit {
     this.cargar();
   }
 
-  // ✅ tu HTML llama cargar()
   cargar(): void {
     if (!this.idEstudiante) {
       this.error.set('No se pudo identificar al estudiante autenticado.');
@@ -132,7 +127,6 @@ export class Documento implements OnInit {
     });
   }
 
-
   private cargarObservaciones(doc: DocumentoTitulacionDto | null): void {
     const idDocumento = Number(doc?.id ?? doc?.idDocumento ?? 0);
     if (!idDocumento) {
@@ -146,7 +140,6 @@ export class Documento implements OnInit {
     });
   }
 
-  // ✅ tu HTML llama guardar()
   guardar(): void {
     if (!this.puedeEditar()) return;
     if (!this.idEstudiante) return;
@@ -186,7 +179,6 @@ export class Documento implements OnInit {
     });
   }
 
-  // ✅ tu HTML llama enviarRevision()
   enviarRevision(): void {
     if (!this.puedeEditar()) return;
     if (!this.idEstudiante) return;
@@ -207,7 +199,6 @@ export class Documento implements OnInit {
     });
   }
 
-  // ✅ tu HTML llama setTab('...')
   setTab(tab: TabKey): void {
     this.activeTab.set(tab);
   }

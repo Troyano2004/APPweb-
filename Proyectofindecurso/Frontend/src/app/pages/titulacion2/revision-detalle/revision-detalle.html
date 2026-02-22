@@ -58,118 +58,115 @@
       <div class="document-section">
         <h3 class="doc-section-title">Título</h3>
         <div class="doc-section-content">
-          <p class="doc-text">
-            {{ documento()?.titulo || titulo() || 'No especificado' }}
-          </p>
+          <div class="doc-text rich-content" [innerHTML]="renderContenido(documento()?.titulo || titulo() || 'No especificado')"></div>
         </div>
       </div>
 
       <div class="document-section" *ngIf="documento()?.resumen">
         <h3 class="doc-section-title">Resumen</h3>
         <div class="doc-section-content">
-          <p class="doc-text">{{ documento()?.resumen }}</p>
+          <div class="doc-text rich-content" [innerHTML]="renderContenido(documento()?.resumen)"></div>
         </div>
       </div>
 
       <div class="document-section" *ngIf="documento()?.abstractText">
         <h3 class="doc-section-title">Abstract</h3>
         <div class="doc-section-content">
-          <p class="doc-text">{{ documento()?.abstractText }}</p>
+          <div class="doc-text rich-content" [innerHTML]="renderContenido(documento()?.abstractText)"></div>
         </div>
       </div>
 
       <div class="document-section" *ngIf="documento()?.introduccion">
         <h3 class="doc-section-title">Introducción</h3>
         <div class="doc-section-content">
-          <p class="doc-text">{{ documento()?.introduccion }}</p>
+          <div class="doc-text rich-content" [innerHTML]="renderContenido(documento()?.introduccion)"></div>
         </div>
       </div>
 
       <div class="document-section" *ngIf="documento()?.planteamientoProblema || documento()?.problema">
         <h3 class="doc-section-title">Planteamiento del Problema</h3>
         <div class="doc-section-content">
-          <p class="doc-text">{{ documento()?.planteamientoProblema || documento()?.problema }}</p>
+          <div class="doc-text rich-content" [innerHTML]="renderContenido(documento()?.planteamientoProblema || documento()?.problema)"></div>
         </div>
       </div>
 
       <div class="document-section" *ngIf="documento()?.objetivoGeneral || documento()?.objetivosGenerales">
         <h3 class="doc-section-title">Objetivos Generales</h3>
         <div class="doc-section-content">
-          <p class="doc-text">{{ documento()?.objetivoGeneral || documento()?.objetivosGenerales }}</p>
+          <div class="doc-text rich-content" [innerHTML]="renderContenido(documento()?.objetivoGeneral || documento()?.objetivosGenerales)"></div>
         </div>
       </div>
 
       <div class="document-section" *ngIf="documento()?.objetivosEspecificos">
         <h3 class="doc-section-title">Objetivos Específicos</h3>
         <div class="doc-section-content">
-          <p class="doc-text">{{ documento()?.objetivosEspecificos }}</p>
+          <div class="doc-text rich-content" [innerHTML]="renderContenido(documento()?.objetivosEspecificos)"></div>
         </div>
       </div>
 
       <div class="document-section" *ngIf="documento()?.justificacion">
         <h3 class="doc-section-title">Justificación</h3>
         <div class="doc-section-content">
-          <p class="doc-text">{{ documento()?.justificacion }}</p>
+          <div class="doc-text rich-content" [innerHTML]="renderContenido(documento()?.justificacion)"></div>
         </div>
       </div>
 
       <div class="document-section" *ngIf="documento()?.marcoTeorico">
         <h3 class="doc-section-title">Marco Teórico</h3>
         <div class="doc-section-content">
-          <p class="doc-text">{{ documento()?.marcoTeorico }}</p>
+          <div class="doc-text rich-content" [innerHTML]="renderContenido(documento()?.marcoTeorico)"></div>
         </div>
       </div>
 
       <div class="document-section" *ngIf="documento()?.metodologia">
         <h3 class="doc-section-title">Metodología</h3>
         <div class="doc-section-content">
-          <p class="doc-text">{{ documento()?.metodologia }}</p>
+          <div class="doc-text rich-content" [innerHTML]="renderContenido(documento()?.metodologia)"></div>
         </div>
       </div>
 
       <div class="document-section" *ngIf="documento()?.resultados">
         <h3 class="doc-section-title">Resultados</h3>
         <div class="doc-section-content">
-          <p class="doc-text">{{ documento()?.resultados }}</p>
+          <div class="doc-text rich-content" [innerHTML]="renderContenido(documento()?.resultados)"></div>
         </div>
       </div>
 
       <div class="document-section" *ngIf="documento()?.discusion">
         <h3 class="doc-section-title">Discusión</h3>
         <div class="doc-section-content">
-          <p class="doc-text">{{ documento()?.discusion }}</p>
+          <div class="doc-text rich-content" [innerHTML]="renderContenido(documento()?.discusion)"></div>
         </div>
       </div>
 
       <div class="document-section" *ngIf="documento()?.conclusiones">
         <h3 class="doc-section-title">Conclusiones</h3>
         <div class="doc-section-content">
-          <p class="doc-text">{{ documento()?.conclusiones }}</p>
+          <div class="doc-text rich-content" [innerHTML]="renderContenido(documento()?.conclusiones)"></div>
         </div>
       </div>
 
       <div class="document-section" *ngIf="documento()?.recomendaciones">
         <h3 class="doc-section-title">Recomendaciones</h3>
         <div class="doc-section-content">
-          <p class="doc-text">{{ documento()?.recomendaciones }}</p>
+          <div class="doc-text rich-content" [innerHTML]="renderContenido(documento()?.recomendaciones)"></div>
         </div>
       </div>
 
       <div class="document-section" *ngIf="documento()?.bibliografia">
         <h3 class="doc-section-title">Bibliografía</h3>
         <div class="doc-section-content">
-          <p class="doc-text">{{ documento()?.bibliografia }}</p>
+          <div class="doc-text rich-content" [innerHTML]="renderContenido(documento()?.bibliografia)"></div>
         </div>
       </div>
 
       <div class="document-section" *ngIf="documento()?.anexos">
         <h3 class="doc-section-title">Anexos</h3>
         <div class="doc-section-content">
-          <p class="doc-text">{{ documento()?.anexos }}</p>
+          <div class="doc-text rich-content" [innerHTML]="renderContenido(documento()?.anexos)"></div>
         </div>
       </div>
 
-      <!-- Estado vacío cuando todavía no carga nada -->
       <div class="empty-observations" *ngIf="!documento() && !loading() && !error()">
         <div class="empty-icon">📄</div>
         <p class="empty-text">No se encontró contenido del documento para mostrar</p>
@@ -228,7 +225,6 @@
     </div>
   </div>
 
-  <!-- Lista de observaciones -->
   <div class="observations-section">
     <h2 class="section-title-main">Historial de Observaciones</h2>
 
