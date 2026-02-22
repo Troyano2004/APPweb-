@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, ElementRef, EventEmitter, forwardRef, Input, Output, ViewChild } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 
 @Component({
@@ -49,7 +50,10 @@ export class RichTextEditorComponent implements ControlValueAccessor {
   @ViewChild('imageInput', { static: true }) imageInputRef!: ElementRef<HTMLInputElement>;
 
   disabled = false;
+  private readonly API_URL = 'http://localhost:8080';
   private innerValue = '';
+
+  constructor(private http: HttpClient) {}
 
   private onChange: (value: string) => void = () => {};
   onTouched: () => void = () => {};
@@ -116,15 +120,22 @@ export class RichTextEditorComponent implements ControlValueAccessor {
     const file = input.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      this.editorRef.nativeElement.focus();
-      document.execCommand('insertImage', false, result);
-      this.onEditorChange();
-      input.value = '';
-    };
-    reader.readAsDataURL(file);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    this.http.post<{ url: string }>(`${this.API_URL}/api/uploads/images`, formData).subscribe({
+      next: (response) => {
+        this.editorRef.nativeElement.focus();
+        document.execCommand('insertImage', false, response.url);
+        this.onEditorChange();
+        input.value = '';
+      },
+      error: (err) => {
+        const message = err?.error?.message ?? 'No se pudo subir la imagen';
+        window.alert(message);
+        input.value = '';
+      }
+    });
   }
 
   clearFormat(): void {
