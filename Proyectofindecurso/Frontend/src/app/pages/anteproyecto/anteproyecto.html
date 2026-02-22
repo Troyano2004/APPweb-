@@ -1,0 +1,211 @@
+<div class="page">
+
+  <div class="content">
+
+    <!-- LOADING -->
+    <div *ngIf="cargando" class="alert alert-warning">
+      Cargando información del anteproyecto...
+    </div>
+
+    <!-- MENSAJE -->
+    <div class="alert info" *ngIf="!cargando && mensaje">
+      {{ mensaje }}
+    </div>
+
+    <!-- PANEL -->
+    <div class="panel" *ngIf="!cargando">
+
+      <!-- CABECERA -->
+      <div class="panel-head">
+        <div>
+          <div class="title">Registrar / Editar Anteproyecto</div>
+          <div class="sub">
+            Estudiante: <b>{{ nombreEstudiante || '---' }}</b>
+
+            <span class="pill"
+                  [class.gray]="bloqueado"
+                  [class.green]="puedeEditar"
+                  [class.yellow]="(anteproyecto?.estado || '').toUpperCase() === 'BORRADOR'">
+              {{ anteproyecto?.estado || '---' }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- FILA: TABS + BOTONES (mismo renglón) -->
+      <div class="tabs-row">
+
+        <!-- TABS -->
+        <div class="tabs">
+          <button class="tab" [class.active]="tab==='portada'" (click)="tab='portada'">Portada</button>
+          <button class="tab" [class.active]="tab==='introduccion'" (click)="tab='introduccion'">Introducción</button>
+          <button class="tab" [class.active]="tab==='marco'" (click)="tab='marco'">Marco Teórico</button>
+          <button class="tab" [class.active]="tab==='resultados'" (click)="tab='resultados'">Metodología / Resultados</button>
+          <button class="tab" [class.active]="tab==='biblio'" (click)="tab='biblio'">Bibliografía</button>
+        </div>
+
+        <!-- BOTONES -->
+        <div class="tab-actions">
+          <button class="btn ghost"
+                  type="button"
+                  (click)="cargarMiAnteproyecto()"
+                  [disabled]="cargando">
+            Refrescar
+          </button>
+
+          <button class="btn ghost"
+                  type="button"
+                  (click)="recargarUltimaVersion()"
+                  [disabled]="!puedeEditar || cargando">
+            Recargar última versión
+          </button>
+
+          <!-- Si tú ya tienes el método copiarDesdePropuesta(), déjalo así.
+               Si no lo tienes aún, comenta este botón por ahora -->
+          <button class="btn ghost"
+                  type="button"
+                  (click)="copiarDesdePropuesta()"
+                  [disabled]="!puedeEditar || cargando">
+            Copiar desde propuesta
+          </button>
+
+          <button class="btn success"
+                  type="button"
+                  (click)="guardarBorrador()"
+                  [disabled]="!puedeEditar || form.invalid || cargando">
+            Guardar borrador
+          </button>
+
+          <button class="btn primary"
+                  type="button"
+                  (click)="enviarARevision()"
+                  [disabled]="!puedeEditar || form.invalid || cargando">
+            Enviar a revisión
+          </button>
+        </div>
+
+      </div>
+
+      <!-- FORM -->
+      <form class="form" [formGroup]="form">
+
+        <!-- PORTADA -->
+        <div class="grid" *ngIf="tab==='portada'">
+          <div class="field full">
+            <label>Título</label>
+            <input formControlName="titulo" />
+            <small class="hint" *ngIf="form.get('titulo')?.touched && form.get('titulo')?.invalid">
+              Campo obligatorio.
+            </small>
+          </div>
+
+          <div class="field full">
+            <label>Tema de investigación</label>
+            <textarea rows="6" formControlName="temaInvestigacion"></textarea>
+            <small class="hint" *ngIf="form.get('temaInvestigacion')?.touched && form.get('temaInvestigacion')?.invalid">
+              Campo obligatorio.
+            </small>
+          </div>
+        </div>
+
+        <!-- INTRODUCCIÓN -->
+        <div class="grid" *ngIf="tab==='introduccion'">
+          <div class="field full">
+            <label>Planteamiento del problema</label>
+            <textarea rows="8" formControlName="planteamientoProblema"></textarea>
+          </div>
+
+          <div class="field full">
+            <label>Objetivo general</label>
+            <textarea rows="4" formControlName="objetivosGenerales"></textarea>
+          </div>
+
+          <div class="field full">
+            <label>Objetivos específicos</label>
+            <textarea rows="6" formControlName="objetivosEspecificos"></textarea>
+          </div>
+        </div>
+
+        <!-- MARCO TEÓRICO -->
+        <div class="grid" *ngIf="tab==='marco'">
+          <div class="field full">
+            <label>Marco teórico</label>
+            <textarea rows="12" formControlName="marcoTeorico"></textarea>
+          </div>
+        </div>
+
+        <!-- RESULTADOS -->
+        <div class="grid" *ngIf="tab==='resultados'">
+          <div class="field full">
+            <label>Metodología</label>
+            <textarea rows="8" formControlName="metodologia"></textarea>
+          </div>
+
+          <div class="field full">
+            <label>Resultados esperados</label>
+            <textarea rows="8" formControlName="resultadosEsperados"></textarea>
+          </div>
+        </div>
+
+        <!-- BIBLIO -->
+        <div class="grid" *ngIf="tab==='biblio'">
+          <div class="field full">
+            <label>Bibliografía</label>
+            <textarea rows="8" formControlName="bibliografia"></textarea>
+          </div>
+
+          <div class="field full">
+            <label>Comentario del cambio (opcional)</label>
+            <textarea rows="3" formControlName="comentarioCambio"></textarea>
+          </div>
+        </div>
+
+      </form>
+
+      <!-- CUADRO BONITO: BASE (Propuesta) -->
+      <div class="base-card" *ngIf="anteproyecto?.propuesta">
+        <div class="base-head">
+          <div class="base-title">
+            <span class="badge">Base</span>
+            <span>Datos de la propuesta aprobada</span>
+          </div>
+
+          <!-- puedes volverlo colapsable luego si quieres -->
+        </div>
+
+        <div class="base-grid">
+          <div class="base-item">
+            <div class="k">Tema</div>
+            <div class="v">{{ anteproyecto?.propuesta?.tituloTema || '-' }}</div>
+          </div>
+
+          <div class="base-item">
+            <div class="k">Título (Propuesta)</div>
+            <div class="v">{{ anteproyecto?.propuesta?.titulo || '-' }}</div>
+          </div>
+
+          <div class="base-item full">
+            <div class="k">Planteamiento (Propuesta)</div>
+            <div class="v pre">{{ anteproyecto?.propuesta?.planteamientoProblema || '-' }}</div>
+          </div>
+
+          <div class="base-item full">
+            <div class="k">Metodología (Propuesta)</div>
+            <div class="v pre">{{ anteproyecto?.propuesta?.metodologia || '-' }}</div>
+          </div>
+
+          <div class="base-item full">
+            <div class="k">Bibliografía (Propuesta)</div>
+            <div class="v pre">{{ anteproyecto?.propuesta?.bibliografia || '-' }}</div>
+          </div>
+        </div>
+
+        <div class="base-tip">
+          💡 Tip: usa <b>“Copiar desde propuesta”</b> para iniciar el anteproyecto con esta base y luego mejorarlo.
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+

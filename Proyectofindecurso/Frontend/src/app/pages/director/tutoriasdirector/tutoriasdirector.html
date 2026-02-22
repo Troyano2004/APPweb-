@@ -1,0 +1,42 @@
+<div class="list-card">
+  <div class="list-head">
+    <div>
+      <div class="list-title">Listado</div>
+      <div class="list-sub">Tutorías registradas para el anteproyecto seleccionado.</div>
+    </div>
+  </div>
+
+  <div class="empty-mini" *ngIf="!tutorias?.length">
+    No hay tutorías registradas.
+  </div>
+
+  <div class="table-wrap" *ngIf="tutorias?.length">
+    <table class="t">
+      <thead>
+      <tr>
+        <th>Fecha</th>
+        <th>Hora</th>
+        <th>Modalidad</th>
+        <th>Estado</th>
+        <th class="right">Acciones</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr *ngFor="let t of tutorias">
+        <td><span class="pill">{{ t.fecha }}</span></td>
+        <td class="mono">{{ t.hora || '-' }}</td>
+        <td>{{ t.modalidad }}</td>
+        <td>
+          <span class="status" [ngClass]="(t.estado || '').toLowerCase()">
+            {{ t.estado }}
+          </span>
+        </td>
+        <td class="right">
+          <button class="btn ghost" (click)="abrirActa(t)">Acta</button>
+          <button class="btn danger" (click)="cancelar(t)">Cancelar</button>
+        </td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
