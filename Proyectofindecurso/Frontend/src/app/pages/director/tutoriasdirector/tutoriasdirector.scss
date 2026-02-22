@@ -1,0 +1,117 @@
+.list-card{
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #fff;
+  padding: 14px;
+  margin-top: 12px;
+  box-shadow: 0 6px 18px rgba(17, 24, 39, 0.05);
+}
+
+.list-head{
+  display:flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.list-title{
+  font-weight: 900;
+  color:#111827;
+}
+
+.list-sub{
+  color:#6b7280;
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.table-wrap{
+  border: 1px solid #eef2f7;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.t{
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.t thead th{
+  background: #f9fafb;
+  color:#374151;
+  text-align: left;
+  padding: 10px 12px;
+  font-weight: 900;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.t tbody td{
+  padding: 10px 12px;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+.t tbody tr:hover{
+  background: #fcfcfd;
+}
+
+.right{ text-align: right; }
+
+.pill{
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #f9fafb;
+  border: 1px solid #eef2f7;
+  font-weight: 800;
+  color:#111827;
+}
+
+.status{
+  display:inline-block;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-weight: 900;
+  font-size: 12px;
+  background: #f3f4f6;
+  color:#111827;
+  border: 1px solid transparent;
+  text-transform: uppercase;
+}
+
+.status.realizada{ background:#ecfdf5; border-color:#a7f3d0; color:#065f46; }
+.status.pendiente{ background:#eff6ff; border-color:#bfdbfe; color:#1d4ed8; }
+.status.cancelada{ background:#fef2f2; border-color:#fecaca; color:#991b1b; }
+
+.btn{
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #111827;
+  padding: 7px 10px;
+  border-radius: 10px;
+  font-weight: 900;
+  font-size: 12px;
+  cursor: pointer;
+  margin-left: 6px;
+}
+
+.btn:hover{ background:#f9fafb; }
+
+.btn.danger{
+  border-color:#ef4444;
+  background:#ef4444;
+  color:#fff;
+}
+.btn.danger:hover{ filter: brightness(0.96); }
+
+.btn.ghost{ background:#fff; }
+
+.empty-mini{
+  padding: 12px;
+  border: 1px dashed #d1d5db;
+  border-radius: 12px;
+  color:#6b7280;
+  font-weight: 700;
+}

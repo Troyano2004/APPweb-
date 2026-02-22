@@ -1,0 +1,67 @@
+<div class="page">
+  <div class="head">
+    <div>
+      <div class="kicker">Director</div>
+      <h2 class="title">Mis anteproyectos</h2>
+      <p class="sub">Selecciona un anteproyecto para gestionar tutorías y actas.</p>
+    </div>
+
+    <div class="actions">
+      <button class="btn ghost" (click)="cargar()" [disabled]="cargando">
+        <span class="dot" [class.on]="cargando"></span>
+        Refrescar
+      </button>
+    </div>
+  </div>
+
+  <div class="state warn" *ngIf="cargando">
+    <div class="spinner"></div>
+    <div>
+      <b>Cargando...</b>
+      <div class="muted">Consultando anteproyectos asignados.</div>
+    </div>
+  </div>
+
+  <div class="state" *ngIf="!cargando && mensaje">
+    <b>{{ mensaje }}</b>
+  </div>
+
+  <div class="grid" *ngIf="!cargando">
+    <div class="card" *ngFor="let x of items">
+      <div class="card-top">
+        <div class="badge" [ngClass]="(x.estadoAnteproyecto || '').toLowerCase()">
+          {{ x.estadoAnteproyecto || 'SIN ESTADO' }}
+        </div>
+        <div class="period">{{ x.periodo || '-' }}</div>
+      </div>
+
+      <div class="card-body">
+        <div class="c-title" [title]="x.tituloProyecto">{{ x.tituloProyecto }}</div>
+
+        <div class="meta">
+          <div class="meta-row">
+            <span class="meta-label">Estudiante</span>
+            <span class="meta-value">{{ x.estudianteNombre || '-' }}</span>
+          </div>
+
+          <div class="meta-row">
+            <span class="meta-label">ID Anteproyecto</span>
+            <span class="meta-value mono">#{{ x.idAnteproyecto }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-actions">
+        <button class="btn primary" (click)="abrir(x)">Ver tutorías</button>
+      </div>
+    </div>
+
+    <div class="empty" *ngIf="items.length === 0">
+      <div class="empty-icon">📄</div>
+      <b>No hay anteproyectos asignados</b>
+      <div class="muted">Cuando coordinación te asigne uno, aparecerá aquí.</div>
+      <button class="btn ghost" (click)="cargar()">Refrescar</button>
+    </div>
+  </div>
+</div>
+
