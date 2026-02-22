@@ -1,0 +1,63 @@
+.editor-wrapper {
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background: #fff;
+}
+
+.editor-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding: 0.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f8fafc;
+}
+
+.tool-btn {
+  border: 1px solid #d1d5db;
+  background: #fff;
+  border-radius: 0.35rem;
+  padding: 0.3rem 0.55rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.editor-content {
+  min-height: 180px;
+  padding: 0.9rem;
+  line-height: 1.6;
+  outline: none;
+}
+
+.editor-content:empty::before {
+  content: attr(data-placeholder);
+  color: #9ca3af;
+}
+
+.editor-content table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.5rem 0;
+}
+
+.editor-content td,
+.editor-content th {
+  border: 1px solid #9ca3af;
+  padding: 0.35rem;
+}
+
+.editor-content img {
+  max-width: 100%;
+  height: auto;
+}
+
+.editor-disabled {
+  opacity: 0.75;
+}
+
+.editor-disabled .tool-btn,
+.tool-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}

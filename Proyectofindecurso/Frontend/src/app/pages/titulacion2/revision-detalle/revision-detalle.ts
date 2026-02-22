@@ -31,7 +31,6 @@ export class RevisionDetalle implements OnInit {
   error = signal<string | null>(null);
   observaciones = signal<ObservacionDto[]>([]);
 
-  // form simple (sin reactive forms para que sea rápido)
   seccion = 'METODOLOGIA';
   comentario = '';
 
@@ -73,6 +72,7 @@ export class RevisionDetalle implements OnInit {
       }
     });
   }
+
   cargarDocumento(): void {
     this.loading.set(true);
     this.error.set(null);
@@ -95,20 +95,22 @@ export class RevisionDetalle implements OnInit {
     this.loading.set(true);
     this.error.set(null);
 
-    this.api.agregarObservacion(this.idDocente, this.idDocumento, {
-      seccion: this.seccion,
-      comentario: this.comentario,
-      idAutor: this.idDocente
-    }).subscribe({
-      next: () => {
-        this.comentario = '';
-        this.cargarObs();
-      },
-      error: (err) => {
-        this.loading.set(false);
-        this.error.set(err?.error?.message ?? 'Error agregando observación');
-      }
-    });
+    this.api
+      .agregarObservacion(this.idDocente, this.idDocumento, {
+        seccion: this.seccion,
+        comentario: this.comentario,
+        idAutor: this.idDocente
+      })
+      .subscribe({
+        next: () => {
+          this.comentario = '';
+          this.cargarObs();
+        },
+        error: (err) => {
+          this.loading.set(false);
+          this.error.set(err?.error?.message ?? 'Error agregando observación');
+        }
+      });
   }
 
   devolver(): void {
@@ -139,7 +141,16 @@ export class RevisionDetalle implements OnInit {
     });
   }
 
+  renderContenido(contenido: string | null | undefined): string {
+    const value = (contenido ?? '').trim();
+    if (!value) return '';
 
+    if (this.pareceHtml(value)) {
+      return this.sanitizeRichHtml(value);
+    }
+
+    return this.escapeHtml(value).replace(/\n/g, '<br/>');
+  }
 
   exportarPdf(): void {
     const doc = this.documento();
@@ -151,12 +162,15 @@ export class RevisionDetalle implements OnInit {
     const titulo = this.escapeHtml(doc.titulo || this.titulo() || `Documento #${this.idDocumento}`);
     const secciones = this.obtenerSeccionesDocumento(doc)
       .filter((seccion) => !!(seccion.contenido || '').trim())
-      .map((seccion) => `
-        <section class="doc-section">
-          <h2>${this.escapeHtml(seccion.titulo)}</h2>
-          <p>${this.escapeHtml(seccion.contenido || '').replace(/\n/g, '<br/>')}</p>
-        </section>
-      `)
+      .map((seccion) => {
+        const contenido = this.renderContenido(seccion.contenido);
+        return `
+          <section class="doc-section">
+            <h2>${this.escapeHtml(seccion.titulo)}</h2>
+            <div class="doc-body">${contenido}</div>
+          </section>
+        `;
+      })
       .join('');
 
     const fecha = new Date().toLocaleDateString('es-EC', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -173,8 +187,12 @@ export class RevisionDetalle implements OnInit {
           h1 { font-size: 16pt; text-align: center; margin: 0 0 0.8rem; }
           .meta { text-align: center; font-size: 11pt; margin-bottom: 1.4rem; }
           h2 { font-size: 13pt; text-transform: uppercase; margin: 1.2rem 0 0.5rem; border-bottom: 1px solid #999; padding-bottom: 0.2rem; }
-          p { margin: 0; text-align: justify; }
-          .doc-section { break-inside: avoid; page-break-inside: avoid; margin-bottom: 0.5rem; }
+          .doc-section { break-inside: avoid; page-break-inside: avoid; margin-bottom: 0.8rem; }
+          .doc-body { text-align: justify; }
+          .doc-body p { margin: 0 0 0.5rem; }
+          .doc-body table { width: 100%; border-collapse: collapse; margin: 0.5rem 0; }
+          .doc-body td, .doc-body th { border: 1px solid #999; padding: 0.25rem; }
+          .doc-body img { max-width: 100%; height: auto; }
         </style>
       </head>
       <body>
@@ -233,6 +251,40 @@ export class RevisionDetalle implements OnInit {
     ];
   }
 
+  private sanitizeRichHtml(rawHtml: string): string {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(rawHtml, 'text/html');
+
+    doc.querySelectorAll('script,style,iframe,object,embed').forEach((el) => el.remove());
+
+    doc.querySelectorAll('*').forEach((el) => {
+      [...el.attributes].forEach((attr) => {
+        const name = attr.name.toLowerCase();
+        const value = attr.value;
+
+        if (name.startsWith('on')) {
+          el.removeAttribute(attr.name);
+          return;
+        }
+
+        if ((name === 'href' || name === 'src') && /^javascript:/i.test(value.trim())) {
+          el.removeAttribute(attr.name);
+          return;
+        }
+
+        if (name === 'style') {
+          el.removeAttribute('style');
+        }
+      });
+    });
+
+    return doc.body.innerHTML;
+  }
+
+  private pareceHtml(text: string): boolean {
+    return /<[^>]+>/.test(text);
+  }
+
   private escapeHtml(text: string): string {
     return text
       .replace(/&/g, '&amp;')
@@ -241,5 +293,4 @@ export class RevisionDetalle implements OnInit {
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
   }
-
 }
