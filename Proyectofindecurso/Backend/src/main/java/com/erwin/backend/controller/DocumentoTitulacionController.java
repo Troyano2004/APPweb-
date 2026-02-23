@@ -72,4 +72,10 @@ public class DocumentoTitulacionController {
         service.aprobar(idDocente, idDocumento);
         return ResponseEntity.ok().build();
     }
+    @PostMapping("/estudiante/{idEstudiante}/observacion/{idObservacion}/atender")
+    public ResponseEntity<?> marcarAtendida(@PathVariable Integer idEstudiante,
+                                            @PathVariable Integer idObservacion) {
+        service.marcarObservacionAtendida(idEstudiante, idObservacion);
+        return ResponseEntity.ok().build();
+    }
 }

@@ -119,6 +119,19 @@ public class DocumentoTitulacionService {
         doc.setEstado(EstadoDocumento.APROBADO_POR_DIRECTOR);
         docRepo.save(doc);
     }
+    @Transactional
+    public void marcarObservacionAtendida(Integer idEstudiante, Integer idObservacion) {
+        ObservacionDocumento obs = obsRepo.findById(idObservacion)
+                .orElseThrow(() -> new RuntimeException("Observación no existe"));
+
+        DocumentoTitulacion doc = obs.getDocumento();
+        if (doc == null || doc.getEstudiante() == null || !doc.getEstudiante().getIdEstudiante().equals(idEstudiante)) {
+            throw new RuntimeException("No autorizado para actualizar esta observación");
+        }
+
+        obs.setEstado(EstadoObservacion.ATENDIDA);
+        obsRepo.save(obs);
+    }
 
     // ====== OBSERVACIONES (para estudiante/ver) ======
     public List<ObservacionDto> listarObservaciones(Integer idDocumento) {
