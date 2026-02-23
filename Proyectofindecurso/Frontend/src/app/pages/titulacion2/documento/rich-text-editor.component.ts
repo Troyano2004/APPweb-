@@ -7,32 +7,7 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
   selector: 'app-rich-text-editor',
   standalone: true,
   imports: [CommonModule],
-  template: `
-    <div class="editor-wrapper" [class.editor-disabled]="disabled">
-      <div class="editor-toolbar">
-        <button type="button" class="tool-btn" (click)="exec('bold')" [disabled]="disabled"><b>B</b></button>
-        <button type="button" class="tool-btn" (click)="exec('italic')" [disabled]="disabled"><i>I</i></button>
-        <button type="button" class="tool-btn" (click)="exec('underline')" [disabled]="disabled"><u>U</u></button>
-        <button type="button" class="tool-btn" (click)="exec('insertUnorderedList')" [disabled]="disabled">• Lista</button>
-        <button type="button" class="tool-btn" (click)="exec('insertOrderedList')" [disabled]="disabled">1. Lista</button>
-        <button type="button" class="tool-btn" (click)="insertLink()" [disabled]="disabled">🔗 Enlace</button>
-        <button type="button" class="tool-btn" (click)="insertTable()" [disabled]="disabled">▦ Tabla</button>
-        <button type="button" class="tool-btn" (click)="triggerImageInput()" [disabled]="disabled">🖼 Imagen</button>
-        <button type="button" class="tool-btn" (click)="clearFormat()" [disabled]="disabled">Limpiar</button>
-      </div>
-
-      <input #imageInput type="file" accept="image/*" hidden (change)="onImageSelected($event)" />
-
-      <div
-        #editor
-        class="editor-content"
-        [attr.data-placeholder]="placeholder"
-        [attr.contenteditable]="!disabled"
-        (input)="onEditorChange()"
-        (blur)="onTouched(); onEditorChange()"
-      ></div>
-    </div>
-  `,
+  templateUrl: './rich-text-editor.component.html',
   styleUrls: ['./rich-text-editor.component.scss'],
   providers: [
     {
@@ -97,10 +72,22 @@ export class RichTextEditorComponent implements ControlValueAccessor {
     const cols = Number(window.prompt('Número de columnas:', '2') || 0);
     if (!rows || !cols || rows < 1 || cols < 1) return;
 
-    let html = '<table><tbody>';
+    const tableWidth = this.normalizeTableSize(window.prompt('Ancho de la tabla (ej: 100%, 600px):', '100%'), '100%');
+    const cellWidth = this.normalizeTableSize(window.prompt('Ancho de cada columna (opcional, ej: 180px o 25%):', ''));
+
+    let html = `<table style="width:${tableWidth}; border-collapse: collapse; border: 1px solid #9ca3af; margin: 0.5rem 0; display: block; overflow: auto; resize: horizontal; min-width: 240px; max-width: 100%;">`;
+    if (cellWidth) {
+      html += '<colgroup>';
+      for (let c = 0; c < cols; c++) {
+        html += `<col style="width:${cellWidth};">`;
+      }
+      html += '</colgroup>';
+    }
+
+    html += '<tbody>';
     for (let r = 0; r < rows; r++) {
       html += '<tr>';
-      for (let c = 0; c < cols; c++) html += '<td> </td>';
+      for (let c = 0; c < cols; c++) html += '<td style="border: 1px solid #9ca3af; padding: 0.35rem; min-width: 2.5rem;"> </td>';
       html += '</tr>';
     }
     html += '</tbody></table><p></p>';
@@ -108,6 +95,16 @@ export class RichTextEditorComponent implements ControlValueAccessor {
     this.editorRef.nativeElement.focus();
     document.execCommand('insertHTML', false, html);
     this.onEditorChange();
+  }
+
+  private normalizeTableSize(value: string | null, fallback = ''): string {
+    const raw = (value ?? '').trim();
+    if (!raw) return fallback;
+
+    const sizePattern = /^\d+(\.\d+)?(px|%|rem|em|vw|vh)?$/i;
+    if (!sizePattern.test(raw)) return fallback;
+
+    return /^\d+(\.\d+)?$/i.test(raw) ? `${raw}px` : raw;
   }
 
   triggerImageInput(): void {

@@ -1,0 +1,24 @@
+<div class="editor-wrapper" [class.editor-disabled]="disabled">
+  <div class="editor-toolbar">
+    <button type="button" class="tool-btn" (click)="exec('bold')" [disabled]="disabled"><b>B</b></button>
+    <button type="button" class="tool-btn" (click)="exec('italic')" [disabled]="disabled"><i>I</i></button>
+    <button type="button" class="tool-btn" (click)="exec('underline')" [disabled]="disabled"><u>U</u></button>
+    <button type="button" class="tool-btn" (click)="exec('insertUnorderedList')" [disabled]="disabled">• Lista</button>
+    <button type="button" class="tool-btn" (click)="exec('insertOrderedList')" [disabled]="disabled">1. Lista</button>
+    <button type="button" class="tool-btn" (click)="insertLink()" [disabled]="disabled">🔗 Enlace</button>
+    <button type="button" class="tool-btn" (click)="insertTable()" [disabled]="disabled">▦ Tabla</button>
+    <button type="button" class="tool-btn" (click)="triggerImageInput()" [disabled]="disabled">🖼 Imagen</button>
+    <button type="button" class="tool-btn" (click)="clearFormat()" [disabled]="disabled">Limpiar</button>
+  </div>
+
+  <input #imageInput type="file" accept="image/*" hidden (change)="onImageSelected($event)" />
+
+  <div
+    #editor
+    class="editor-content"
+    [attr.data-placeholder]="placeholder"
+    [attr.contenteditable]="!disabled"
+    (input)="onEditorChange()"
+    (blur)="onTouched(); onEditorChange()"
+  ></div>
+</div>
