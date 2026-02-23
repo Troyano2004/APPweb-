@@ -136,6 +136,7 @@ export class ShellComponent implements OnInit, OnDestroy {
         { label: 'Validación administrativa', path: '/app/coordinador/validacion' },
         { label: 'Control de tutorías', path: '/app/coordinador/tutorias' },
         { label: 'Observaciones administrativas', path: '/app/coordinador/observaciones' },
+        { label: 'Workflow Titulación II', path: '/app/titulacion2/workflow' },
         { label: 'Reportes', path: '/app/coordinador/reportes' },
         { label: 'Comisión formativa', path: '/app/coordinador/comision' }
       ]

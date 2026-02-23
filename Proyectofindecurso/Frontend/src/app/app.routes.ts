@@ -11,6 +11,7 @@ import { EstudiantesComponent } from './pages/estudiantes/estudiantes';
 import { Documento } from './pages/titulacion2/documento/documento';
 import { Revision } from './pages/titulacion2/revision/revision';
 import { RevisionDetalle } from './pages/titulacion2/revision-detalle/revision-detalle';
+import { TitulacionWorkflowComponent } from './pages/titulacion2/workflow/workflow';
 import { SeguimientoProyectosComponent } from './pages/coordinador/seguimiento-proyectos/seguimiento-proyectos.component';
 import { DirectoresComponent } from './pages/coordinador/directores/directores.component';
 import { ValidacionComponent } from './pages/coordinador/validacion/validacion.component';
@@ -46,6 +47,11 @@ export const routes: Routes = [
         path: 'titulacion2/revisar/:idDocumento',
         component: RevisionDetalle,
         data: { title: 'Detalle de revisión' }
+      },
+      {
+        path: 'titulacion2/workflow',
+        component: TitulacionWorkflowComponent,
+        data: { title: 'Workflow Titulación II' }
       },
       { path: 'titulacion2/revision', pathMatch: 'full', redirectTo: 'titulacion2/revisar' },
       {
