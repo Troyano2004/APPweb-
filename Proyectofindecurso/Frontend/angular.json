@@ -71,8 +71,23 @@
         },
         "test": {
           "builder": "@angular/build:unit-test"
-        }
+        },
+        "assets": [
+          {
+            "glob": "**/*",
+            "input": "public"
+          },
+          {
+            "glob": "**/*",
+            "input": "src/assets",
+            "output": "assets"
+          }
+        ]
+
+
       }
     }
   }
 }
+
+

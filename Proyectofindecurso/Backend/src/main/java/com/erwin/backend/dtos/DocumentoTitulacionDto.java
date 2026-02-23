@@ -2,6 +2,9 @@ package com.erwin.backend.dtos;
 
 import com.erwin.backend.enums.EstadoDocumento;
 import lombok.Data;
+import java.time.LocalDate;
+import java.time.LocalTime;
+
 
 @Data
 public class DocumentoTitulacionDto {
@@ -29,4 +32,9 @@ public class DocumentoTitulacionDto {
     private String recomendaciones;
     private String bibliografia;
     private String anexos;
+
+    private String tribunal;
+    private LocalDate fechaSustentacion;
+    private LocalTime horaSustentacion;
+    private String lugarSustentacion;
 }
