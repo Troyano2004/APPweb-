@@ -281,6 +281,28 @@ $radius-xl: 16px;
 .document-section li {
   margin: 0.5rem 0;
 }
+.rich-content {
+  line-height: 1.75;
+  color: $gray-700;
+}
+
+.rich-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.75rem 0;
+}
+
+.rich-content td,
+.rich-content th {
+  border: 1px solid $gray-400;
+  padding: 0.4rem;
+}
+
+.rich-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: $radius-sm;
+}
 
 // ===============================================
 // OBSERVATIONS
@@ -536,7 +558,7 @@ $radius-xl: 16px;
     grid-template-columns: 1fr;
     gap: 1rem;
   }
-  rich-content {
+  .rich-content {
     line-height: 1.75;
     color: $gray-700;
   }

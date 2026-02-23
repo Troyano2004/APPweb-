@@ -37,8 +37,16 @@
 
 .editor-content table {
   border-collapse: collapse;
-  width: 100%;
+  max-width: 100%;
+  width: auto;
   margin: 0.5rem 0;
+  display: block;
+  overflow: auto;
+  resize: horizontal;
+}
+
+.editor-content table:hover {
+  outline: 1px dashed #6b7280;
 }
 
 .editor-content td,
@@ -60,4 +68,24 @@
 .tool-btn:disabled {
   cursor: not-allowed;
   opacity: 0.5;
+}
+
+:host ::ng-deep .editor-content table {
+  border-collapse: collapse;
+  max-width: 100%;
+  width: auto;
+  margin: 0.5rem 0;
+  display: block;
+  overflow: auto;
+  resize: horizontal;
+}
+
+:host ::ng-deep .editor-content table:hover {
+  outline: 1px dashed #6b7280;
+}
+
+:host ::ng-deep .editor-content td,
+:host ::ng-deep .editor-content th {
+  border: 1px solid #9ca3af;
+  padding: 0.35rem;
 }
