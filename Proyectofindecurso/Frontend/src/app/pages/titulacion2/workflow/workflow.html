@@ -1,0 +1,103 @@
+<div class="wf-container">
+  <header class="wf-header">
+    <h1>Workflow Titulación II</h1>
+    <p>Opera estados desde <strong>APROBADO_POR_DIRECTOR</strong> hasta cierre de expediente.</p>
+    <div class="chips">
+      <span class="chip">Estado: {{ estado() }}</span>
+      <span class="chip" *ngIf="notaFinal() !== null">Nota final: {{ notaFinal() }}</span>
+    </div>
+  </header>
+
+  <div class="alert ok" *ngIf="ok()">{{ ok() }}</div>
+  <div class="alert err" *ngIf="error()">{{ error() }}</div>
+
+  <section class="card" [formGroup]="formBase">
+    <h2>1) LISTO_PARA_TRIBUNAL</h2>
+    <div class="grid two">
+      <label>ID Documento <input type="number" formControlName="idDocumento" /></label>
+      <label>% Antiplagio <input type="number" step="0.01" formControlName="porcentajeAntiplagio" /></label>
+      <label>Umbral Antiplagio <input type="number" step="0.01" formControlName="umbralAntiplagio" /></label>
+      <label>URL informe antiplagio <input type="text" formControlName="urlInformeAntiplagio" /></label>
+      <label class="full">URL Aval Director (PDF) <input type="text" formControlName="avalUrlPdf" /></label>
+      <label class="full">Comentario aval <textarea rows="2" formControlName="avalComentario"></textarea></label>
+    </div>
+    <button (click)="listoParaTribunal()" [disabled]="loading()">Enviar a LISTO_PARA_TRIBUNAL</button>
+  </section>
+
+  <section class="card" [formGroup]="formTribunal">
+    <h2>2) TRIBUNAL_ASIGNADO</h2>
+    <div formArrayName="miembros">
+      <div class="grid two row" *ngFor="let g of miembros.controls; let i = index" [formGroupName]="i">
+        <label>ID Docente <input type="number" formControlName="idDocente" /></label>
+        <label>Cargo
+          <select formControlName="cargo">
+            <option value="PRESIDENTE">PRESIDENTE</option>
+            <option value="SECRETARIO">SECRETARIO</option>
+            <option value="VOCAL">VOCAL</option>
+            <option value="SUPLENTE">SUPLENTE</option>
+          </select>
+        </label>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="secondary" (click)="addMiembro()" [disabled]="loading()">+ Miembro</button>
+      <button (click)="asignarTribunal()" [disabled]="loading()">Asignar tribunal</button>
+    </div>
+  </section>
+
+  <section class="card" [formGroup]="formAgenda">
+    <h2>3) SUSTENTACION_AGENDADA</h2>
+    <div class="grid two">
+      <label>Fecha <input type="date" formControlName="fecha" /></label>
+      <label>Hora <input type="time" formControlName="hora" /></label>
+      <label class="full">Lugar <input type="text" formControlName="lugar" /></label>
+      <label class="full">Observaciones <textarea rows="2" formControlName="observaciones"></textarea></label>
+      <label class="full">Motivo reprogramación <textarea rows="2" formControlName="motivoReprogramacion"></textarea></label>
+    </div>
+    <button (click)="agendar()" [disabled]="loading()">Agendar sustentación</button>
+  </section>
+
+  <section class="card" [formGroup]="formResultado">
+    <h2>4) SUSTENTADO</h2>
+    <div class="grid two">
+      <label>Nota docente <input type="number" step="0.01" formControlName="notaDocente" /></label>
+      <label>Resultado
+        <select formControlName="resultado">
+          <option value="APROBADO">APROBADO</option>
+          <option value="REPROBADO">REPROBADO</option>
+        </select>
+      </label>
+      <label class="full">Acta URL <input type="text" formControlName="actaUrl" /></label>
+      <label class="full">Acta firmada URL <input type="text" formControlName="actaFirmadaUrl" /></label>
+    </div>
+
+    <h3>Notas tribunal</h3>
+    <div formArrayName="notasTribunal">
+      <div class="grid two row" *ngFor="let g of notasTribunal.controls; let i = index" [formGroupName]="i">
+        <label>ID Docente <input type="number" formControlName="idDocente" /></label>
+        <label>Nota <input type="number" step="0.01" formControlName="nota" /></label>
+      </div>
+    </div>
+
+    <label class="full">Observaciones <textarea rows="2" formControlName="observaciones"></textarea></label>
+
+    <div class="actions">
+      <button class="secondary" (click)="addNota()" [disabled]="loading()">+ Nota</button>
+      <button (click)="registrarResultado()" [disabled]="loading()">Registrar resultado</button>
+    </div>
+  </section>
+
+  <section class="card" [formGroup]="formCierre">
+    <h2>5) CIERRE</h2>
+    <div class="grid two">
+      <label>Resultado final
+        <select formControlName="resultadoFinal">
+          <option value="APROBADO">APROBADO</option>
+          <option value="REPROBADO">REPROBADO</option>
+        </select>
+      </label>
+      <label class="full">Observaciones finales <textarea rows="2" formControlName="observacionesFinales"></textarea></label>
+    </div>
+    <button (click)="cerrar()" [disabled]="loading()">Cerrar expediente</button>
+  </section>
+</div>
