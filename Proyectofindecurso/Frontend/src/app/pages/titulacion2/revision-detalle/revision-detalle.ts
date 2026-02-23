@@ -51,7 +51,7 @@ export class RevisionDetalle implements OnInit {
     }
 
     const t = this.route.snapshot.queryParamMap.get('titulo');
-    if (t) this.titulo.set(t);
+    if (t) this.titulo.set(this.toPlainText(t));
 
     this.cargarDocumento();
     this.cargarObs();
@@ -159,7 +159,11 @@ export class RevisionDetalle implements OnInit {
       return;
     }
 
-    const titulo = this.escapeHtml(doc.titulo || this.titulo() || `Documento #${this.idDocumento}`);
+    const tituloDocumento = this.toPlainText(doc.titulo || this.titulo() || `Documento #${this.idDocumento}`);
+    const idEstudiante = this.route.snapshot.queryParamMap.get('idEstudiante') || 'No registrado';
+    const fechaLarga = new Date().toLocaleDateString('es-EC', { year: 'numeric', month: 'long', day: 'numeric' });
+    const anio = new Date().getFullYear();
+
     const secciones = this.obtenerSeccionesDocumento(doc)
       .filter((seccion) => !!(seccion.contenido || '').trim())
       .map((seccion) => {
@@ -173,32 +177,177 @@ export class RevisionDetalle implements OnInit {
       })
       .join('');
 
-    const fecha = new Date().toLocaleDateString('es-EC', { year: 'numeric', month: 'long', day: 'numeric' });
+    const logoUteqUrl = `${window.location.origin}/assets/img/logo.png`;
 
     const html = `
       <!doctype html>
       <html lang="es">
       <head>
         <meta charset="utf-8" />
-        <title>${titulo}</title>
+        <title>${this.escapeHtml(tituloDocumento)}</title>
         <style>
-          @page { margin: 2.5cm 2.2cm; }
-          body { font-family: 'Times New Roman', Times, serif; font-size: 12pt; line-height: 1.6; color: #111; }
-          h1 { font-size: 16pt; text-align: center; margin: 0 0 0.8rem; }
-          .meta { text-align: center; font-size: 11pt; margin-bottom: 1.4rem; }
-          h2 { font-size: 13pt; text-transform: uppercase; margin: 1.2rem 0 0.5rem; border-bottom: 1px solid #999; padding-bottom: 0.2rem; }
-          .doc-section { break-inside: avoid; page-break-inside: avoid; margin-bottom: 0.8rem; }
+          @page { margin: 2.2cm 2cm; }
+          * { box-sizing: border-box; }
+          body {
+            font-family: 'Times New Roman', Times, serif;
+            color: #121212;
+            font-size: 12pt;
+            line-height: 1.6;
+            margin: 0;
+          }
+          .cover-page {
+            min-height: calc(100vh - 4.4cm);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            text-align: center;
+            page-break-after: always;
+            padding: 0.3cm 0 0.8cm;
+          }
+          .cover-logo { margin-bottom: 0.3cm; }
+          .cover-logo img { width: 110px; height: 110px; object-fit: contain; }
+          .cover-university {
+            font-size: 18pt;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+            margin: 0;
+          }
+          .cover-faculty {
+            margin: 0.15cm 0 0;
+            font-size: 12.2pt;
+          }
+          .cover-career {
+            margin: 0.05cm 0 0;
+            font-size: 11.5pt;
+          }
+          .cover-divider {
+            width: 100%;
+            border: 0;
+            border-top: 1.5px solid #4f4f4f;
+            margin: 0.9cm 0;
+          }
+          .cover-title {
+            margin: 0;
+            font-size: 20pt;
+            font-weight: 700;
+            text-transform: uppercase;
+          }
+          .cover-subtitle {
+            margin: 0.28cm 0 0;
+            font-size: 13pt;
+          }
+          .cover-box {
+            text-align: left;
+            width: 100%;
+            max-width: 14cm;
+            font-size: 12pt;
+            line-height: 1.55;
+          }
+          .cover-box strong { font-weight: 700; }
+          .cover-footer {
+            font-size: 12pt;
+            text-align: center;
+          }
+
+          .doc-main {
+            position: relative;
+            padding-bottom: 2cm;
+          }
+          .doc-header {
+            text-align: center;
+            border-bottom: 2px solid #1d7f43;
+            margin-bottom: 0.9rem;
+            padding-bottom: 0.5rem;
+          }
+          .doc-header h1 {
+            margin: 0;
+            font-size: 15.5pt;
+            text-transform: uppercase;
+            color: #14532d;
+          }
+          .doc-meta {
+            margin-top: 0.22rem;
+            font-size: 10.8pt;
+            color: #303030;
+          }
+          .doc-section {
+            break-inside: avoid;
+            page-break-inside: avoid;
+            margin-bottom: 0.85rem;
+          }
+          h2 {
+            font-size: 12.5pt;
+            text-transform: uppercase;
+            color: #14532d;
+            margin: 1rem 0 0.45rem;
+            border-bottom: 1px solid #8ea894;
+            padding-bottom: 0.15rem;
+          }
           .doc-body { text-align: justify; }
-          .doc-body p { margin: 0 0 0.5rem; }
-          .doc-body table { width: 100%; border-collapse: collapse; margin: 0.5rem 0; }
-          .doc-body td, .doc-body th { border: 1px solid #999; padding: 0.25rem; }
+          .doc-body p { margin: 0 0 0.48rem; }
+          .doc-body table { width: 100%; border-collapse: collapse; margin: 0.55rem 0; }
+          .doc-body td, .doc-body th { border: 1px solid #8b8b8b; padding: 0.25rem; }
           .doc-body img { max-width: 100%; height: auto; }
+
+          .pdf-footer {
+            position: fixed;
+            bottom: 0.6cm;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 9.7pt;
+            color: #4a4a4a;
+            border-top: 1px solid #bdbdbd;
+            padding-top: 0.2cm;
+          }
+          .pdf-footer .page::after {
+            content: counter(page);
+          }
         </style>
       </head>
       <body>
-        <h1>${titulo}</h1>
-        <div class="meta">Documento de revisión · ${this.escapeHtml(fecha)}</div>
-        ${secciones || '<p>No hay contenido disponible para exportar.</p>'}
+        <section class="cover-page">
+          <div style="width: 100%;">
+            <div class="cover-logo"><img src="${logoUteqUrl}" alt="Logo UTEQ" /></div>
+            <p class="cover-university">UNIVERSIDAD TÉCNICA ESTATAL DE QUEVEDO</p>
+            <p class="cover-faculty">Facultad de Ciencias de la Computación y Diseño Digital</p>
+            <p class="cover-career">Ingeniería en Software</p>
+
+            <hr class="cover-divider" />
+
+            <h1 class="cover-title">INFORME DE REVISIÓN</h1>
+            <p class="cover-subtitle">Documento de titulación para evaluación académica</p>
+
+            <hr class="cover-divider" />
+
+            <div class="cover-box">
+              <div><strong>Título del proyecto:</strong> ${this.escapeHtml(tituloDocumento)}</div>
+              <div><strong>Documento:</strong> #${this.idDocumento}</div>
+              <div><strong>Estudiante (ID):</strong> ${this.escapeHtml(idEstudiante)}</div>
+              <div><strong>Fecha de emisión:</strong> ${this.escapeHtml(fechaLarga)}</div>
+            </div>
+          </div>
+
+          <div class="cover-footer">
+            Quevedo - Ecuador<br/>
+            ${anio}
+          </div>
+        </section>
+
+        <main class="doc-main">
+          <header class="doc-header">
+            <h1>${this.escapeHtml(tituloDocumento)}</h1>
+            <div class="doc-meta">Documento de revisión · ${this.escapeHtml(fechaLarga)}</div>
+          </header>
+
+          ${secciones || '<p>No hay contenido disponible para exportar.</p>'}
+        </main>
+
+        <footer class="pdf-footer">
+          Universidad Técnica Estatal de Quevedo · Sistema de Titulación · Página <span class="page"></span>
+        </footer>
       </body>
       </html>
     `;
@@ -283,6 +432,13 @@ export class RevisionDetalle implements OnInit {
 
   private pareceHtml(text: string): boolean {
     return /<[^>]+>/.test(text);
+  }
+
+  private toPlainText(value: string): string {
+    return (value || '')
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
   }
 
   private escapeHtml(text: string): string {

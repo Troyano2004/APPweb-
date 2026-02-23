@@ -8,6 +8,8 @@ import com.erwin.backend.repository.DocumentoTitulacionRepository;
 import com.erwin.backend.repository.ObservacionDocumentoRepository;
 import com.erwin.backend.repository.DocenteRepository;
 import com.erwin.backend.repository.EstudianteRepository;
+import com.erwin.backend.repository.SustentacionRepository;
+import com.erwin.backend.repository.TribunalProyectoRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
@@ -20,15 +22,21 @@ public class DocumentoTitulacionService {
     private final ObservacionDocumentoRepository obsRepo;
     private final EstudianteRepository estudianteRepo;
     private final DocenteRepository docenteRepo;
+    private final TribunalProyectoRepository tribunalRepo;
+    private final SustentacionRepository sustentacionRepo;
 
     public DocumentoTitulacionService(DocumentoTitulacionRepository docRepo,
                                       ObservacionDocumentoRepository obsRepo,
                                       EstudianteRepository estudianteRepo,
-                                      DocenteRepository docenteRepo) {
+                                      DocenteRepository docenteRepo,
+                                      TribunalProyectoRepository tribunalRepo,
+                                      SustentacionRepository sustentacionRepo) {
         this.docRepo = docRepo;
         this.obsRepo = obsRepo;
         this.estudianteRepo = estudianteRepo;
         this.docenteRepo = docenteRepo;
+        this.tribunalRepo = tribunalRepo;
+        this.sustentacionRepo = sustentacionRepo;
     }
 
     // ====== ESTUDIANTE ======
@@ -119,6 +127,7 @@ public class DocumentoTitulacionService {
         doc.setEstado(EstadoDocumento.APROBADO_POR_DIRECTOR);
         docRepo.save(doc);
     }
+
     @Transactional
     public void marcarObservacionAtendida(Integer idEstudiante, Integer idObservacion) {
         ObservacionDocumento obs = obsRepo.findById(idObservacion)
@@ -222,10 +231,49 @@ public class DocumentoTitulacionService {
                 propuesta != null ? propuesta.getBibliografia() : null
         ));
         dto.setAnexos(d.getAnexos());
+
+        if (d.getProyecto() != null && d.getProyecto().getIdProyecto() != null) {
+            Integer idProyecto = d.getProyecto().getIdProyecto();
+            List<TribunalProyecto> miembros = tribunalRepo.findByProyecto_IdProyecto(idProyecto);
+            if (!miembros.isEmpty()) {
+                String tribunal = miembros.stream()
+                        .map(this::formatMiembroTribunal)
+                        .toList()
+                        .stream()
+                        .filter(v -> v != null && !v.isBlank())
+                        .reduce((a, b) -> a + " · " + b)
+                        .orElse(null);
+                dto.setTribunal(tribunal);
+            }
+
+            List<Sustentacion> sustentaciones = sustentacionRepo.findByProyecto_IdProyectoOrderByFechaDescHoraDesc(idProyecto);
+            if (!sustentaciones.isEmpty()) {
+                Sustentacion ultima = sustentaciones.get(0);
+                dto.setFechaSustentacion(ultima.getFecha());
+                dto.setHoraSustentacion(ultima.getHora());
+                dto.setLugarSustentacion(ultima.getLugar());
+            }
+        }
         return dto;
     }
 
+    private String formatMiembroTribunal(TribunalProyecto miembro) {
+        if (miembro == null || miembro.getDocente() == null || miembro.getDocente().getUsuario() == null) {
+            return null;
+        }
+        String nombres = firstNonBlank(miembro.getDocente().getUsuario().getNombres(), "");
+        String apellidos = firstNonBlank(miembro.getDocente().getUsuario().getApellidos(), "");
+        String nombreCompleto = (nombres + " " + apellidos).trim();
+        String cargo = miembro.getCargo() != null ? miembro.getCargo().trim() : "";
 
+        if (cargo.isEmpty()) {
+            return nombreCompleto.isEmpty() ? null : nombreCompleto;
+        }
+        if (nombreCompleto.isEmpty()) {
+            return cargo;
+        }
+        return cargo + ": " + nombreCompleto;
+    }
 
     private String firstNonBlank(String... values) {
         for (String value : values) {
@@ -251,10 +299,10 @@ public class DocumentoTitulacionService {
         }
         return dto;
     }
+
     public DocumentoTitulacionDto obtenerPorIdDocumento(Integer idDocumento) {
         DocumentoTitulacion doc = docRepo.findById(idDocumento)
                 .orElseThrow(() -> new RuntimeException("Documento no existe"));
         return toDto(doc);
     }
-
 }

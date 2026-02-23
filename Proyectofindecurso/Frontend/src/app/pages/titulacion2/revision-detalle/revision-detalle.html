@@ -12,8 +12,8 @@
         <p class="header-subtitle">Revisión y observaciones del documento</p>
 
         <!-- Opcional: si mandas titulo por queryParam -->
-        <p class="header-subtitle" *ngIf="titulo()">
-          <strong>Título del proyecto:</strong> {{ titulo() }}
+        <p class="header-subtitle" *ngIf="documento()?.titulo || titulo()">
+          <strong>Título del proyecto:</strong> {{ documento()?.titulo || titulo() }}
         </p>
       </div>
     </div>

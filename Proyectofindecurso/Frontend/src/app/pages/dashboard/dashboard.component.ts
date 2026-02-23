@@ -64,7 +64,41 @@ import { getSessionEntityId, getSessionUser, hasRole } from '../../services/sess
           </article>
         </div>
 
-        <div class="grid">
+        <div class="grid student-grid">
+          <article class="card large student-highlight">
+            <h3>Tribunal asignado</h3>
+            <p class="student-detail">
+              <strong class="detail-main">{{ documentoEstudiante?.tribunal || 'Pendiente de asignación' }}</strong>
+            </p>
+            <div class="meeting-info">
+              <div>
+                <span class="label">Fecha</span>
+                <span class="value">{{ formatFechaSustentacion() }}</span>
+              </div>
+              <div>
+                <span class="label">Hora</span>
+                <span class="value">{{ formatHoraSustentacion() }}</span>
+              </div>
+              <div>
+                <span class="label">Lugar</span>
+                <span class="value">{{ documentoEstudiante?.lugarSustentacion || 'Por confirmar' }}</span>
+              </div>
+            </div>
+          </article>
+
+          <article class="card large student-highlight recommendations-card">
+            <h3>Recomendaciones para tu sustentación</h3>
+            <p class="recommendation-text">{{ recomendacionesPreview() }}</p>
+            <ul>
+              <li>Prepara una presentación breve enfocada en objetivos, metodología y resultados.</li>
+              <li>Practica respuestas para preguntas técnicas y justifica tus decisiones de investigación.</li>
+              <li>Revisa que anexos y referencias estén listos para consulta del tribunal.</li>
+            </ul>
+            <div class="quick-links">
+              <a routerLink="/app/titulacion2/documento">Actualizar recomendaciones</a>
+            </div>
+          </article>
+
           <article class="card large">
             <h3>Tu plan de trabajo</h3>
             <ul>
@@ -113,6 +147,17 @@ import { getSessionEntityId, getSessionUser, hasRole } from '../../services/sess
       .card.large ul { margin: 0.8rem 0 0; padding-left: 1.2rem; color: #4b5563; }
       .quick-links { margin-top: 0.8rem; display: grid; gap: 0.45rem; }
       .quick-links a { color: #0f7a3a; font-weight: 600; text-decoration: none; }
+
+      .student-grid .card { min-height: 100%; }
+      .student-highlight { border-color: #bbf7d0; background: linear-gradient(180deg, #f7fff9 0%, #ffffff 100%); }
+      .student-detail { margin: 0.5rem 0 0; }
+      .detail-main { font-size: 1.05rem !important; line-height: 1.5; color: #14532d !important; }
+      .meeting-info { margin-top: 0.9rem; display: grid; gap: 0.6rem; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+      .meeting-info div { background: #ecfdf3; border: 1px solid #d1fae5; border-radius: 0.65rem; padding: 0.55rem 0.7rem; }
+      .meeting-info .label { display: block; color: #166534; font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; }
+      .meeting-info .value { display: block; color: #14532d; font-weight: 600; margin-top: 0.1rem; }
+      .recommendations-card ul { margin-top: 0.7rem; }
+      .recommendation-text { margin-top: 0.65rem; color: #14532d; background: #ecfdf3; border: 1px solid #d1fae5; border-radius: 0.65rem; padding: 0.65rem 0.8rem; }
       .empty { margin: 0.8rem 0 0; color: #6b7280; }
     `
   ]
@@ -183,6 +228,45 @@ export class DashboardComponent implements OnInit {
 
     const completados = fields.filter((f) => (f ?? '').toString().trim().length > 0).length;
     return Math.round((completados / fields.length) * 100);
+  }
+
+  formatFechaSustentacion(): string {
+    const fecha = this.documentoEstudiante?.fechaSustentacion;
+    if (!fecha) return 'Por definir';
+
+    const value = new Date(`${fecha}T00:00:00`);
+    return Number.isNaN(value.getTime())
+      ? fecha
+      : value.toLocaleDateString('es-EC', {
+        weekday: 'short',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+  }
+
+  formatHoraSustentacion(): string {
+    const hora = this.documentoEstudiante?.horaSustentacion;
+    if (!hora) return 'Por definir';
+    return hora.slice(0, 5);
+  }
+
+  recomendacionesPreview(): string {
+    const contenido = this.documentoEstudiante?.recomendaciones;
+    if (!contenido) {
+      return 'Aún no has registrado recomendaciones en tu documento. Añádelas para tener una guía clara antes de la defensa.';
+    }
+
+    const textoPlano = contenido
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (!textoPlano) {
+      return 'Aún no has registrado recomendaciones en tu documento. Añádelas para tener una guía clara antes de la defensa.';
+    }
+
+    return textoPlano.length > 220 ? `${textoPlano.slice(0, 220)}...` : textoPlano;
   }
 
   private cargarDashboardCoordinacion(): void {

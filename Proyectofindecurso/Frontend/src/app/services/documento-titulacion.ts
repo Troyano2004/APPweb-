@@ -38,6 +38,11 @@ export interface DocumentoTitulacionDto {
 
   bibliografia: string | null;
   anexos: string | null;
+
+  tribunal?: string | null;
+  fechaSustentacion?: string | null;
+  horaSustentacion?: string | null;
+  lugarSustentacion?: string | null;
 }
 
 export interface DocumentoUpdateRequest {
