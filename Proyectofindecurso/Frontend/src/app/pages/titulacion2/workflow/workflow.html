@@ -4,6 +4,7 @@
     <p>Opera estados desde <strong>APROBADO_POR_DIRECTOR</strong> hasta cierre de expediente.</p>
     <div class="chips">
       <span class="chip">Estado: {{ estado() }}</span>
+      <span class="chip chip-soft">Aprobados por director: {{ documentosAprobados.length }}</span>
       <span class="chip" *ngIf="notaFinal() !== null">Nota final: {{ notaFinal() }}</span>
     </div>
   </header>
@@ -14,10 +15,15 @@
   <section class="card" [formGroup]="formBase">
     <h2>1) LISTO_PARA_TRIBUNAL</h2>
     <div class="grid two">
-      <label>ID Documento <input type="number" formControlName="idDocumento" /></label>
+      <label class="full">Documento seleccionado</label>
+      <div class="picker-row full">
+        <input type="text" [value]="selectedDocumentoLabel()" placeholder="Selecciona documento" readonly />
+        <button class="secondary" type="button" (click)="abrirSelectorDocumento()" [disabled]="loading()">Buscar documento</button>
+      </div>
+
       <label>% Antiplagio <input type="number" step="0.01" formControlName="porcentajeAntiplagio" /></label>
       <label>Umbral Antiplagio <input type="number" step="0.01" formControlName="umbralAntiplagio" /></label>
-      <label>URL informe antiplagio <input type="text" formControlName="urlInformeAntiplagio" /></label>
+      <label class="full">URL informe antiplagio <input type="text" formControlName="urlInformeAntiplagio" /></label>
       <label class="full">URL Aval Director (PDF) <input type="text" formControlName="avalUrlPdf" /></label>
       <label class="full">Comentario aval <textarea rows="2" formControlName="avalComentario"></textarea></label>
     </div>
@@ -28,7 +34,12 @@
     <h2>2) TRIBUNAL_ASIGNADO</h2>
     <div formArrayName="miembros">
       <div class="grid two row" *ngFor="let g of miembros.controls; let i = index" [formGroupName]="i">
-        <label>ID Docente <input type="number" formControlName="idDocente" /></label>
+        <label class="full">Docente</label>
+        <div class="picker-row full">
+          <input type="text" formControlName="nombreDocente" placeholder="Selecciona docente" readonly />
+          <button class="secondary" type="button" (click)="abrirSelectorDocente('miembro', i)" [disabled]="loading()">Buscar docente</button>
+        </div>
+
         <label>Cargo
           <select formControlName="cargo">
             <option value="PRESIDENTE">PRESIDENTE</option>
@@ -40,8 +51,8 @@
       </div>
     </div>
     <div class="actions">
-      <button class="secondary" (click)="addMiembro()" [disabled]="loading()">+ Miembro</button>
-      <button (click)="asignarTribunal()" [disabled]="loading()">Asignar tribunal</button>
+      <button class="secondary" type="button" (click)="addMiembro()" [disabled]="loading()">+ Miembro</button>
+      <button type="button" (click)="asignarTribunal()" [disabled]="loading()">Asignar tribunal</button>
     </div>
   </section>
 
@@ -57,47 +68,106 @@
     <button (click)="agendar()" [disabled]="loading()">Agendar sustentación</button>
   </section>
 
-  <section class="card" [formGroup]="formResultado">
-    <h2>4) SUSTENTADO</h2>
-    <div class="grid two">
-      <label>Nota docente <input type="number" step="0.01" formControlName="notaDocente" /></label>
-      <label>Resultado
-        <select formControlName="resultado">
-          <option value="APROBADO">APROBADO</option>
-          <option value="REPROBADO">REPROBADO</option>
-        </select>
-      </label>
-      <label class="full">Acta URL <input type="text" formControlName="actaUrl" /></label>
-      <label class="full">Acta firmada URL <input type="text" formControlName="actaFirmadaUrl" /></label>
-    </div>
-
-    <h3>Notas tribunal</h3>
-    <div formArrayName="notasTribunal">
-      <div class="grid two row" *ngFor="let g of notasTribunal.controls; let i = index" [formGroupName]="i">
-        <label>ID Docente <input type="number" formControlName="idDocente" /></label>
-        <label>Nota <input type="number" step="0.01" formControlName="nota" /></label>
+  <section class="card post-stage">
+    <div class="post-stage-header">
+      <div>
+        <h2>4 y 5) Etapa posterior (día de sustentación y cierre)</h2>
+        <p>Estas acciones se realizan después de que la sustentación ya esté agendada/ejecutada, no en el mismo día de preparación.</p>
       </div>
+      <button type="button" class="secondary" (click)="togglePostStage()" [disabled]="loading()">
+        {{ mostrarPostStage() ? 'Ocultar' : 'Mostrar' }} etapa posterior
+      </button>
     </div>
 
-    <label class="full">Observaciones <textarea rows="2" formControlName="observaciones"></textarea></label>
+    <div *ngIf="mostrarPostStage()" class="post-stage-content">
+      <section class="inner-card" [formGroup]="formResultado">
+        <h3>4) SUSTENTADO</h3>
+        <div class="grid two">
+          <label>Nota docente <input type="number" step="0.01" formControlName="notaDocente" /></label>
+          <label>Resultado
+            <select formControlName="resultado">
+              <option value="APROBADO">APROBADO</option>
+              <option value="REPROBADO">REPROBADO</option>
+            </select>
+          </label>
+          <label class="full">Acta URL <input type="text" formControlName="actaUrl" /></label>
+          <label class="full">Acta firmada URL <input type="text" formControlName="actaFirmadaUrl" /></label>
+        </div>
 
-    <div class="actions">
-      <button class="secondary" (click)="addNota()" [disabled]="loading()">+ Nota</button>
-      <button (click)="registrarResultado()" [disabled]="loading()">Registrar resultado</button>
-    </div>
-  </section>
+        <h4>Notas tribunal</h4>
+        <div formArrayName="notasTribunal">
+          <div class="grid two row" *ngFor="let g of notasTribunal.controls; let i = index" [formGroupName]="i">
+            <label class="full">Docente</label>
+            <div class="picker-row full">
+              <input type="text" formControlName="nombreDocente" placeholder="Selecciona docente" readonly />
+              <button class="secondary" type="button" (click)="abrirSelectorDocente('nota', i)" [disabled]="loading()">Buscar docente</button>
+            </div>
 
-  <section class="card" [formGroup]="formCierre">
-    <h2>5) CIERRE</h2>
-    <div class="grid two">
-      <label>Resultado final
-        <select formControlName="resultadoFinal">
-          <option value="APROBADO">APROBADO</option>
-          <option value="REPROBADO">REPROBADO</option>
-        </select>
-      </label>
-      <label class="full">Observaciones finales <textarea rows="2" formControlName="observacionesFinales"></textarea></label>
+            <label>Nota <input type="number" step="0.01" formControlName="nota" /></label>
+          </div>
+        </div>
+
+        <label class="full">Observaciones <textarea rows="2" formControlName="observaciones"></textarea></label>
+
+        <div class="actions">
+          <button class="secondary" type="button" (click)="addNota()" [disabled]="loading()">+ Nota</button>
+          <button type="button" (click)="registrarResultado()" [disabled]="loading()">Registrar resultado</button>
+        </div>
+      </section>
+
+      <section class="inner-card" [formGroup]="formCierre">
+        <h3>5) CIERRE</h3>
+        <div class="grid two">
+          <label>Resultado final
+            <select formControlName="resultadoFinal">
+              <option value="APROBADO">APROBADO</option>
+              <option value="REPROBADO">REPROBADO</option>
+            </select>
+          </label>
+          <label class="full">Observaciones finales <textarea rows="2" formControlName="observacionesFinales"></textarea></label>
+        </div>
+        <button type="button" (click)="cerrar()" [disabled]="loading()">Cerrar expediente</button>
+      </section>
     </div>
-    <button (click)="cerrar()" [disabled]="loading()">Cerrar expediente</button>
   </section>
 </div>
+
+<div class="modal-backdrop" *ngIf="modalDocumentoOpen()" (click)="cerrarSelectorDocumento()">
+  <section class="modal-card" (click)="$event.stopPropagation()">
+    <header>
+      <h3>Seleccionar documento</h3>
+      <small class="hint">Para iniciar en LISTO_PARA_TRIBUNAL, el documento debe estar en APROBADO_POR_DIRECTOR.</small>
+      <button type="button" class="close" (click)="cerrarSelectorDocumento()">✕</button>
+    </header>
+    <input type="text" placeholder="Buscar por estudiante, título o ID" [value]="filtroDocumento()" (input)="onFiltroDocumento($any($event.target).value)" />
+    <div class="list" *ngIf="!cargandoOpciones(); else loadTpl">
+      <button type="button" class="row-item" *ngFor="let d of documentosFiltrados" (click)="seleccionarDocumento(d)">
+        <strong>#{{ d.idDocumento }} · {{ d.estudiante }}</strong>
+        <span>{{ d.titulo }}</span>
+        <small [class.ok-state]="d.estado === 'APROBADO_POR_DIRECTOR'">Estado: {{ d.estado }}</small>
+      </button>
+      <p class="empty" *ngIf="documentosFiltrados.length === 0">No hay documentos APROBADO_POR_DIRECTOR para seleccionar.</p>
+    </div>
+  </section>
+</div>
+
+<div class="modal-backdrop" *ngIf="modalDocenteOpen()" (click)="cerrarSelectorDocente()">
+  <section class="modal-card" (click)="$event.stopPropagation()">
+    <header>
+      <h3>Seleccionar docente</h3>
+      <button type="button" class="close" (click)="cerrarSelectorDocente()">✕</button>
+    </header>
+    <input type="text" placeholder="Buscar por nombre o ID" [value]="filtroDocente()" (input)="onFiltroDocente($any($event.target).value)" />
+    <div class="list" *ngIf="!cargandoOpciones(); else loadTpl">
+      <button type="button" class="row-item" *ngFor="let d of docentesFiltrados" (click)="seleccionarDocente(d)">
+        <strong>{{ d.director }}</strong>
+        <small>ID: {{ d.idDocente }} · Carga: {{ d.proyectosAsignados }}</small>
+      </button>
+      <p class="empty" *ngIf="docentesFiltrados.length === 0">No hay docentes para mostrar.</p>
+    </div>
+  </section>
+</div>
+
+<ng-template #loadTpl>
+  <p class="empty">Cargando opciones...</p>
+</ng-template>
