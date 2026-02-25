@@ -23,8 +23,15 @@ import { VisualizarProyectoComponent } from './pages/coordinador/visualizar-proy
 import { LoginComponent } from './pages/login/login';
 import { AdminUsuariosComponent } from './pages/admin-usuario/admin-usuarios';
 import { RolesComponent } from './pages/roles/roles';
-import { authGuard, loginGuard } from './guards/auth.guard';
+import { authGuard, loginGuard, roleGuard } from './guards/auth.guard';
 import { CarreraModalidadComponent } from './pages/catalogos/carrera-modalidad/carrera-modalidad.component';
+
+import { UniversidadComponent } from './pages/catalogos/universidad/universidad.component';
+import { FacultadComponent } from './pages/catalogos/facultad/facultad.component';
+import { CarreraComponent } from './pages/catalogos/carrera/carrera.component';
+import { ModalidadCatalogoComponent } from './pages/catalogos/modalidad/modalidad-catalogo.component';
+import { PeriodoComponent } from './pages/catalogos/periodo/periodo.component';
+import { TipoTrabajoComponent } from './pages/catalogos/tipo-trabajo/tipo-trabajo.component';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'login' },
@@ -60,19 +67,46 @@ export const routes: Routes = [
         redirectTo: 'titulacion2/revisar/:idDocumento'
       },
 
-      { path: 'catalogos/universidad', component: PlaceholderPageComponent, data: { title: 'Universidad' } },
-      { path: 'catalogos/facultad', component: PlaceholderPageComponent, data: { title: 'Facultad' } },
-      { path: 'catalogos/carrera', component: PlaceholderPageComponent, data: { title: 'Carrera' } },
-      { path: 'catalogos/modalidad', component: PlaceholderPageComponent, data: { title: 'Modalidad Titulación' } },
-      { path: 'catalogos/periodo', component: PlaceholderPageComponent, data: { title: 'Período Académico' } },
+      {
+        path: 'catalogos/universidad',
+        component: UniversidadComponent,
+        canActivate: [roleGuard('ROLE_COORDINADOR', 'ROLE_ADMIN')],
+        data: { title: 'Universidad' }
+      },
+      {
+        path: 'catalogos/facultad',
+        component: FacultadComponent,
+        canActivate: [roleGuard('ROLE_COORDINADOR', 'ROLE_ADMIN')],
+        data: { title: 'Facultad' }
+      },
+      {
+        path: 'catalogos/carrera',
+        component: CarreraComponent,
+        canActivate: [roleGuard('ROLE_COORDINADOR', 'ROLE_ADMIN')],
+        data: { title: 'Carrera' }
+      },
+      {
+        path: 'catalogos/modalidad',
+        component: ModalidadCatalogoComponent,
+        canActivate: [roleGuard('ROLE_COORDINADOR', 'ROLE_ADMIN')],
+        data: { title: 'Modalidad Titulación' }
+      },
+      {
+        path: 'catalogos/periodo',
+        component: PeriodoComponent,
+        canActivate: [roleGuard('ROLE_COORDINADOR', 'ROLE_ADMIN')],
+        data: { title: 'Período Académico' }
+      },
       {
         path: 'catalogos/tipo-trabajo',
-        component: PlaceholderPageComponent,
+        component: TipoTrabajoComponent,
+        canActivate: [roleGuard('ROLE_COORDINADOR', 'ROLE_ADMIN')],
         data: { title: 'Tipo Trabajo Titulación' }
       },
       {
         path: 'catalogos/carrera-modalidad',
         component: CarreraModalidadComponent,
+        canActivate: [roleGuard('ROLE_COORDINADOR', 'ROLE_ADMIN')],
         data: { title: 'Carrera-Modalidad' }
       },
 
