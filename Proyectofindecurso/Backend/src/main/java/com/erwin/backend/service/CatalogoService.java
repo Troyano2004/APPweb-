@@ -41,8 +41,7 @@ public class CatalogoService {
 
         String normalizado = nombre.trim();
 
-        boolean existe = modalidadRepo.findAll().stream()
-                .anyMatch(m -> m.getNombre() != null && m.getNombre().trim().equalsIgnoreCase(normalizado));
+        boolean existe = modalidadRepo.findByNombreIgnoreCase(normalizado).isPresent();
 
         if (existe) {
             throw new RuntimeException("Ya existe una modalidad con ese nombre");
