@@ -187,19 +187,28 @@ public class ComisionTemasController {
                                          @RequestBody DecisionPropuestaRequest req) {
         validarMiembroComision(idDocente);
 
-        PropuestaTitulacion propuesta = propuestaRepository.findById(idPropuesta)
-                .orElseThrow(() -> new RuntimeException("Propuesta no encontrada"));
+        if (!propuestaRepository.existsById(idPropuesta)) {
+            throw new RuntimeException("Propuesta no encontrada");
+        }
 
         String estado = req.estado == null ? "" : req.estado.trim().toUpperCase();
         if (!estado.equals("APROBADA") && !estado.equals("RECHAZADA")) {
             throw new RuntimeException("El estado debe ser APROBADA o RECHAZADA");
         }
 
-        propuesta.setEstado(estado);
-        propuesta.setFechaRevision(LocalDate.now());
-        propuesta.setObservacionesComision(req.observaciones);
+        Integer actualizado = propuestaRepository.registrarDecisionStored(
+                idPropuesta,
+                estado,
+                req.observaciones,
+                LocalDate.now()
+        );
 
-        return toPropuestaDto(propuestaRepository.save(propuesta));
+        if (actualizado == null || actualizado == 0) {
+            throw new RuntimeException("No se pudo registrar la decisión de la propuesta");
+        }
+
+        return toPropuestaDto(propuestaRepository.findById(idPropuesta)
+                .orElseThrow(() -> new RuntimeException("Propuesta no encontrada")));
     }
 
     @PostMapping("/estudiante/{idEstudiante}/propuestas")
@@ -222,38 +231,47 @@ public class ComisionTemasController {
                 : carreraRepository.findById(req.idCarrera)
                 .orElseThrow(() -> new RuntimeException("Carrera no encontrada"));
 
-        PropuestaTitulacion propuesta = new PropuestaTitulacion();
-        propuesta.setEleccion(eleccion);
-        propuesta.setEstudiante(estudiante);
-        propuesta.setCarrera(carrera);
-        propuesta.setTitulo(req.titulo.trim());
-        propuesta.setTemaInvestigacion(valueOrDefault(req.temaInvestigacion, "Pendiente de definir"));
-        propuesta.setPlanteamientoProblema(valueOrDefault(req.planteamientoProblema, "Pendiente de definir"));
-        propuesta.setObjetivosGenerales(valueOrDefault(req.objetivosGenerales, "Pendiente de definir"));
-        propuesta.setObjetivosEspecificos(valueOrDefault(req.objetivosEspecificos, "Pendiente de definir"));
-        propuesta.setMarcoTeorico(valueOrDefault(req.marcoTeorico, "Pendiente de definir"));
-        propuesta.setMetodologia(valueOrDefault(req.metodologia, "Pendiente de definir"));
-        propuesta.setResultadosEsperados(valueOrDefault(req.resultadosEsperados, "Pendiente de definir"));
-        propuesta.setBibliografia(valueOrDefault(req.bibliografia, "Pendiente de definir"));
-
-        propuesta.setEstado("EN_REVISION");
-        propuesta.setFechaEnvio(LocalDate.now());
+        String temaInvestigacion = valueOrDefault(req.temaInvestigacion, "Pendiente de definir");
+        Integer idTema = null;
 
         if (req.idTema != null) {
             BancoTemas tema = bancoTemasRepository.findById(req.idTema)
                     .orElseThrow(() -> new RuntimeException("Tema seleccionado no existe"));
-            propuesta.setTema(tema);
-            if (propuesta.getTemaInvestigacion() == null || propuesta.getTemaInvestigacion().isBlank() || propuesta.getTemaInvestigacion().equals("Pendiente de definir")) {
-                propuesta.setTemaInvestigacion(tema.getTitulo());
+            idTema = tema.getIdTema();
+            if (temaInvestigacion == null || temaInvestigacion.isBlank() || temaInvestigacion.equals("Pendiente de definir")) {
+                temaInvestigacion = tema.getTitulo();
             }
         }
 
-        return toPropuestaDto(propuestaRepository.save(propuesta));
+        Integer idPropuestaCreada = propuestaRepository.crearPropuestaStored(
+                eleccion.getIdEleccion(),
+                estudiante.getIdEstudiante(),
+                carrera.getIdCarrera(),
+                idTema,
+                req.titulo.trim(),
+                temaInvestigacion,
+                valueOrDefault(req.planteamientoProblema, "Pendiente de definir"),
+                valueOrDefault(req.objetivosGenerales, "Pendiente de definir"),
+                valueOrDefault(req.objetivosEspecificos, "Pendiente de definir"),
+                valueOrDefault(req.marcoTeorico, "Pendiente de definir"),
+                valueOrDefault(req.metodologia, "Pendiente de definir"),
+                valueOrDefault(req.resultadosEsperados, "Pendiente de definir"),
+                valueOrDefault(req.bibliografia, "Pendiente de definir"),
+                "EN_REVISION",
+                LocalDate.now()
+        );
+
+        if (idPropuestaCreada == null) {
+            throw new RuntimeException("No se pudo crear la propuesta");
+        }
+
+        return toPropuestaDto(propuestaRepository.findById(idPropuestaCreada)
+                .orElseThrow(() -> new RuntimeException("Propuesta creada no encontrada")));
     }
 
     @GetMapping("/estudiante/{idEstudiante}/propuestas")
     public List<PropuestaDto> propuestasEstudiante(@PathVariable Integer idEstudiante) {
-        return propuestaRepository.findByEstudiante_IdEstudiante(idEstudiante)
+        return propuestaRepository.findByEstudianteStored(idEstudiante)
                 .stream()
                 .sorted(Comparator.comparing(PropuestaTitulacion::getIdPropuesta).reversed())
                 .map(this::toPropuestaDto)
