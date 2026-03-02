@@ -1,6 +1,10 @@
+
 package com.erwin.backend.controller;
 
-import com.erwin.backend.dtos.*;
+import com.erwin.backend.dtos.UsuarioAdminDto;
+import com.erwin.backend.dtos.UsuarioCreateRequest;
+import com.erwin.backend.dtos.UsuarioEstadoRequest;
+import com.erwin.backend.dtos.UsuarioUpdateRequest;
 import com.erwin.backend.service.AdminUsuarioService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -29,12 +33,14 @@ public class AdminUsuarioController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<UsuarioAdminDto> editar(@PathVariable Integer id, @RequestBody UsuarioUpdateRequest req) {
+    public ResponseEntity<UsuarioAdminDto> editar(@PathVariable Integer id,
+                                                  @RequestBody UsuarioUpdateRequest req) {
         return ResponseEntity.ok(service.editar(id, req));
     }
 
     @PatchMapping("/{id}/estado")
-    public ResponseEntity<UsuarioAdminDto> cambiarEstado(@PathVariable Integer id, @RequestBody UsuarioEstadoRequest req) {
+    public ResponseEntity<UsuarioAdminDto> cambiarEstado(@PathVariable Integer id,
+                                                         @RequestBody UsuarioEstadoRequest req) {
         return ResponseEntity.ok(service.cambiarEstado(id, req));
     }
 }

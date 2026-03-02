@@ -1,10 +1,11 @@
+
 <div class="page">
   <div class="wrap">
 
     <div class="hero">
       <div class="hero-left">
         <h1>Control de Usuarios</h1>
-        <p>Administración de usuarios del sistema (roles, estado y datos generales)</p>
+        <p>Administración de usuarios del sistema (roles del aplicativo, estado y datos generales)</p>
       </div>
 
       <div class="hero-right">
@@ -12,7 +13,6 @@
       </div>
     </div>
 
-    <!-- ================== CARD USUARIOS ================== -->
     <div class="card">
 
       <div class="section-title">
@@ -22,28 +22,20 @@
 
       <div class="toolbar">
         <div class="toolbar-left">
-          <button type="button" class="btn btn-success" (click)="abrirNuevo()">
-            ＋ Nuevo usuario
-          </button>
-
-          <button type="button" class="btn btn-secondary" (click)="recargar()">
-            ↻ Recargar
-          </button>
+          <button type="button" class="btn btn-success" (click)="abrirNuevo()">＋ Nuevo usuario</button>
+          <button type="button" class="btn btn-secondary" (click)="recargar()">↻ Recargar</button>
         </div>
 
         <div class="toolbar-right">
-          <input
-            type="text"
-            [(ngModel)]="filtro"
-            placeholder="Buscar (usuario, nombre, rol, estado...)" />
+          <div class="search">
+            <span class="search-icon">🔎</span>
+            <input type="text" [(ngModel)]="filtro" placeholder="Buscar (usuario, nombre, rol, estado...)" />
+          </div>
         </div>
       </div>
 
-      <!-- mensajes -->
-      <div *ngIf="cargando" style="margin: 0.75rem 0; font-weight: 800;">Cargando...</div>
-      <div *ngIf="errorMsg" style="margin: 0.75rem 0; color: #b91c1c; font-weight: 800;">
-        {{ errorMsg }}
-      </div>
+      <div *ngIf="cargando" class="msg-loading">Cargando...</div>
+      <div *ngIf="errorMsg" class="msg-error">{{ errorMsg }}</div>
 
       <div class="table-card">
         <table class="table">
@@ -53,9 +45,9 @@
             <th>Usuario</th>
             <th>Nombres</th>
             <th>Apellidos</th>
-            <th style="width: 140px;">Rol</th>
+            <th>Roles</th>
             <th style="width: 140px;">Estado</th>
-            <th style="width: 220px;">Acciones</th>
+            <th style="width: 260px;">Acciones</th>
           </tr>
           </thead>
 
@@ -66,8 +58,19 @@
             <td>{{ u.nombres }}</td>
             <td>{{ u.apellidos }}</td>
 
-            <td>
-              <span class="badge badge-info">{{ u.rol }}</span>
+            <td class="roles-cell">
+              <div class="roles-line">
+                <span class="badge badge-info" *ngIf="u.rolApp; else sinRol">
+                  {{ u.rolApp }}
+                </span>
+                <ng-template #sinRol>
+                  <span class="muted">(sin roles)</span>
+                </ng-template>
+
+                <span class="roles-text" *ngIf="u.rolesApp">
+                  {{ u.rolesApp }}
+                </span>
+              </div>
             </td>
 
             <td>
@@ -77,9 +80,7 @@
             </td>
 
             <td class="actions">
-              <button type="button" class="btn btn-outline" (click)="abrirEditar(u)">
-                ✏️ Editar
-              </button>
+              <button type="button" class="btn btn-outline" (click)="abrirEditar(u)">✏️ Editar</button>
 
               <button
                 type="button"
@@ -92,17 +93,13 @@
           </tr>
 
           <tr *ngIf="!cargando && usuariosFiltrados.length === 0">
-            <td colspan="7" style="padding: 1rem; text-align: center; opacity: .7;">
-              No hay usuarios para mostrar.
-            </td>
+            <td colspan="7" class="empty-row">No hay usuarios para mostrar.</td>
           </tr>
           </tbody>
         </table>
       </div>
 
     </div>
-    <!-- ================== FIN CARD USUARIOS ================== -->
-
 
     <!-- ================== MODAL ================== -->
     <div class="modal-backdrop" *ngIf="modalAbierto" (click)="cerrarModal()"></div>
@@ -115,61 +112,177 @@
           <button type="button" class="btn btn-secondary" (click)="cerrarModal()">✕</button>
         </div>
 
-        <!-- NUEVO -->
-        <div class="modal-body" *ngIf="!modoEdicion">
-          <div class="grid">
-            <label>Cédula * <input [(ngModel)]="formCreate.cedula" /></label>
+        <!-- mensajes modal -->
+        <div class="modal-msg" *ngIf="warnMsg">{{ warnMsg }}</div>
+        <div class="modal-msg error" *ngIf="errorMsg">{{ errorMsg }}</div>
 
-            <label>Correo institucional *
-              <input [(ngModel)]="formCreate.correoInstitucional" placeholder="algo@uteq.edu.ec" />
-            </label>
+        <div class="modal-body scrollable">
 
-            <label>Username * <input [(ngModel)]="formCreate.username" /></label>
-            <label>Password * <input type="password" [(ngModel)]="formCreate.password" /></label>
+          <!-- CREATE -->
+          <ng-container *ngIf="!modoEdicion">
+            <div class="grid">
+              <label>Cédula * <input [(ngModel)]="formCreate.cedula" /></label>
 
-            <label>Nombres * <input [(ngModel)]="formCreate.nombres" /></label>
-            <label>Apellidos * <input [(ngModel)]="formCreate.apellidos" /></label>
+              <label>Correo institucional *
+                <input [(ngModel)]="formCreate.correoInstitucional" placeholder="algo@uteq.edu.ec" />
+              </label>
 
-            <label>Rol *
-              <select [(ngModel)]="formCreate.rol">
-                <option *ngFor="let r of rolesUsuario" [value]="r">{{ r }}</option>
-              </select>
-            </label>
+              <label>Username * <input [(ngModel)]="formCreate.username" /></label>
 
-            <label class="check">
-              <input type="checkbox" [(ngModel)]="formCreate.activo" /> Activo
-            </label>
-          </div>
-        </div>
+              <!-- ✅ CAMBIO: passwordApp -->
+              <label>Password * <input type="password" [(ngModel)]="formCreate.passwordApp" /></label>
 
-        <!-- EDITAR -->
-        <div class="modal-body" *ngIf="modoEdicion">
-          <div class="grid">
-            <label>Nombres <input [(ngModel)]="formUpdate.nombres" /></label>
-            <label>Apellidos <input [(ngModel)]="formUpdate.apellidos" /></label>
+              <label>Nombres * <input [(ngModel)]="formCreate.nombres" /></label>
+              <label>Apellidos * <input [(ngModel)]="formCreate.apellidos" /></label>
 
-            <label>Rol
-              <select [(ngModel)]="formUpdate.rol">
-                <option *ngFor="let r of rolesUsuario" [value]="r">{{ r }}</option>
-              </select>
-            </label>
+              <label style="grid-column: 1 / -1;">Rol principal (obligatorio) *
+                <select [(ngModel)]="createRolPrincipalId">
+                  <option [ngValue]="null" disabled>Seleccione rol principal</option>
+                  <option *ngFor="let ra of rolesApp" [ngValue]="ra.idRolApp">
+                    {{ ra.nombre }}
+                  </option>
+                </select>
+              </label>
+            </div>
 
-            <label class="check">
-              <input type="checkbox" [(ngModel)]="formUpdate.activo" /> Activo
-            </label>
+            <div class="state-card">
+              <div class="state-left">
+                <div class="state-title">Estado</div>
+                <div class="state-sub">Define si el usuario podrá iniciar sesión</div>
+              </div>
 
-            <label>Password (opcional)
+              <div class="state-right">
+                <label class="switch">
+                  <input type="checkbox" [(ngModel)]="formCreate.activo" />
+                  <span class="slider"></span>
+                </label>
+
+                <span class="pill" [class.on]="formCreate.activo" [class.off]="!formCreate.activo">
+                  {{ formCreate.activo ? 'ACTIVO' : 'INACTIVO' }}
+                </span>
+              </div>
+            </div>
+
+            <div class="roles-box">
+              <div class="roles-head">
+                <div class="roles-title">Roles adicionales (opcional)</div>
+                <div class="roles-sub">Selecciona uno o varios</div>
+              </div>
+
+              <div class="roles-grid">
+                <div
+                  class="role-card"
+                  *ngFor="let r of rolesApp"
+                  [class.checked]="isExtraSelectedCreate(r.idRolApp)"
+                  [class.disabled]="createRolPrincipalId === r.idRolApp"
+                  (click)="createRolPrincipalId === r.idRolApp ? null : toggleExtraRoleCreate(r.idRolApp)"
+                >
+                  <div class="role-top">
+                    <input
+                      type="checkbox"
+                      [checked]="isExtraSelectedCreate(r.idRolApp)"
+                      [disabled]="createRolPrincipalId === r.idRolApp"
+                      (click)="$event.stopPropagation()"
+                      (change)="toggleExtraRoleCreate(r.idRolApp)"
+                    />
+                    <span class="role-name">{{ r.nombre }}</span>
+                  </div>
+                  <div class="role-desc">{{ r.descripcion || '—' }}</div>
+                </div>
+              </div>
+
+              <div class="chips" *ngIf="selectedNamesCreate.length">
+                <span class="chip" *ngFor="let n of selectedNamesCreate">{{ n }}</span>
+              </div>
+            </div>
+          </ng-container>
+
+          <!-- UPDATE -->
+          <ng-container *ngIf="modoEdicion">
+            <div class="grid">
+              <label>Nombres <input [(ngModel)]="formUpdate.nombres" /></label>
+              <label>Apellidos <input [(ngModel)]="formUpdate.apellidos" /></label>
+
+              <label style="grid-column: 1 / -1;">Rol principal (obligatorio) *
+                <select [(ngModel)]="updateRolPrincipalId">
+                  <option [ngValue]="null" disabled>Seleccione rol principal</option>
+                  <option *ngFor="let ra of rolesApp" [ngValue]="ra.idRolApp">
+                    {{ ra.nombre }}
+                  </option>
+                </select>
+              </label>
+            </div>
+
+            <div class="state-card">
+              <div class="state-left">
+                <div class="state-title">Estado</div>
+                <div class="state-sub">Activa o desactiva el acceso del usuario</div>
+              </div>
+
+              <div class="state-right">
+                <label class="switch">
+                  <input type="checkbox" [(ngModel)]="formUpdate.activo" />
+                  <span class="slider"></span>
+                </label>
+
+                <span class="pill" [class.on]="formUpdate.activo" [class.off]="!formUpdate.activo">
+                  {{ formUpdate.activo ? 'ACTIVO' : 'INACTIVO' }}
+                </span>
+              </div>
+            </div>
+
+            <label class="block">Password (opcional)
               <input
                 type="password"
                 [(ngModel)]="formUpdate.password"
                 placeholder="dejar vacío para no cambiar" />
             </label>
-          </div>
+
+            <div class="roles-box">
+              <div class="roles-head">
+                <div class="roles-title">Roles adicionales (opcional)</div>
+                <div class="roles-sub">Selecciona uno o varios</div>
+              </div>
+
+              <div class="roles-grid">
+                <div
+                  class="role-card"
+                  *ngFor="let r of rolesApp"
+                  [class.checked]="isExtraSelectedUpdate(r.idRolApp)"
+                  [class.disabled]="updateRolPrincipalId === r.idRolApp"
+                  (click)="updateRolPrincipalId === r.idRolApp ? null : toggleExtraRoleUpdate(r.idRolApp)"
+                >
+                  <div class="role-top">
+                    <input
+                      type="checkbox"
+                      [checked]="isExtraSelectedUpdate(r.idRolApp)"
+                      [disabled]="updateRolPrincipalId === r.idRolApp"
+                      (click)="$event.stopPropagation()"
+                      (change)="toggleExtraRoleUpdate(r.idRolApp)"
+                    />
+                    <span class="role-name">{{ r.nombre }}</span>
+                  </div>
+                  <div class="role-desc">{{ r.descripcion || '—' }}</div>
+                </div>
+              </div>
+
+              <div class="chips" *ngIf="selectedNamesUpdate.length">
+                <span class="chip" *ngFor="let n of selectedNamesUpdate">{{ n }}</span>
+              </div>
+            </div>
+          </ng-container>
+
         </div>
 
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" (click)="cerrarModal()">Cancelar</button>
-          <button type="button" class="btn btn-success" (click)="guardar()">Guardar</button>
+          <button
+            type="button"
+            class="btn btn-success"
+            [disabled]="cargando || !puedeGuardar()"
+            (click)="guardar()">
+            Guardar
+          </button>
         </div>
 
       </div>
