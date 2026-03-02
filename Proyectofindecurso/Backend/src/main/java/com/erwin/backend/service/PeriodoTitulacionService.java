@@ -3,8 +3,10 @@ package com.erwin.backend.service;
 import com.erwin.backend.dtos.PeriodoTitulacionDto;
 import com.erwin.backend.entities.PeriodoTitulacion;
 import com.erwin.backend.repository.PeriodoTitulacionRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -75,6 +77,18 @@ public class PeriodoTitulacionService {
             throw new RuntimeException("Período no encontrado");
         }
         periodoRepo.deleteById(id);
+    }
+    @Transactional(readOnly = true)
+    public PeriodoTitulacionDto obtenerPeriodoActivo() {
+
+        PeriodoTitulacion periodo = periodoRepo
+                .findFirstByActivoTrueOrderByIdPeriodoDesc()
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "NO_EXISTE_PERIODO_ACTIVO"
+                ));
+
+        return convertirADto(periodo);
     }
 
     private PeriodoTitulacionDto convertirADto(PeriodoTitulacion p) {

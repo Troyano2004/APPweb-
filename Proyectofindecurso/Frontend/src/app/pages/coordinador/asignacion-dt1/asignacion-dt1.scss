@@ -1,0 +1,74 @@
+.page { padding: 16px; }
+
+.page-header h1 { margin: 0 0 4px; }
+.page-header p { margin: 0 0 12px; opacity: .8; }
+
+.card {
+  background: #fff;
+  border: 1px solid #e7e7e7;
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.info { line-height: 1.5; }
+
+.tabs {
+  display: flex;
+  gap: 8px;
+
+  button {
+    border: 1px solid #e7e7e7;
+    background: #f7f7f7;
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+
+  button.active {
+    background: #fff;
+    border-color: #cfcfcf;
+    font-weight: 600;
+  }
+}
+
+.form .grid {
+  display: grid;
+  gap: 12px;
+}
+
+.field label { display: block; margin-bottom: 6px; font-weight: 600; }
+.field select, .field input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #dcdcdc;
+  border-radius: 8px;
+}
+
+.field small { color: #d12; }
+
+.actions { margin-top: 12px; }
+.actions button {
+  padding: 10px 14px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  background: #111;
+  color: #fff;
+}
+
+.actions button:disabled { opacity: .6; cursor: not-allowed; }
+
+.msg {
+  padding: 10px 12px;
+  border-radius: 8px;
+  margin: 10px 0;
+}
+.msg.ok { background: #eaffea; border: 1px solid #bde5bd; }
+.msg.error { background: #ffecec; border: 1px solid #f3b4b4; }
+
+.hint { margin-top: 10px; opacity: .75; }
+
+.divider { margin: 14px 0; border-top: 1px solid #eee; }
+
+.simple-list { margin: 0; padding-left: 18px; }

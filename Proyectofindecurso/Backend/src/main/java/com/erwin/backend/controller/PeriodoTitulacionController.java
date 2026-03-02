@@ -68,4 +68,8 @@ public class PeriodoTitulacionController {
         periodoService.eliminar(id);
         return ResponseEntity.noContent().build();
     }
+    @GetMapping("/activo")
+    public PeriodoTitulacionDto obtenerActivo() {
+        return periodoService.obtenerPeriodoActivo();
+    }
 }

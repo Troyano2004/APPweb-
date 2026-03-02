@@ -1,7 +1,7 @@
 package com.erwin.backend.service;
 
-import com.erwin.backend.dtos.CoordinadorDtos.*;
-import com.erwin.backend.dtos.DocumentoTitulacionDto;
+import com.erwin.backend.dtos.*;
+import com.erwin.backend.dtos.CoordinadorDto.*;
 import com.erwin.backend.entities.*;
 import com.erwin.backend.enums.EstadoDocumento;
 import com.erwin.backend.repository.*;
@@ -15,6 +15,7 @@ import java.util.Optional;
 
 @Service
 public class CoordinadorService {
+
     private final ProyectoTitulacionRepository proyectoRepo;
     private final DocumentoTitulacionRepository documentoRepo;
     private final DocenteRepository docenteRepo;
@@ -24,14 +25,32 @@ public class CoordinadorService {
     private final ComisionProyectoRepository comisionProyectoRepo;
     private final CarreraRepository carreraRepo;
 
-    public CoordinadorService(ProyectoTitulacionRepository proyectoRepo,
-                              DocumentoTitulacionRepository documentoRepo,
-                              DocenteRepository docenteRepo,
-                              ObservacionAdministrativaRepository observacionRepo,
-                              ComisionFormativaRepository comisionRepo,
-                              ComisionMiembroRepository miembroRepo,
-                              ComisionProyectoRepository comisionProyectoRepo,
-                              CarreraRepository carreraRepo) {
+    private final Dt1AsignacionRepository dt1AsignacionRepo;
+    private final Dt1TutorEstudianteRepository dt1TutorRepo;
+    private final EstudianteRepository estudianteRepo;
+    private final PeriodoTitulacionRepository periodoRepo;
+
+    // ✅ NUEVOS repos para validar "solo mi carrera"
+    private final CoordinadorRepository coordinadorRepo;
+    private final DocenteCarreraRepository docenteCarreraRepo;
+
+    public CoordinadorService(
+            ProyectoTitulacionRepository proyectoRepo,
+            DocumentoTitulacionRepository documentoRepo,
+            DocenteRepository docenteRepo,
+            ObservacionAdministrativaRepository observacionRepo,
+            ComisionFormativaRepository comisionRepo,
+            ComisionMiembroRepository miembroRepo,
+            ComisionProyectoRepository comisionProyectoRepo,
+            CarreraRepository carreraRepo,
+            Dt1AsignacionRepository dt1AsignacionRepo,
+            Dt1TutorEstudianteRepository dt1TutorRepo,
+            EstudianteRepository estudianteRepo,
+            PeriodoTitulacionRepository periodoRepo,
+
+            CoordinadorRepository coordinadorRepo,
+            DocenteCarreraRepository docenteCarreraRepo
+    ) {
         this.proyectoRepo = proyectoRepo;
         this.documentoRepo = documentoRepo;
         this.docenteRepo = docenteRepo;
@@ -40,7 +59,19 @@ public class CoordinadorService {
         this.miembroRepo = miembroRepo;
         this.comisionProyectoRepo = comisionProyectoRepo;
         this.carreraRepo = carreraRepo;
+
+        this.dt1AsignacionRepo = dt1AsignacionRepo;
+        this.dt1TutorRepo = dt1TutorRepo;
+        this.estudianteRepo = estudianteRepo;
+        this.periodoRepo = periodoRepo;
+
+        this.coordinadorRepo = coordinadorRepo;
+        this.docenteCarreraRepo = docenteCarreraRepo;
     }
+
+    // ==========================================================
+    // TODO LO DEMÁS SE QUEDA IGUAL (lo de tu compañero)
+    // ==========================================================
 
     public List<SeguimientoProyectoDto> seguimiento() {
         List<SeguimientoProyectoDto> salida = new ArrayList<>();
@@ -364,5 +395,271 @@ public class CoordinadorService {
 
     public Optional<ComisionProyecto> comisionPorProyecto(Integer idProyecto) {
         return comisionProyectoRepo.findByProyecto_IdProyecto(idProyecto);
+    }
+
+    // ==========================================================
+    // ✅ AQUÍ SOLO CAMBIO DT1 (validación por carrera del coordinador)
+    // ==========================================================
+    @Transactional
+    public Dt1AsignacionResponse crearAsignacionDt1(Dt1AsignacionCreateRequest req) {
+
+        if (req == null || req.getIdUsuario() == null || req.getIdCarrera() == null
+                || req.getIdPeriodo() == null || req.getIdDocente() == null) {
+            throw new RuntimeException("Incompleto");
+        }
+
+        Integer idCarreraCoord = carreraCoordinador(req.getIdUsuario());
+
+        if (!req.getIdCarrera().equals(idCarreraCoord)) {
+            throw new RuntimeException("NO_PUEDE_ASIGNAR_EN_OTRA_CARRERA");
+        }
+
+        boolean docenteEnCarrera = docenteCarreraRepo
+                .existsByDocente_IdDocenteAndCarrera_IdCarreraAndActivoTrue(req.getIdDocente(), idCarreraCoord);
+
+        if (!docenteEnCarrera) {
+            throw new RuntimeException("DOCENTE_NO_PERTENECE_A_TU_CARRERA");
+        }
+
+        Docente docente = docenteRepo.findById(req.getIdDocente())
+                .orElseThrow(() -> new RuntimeException("DOCENTE_NO_EXISTE"));
+
+        Carrera carrera = carreraRepo.findById(req.getIdCarrera())
+                .orElseThrow(() -> new RuntimeException("CARRERA_NO_EXISTE"));
+
+        PeriodoTitulacion periodo = periodoRepo.findById(req.getIdPeriodo())
+                .orElseThrow(() -> new RuntimeException("PERIODO_NO_EXISTE"));
+
+        boolean existe = dt1AsignacionRepo
+                .existsByDocente_IdDocenteAndCarrera_IdCarreraAndPeriodo_IdPeriodoAndActivoTrue(
+                        docente.getIdDocente(), carrera.getIdCarrera(), periodo.getIdPeriodo()
+                );
+
+        if (existe) throw new RuntimeException("Asignacion existente");
+
+        Dt1Asignacion a = new Dt1Asignacion();
+        a.setDocente(docente);
+        a.setCarrera(carrera);
+        a.setPeriodo(periodo);
+        a.setActivo(true);
+
+        a = dt1AsignacionRepo.save(a);
+        return mapAsignacionDt1(a);
+    }
+    @Transactional
+    public Dt1AsignarTutorResponse asignarTutorDt1(Dt1AsignarTutorRequest req) {
+
+        if (req == null || req.getIdUsuario() == null) throw new RuntimeException("ID_USUARIO_REQUERIDO");
+
+        validarAsignacionTutorReq(req);
+
+        Integer idCarreraCoord = carreraCoordinador(req.getIdUsuario());
+
+        Estudiante est = estudianteRepo.findById(req.getIdEstudiante())
+                .orElseThrow(() -> new RuntimeException("ESTUDIANTE_NO_EXISTE"));
+
+        Integer idCarreraEst = (est.getCarrera() != null) ? est.getCarrera().getIdCarrera() : null;
+        if (idCarreraEst == null || !idCarreraEst.equals(idCarreraCoord)) {
+            throw new RuntimeException("ESTUDIANTE_NO_ES_DE_TU_CARRERA");
+        }
+
+        Docente docente = docenteRepo.findById(req.getIdDocente())
+                .orElseThrow(() -> new RuntimeException("DOCENTE_NO_EXISTE"));
+
+        boolean docenteEnCarrera = docenteCarreraRepo
+                .existsByDocente_IdDocenteAndCarrera_IdCarreraAndActivoTrue(docente.getIdDocente(), idCarreraCoord);
+
+        if (!docenteEnCarrera) {
+            throw new RuntimeException("DOCENTE_NO_PERTENECE_A_TU_CARRERA");
+        }
+
+        PeriodoTitulacion periodo = periodoRepo.findById(req.getIdPeriodo())
+                .orElseThrow(() -> new RuntimeException("PERIODO_NO_EXISTE"));
+
+        boolean docenteEsDt1 = dt1AsignacionRepo
+                .existsByDocente_IdDocenteAndCarrera_IdCarreraAndPeriodo_IdPeriodoAndActivoTrue(
+                        docente.getIdDocente(), idCarreraCoord, periodo.getIdPeriodo()
+                );
+
+        if (!docenteEsDt1) throw new RuntimeException("DOCENTE_NO_ASIGNADO_A_DT1");
+
+        boolean yaTieneTutor = dt1TutorRepo
+                .existsByEstudiante_IdEstudianteAndPeriodo_IdPeriodoAndActivoTrue(est.getIdEstudiante(), periodo.getIdPeriodo());
+
+        if (yaTieneTutor) throw new RuntimeException("ESTUDIANTE YA TIENE TUTOR");
+
+        Dt1TutorEstudiante t = new Dt1TutorEstudiante();
+        t.setEstudiante(est);
+        t.setDocente(docente);
+        t.setPeriodo(periodo);
+        t.setActivo(true);
+
+        dt1TutorRepo.save(t);
+        return mapTutorResponse(t, "ASIGNADO");
+    }
+
+    // ==========================================================
+    // Helpers (solo para esto)
+    // ==========================================================
+
+    private Integer carreraCoordinador(Integer idUsuario) {
+        Coordinador coord = coordinadorRepo.findByUsuario_IdUsuarioAndActivoTrue(idUsuario)
+                .orElseThrow(() -> new RuntimeException("NO_ES_COORDINADOR"));
+
+        if (coord.getCarrera() == null) throw new RuntimeException("COORDINADOR_SIN_CARRERA");
+        return coord.getCarrera().getIdCarrera();
+    }
+
+    /**
+     * ✅ Aquí debes devolver el id del usuario logueado.
+     * Si ya tienes login/JWT, aquí va SecurityContext.
+     * Si NO tienes seguridad, entonces el controller debe pasar el idUsuario.
+     */
+
+
+    // ==========================================================
+    // Lo tuyo (sin cambios)
+    // ==========================================================
+
+    private void validarAsignacionTutorReq(Dt1AsignarTutorRequest req) {
+        if (req == null) throw new RuntimeException("DATOS_REQUERIDOS");
+        if (req.getIdEstudiante() == null) throw new RuntimeException("ID_ESTUDIANTE_REQUERIDO");
+        if (req.getIdDocente() == null) throw new RuntimeException("ID_DOCENTE_REQUERIDO");
+        if (req.getIdPeriodo() == null) throw new RuntimeException("ID_PERIODO_REQUERIDO");
+
+        List<Dt1Asignacion> listaAsignaciones = dt1AsignacionRepo.findByDocente_IdDocenteAndActivoTrue(req.getIdDocente());
+        if (listaAsignaciones.isEmpty()) {
+            throw new RuntimeException("DOCENTE_SIN_ASIGNACION_ACTIVA");
+        }
+    }
+
+    private Dt1AsignacionResponse mapAsignacionDt1(Dt1Asignacion a) {
+        Dt1AsignacionResponse r = new Dt1AsignacionResponse();
+        r.setIdAsignacion(a.getIdAsignacion());
+        r.setIdDocente(a.getDocente().getIdDocente());
+        r.setDocenteNombre(nombreCompleto(a.getDocente().getUsuario()));
+        r.setIdCarrera(a.getCarrera().getIdCarrera());
+        r.setCarreraNombre(a.getCarrera().getNombre());
+        r.setIdPeriodo(a.getPeriodo().getIdPeriodo());
+        r.setPeriodo(a.getPeriodo().getDescripcion());
+        r.setActivo(a.getActivo());
+        return r;
+    }
+
+    private Dt1AsignarTutorResponse mapTutorResponse(Dt1TutorEstudiante t, String estado) {
+        Dt1AsignarTutorResponse r = new Dt1AsignarTutorResponse();
+        r.setIdTutorEstudiante(t.getIdTutorEstudiante());
+        r.setIdEstudiante(t.getEstudiante().getIdEstudiante());
+        r.setIdDocente(t.getDocente().getIdDocente());
+        r.setIdPeriodo(t.getPeriodo().getIdPeriodo());
+        r.setEstado(estado);
+        return r;
+    }
+
+    private String nombreCompleto(Usuario u) {
+        if (u == null) return "";
+        String n = (u.getNombres() == null) ? "" : u.getNombres().trim();
+        String a = (u.getApellidos() == null) ? "" : u.getApellidos().trim();
+        return (n + " " + a).trim();
+    }
+    public InformacionAcademicaDt1Dto infoDt1(Integer idUsuario) {
+
+        Coordinador coord = coordinadorRepo.findByUsuario_IdUsuarioAndActivoTrue(idUsuario)
+                .orElseThrow(() -> new RuntimeException("USUARIO_NO_ES_COORDINADOR"));
+
+        Carrera carrera = coord.getCarrera();
+        if (carrera == null) throw new RuntimeException("COORDINADOR_SIN_CARRERA");
+
+        PeriodoTitulacion periodo = periodoRepo.findFirstByActivoTrueOrderByIdPeriodoDesc()
+                .orElseThrow(() -> new RuntimeException("NO_HAY_PERIODO_ACTIVO"));
+
+        InformacionAcademicaDt1Dto dto = new InformacionAcademicaDt1Dto();
+        dto.setIdCarrera(carrera.getIdCarrera());
+        dto.setCarrera(carrera.getNombre());
+        dto.setIdPeriodoAcademico(periodo.getIdPeriodo());
+        dto.setPeriodoAcademico(periodo.getDescripcion());
+
+
+
+        // =========================================
+// ✅ DOCENTES DE LA CARRERA (para combo TAB 1)
+// =========================================
+        List<DocenteCarrera> dc =
+                docenteCarreraRepo.findByCarrera_IdCarreraAndActivoTrue(carrera.getIdCarrera());
+
+        List<InformacionAcademicaDt1Dto.DocenteItemDto> docentesCarrera = new ArrayList<>();
+
+        for (DocenteCarrera x : dc) {
+            Docente d = x.getDocente();
+            if (d == null || d.getUsuario() == null) continue;
+
+            InformacionAcademicaDt1Dto.DocenteItemDto it =
+                    new InformacionAcademicaDt1Dto.DocenteItemDto();
+
+            it.setIdDocente(d.getIdDocente());
+            it.setNombre(nombreCompleto(d.getUsuario()));
+            docentesCarrera.add(it);
+        }
+
+        dto.setDocentesCarrera(docentesCarrera);
+        // =========================================
+        // ✅ DOCENTES DT1 (NO docente_carrera)
+        // =========================================
+        List<Dt1Asignacion> asignaciones =
+                dt1AsignacionRepo.findByCarrera_IdCarreraAndPeriodo_IdPeriodoAndActivoTrue(
+                        carrera.getIdCarrera(),
+                        periodo.getIdPeriodo()
+                );
+
+        List<InformacionAcademicaDt1Dto.DocenteItemDto> docentes = new ArrayList<>();
+
+        for (Dt1Asignacion a : asignaciones) {
+            Docente d = a.getDocente();
+            if (d == null || d.getUsuario() == null) continue;
+
+            InformacionAcademicaDt1Dto.DocenteItemDto it =
+                    new InformacionAcademicaDt1Dto.DocenteItemDto();
+
+            it.setIdDocente(d.getIdDocente());
+            it.setNombre(nombreCompleto(d.getUsuario()));
+            docentes.add(it);
+        }
+
+        dto.setDocentesDt1(docentes);
+
+        // =========================================
+        // ✅ ESTUDIANTES SIN TUTOR EN ESTE PERIODO
+        // =========================================
+
+        List<Dt1TutorEstudiante> tutoresPeriodo =
+                dt1TutorRepo.findByPeriodo_IdPeriodoAndActivoTrue(periodo.getIdPeriodo());
+
+        java.util.Set<Integer> estudiantesConTutor = new java.util.HashSet<>();
+        for (Dt1TutorEstudiante t : tutoresPeriodo) {
+            if (t.getEstudiante() != null) {
+                estudiantesConTutor.add(t.getEstudiante().getIdEstudiante());
+            }
+        }
+
+        List<Estudiante> estudiantesCarrera =
+                estudianteRepo.findByCarrera_IdCarrera(carrera.getIdCarrera());
+
+        List<InformacionAcademicaDt1Dto.EstudianteItemDto> estudiantes = new ArrayList<>();
+
+        for (Estudiante e : estudiantesCarrera) {
+            if (e.getUsuario() == null) continue;
+            if (estudiantesConTutor.contains(e.getIdEstudiante())) continue;
+
+            InformacionAcademicaDt1Dto.EstudianteItemDto it =
+                    new InformacionAcademicaDt1Dto.EstudianteItemDto();
+
+            it.setIdEstudiante(e.getIdEstudiante());
+            it.setNombre(nombreCompleto(e.getUsuario()));
+            estudiantes.add(it);
+        }
+
+        dto.setEstudiantesDisponibles(estudiantes);
+
+        return dto;
     }
 }

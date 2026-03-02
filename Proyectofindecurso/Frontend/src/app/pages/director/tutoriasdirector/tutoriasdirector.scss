@@ -1,0 +1,152 @@
+/* Contenedor principal */
+.container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Tarjetas (Cards) para Formulario y Listado */
+.form-card, .list-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  padding: 24px;
+  margin-bottom: 24px;
+  border: 1px solid #e0e0e0;
+}
+
+/* Cabeceras de sección */
+.form-head, .list-head {
+  margin-bottom: 20px;
+  border-bottom: 2px solid #f0f0f0;
+  padding-bottom: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  .form-title, .list-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #1b5e20; /* Verde UTEQ */
+  }
+
+  p, .list-sub {
+    color: #666;
+    font-size: 0.9rem;
+    margin-top: 4px;
+  }
+}
+
+/* Diseño del formulario en malla (Grid) */
+.grid-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  align-items: flex-end;
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    label {
+      font-weight: 600;
+      font-size: 0.85rem;
+      color: #444;
+    }
+
+    .input {
+      padding: 10px 14px;
+      border: 1.5px solid #ddd;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      transition: all 0.3s ease;
+
+      &:focus {
+        border-color: #2e7d32;
+        box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.1);
+        outline: none;
+      }
+    }
+  }
+}
+
+/* Botones con estilo SGA */
+.btn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: transform 0.1s, background 0.3s;
+
+  &.primary {
+    background: #1b5e20;
+    color: white;
+    &:hover { background: #144317; }
+  }
+
+  &.ghost {
+    background: #f5f5f5;
+    color: #333;
+    border: 1px solid #ddd;
+    &:hover { background: #eeeeee; }
+  }
+
+  &.danger {
+    background: #d32f2f;
+    color: white;
+    &:hover { background: #b71c1c; }
+  }
+
+  &:active { transform: scale(0.96); }
+  &:disabled { opacity: 0.6; cursor: not-allowed; }
+}
+
+/* Tabla de Tutorías */
+.table-wrap {
+  overflow-x: auto;
+  margin-top: 10px;
+
+  table.t {
+    width: 100%;
+    border-collapse: collapse;
+
+    th {
+      text-align: left;
+      padding: 12px;
+      background: #f8f9fa;
+      color: #555;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    td {
+      padding: 14px 12px;
+      border-bottom: 1px solid #eee;
+      vertical-align: middle;
+    }
+  }
+}
+
+/* Estados y Píldoras */
+.status {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+
+  &.programada { background: #e3f2fd; color: #1976d2; }
+  &.realizada { background: #e8f5e9; color: #2e7d32; }
+  &.cancelada { background: #ffebee; color: #c62828; }
+}
+
+.pill {
+  background: #eee;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
