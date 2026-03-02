@@ -15,5 +15,11 @@ public interface Dt1AsignacionRepository extends JpaRepository<Dt1Asignacion, In
             Integer idPeriodo
     );
     List<Dt1Asignacion> findByCarrera_IdCarreraAndPeriodo_IdPeriodoAndActivoTrue(Integer idCarrera, Integer idPeriodo);
+    // 🔹 Para listar asignaciones de un docente en un periodo activo
+    List<Dt1Asignacion> findByDocente_IdDocenteAndPeriodo_IdPeriodoAndActivoTrue(
+            Integer idDocente,
+            Integer idPeriodo
+    );
+
 
 }

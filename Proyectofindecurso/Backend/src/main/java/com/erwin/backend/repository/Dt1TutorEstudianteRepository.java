@@ -37,4 +37,14 @@ public interface Dt1TutorEstudianteRepository extends JpaRepository<Dt1TutorEstu
     List<Dt1TutorEstudiante> findByPeriodo_IdPeriodoAndActivoTrue(
             Integer idPeriodo
     );
+
+
+
+    Optional<Dt1TutorEstudiante> findByDocente_IdDocenteAndEstudiante_IdEstudianteAndPeriodo_IdPeriodoAndActivoTrue(
+            Integer idDocente,
+            Integer idEstudiante,
+            Integer idPeriodo
+    );
+
+
 }

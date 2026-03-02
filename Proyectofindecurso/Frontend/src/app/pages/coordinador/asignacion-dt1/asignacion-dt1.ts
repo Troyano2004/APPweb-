@@ -22,7 +22,7 @@ type MsgType = 'ok' | 'error' | '';
   templateUrl: './asignacion-dt1.html',
   styleUrls: ['./asignacion-dt1.scss']
 })
-export class AsignacionDt1Component implements OnInit {
+export class AsignacionDt1 implements OnInit {
   tab: 'docentes' | 'tutores' = 'docentes';
 
   cargando = false;
