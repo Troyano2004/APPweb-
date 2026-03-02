@@ -1,0 +1,46 @@
+<div class="panel">
+
+  <div class="head">
+    <div>
+      <div class="title">Anteproyectos enviados (DT1)</div>
+      <div class="sub">Bandeja de revisión del docente</div>
+    </div>
+
+    <button class="btn ghost"
+            (click)="cargar()"
+            [disabled]="cargando">
+      Refrescar
+    </button>
+  </div>
+
+  <div class="alert" *ngIf="cargando">
+    Cargando...
+  </div>
+
+  <div class="alert warn" *ngIf="!cargando && mensaje">
+    {{ mensaje }}
+  </div>
+
+  <div class="table" *ngIf="!cargando && items.length > 0">
+
+    <div class="row headrow">
+      <div>Estudiante</div>
+      <div>Título</div>
+      <div>Versión</div>
+      <div>Fecha envío</div>
+      <div></div>
+    </div>
+
+    <div class="row" *ngFor="let it of items">
+      <div class="strong">{{ it.estudiante }}</div>
+      <div class="muted">{{ it.titulo }}</div>
+      <div>v{{ it.version }}</div>
+      <div>{{ it.fechaEnvio | date:'mediumDate' }}</div>
+      <div>
+        <button class="btn primary" (click)="abrir(it)">Revisar</button>
+      </div>
+    </div>
+
+  </div>
+
+</div>
