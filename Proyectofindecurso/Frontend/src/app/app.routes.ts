@@ -25,10 +25,7 @@ import { AdminUsuariosComponent } from './pages/admin-usuario/admin-usuarios';
 import { RolesComponent } from './pages/roles/roles';
 import { AsignacionDt1  } from './pages/coordinador/asignacion-dt1/asignacion-dt1';
 import { authGuard, loginGuard } from './guards/auth.guard';
-import { authGuard, loginGuard, roleGuard } from './guards/auth.guard';
 import { CarreraModalidadComponent } from './pages/catalogos/carrera-modalidad/carrera-modalidad.component';
-
-
 
 // ✅ Nuevos imports agregados
 import { Historialtutorias } from './pages/historialtutorias/historialtutorias';
@@ -38,13 +35,6 @@ import { AnteproyectoComponent } from './pages/anteproyecto/anteproyecto';
 import { Actadirector } from './pages/director/actadirector/actadirector';
 import { Tutoriasdirector } from './pages/director/tutoriasdirector/tutoriasdirector';
 import { DirectorMisAnteproyectosComponent } from './pages/director/directoranteproyectos/directoranteproyectos';
-
-import { UniversidadComponent } from './pages/catalogos/universidad/universidad.component';
-import { FacultadComponent } from './pages/catalogos/facultad/facultad.component';
-import { CarreraComponent } from './pages/catalogos/carrera/carrera.component';
-import { ModalidadCatalogoComponent } from './pages/catalogos/modalidad/modalidad-catalogo.component';
-import { PeriodoComponent } from './pages/catalogos/periodo/periodo.component';
-import { TipoTrabajoComponent } from './pages/catalogos/tipo-trabajo/tipo-trabajo.component';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'login' },
@@ -123,7 +113,6 @@ export const routes: Routes = [
 
       { path: 'tutorias/nueva', component: PlaceholderPageComponent, data: { title: 'Registrar tutoría' } },
       { path: 'tutorias/actas', component: PlaceholderPageComponent, data: { title: 'Actas de tutoría' } },
-      { path: 'tutorias/historial', component: PlaceholderPageComponent, data: { title: 'Historial' } },
 
       {
         path: 'proyecto/documento',

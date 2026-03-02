@@ -29,7 +29,7 @@ public class AuthService {
             throw new RuntimeException("Contraseña incorrecta");
         }
 
-        // ✅ CONVERTIR ROL A FORMATO ROLE_...
+
         String rolFrontend = convertirRol(usuario.getRolAsignado());
 
         return new LoginResponse(
