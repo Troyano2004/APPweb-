@@ -1,7 +1,7 @@
 package com.erwin.backend.controller;
 
-import com.erwin.backend.dtos.CoordinadorDtos.*;
-import com.erwin.backend.dtos.DocumentoTitulacionDto;
+import com.erwin.backend.dtos.*;
+import com.erwin.backend.dtos.CoordinadorDto.*;
 import com.erwin.backend.entities.ComisionProyecto;
 import com.erwin.backend.service.CoordinadorService;
 import org.springframework.web.bind.annotation.*;
@@ -94,4 +94,21 @@ public class CoordinadorController {
         return service.comisionPorProyecto(idProyecto)
                 .orElseThrow(() -> new RuntimeException("Comisión no encontrada"));
     }
+    @PostMapping("/dt1/asignaciones")
+    public Dt1AsignacionResponse crearAsignacionDt1(@RequestBody Dt1AsignacionCreateRequest req) {
+        return service.crearAsignacionDt1(req);
+    }
+    @PostMapping("/dt1/tutores/asignar")
+    public Dt1AsignarTutorResponse asignarTutorDt1(@RequestBody Dt1AsignarTutorRequest req) {
+        return service.asignarTutorDt1(req);
+    }
+
+    @GetMapping("/dt1/informacion-academica")
+    public InformacionAcademicaDt1Dto obtenerInformacionAcademica(
+            @RequestParam Integer idUsuario) {
+
+        return service.infoDt1(idUsuario);
+    }
+
+
 }

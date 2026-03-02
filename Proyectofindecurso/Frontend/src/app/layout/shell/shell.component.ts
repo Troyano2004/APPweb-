@@ -1,17 +1,29 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { ActivatedRoute, NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import {
+  ActivatedRoute,
+  NavigationEnd,
+  Router,
+  RouterLink,
+  RouterLinkActive,
+  RouterOutlet,
+} from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { filter, Subscription } from 'rxjs';
-import { getSessionUser, hasRole, normalizeRole } from '../../services/session';
+import { getSessionUser } from '../../services/session';
+
+// ✅ Agregado COORDINADOR al type
+type AppRole = 'ADMIN' | 'DOCENTE' | 'ESTUDIANTE' | 'COORDINADOR';
 
 interface MenuItem {
   label: string;
   path: string;
+  roles?: AppRole[];
 }
 
 interface MenuSection {
   title: string;
   icon: string;
+  roles?: AppRole[];
   items: MenuItem[];
 }
 
@@ -20,7 +32,7 @@ interface MenuSection {
   standalone: true,
   imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
   templateUrl: './shell.component.html',
-  styleUrls: ['./shell.component.scss']
+  styleUrls: ['./shell.component.scss'],
 })
 export class ShellComponent implements OnInit, OnDestroy {
   isCollapsed = false;
@@ -33,15 +45,18 @@ export class ShellComponent implements OnInit, OnDestroy {
 
   private readonly subscriptions = new Subscription();
 
-  private readonly fullMenuSections: MenuSection[] = [
+  // ✅ MENÚ MAESTRO ACTUALIZADO CON TODO LO DE LA VERSIÓN OFICIAL
+  private readonly ALL_SECTIONS: MenuSection[] = [
     {
       title: 'Dashboard',
       icon: '🏠',
-      items: [{ label: 'Resumen general', path: '/app/dashboard' }]
+      roles: ['ADMIN', 'DOCENTE', 'ESTUDIANTE', 'COORDINADOR'],
+      items: [{ label: 'Resumen general', path: '/app/dashboard' }],
     },
     {
       title: 'Catálogos Académicos',
       icon: '🎓',
+      roles: ['ADMIN', 'COORDINADOR'],
       items: [
         { label: 'Universidad', path: '/app/catalogos/universidad' },
         { label: 'Facultad', path: '/app/catalogos/facultad' },
@@ -49,88 +64,45 @@ export class ShellComponent implements OnInit, OnDestroy {
         { label: 'Modalidad Titulación', path: '/app/catalogos/modalidad' },
         { label: 'Período Académico', path: '/app/catalogos/periodo' },
         { label: 'Tipo Trabajo Titulación', path: '/app/catalogos/tipo-trabajo' },
-        { label: 'Carrera-Modalidad', path: '/app/catalogos/carrera-modalidad' }
-      ]
+        { label: 'Carrera-Modalidad', path: '/app/catalogos/carrera-modalidad' },
+      ],
     },
     {
       title: 'Banco de Temas',
       icon: '📚',
+      roles: ['DOCENTE', 'ADMIN', 'COORDINADOR'],
       items: [
         { label: 'Listado de temas', path: '/app/temas' },
         { label: 'Registrar tema', path: '/app/temas/nuevo' },
-        { label: 'Aprobación temas', path: '/app/temas/aprobacion' }
-      ]
+        { label: 'Aprobación temas', path: '/app/temas/aprobacion' },
+      ],
     },
     {
-      title: 'Propuesta y Anteproyecto',
-      icon: '📝',
+      title: 'Tutorías y Dirección',
+      icon: '👨‍🏫',
+      roles: ['DOCENTE', 'ADMIN'],
       items: [
-        { label: 'Propuestas pendientes', path: '/app/propuesta/pendientes' },
-        { label: 'Registrar propuesta', path: '/app/propuesta/nueva' },
-        { label: 'Revisión por director', path: '/app/propuesta/revision' },
-        { label: 'Historial observaciones', path: '/app/propuesta/historial' }
-      ]
+        { label: 'Mis anteproyectos', path: '/app/director/mis-anteproyectos' },
+        { label: 'Tutorías', path: '/app/director/tutorias' },
+        { label: 'Acta de revisión', path: '/app/director/acta' },
+        { label: 'Revisión Final Anteproyecto', path: '/app/dt1/lista' },
+      ],
     },
     {
-      title: 'Tutorías',
-      icon: '🤝',
+      title: 'Titulación II',
+      icon: '🧐',
+      roles: ['DOCENTE', 'ESTUDIANTE', 'ADMIN'],
       items: [
-        { label: 'Registrar tutoría', path: '/app/tutorias/nueva' },
-        { label: 'Actas de tutoría', path: '/app/tutorias/actas' },
-        { label: 'Historial', path: '/app/tutorias/historial' }
-      ]
-    },
-    {
-      title: 'Proyecto de Titulación',
-      icon: '📄',
-      items: [
-        { label: 'Documento por secciones', path: '/app/proyecto/documento' },
-        { label: 'Revisión por secciones', path: '/app/proyecto/revision' },
-        { label: 'Correcciones', path: '/app/proyecto/correcciones' },
-        { label: 'Estado del proyecto', path: '/app/proyecto/estado' }
-      ]
-    },
-    {
-      title: 'Documentos',
-      icon: '🗂️',
-      items: [
-        { label: 'Habilitantes', path: '/app/documentos/habilitantes' },
-        { label: 'Versiones', path: '/app/documentos/versiones' },
-        { label: 'Expediente', path: '/app/documentos/expediente' }
-      ]
-    },
-    {
-      title: 'Legalización',
-      icon: '⚖️',
-      items: [
-        { label: 'Validación legal', path: '/app/legalizacion/validacion' },
-        { label: 'Checklist', path: '/app/legalizacion/checklist' },
-        { label: 'Aprobación final', path: '/app/legalizacion/aprobacion' }
-      ]
-    },
-    {
-      title: 'Reportes',
-      icon: '📊',
-      items: [
-        { label: 'Expediente por estudiante', path: '/app/reportes/expediente' },
-        { label: 'Por período', path: '/app/reportes/periodo' },
-        { label: 'Actas y constancias', path: '/app/reportes/actas' }
-      ]
-    },
-    {
-      title: 'Administración del aplicativo',
-      icon: '🛠️',
-      items: [
-        { label: 'Usuarios', path: '/app/admin/usuarios' },
-        { label: 'Roles y permisos', path: '/app/admin/roles' },
-        { label: 'Parámetros', path: '/app/admin/parametros' }
-      ]
+        { label: 'Documento de titulación', path: '/app/titulacion2/documento', roles: ['ESTUDIANTE'] },
+        { label: 'Documentos pendientes', path: '/app/titulacion2/revision', roles: ['DOCENTE'] },
+        { label: 'Workflow Proceso', path: '/app/titulacion2/workflow', roles: ['ADMIN', 'DOCENTE'] },
+      ],
     },
     {
       title: 'Coordinación',
       icon: '🧭',
+      roles: ['COORDINADOR', 'ADMIN'],
       items: [
-        { label: 'Modalidad de titulación', path: '/app/catalogos/carrera-modalidad' },
         { label: 'Seguimiento de proyectos', path: '/app/coordinador/seguimiento' },
         { label: 'Control de directores', path: '/app/coordinador/directores' },
         { label: 'Validación administrativa', path: '/app/coordinador/validacion' },
@@ -138,9 +110,30 @@ export class ShellComponent implements OnInit, OnDestroy {
         { label: 'Observaciones administrativas', path: '/app/coordinador/observaciones' },
         { label: 'Workflow Titulación II', path: '/app/titulacion2/workflow' },
         { label: 'Reportes', path: '/app/coordinador/reportes' },
-        { label: 'Comisión formativa', path: '/app/coordinador/comision' }
-      ]
-    }
+        { label: 'Comisión formativa', path: '/app/coordinador/comision' },
+        { label: 'DT1 - Docentes y Tutores', path: '/app/coordinador/dt1-asignacion' },
+      ],
+    },
+    {
+      title: 'Propuesta y Anteproyecto',
+      icon: '📝',
+      roles: ['ESTUDIANTE'],
+      items: [
+        { label: 'Registrar propuesta', path: '/app/propuesta/nueva' },
+        { label: 'Registrar anteproyecto', path: '/app/anteproyecto/nuevo' },
+        { label: 'Historial observaciones', path: '/app/tutorias/historial' },
+      ],
+    },
+    {
+      title: 'Administración del aplicativo',
+      icon: '🛠️',
+      roles: ['ADMIN', 'COORDINADOR'],
+      items: [
+        { label: 'Usuarios', path: '/app/admin/usuarios' },
+        { label: 'Roles y permisos', path: '/app/admin/roles' },
+        { label: 'Parámetros', path: '/app/admin/parametros' },
+      ],
+    },
   ];
 
   menuSections: MenuSection[] = [];
@@ -149,7 +142,10 @@ export class ShellComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadUserData();
+    this.menuSections = this.buildMenuByRole();
+    this.openSectionIndex = this.menuSections.length ? 0 : -1;
     this.updateTitles();
+
     const sub = this.router.events
       .pipe(filter((event) => event instanceof NavigationEnd))
       .subscribe(() => this.updateTitles());
@@ -160,21 +156,11 @@ export class ShellComponent implements OnInit, OnDestroy {
     this.subscriptions.unsubscribe();
   }
 
-  toggleCollapse(): void {
-    this.isCollapsed = !this.isCollapsed;
-  }
-
-  toggleMobile(): void {
-    this.isMobileOpen = !this.isMobileOpen;
-  }
-
-  closeMobile(): void {
-    this.isMobileOpen = false;
-  }
-
-  toggleSection(index: number): void {
-    this.openSectionIndex = this.openSectionIndex === index ? -1 : index;
-  }
+  // ✅ MÉTODOS DE UI
+  toggleCollapse() { this.isCollapsed = !this.isCollapsed; }
+  toggleMobile() { this.isMobileOpen = !this.isMobileOpen; }
+  closeMobile() { this.isMobileOpen = false; }
+  toggleSection(index: number) { this.openSectionIndex = this.openSectionIndex === index ? -1 : index; }
 
   logout(): void {
     localStorage.removeItem('usuario');
@@ -184,74 +170,48 @@ export class ShellComponent implements OnInit, OnDestroy {
 
   private loadUserData(): void {
     const user = getSessionUser();
-    if (!user) {
-      return;
-    }
+    if (!user) return;
 
-    const names = [user['nombres'], user['apellidos']]
-      .map((value) => (value ?? '').toString().trim())
-      .filter((value) => value.length > 0);
+    // 1. Construir nombre completo (Limpiando nulos y espacios)
+    const fullName = [user['nombres'], user['apellidos']]
+      .map(v => String(v ?? '').trim()) // String() es más seguro que .toString()
+      .filter(v => v.length > 0)
+      .join(' ');
 
-    const username = (user['username'] ?? user['usuarioLogin'] ?? '').toString().trim();
-    this.userName = names.length ? names.join(' ') : username || 'Usuario';
+    // 2. Fallback al username (Forzando que sea string para evitar el error TS2322)
+    const backupName = String(user['username'] || user['usuarioLogin'] || 'Usuario');
 
-    const roleValue = (user['rol'] ?? '').toString();
-    const role = roleValue.replace('ROLE_', '').trim();
-    this.userRole = role || 'Sistema';
+    this.userName = fullName || backupName;
 
-    const normalizedRole = normalizeRole(roleValue);
+    // 3. Formatear el rol
+    this.userRole = String(user['rol'] ?? '').replace('ROLE_', '').trim() || 'Sistema';
+  }
 
-    if (hasRole(normalizedRole, 'ROLE_COORDINADOR')) {
-      this.menuSections = this.fullMenuSections.filter((section) =>
-        ['Dashboard', 'Administración del aplicativo', 'Coordinación'].includes(section.title)
-      );
-      return;
-    }
+  // ✅ LÓGICA DE FILTRADO POR ROL
+  private buildMenuByRole(): MenuSection[] {
+    const role = this.getNormalizedRole();
+    if (!role) return [];
 
-    if (hasRole(normalizedRole, 'ROLE_ESTUDIANTE')) {
-      this.menuSections = [
-        {
-          title: 'Dashboard',
-          icon: '🏠',
-          items: [{ label: 'Mi panel', path: '/app/dashboard' }]
-        },
-        {
-          title: 'Mi Proyecto de Titulación',
-          icon: '📘',
-          items: [
-            { label: 'Documento de titulación', path: '/app/titulacion2/documento' },
-            { label: 'Registrar propuesta', path: '/app/propuesta/nueva' }
-          ]
-        }
-      ];
-      return;
-    }
+    return this.ALL_SECTIONS
+      .filter((sec) => !sec.roles || sec.roles.includes(role))
+      .map((sec) => ({
+        ...sec,
+        // Filtra también los items individuales si tienen la propiedad roles
+        items: sec.items.filter((it) => !it.roles || it.roles.includes(role)),
+      }))
+      .filter((sec) => sec.items.length > 0);
+  }
 
-    if (hasRole(normalizedRole, 'ROLE_DOCENTE')) {
-      this.menuSections = [
-        {
-          title: 'Dashboard',
-          icon: '🏠',
-          items: [{ label: 'Mi panel docente', path: '/app/dashboard' }]
-        },
-        {
-          title: 'Comisión formativa',
-          icon: '🧩',
-          items: [
-            { label: 'Banco de temas', path: '/app/temas/nuevo' },
-            { label: 'Revisión de propuestas', path: '/app/temas/aprobacion' }
-          ]
-        },
-        {
-          title: 'Revisión',
-          icon: '🧐',
-          items: [{ label: 'Documentos pendientes', path: '/app/titulacion2/revision' }]
-        }
-      ];
-      return;
-    }
+  private getNormalizedRole(): AppRole | null {
+    const user = getSessionUser();
+    const raw = String(user?.['rol'] ?? '').trim().toUpperCase();
+    const clean = raw.replace('ROLE_', '');
 
-    this.menuSections = this.fullMenuSections;
+    if (clean === 'ADMIN') return 'ADMIN';
+    if (clean === 'DOCENTE') return 'DOCENTE';
+    if (clean === 'ESTUDIANTE') return 'ESTUDIANTE';
+    if (clean === 'COORDINADOR') return 'COORDINADOR'; // ✅ Agregado
+    return null;
   }
 
   private updateTitles(): void {
@@ -262,9 +222,7 @@ export class ShellComponent implements OnInit, OnDestroy {
 
   private getDeepestTitle(route: ActivatedRoute): string | undefined {
     let current = route;
-    while (current.firstChild) {
-      current = current.firstChild;
-    }
+    while (current.firstChild) current = current.firstChild;
     return current.snapshot.data['title'] as string | undefined;
   }
 }
