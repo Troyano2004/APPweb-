@@ -1,213 +1,245 @@
 package com.erwin.backend.service;
 
-import com.erwin.backend.dtos.AnteproyectoResponse;
-import com.erwin.backend.dtos.AnteproyectoVersionRequest;
-import com.erwin.backend.dtos.AnteproyectoVersionResponse;
+import com.erwin.backend.dtos.*;
+import com.erwin.backend.entities.*;
+import com.erwin.backend.repository.*;
 import org.springframework.http.HttpStatus;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.sql.Date;
 import java.util.List;
-import java.util.Map;
 
 @Service
 public class AnteproyectoService {
 
-    private final JdbcTemplate jdbc;
+    private final AnteproyectoVersionRepository verRepo;
+    private final PropuestaRepository propRepo;
+    private final AnteproyectoTitulacionRepository anteRepo;
 
-    public AnteproyectoService(JdbcTemplate jdbc) {
-        this.jdbc = jdbc;
+    public AnteproyectoService(AnteproyectoVersionRepository verRepo,
+                               PropuestaRepository propRepo,
+                               AnteproyectoTitulacionRepository anteRepo) {
+        this.verRepo = verRepo;
+        this.propRepo = propRepo;
+        this.anteRepo = anteRepo;
     }
 
-    // ✅ Convierte filas (ResultSet) en AnteproyectoVersionResponse
-    private final RowMapper<AnteproyectoVersionResponse> mapearVersion = (rs, numeroFila) -> {
-        AnteproyectoVersionResponse r = new AnteproyectoVersionResponse();
-        r.setIdVersion(rs.getInt("id_version"));
-        r.setNumeroVersion(rs.getInt("numero_version"));
-        r.setEstadoVersion(rs.getString("estado_version"));
-
-        Date fecha = rs.getDate("fecha_envio");
-        r.setFechaCreacion(fecha != null ? fecha.toLocalDate() : null);
-
-        r.setComentarioCambio(rs.getString("comentario_cambio"));
-        r.setTitulo(rs.getString("titulo"));
-        r.setTemaInvestigacion(rs.getString("tema_investigacion"));
-        r.setPlanteamientoProblema(rs.getString("planteamiento_problema"));
-        r.setObjetivosGenerales(rs.getString("objetivos_generales"));
-        r.setObjetivosEspecificos(rs.getString("objetivos_especificos"));
-        r.setMarcoTeorico(rs.getString("marco_teorico"));
-        r.setMetodologia(rs.getString("metodologia"));
-        r.setResultadosEsperados(rs.getString("resultados_esperados"));
-        r.setBibliografia(rs.getString("bibliografia"));
-        return r;
-    };
-
-    // ==========================================================
-    // ✅ 1) Controller llama: service.cargarMiAnteproyecto(id)
-    // ==========================================================
+    /**
+     * Equivalente a fn_mi_anteproyecto(idEstudiante)
+     * - Busca propuesta aprobada
+     * - Busca o crea anteproyecto
+     * - Retorna snapshot de propuesta + ultimaVersion (si existe) o plantilla
+     */
+    @Transactional
     public AnteproyectoResponse cargarMiAnteproyecto(Integer idEstudiante) {
 
-        List<Map<String, Object>> filas = jdbc.queryForList(
-                "select * from fn_mi_anteproyecto(?)",
-                idEstudiante
-        );
+        PropuestaTitulacion p = propRepo
+                .findFirstByEstudiante_IdEstudianteAndEstadoInOrderByIdPropuestaAsc(
+                        idEstudiante,
+                        List.of("APROBADO", "APROBADA")
+                )
+                .orElse(null);
 
-        if (filas.isEmpty()) {
-            AnteproyectoResponse resp = new AnteproyectoResponse();
+        AnteproyectoResponse resp = new AnteproyectoResponse();
+
+        if (p == null) {
             resp.setEstado("NO_DISPONIBLE");
             resp.setIdEstudiante(idEstudiante);
-            resp.setMensaje("No disponible.");
+            resp.setMensaje("Aún no tienes una propuesta APROBADA. Cuando esté aprobada podrás editar el anteproyecto.");
             return resp;
         }
 
-        Map<String, Object> fila = filas.get(0);
+        // Buscar o crear anteproyecto
+        AnteproyectoTitulacion a = anteRepo.findByPropuesta_IdPropuesta(p.getIdPropuesta())
+                .orElseGet(() -> {
+                    AnteproyectoTitulacion nuevo = new AnteproyectoTitulacion();
+                    nuevo.setPropuesta(p);
+                    nuevo.setEleccion(p.getEleccion());
+                    nuevo.setEstudiante(p.getEstudiante());
+                    nuevo.setCarrera(p.getCarrera());
+                    nuevo.setEstado("BORRADOR");
+                    return anteRepo.save(nuevo);
+                });
 
-        AnteproyectoResponse resp = new AnteproyectoResponse();
-        resp.setIdAnteproyecto((Integer) fila.get("id_anteproyecto"));
-        resp.setEstado((String) fila.get("estado"));
-        resp.setIdEstudiante((Integer) fila.get("id_estudiante"));
-        resp.setNombresEstudiante((String) fila.get("nombres_estudiante"));
-        resp.setApellidosEstudiante((String) fila.get("apellidos_estudiante"));
+        resp.setIdAnteproyecto(a.getIdAnteproyecto());
+        resp.setEstado(a.getEstado());
+        resp.setIdEstudiante(a.getEstudiante().getIdEstudiante());
 
-        String mensaje = (String) fila.get("mensaje");
-        if (mensaje != null && !"OK".equalsIgnoreCase(mensaje)) {
-            resp.setMensaje(mensaje);
+        // Nombre del estudiante (si la relación existe)
+        try {
+            Usuario u = a.getEstudiante().getUsuario();
+            if (u != null) {
+                resp.setNombresEstudiante(n(u.getNombres()));
+                resp.setApellidosEstudiante(n(u.getApellidos()));
+            }
+        } catch (Exception ignored) {}
+
+        // Snapshot de propuesta
+        AnteproyectoResponse.PropuestaSnapshot snap = new AnteproyectoResponse.PropuestaSnapshot();
+        snap.idPropuesta = p.getIdPropuesta();
+
+        if (p.getTema() != null) {
+            snap.idTema = p.getTema().getIdTema();
+            snap.tituloTema = n(p.getTema().getTitulo());
         }
 
-        // snapshot propuesta
-        AnteproyectoResponse.PropuestaSnapshot snap = new AnteproyectoResponse.PropuestaSnapshot();
-        snap.idPropuesta = (Integer) fila.get("id_propuesta");
-        snap.idTema = (Integer) fila.get("id_tema");
-        snap.tituloTema = (String) fila.get("titulo_tema");
+        // OJO: aquí usa los getters reales de tu entidad (yo dejé los de tu ejemplo)
+        snap.titulo = n(p.getTitulo());
 
-        snap.titulo = (String) fila.get("titulo");
-        snap.temaInvestigacion = (String) fila.get("tema_investigacion");
-        snap.planteamientoProblema = (String) fila.get("planteamiento_problema");
-        snap.objetivoGeneral = (String) fila.get("objetivo_general");
-        snap.objetivosEspecificos = (String) fila.get("objetivos_especificos");
-        snap.metodologia = (String) fila.get("metodologia");
-        snap.bibliografia = (String) fila.get("bibliografia");
+        snap.planteamientoProblema = n(p.getPlanteamientoProblema());
+        snap.objetivoGeneral = n(p.getObjetivosGenerales());
+        snap.objetivosEspecificos = n(p.getObjetivosEspecificos());
+        snap.metodologia = n(p.getMetodologia());
+        snap.bibliografia = n(p.getBibliografia());
 
         resp.setPropuesta(snap);
 
-        // cargar última versión (si existe)
-        Integer idAnte = resp.getIdAnteproyecto();
-        if (idAnte != null) {
-            List<AnteproyectoVersionResponse> ult = jdbc.query(
-                    "select * from fn_ultima_version(?)",
-                    mapearVersion,
-                    idAnte
-            );
+        // Última versión (equivalente a fn_ultima_version)
+        var lastOpt = verRepo.findTopByAnteproyecto_IdAnteproyectoOrderByNumeroVersionDesc(a.getIdAnteproyecto());
 
-            if (!ult.isEmpty()) {
-                resp.setUltimaVersion(ult.get(0));
-            } else {
-                // plantilla (como tu lógica anterior)
-                AnteproyectoVersionResponse plantilla = new AnteproyectoVersionResponse();
-                plantilla.setNumeroVersion(0);
-                plantilla.setEstadoVersion("PLANTILLA");
-                plantilla.setTitulo(textoSeguro(snap.titulo));
-                plantilla.setTemaInvestigacion(textoSeguro(snap.temaInvestigacion));
-                plantilla.setPlanteamientoProblema(textoSeguro(snap.planteamientoProblema));
-                plantilla.setObjetivosGenerales(textoSeguro(snap.objetivoGeneral));
-                plantilla.setObjetivosEspecificos(textoSeguro(snap.objetivosEspecificos));
-                plantilla.setMarcoTeorico("");
-                plantilla.setMetodologia(textoSeguro(snap.metodologia));
-                plantilla.setResultadosEsperados("");
-                plantilla.setBibliografia(textoSeguro(snap.bibliografia));
-
-                resp.setUltimaVersion(plantilla);
-
-                if (resp.getMensaje() == null) {
-                    resp.setMensaje("Se precargaron campos desde tu propuesta aprobada. Completa y guarda el anteproyecto.");
-                }
-            }
+        if (lastOpt.isPresent()) {
+            resp.setUltimaVersion(toDto(lastOpt.get()));
+            return resp;
         }
 
+        // Plantilla si no hay versiones
+        AnteproyectoVersionResponse plantilla = new AnteproyectoVersionResponse();
+        plantilla.setNumeroVersion(0);
+        plantilla.setEstadoVersion("PLANTILLA");
+        plantilla.setTitulo(n(snap.titulo));
+        plantilla.setTemaInvestigacion(n(snap.temaInvestigacion));
+        plantilla.setPlanteamientoProblema(n(snap.planteamientoProblema));
+        plantilla.setObjetivosGenerales(n(snap.objetivoGeneral));
+        plantilla.setObjetivosEspecificos(n(snap.objetivosEspecificos));
+        plantilla.setMarcoTeorico("");
+        plantilla.setMetodologia(n(snap.metodologia));
+        plantilla.setResultadosEsperados("");
+        plantilla.setBibliografia(n(snap.bibliografia));
+
+        resp.setUltimaVersion(plantilla);
+        resp.setMensaje("Se precargaron campos desde tu propuesta aprobada. Completa y guarda el anteproyecto.");
         return resp;
     }
 
-    // ==========================================================
-    // ✅ 2) Controller llama: service.versiones(idAnteproyecto)
-    // ==========================================================
     public List<AnteproyectoVersionResponse> versiones(Integer idAnteproyecto) {
-        return jdbc.query(
-                "select * from fn_listar_versiones(?)",
-                mapearVersion,
-                idAnteproyecto
-        );
+        return verRepo.findByAnteproyecto_IdAnteproyectoOrderByNumeroVersionAsc(idAnteproyecto)
+                .stream()
+                .map(this::toDto)
+                .toList();
     }
 
-    // ==========================================================
-    // ✅ 3) Controller llama: service.ultimaVersion(idAnteproyecto)
-    // ==========================================================
     public AnteproyectoVersionResponse ultimaVersion(Integer idAnteproyecto) {
-        List<AnteproyectoVersionResponse> lista = jdbc.query(
-                "select * from fn_ultima_version(?)",
-                mapearVersion,
-                idAnteproyecto
-        );
-
-        if (lista.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "SIN_VERSIONES");
-        }
-
-        return lista.get(0);
+        Anteproyectotitulacionversion v = verRepo
+                .findTopByAnteproyecto_IdAnteproyectoOrderByNumeroVersionDesc(idAnteproyecto)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "SIN_VERSIONES"));
+        return toDto(v);
     }
 
-    // ==========================================================
-    // ✅ 4) Controller llama: service.guardarBorrador(id, req)
-    // ==========================================================
+    /**
+     * Equivalente a sp_guardar_borrador(...)
+     * - valida bloqueado
+     * - crea nueva version BORRADOR
+     * - actualiza estado anteproyecto BORRADOR
+     */
     @Transactional
     public AnteproyectoVersionResponse guardarBorrador(Integer idAnteproyecto, AnteproyectoVersionRequest req) {
 
-        jdbc.update(
-                "call sp_guardar_borrador(?,?,?,?,?,?,?,?,?,?,?)",
-                idAnteproyecto,
-                req.titulo,
-                req.temaInvestigacion,
-                req.planteamientoProblema,
-                req.objetivosGenerales,
-                req.objetivosEspecificos,
-                req.marcoTeorico,
-                req.metodologia,
-                req.resultadosEsperados,
-                req.bibliografia,
-                req.comentarioCambio
-        );
+        AnteproyectoTitulacion a = anteRepo.findById(idAnteproyecto)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "ANTEPROYECTO_NO_EXISTE"));
 
-        return ultimaVersion(idAnteproyecto);
+        if (estaBloqueado(a.getEstado())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "ANTEPROYECTO_BLOQUEADO");
+        }
+
+        Anteproyectotitulacionversion v = crearVersion(a, req);
+        v.setEstadoVersion("BORRADOR");
+
+        // estado anteproyecto
+        a.setEstado("BORRADOR");
+        anteRepo.save(a);
+
+        return toDto(verRepo.save(v));
     }
 
-    // ==========================================================
-    // ✅ 5) Controller llama: service.enviarRevision(id, req)
-    // ==========================================================
+    /**
+     * Equivalente a sp_enviar_revision(...)
+     * - valida bloqueado
+     * - crea nueva version ENVIADO
+     * - actualiza estado anteproyecto EN_REVISION
+     */
     @Transactional
     public AnteproyectoVersionResponse enviarRevision(Integer idAnteproyecto, AnteproyectoVersionRequest req) {
 
-        jdbc.update(
-                "call sp_enviar_revision(?,?,?,?,?,?,?,?,?,?,?)",
-                idAnteproyecto,
-                req.titulo,
-                req.temaInvestigacion,
-                req.planteamientoProblema,
-                req.objetivosGenerales,
-                req.objetivosEspecificos,
-                req.marcoTeorico,
-                req.metodologia,
-                req.resultadosEsperados,
-                req.bibliografia,
-                req.comentarioCambio
-        );
+        AnteproyectoTitulacion a = anteRepo.findById(idAnteproyecto)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "ANTEPROYECTO_NO_EXISTE"));
 
-        return ultimaVersion(idAnteproyecto);
+        if (estaBloqueado(a.getEstado())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "ANTEPROYECTO_BLOQUEADO");
+        }
+
+        Anteproyectotitulacionversion v = crearVersion(a, req);
+        v.setEstadoVersion("ENVIADO");
+        Anteproyectotitulacionversion guardada = verRepo.save(v);
+
+        a.setEstado("EN_REVISION");
+        anteRepo.save(a);
+
+        return toDto(guardada);
     }
 
-    private String textoSeguro(String s) {
-        return (s == null) ? "" : s;
+    // ===================== helpers =====================
+
+    private boolean estaBloqueado(String estado) {
+        if (estado == null) return false;
+        String e = estado.toUpperCase();
+        // Ajusta según tu regla real
+        return e.equals("APROBADA") || e.equals("RECHAZADA") || e.equals("EN_REVISION");
     }
+
+    private Anteproyectotitulacionversion crearVersion(AnteproyectoTitulacion a, AnteproyectoVersionRequest req) {
+        int next = verRepo.maxNumeroVersion(a.getIdAnteproyecto()) + 1;
+
+        Anteproyectotitulacionversion v = new Anteproyectotitulacionversion();
+        v.setAnteproyecto(a);
+        v.setNumeroVersion(next);
+
+        v.setTitulo(n(req.titulo));
+        v.setTemaInvestigacion(n(req.temaInvestigacion));
+        v.setPlanteamientoProblema(n(req.planteamientoProblema));
+        v.setObjetivosGenerales(n(req.objetivosGenerales));
+        v.setObjetivosEspecificos(n(req.objetivosEspecificos));
+        v.setMarcoTeorico(n(req.marcoTeorico));
+        v.setMetodologia(n(req.metodologia));
+        v.setResultadosEsperados(n(req.resultadosEsperados));
+        v.setBibliografia(n(req.bibliografia));
+        v.setComentarioCambio(n(req.comentarioCambio));
+
+        // si manejas fecha en entidad:
+        // v.setFechaEnvio(LocalDate.now());
+
+        return v;
+    }
+
+    private AnteproyectoVersionResponse toDto(Anteproyectotitulacionversion v) {
+        AnteproyectoVersionResponse r = new AnteproyectoVersionResponse();
+        r.setIdVersion(v.getIdVersion());
+        r.setNumeroVersion(v.getNumeroVersion());
+        r.setEstadoVersion(v.getEstadoVersion());
+        r.setFechaCreacion(v.getFechaEnvio());   // ajusta si tu campo se llama distinto
+        r.setComentarioCambio(v.getComentarioCambio());
+
+        r.setTitulo(v.getTitulo());
+        r.setTemaInvestigacion(v.getTemaInvestigacion());
+        r.setPlanteamientoProblema(v.getPlanteamientoProblema());
+        r.setObjetivosGenerales(v.getObjetivosGenerales());
+        r.setObjetivosEspecificos(v.getObjetivosEspecificos());
+        r.setMarcoTeorico(v.getMarcoTeorico());
+        r.setMetodologia(v.getMetodologia());
+        r.setResultadosEsperados(v.getResultadosEsperados());
+        r.setBibliografia(v.getBibliografia());
+        return r;
+    }
+
+    private String n(String s) { return (s == null) ? "" : s; }
 }
