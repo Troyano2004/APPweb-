@@ -11,4 +11,5 @@ import java.util.Optional;
 public interface PeriodoTitulacionRepository extends JpaRepository<PeriodoTitulacion, Integer> {
     Optional<PeriodoTitulacion> findByActivoTrue();
     List<PeriodoTitulacion> findByActivo(Boolean activo);
+    Optional<PeriodoTitulacion> findFirstByActivoTrueOrderByIdPeriodoDesc();
 }

@@ -1,0 +1,54 @@
+<div class="panel">
+
+  <div class="head">
+    <div>
+      <div class="title">Revisión DT1</div>
+      <div class="sub">Abre el PDF y guarda tu decisión.</div>
+    </div>
+
+    <div class="actions">
+      <button class="btn ghost" (click)="volver()" [disabled]="cargando">Volver</button>
+      <button class="btn ghost" (click)="verPdf()" [disabled]="cargando">Ver PDF</button>
+    </div>
+  </div>
+
+  <div class="alert" *ngIf="cargando">Cargando...</div>
+
+  <div class="alert warn" *ngIf="!cargando && mensaje">
+    {{ mensaje }}
+  </div>
+
+  <div class="card" *ngIf="!cargando && detalle">
+    <div class="grid">
+      <div><b>Estudiante:</b> {{ detalle.estudiante }}</div>
+      <div><b>Período:</b> {{ detalle.periodo }}</div>
+      <div><b>Anteproyecto:</b> #{{ detalle.idAnteproyecto }}</div>
+      <div><b>Versión:</b> v{{ detalle.numeroVersion }}</div>
+      <div><b>Estado:</b> {{ detalle.estadoAnteproyecto }}</div>
+
+      <!-- ✅ CORREGIDO: si fechaEnvio viene null, no rompe -->
+      <div><b>Fecha envío:</b> {{ detalle.fechaEnvio ? (detalle.fechaEnvio | date:'mediumDate') : 'Sin fecha' }}</div>
+    </div>
+
+    <hr />
+
+    <label class="lbl">Decisión</label>
+    <select class="control" [(ngModel)]="decision">
+      <option value="APROBADO">APROBADO</option>
+      <option value="RECHAZADO">RECHAZADO</option>
+    </select>
+
+    <label class="lbl">Observación</label>
+    <textarea class="control"
+              rows="5"
+              [(ngModel)]="observacion"
+              placeholder="Obligatorio si rechazas"></textarea>
+
+    <div class="buttons">
+      <button class="btn primary" (click)="guardar()" [disabled]="cargando">
+        Guardar decisión
+      </button>
+    </div>
+  </div>
+
+</div>

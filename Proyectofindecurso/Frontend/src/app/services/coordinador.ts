@@ -51,6 +51,65 @@ export interface CatalogoCarrera {
   nombre: string;
 }
 
+/** =========================
+ *  DT1 - REQUEST/RESPONSE
+ *  ========================= */
+export interface Dt1AsignacionCreateRequest {
+  idUsuario: number;
+  idDocente: number;
+  idCarrera: number;
+  idPeriodo: number;
+}
+
+export interface Dt1AsignacionResponse {
+  idAsignacion: number;
+  idDocente: number;
+  idCarrera: number;
+  idPeriodo: number;
+  activo: boolean;
+}
+
+export interface Dt1AsignarTutorRequest {
+  idUsuario: number;
+  idEstudiante: number;
+  idDocente: number;
+  idPeriodo: number;
+}
+
+export interface Dt1AsignarTutorResponse {
+  idTutorEstudiante: number;
+  idEstudiante: number;
+  idDocente: number;
+  idPeriodo: number;
+  estado: string;
+}
+
+export interface InformacionAcademicaDt1 {
+  idCarrera: number;
+  carrera: string;
+
+  idPeriodoAcademico: number;
+  periodoAcademico: string;
+
+  // ✅ docentes de la carrera (para habilitar)
+  docentesCarrera: Array<{
+    idDocente: number;
+    nombre: string;
+  }>;
+
+  // ✅ docentes ya habilitados como DT1 (para tutores)
+  docentesDt1: Array<{
+    idDocente: number;
+    nombre: string;
+  }>;
+
+  // ✅ estudiantes sin tutor en ese periodo
+  estudiantesDisponibles: Array<{
+    idEstudiante: number;
+    nombre: string;
+  }>;
+}
+
 @Injectable({ providedIn: 'root' })
 export class CoordinadorService {
   private readonly API_URL = 'http://localhost:8080/api/coordinador';
@@ -128,5 +187,22 @@ export class CoordinadorService {
     fechaConformacion: string;
   }): Observable<void> {
     return this.http.post<void>(`${this.API_URL}/comisiones/asignar-proyecto`, payload);
+  }
+
+  /** =========================
+   *  DT1 - ENDPOINTS
+   *  ========================= */
+  crearAsignacionDt1(payload: Dt1AsignacionCreateRequest): Observable<Dt1AsignacionResponse> {
+    return this.http.post<Dt1AsignacionResponse>(`${this.API_URL}/dt1/asignaciones`, payload);
+  }
+
+  asignarTutorDt1(payload: Dt1AsignarTutorRequest): Observable<Dt1AsignarTutorResponse> {
+    return this.http.post<Dt1AsignarTutorResponse>(`${this.API_URL}/dt1/tutores/asignar`, payload);
+  }
+
+  getInformacionAcademicaDt1(idUsuario: number): Observable<InformacionAcademicaDt1> {
+    return this.http.get<InformacionAcademicaDt1>(
+      `${this.API_URL}/dt1/informacion-academica?idUsuario=${idUsuario}`
+    );
   }
 }
