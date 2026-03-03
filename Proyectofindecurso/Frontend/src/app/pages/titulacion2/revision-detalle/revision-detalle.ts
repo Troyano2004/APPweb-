@@ -30,7 +30,7 @@ export class RevisionDetalle implements OnInit {
   loading = signal(false);
   error = signal<string | null>(null);
   observaciones = signal<ObservacionDto[]>([]);
-
+  aiResult = signal<string | null>(null);
   seccion = 'METODOLOGIA';
   comentario = '';
 
@@ -81,6 +81,8 @@ export class RevisionDetalle implements OnInit {
       next: (doc) => {
         this.documento.set(doc);
         this.loading.set(false);
+        this.aiResult.set(doc?.feedbackIa?.trim() || null);
+
       },
       error: (err) => {
         this.loading.set(false);
@@ -147,12 +149,14 @@ export class RevisionDetalle implements OnInit {
     this.error.set(null);
 
     this.api.revisarConIa(this.idDocumento).subscribe({
-      next: () => {
-        this.cargarDocumento();
+      next: (doc) => {
+        this.documento.set(doc);
+        this.aiResult.set(doc?.feedbackIa?.trim() || 'La IA no devolvió observaciones para este documento.');
         this.cargarObs();
       },
       error: (err) => {
         this.loading.set(false);
+        this.aiResult.set(null);
         this.error.set(err?.error?.message ?? 'Error revisando documento con IA');
       }
     });

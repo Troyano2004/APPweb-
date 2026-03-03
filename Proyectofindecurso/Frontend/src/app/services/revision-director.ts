@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { DocumentoTitulacionDto } from './documento-titulacion';
 
 export interface ObservacionDto {
   idObservacion: number;
@@ -63,7 +64,7 @@ export class RevisionDirectorService {
   aprobar(idDocente: number, idDocumento: number) {
     return this.http.post(`${this.baseUrl}/director/${idDocente}/documento/${idDocumento}/aprobar`, {});
   }
-  revisarConIa(idDocumento: number): Observable<unknown> {
-    return this.http.post(`${this.API_URL}/api/revision-ia/evaluar/${idDocumento}`, {});
+  revisarConIa(idDocumento: number): Observable<DocumentoTitulacionDto> {
+    return this.http.post<DocumentoTitulacionDto>(`${this.API_URL}/api/revision-ia/evaluar/${idDocumento}`, {});
   }
 }
