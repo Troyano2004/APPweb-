@@ -26,7 +26,7 @@ public class RevisionIAService {
     private final String geminiApiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent";
 
     // TODO: Pega tu clave real aquí
-    private final String geminiApiKey = "AIzaSyADSj8bu9lmHL0eAf9Yftt9ZqOdEASD0Hw";
+    private final String geminiApiKey = "";
 
     /**
      * Este es el método que falta y que el Controlador está intentando llamar.
