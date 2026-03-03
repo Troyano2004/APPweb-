@@ -1,12 +1,19 @@
+
 package com.erwin.backend.service;
 
-import com.erwin.backend.dtos.*;
-import com.erwin.backend.entities.Usuario;
+import com.erwin.backend.dtos.UsuarioAdminDto;
+import com.erwin.backend.dtos.UsuarioCreateRequest;
+import com.erwin.backend.dtos.UsuarioEstadoRequest;
+import com.erwin.backend.dtos.UsuarioUpdateRequest;
 import com.erwin.backend.repository.UsuarioRepository;
 import com.erwin.backend.repository.UsuarioSpRepository;
+import com.erwin.backend.security.CryptoUtil;
+
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
 import java.util.List;
 
 @Service
@@ -14,108 +21,217 @@ public class AdminUsuarioService {
 
     private final UsuarioRepository usuarioRepo;
     private final UsuarioSpRepository usuarioSpRepo;
+    private final PasswordEncoder passwordEncoder;
 
-    public AdminUsuarioService(UsuarioRepository usuarioRepo, UsuarioSpRepository usuarioSpRepo) {
+    //---------------------------------------------------
+    // CONSTRUCTOR
+    //---------------------------------------------------
+    public AdminUsuarioService(
+            UsuarioRepository usuarioRepo,
+            UsuarioSpRepository usuarioSpRepo,
+            PasswordEncoder passwordEncoder) {
+
         this.usuarioRepo = usuarioRepo;
         this.usuarioSpRepo = usuarioSpRepo;
+        this.passwordEncoder = passwordEncoder;
     }
 
+    //---------------------------------------------------
+    // LISTAR
+    //---------------------------------------------------
     public List<UsuarioAdminDto> listar() {
         return usuarioSpRepo.listarUsuarios();
     }
 
+    //---------------------------------------------------
+    // CREAR USUARIO
+    //---------------------------------------------------
     @Transactional
     public UsuarioAdminDto crear(UsuarioCreateRequest req) {
+
         validarCreate(req);
 
         String username = req.getUsername().trim();
-        String rol = normalizarRol(req.getRol());
 
         if (usuarioRepo.existsByUsername(username)) {
             throw new RuntimeException("El usuario ya existe");
         }
 
-        Integer newId = usuarioSpRepo.crearUsuario(
+        //------------------------------------------------
+        // PASSWORD APP → BCrypt
+        //------------------------------------------------
+        String passwordHash =
+                passwordEncoder.encode(req.getPasswordApp().trim());
+
+        //------------------------------------------------
+        // ✅ GENERAR PASSWORD BD AUTOMÁTICA
+        //------------------------------------------------
+        String passwordDbPlain = generarPasswordSegura();
+
+        //------------------------------------------------
+        // ✅ CIFRAR PASSWORD BD
+        //------------------------------------------------
+        String passwordDbEncrypted =
+                CryptoUtil.encrypt(passwordDbPlain);
+
+        //------------------------------------------------
+        // username_db = username
+        //------------------------------------------------
+        String usernameDb = username;
+
+        Integer[] idsRolApp = req.getIdsRolApp();
+
+        //------------------------------------------------
+        // ✅ AHORA SE ENVÍAN LOS 3 VALORES
+        //------------------------------------------------
+        Integer newId = usuarioSpRepo.crearUsuarioV3(
                 req.getCedula().trim(),
-                req.getCorreoInstitucional() != null ? req.getCorreoInstitucional().trim() : null,
+                req.getCorreoInstitucional() != null
+                        ? req.getCorreoInstitucional().trim()
+                        : null,
                 username,
-                req.getPassword(),
+                passwordHash,
                 req.getNombres().trim(),
                 req.getApellidos().trim(),
-                rol,
-                req.getActivo() != null ? req.getActivo() : true
+                req.getActivo() != null ? req.getActivo() : true,
+                idsRolApp,
+                usernameDb,
+                passwordDbEncrypted,
+                passwordDbPlain   // ✅ NUEVO
         );
 
-        Usuario u = usuarioRepo.findById(newId)
-                .orElseThrow(() -> new RuntimeException("Usuario no existe"));
-        return toDto(u);
+        UsuarioAdminDto dto =
+                usuarioSpRepo.obtenerPorId(newId);
+
+        if (dto == null) {
+            throw new RuntimeException("Usuario no existe");
+        }
+
+        return dto;
     }
 
+    //---------------------------------------------------
+    // EDITAR
+    //---------------------------------------------------
     @Transactional
     public UsuarioAdminDto editar(Integer id, UsuarioUpdateRequest req) {
-        String nombres = req.getNombres() != null ? req.getNombres().trim() : null;
-        String apellidos = req.getApellidos() != null ? req.getApellidos().trim() : null;
-        String rol = req.getRol() != null && !req.getRol().trim().isEmpty()
-                ? normalizarRol(req.getRol())
-                : null;
-        String password = req.getPassword() != null ? req.getPassword().trim() : null;
 
-        usuarioSpRepo.editarUsuario(id, nombres, apellidos, rol, req.getActivo(), password);
+        if (req == null)
+            throw new RuntimeException("Body requerido");
 
-        Usuario u = usuarioRepo.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuario no existe"));
-        return toDto(u);
+        String nombres =
+                req.getNombres() != null ? req.getNombres().trim() : null;
+
+        String apellidos =
+                req.getApellidos() != null ? req.getApellidos().trim() : null;
+
+        String password = null;
+
+        if (req.getPassword() != null &&
+                !req.getPassword().trim().isEmpty()) {
+
+            password =
+                    passwordEncoder.encode(req.getPassword().trim());
+        }
+
+        Integer[] idsRolApp = req.getIdsRolApp();
+
+        usuarioSpRepo.editarUsuarioV3(
+                id,
+                nombres,
+                apellidos,
+                req.getActivo(),
+                password,
+                idsRolApp
+        );
+
+        UsuarioAdminDto dto =
+                usuarioSpRepo.obtenerPorId(id);
+
+        if (dto == null)
+            throw new RuntimeException("Usuario no existe");
+
+        return dto;
     }
 
+    //---------------------------------------------------
+    // CAMBIAR ESTADO
+    //---------------------------------------------------
     @Transactional
-    public UsuarioAdminDto cambiarEstado(Integer id, UsuarioEstadoRequest req) {
+    public UsuarioAdminDto cambiarEstado(
+            Integer id,
+            UsuarioEstadoRequest req) {
+
         if (req == null || req.getActivo() == null) {
             throw new RuntimeException("Debe enviar activo=true/false");
         }
 
         usuarioSpRepo.cambiarEstado(id, req.getActivo());
 
-        Usuario u = usuarioRepo.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuario no existe"));
-        return toDto(u);
+        UsuarioAdminDto dto =
+                usuarioSpRepo.obtenerPorId(id);
+
+        if (dto == null)
+            throw new RuntimeException("Usuario no existe");
+
+        return dto;
     }
 
-    private UsuarioAdminDto toDto(Usuario u) {
-        return new UsuarioAdminDto(
-                u.getIdUsuario(),
-                u.getUsername(),
-                u.getNombres(),
-                u.getApellidos(),
-                u.getRol(),
-                u.getActivo()
-        );
-    }
-
+    //---------------------------------------------------
+    // VALIDACIONES CREATE
+    //---------------------------------------------------
     private void validarCreate(UsuarioCreateRequest req) {
-        if (req == null) throw new RuntimeException("Body requerido");
-        if (vacio(req.getCedula())) throw new RuntimeException("Cédula requerida");
-        if (vacio(req.getUsername())) throw new RuntimeException("Username requerido");
-        if (vacio(req.getPassword())) throw new RuntimeException("Password requerida");
-        if (vacio(req.getNombres())) throw new RuntimeException("Nombres requeridos");
-        if (vacio(req.getApellidos())) throw new RuntimeException("Apellidos requeridos");
-        if (vacio(req.getRol())) throw new RuntimeException("Rol requerido");
+
+        if (req == null)
+            throw new RuntimeException("Body requerido");
+
+        if (vacio(req.getCedula()))
+            throw new RuntimeException("Cédula requerida");
+
+        if (vacio(req.getUsername()))
+            throw new RuntimeException("Username requerido");
+
+        if (vacio(req.getPasswordApp()))
+            throw new RuntimeException("Password App requerida");
+
+        if (vacio(req.getNombres()))
+            throw new RuntimeException("Nombres requeridos");
+
+        if (vacio(req.getApellidos()))
+            throw new RuntimeException("Apellidos requeridos");
+
+        if (req.getIdsRolApp() == null ||
+                req.getIdsRolApp().length == 0) {
+
+            throw new RuntimeException(
+                    "Seleccione al menos un Rol del Aplicativo");
+        }
     }
 
+    //---------------------------------------------------
+    // GENERADOR PASSWORD SEGURA
+    //---------------------------------------------------
+    private String generarPasswordSegura() {
+
+        String caracteres =
+                "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#";
+
+        StringBuilder sb = new StringBuilder();
+        SecureRandom random = new SecureRandom();
+
+        for (int i = 0; i < 12; i++) {
+            sb.append(
+                    caracteres.charAt(
+                            random.nextInt(caracteres.length())
+                    )
+            );
+        }
+
+        return sb.toString();
+    }
+
+    //---------------------------------------------------
     private boolean vacio(String s) {
         return s == null || s.trim().isEmpty();
     }
-
-    private String normalizarRol(String rol) {
-        String r = rol.trim().toUpperCase();
-
-        if (r.equals("ROLE_ADMIN")) return "ADMIN";
-        if (r.equals("ROLE_DOCENTE")) return "DOCENTE";
-        if (r.equals("ROLE_ESTUDIANTE")) return "ESTUDIANTE";
-
-        if (!r.equals("ADMIN") && !r.equals("DOCENTE") && !r.equals("ESTUDIANTE")) {
-            throw new RuntimeException("Rol inválido. Use ADMIN, DOCENTE o ESTUDIANTE");
-        }
-        return r;
-    }
-
 }

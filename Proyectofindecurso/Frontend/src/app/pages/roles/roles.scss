@@ -1,3 +1,4 @@
+
 // ===============================================
 // VARIABLES - SGA Green Theme (NECESARIAS AQUÍ)
 // ===============================================
@@ -29,21 +30,20 @@ $warning-dark: #d97706;
 $shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 $shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 $shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-$shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
 
 $radius-sm: 6px;
 $radius-md: 8px;
 $radius-lg: 12px;
 $radius-xl: 16px;
 
-// ✅ FIX GLOBAL: evita desbordes raros (buscador saliéndose)
+// ✅ FIX GLOBAL
 :host,
 :host * {
   box-sizing: border-box;
 }
 
 // ===============================================
-// PAGE LAYOUT (como la referencia)
+// PAGE
 // ===============================================
 .page {
   min-height: 100vh;
@@ -62,7 +62,7 @@ $radius-xl: 16px;
 }
 
 // ===============================================
-// HERO (banner verde)
+// HERO
 // ===============================================
 .hero {
   background: linear-gradient(135deg, $primary-green 0%, $primary-green-dark 100%);
@@ -104,16 +104,13 @@ $radius-xl: 16px;
   justify-content: flex-end;
 }
 
-// ✅ “Volver” en cuadrito transparente + hover
 .back-link {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  text-decoration: none;
   font-weight: 900;
   font-size: 0.92rem;
   color: $white;
-
   padding: 0.55rem 0.9rem;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.12);
@@ -168,6 +165,20 @@ $radius-xl: 16px;
     color: $gray-500;
     font-size: 0.95rem;
   }
+}
+
+// ===============================================
+// MENSAJES
+// ===============================================
+.msg-loading {
+  margin: 0.75rem 0;
+  font-weight: 900;
+}
+
+.msg-error {
+  margin: 0.75rem 0;
+  color: #b91c1c;
+  font-weight: 900;
 }
 
 // ===============================================
@@ -309,18 +320,22 @@ $radius-xl: 16px;
 }
 
 // ===============================================
-// TABLE
+// TABLE (✅ FIX para que se vean las acciones)
 // ===============================================
 .table-card {
   border: 1px solid $gray-200;
   border-radius: $radius-xl;
-  overflow: hidden;
+  overflow-x: auto;   // ✅ antes era hidden (eso cortaba botones)
+  overflow-y: hidden;
   background: $white;
 }
 
 .table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: auto;
+  min-width: 980px;   // ✅ espacio real para acciones
 }
 
 .table thead th {
@@ -347,26 +362,39 @@ $radius-xl: 16px;
   background: rgba(15, 122, 58, 0.03);
 }
 
+.empty-row {
+  padding: 1rem;
+  text-align: center;
+  opacity: .7;
+}
+
 .mono {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   font-weight: 800;
   color: $gray-800;
 }
 
-.actions {
+// ✅ ACCIONES (FIX)
+td.actions {
   display: flex;
   gap: 0.65rem;
-  flex-wrap: nowrap;
-  justify-content: flex-end;
   align-items: center;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  overflow: visible;
+  min-width: 260px; // ✅ caben 2 botones
+}
 
-  @media (max-width: 520px) {
+td.actions .btn {
+  min-width: 120px;
+}
+
+@media (max-width: 720px) {
+  td.actions {
     flex-wrap: wrap;
     justify-content: flex-start;
-  }
-
-  .btn {
-    min-width: 120px;
+    min-width: 220px;
   }
 }
 
@@ -374,6 +402,7 @@ $radius-xl: 16px;
 .perms-cell {
   max-width: 520px;
 }
+
 .perms-text {
   display: inline-block;
   max-width: 520px;
@@ -410,14 +439,8 @@ $radius-xl: 16px;
   border: 1px solid rgba(245, 158, 11, 0.25);
 }
 
-.badge-info {
-  background: #eff6ff;
-  color: #1e40af;
-  border: 1px solid #bfdbfe;
-}
-
 // ===============================================
-// MODAL (igual que usuarios)
+// MODAL
 // ===============================================
 .modal-backdrop {
   position: fixed;
@@ -501,7 +524,7 @@ $radius-xl: 16px;
 }
 
 // ===============================================
-// PERMISOS (tarjetas dentro del modal)
+// PERMISOS
 // ===============================================
 .perm-box {
   margin-top: 1.15rem;

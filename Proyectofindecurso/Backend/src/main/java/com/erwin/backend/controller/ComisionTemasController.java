@@ -23,6 +23,8 @@ public class ComisionTemasController {
     private final ModalidadTitulacionRepository modalidadRepository;
     private final CarreraModalidadRepository carreraModalidadRepository;
     private final PeriodoTitulacionRepository periodoRepository;
+    private final ProyectoTitulacionRepository proyectoTitulacionRepository;
+    private final TipoTrabajoTitulacionRepository tipoTrabajoTitulacionRepository;
 
     public ComisionTemasController(BancoTemasRepository bancoTemasRepository,
                                    PropuestaTitulacionRepository propuestaRepository,
@@ -33,7 +35,9 @@ public class ComisionTemasController {
                                    EleccionTitulacionRepository eleccionRepository,
                                    ModalidadTitulacionRepository modalidadRepository,
                                    CarreraModalidadRepository carreraModalidadRepository,
-                                   PeriodoTitulacionRepository periodoRepository) {
+                                   PeriodoTitulacionRepository periodoRepository,
+                                   ProyectoTitulacionRepository proyectoTitulacionRepository,
+                                   TipoTrabajoTitulacionRepository tipoTrabajoTitulacionRepository) {
         this.bancoTemasRepository = bancoTemasRepository;
         this.propuestaRepository = propuestaRepository;
         this.comisionMiembroRepository = comisionMiembroRepository;
@@ -44,6 +48,8 @@ public class ComisionTemasController {
         this.modalidadRepository = modalidadRepository;
         this.carreraModalidadRepository = carreraModalidadRepository;
         this.periodoRepository = periodoRepository;
+        this.proyectoTitulacionRepository = proyectoTitulacionRepository;
+        this.tipoTrabajoTitulacionRepository = tipoTrabajoTitulacionRepository;
     }
 
     @GetMapping("/estudiante/{idEstudiante}/estado-modalidad")
@@ -112,14 +118,10 @@ public class ComisionTemasController {
         return estadoModalidad(idEstudiante).withEleccion(guardada.getIdEleccion(), modalidad.getIdModalidad(), modalidad.getNombre());
     }
 
-
     private EleccionTitulacion obtenerEleccionVigente(Integer idEstudiante) {
         return periodoRepository.findByActivoTrue()
                 .flatMap(periodo -> eleccionRepository.findByEstudiante_IdEstudianteAndPeriodo_IdPeriodo(idEstudiante, periodo.getIdPeriodo()))
-                .orElseGet(() -> eleccionRepository.findByEstudiante_IdEstudiante(idEstudiante)
-                        .stream()
-                        .max(Comparator.comparing(EleccionTitulacion::getIdEleccion))
-                        .orElse(null));
+                .orElse(null);
     }
 
     private List<ModalidadSimpleDto> obtenerModalidadesDisponibles(Integer idCarrera) {
@@ -207,8 +209,14 @@ public class ComisionTemasController {
             throw new RuntimeException("No se pudo registrar la decisión de la propuesta");
         }
 
-        return toPropuestaDto(propuestaRepository.findById(idPropuesta)
-                .orElseThrow(() -> new RuntimeException("Propuesta no encontrada")));
+        PropuestaTitulacion propuestaActualizada = propuestaRepository.findById(idPropuesta)
+                .orElseThrow(() -> new RuntimeException("Propuesta no encontrada"));
+
+        if ("APROBADA".equals(propuestaActualizada.getEstado())) {
+            crearProyectoTitulacionDesdePropuesta(propuestaActualizada);
+        }
+
+        return toPropuestaDto(propuestaActualizada);
     }
 
     @PostMapping("/estudiante/{idEstudiante}/propuestas")
@@ -339,6 +347,51 @@ public class ComisionTemasController {
                 propuesta.getFechaEnvio(),
                 propuesta.getObservacionesComision()
         );
+    }
+
+    private Docente resolverDirectorInicial(PropuestaTitulacion propuesta) {
+        if (propuesta.getTema() != null && propuesta.getTema().getDocenteProponente() != null) {
+            return propuesta.getTema().getDocenteProponente();
+        }
+
+        throw new RuntimeException("No se puede crear el proyecto: la propuesta aprobada no tiene docente director asociado");
+    }
+
+    private void crearProyectoTitulacionDesdePropuesta(PropuestaTitulacion propuesta) {
+        if (proyectoTitulacionRepository.findByPropuesta_IdPropuesta(propuesta.getIdPropuesta()).isPresent()) {
+            return;
+        }
+
+        EleccionTitulacion eleccion = propuesta.getEleccion();
+        if (eleccion == null || eleccion.getModalidad() == null || eleccion.getModalidad().getIdModalidad() == null) {
+            throw new RuntimeException("No se puede crear el proyecto: la propuesta no tiene modalidad de titulación asociada");
+        }
+
+        PeriodoTitulacion periodo = eleccion.getPeriodo();
+        if (periodo == null) {
+            periodo = periodoRepository.findByActivoTrue()
+                    .orElseThrow(() -> new RuntimeException("No se encontró un periodo activo para crear el proyecto"));
+        }
+
+        List<Tipotrabajotitulacion> tiposTrabajo = tipoTrabajoTitulacionRepository
+                .findByModalidadTitulacion_IdModalidad(eleccion.getModalidad().getIdModalidad());
+
+        if (tiposTrabajo.isEmpty()) {
+            throw new RuntimeException("No existe un tipo de trabajo configurado para la modalidad seleccionada");
+        }
+
+        Docente directorInicial = resolverDirectorInicial(propuesta);
+
+        ProyectoTitulacion proyecto = new ProyectoTitulacion();
+        proyecto.setPropuesta(propuesta);
+        proyecto.setEleccion(eleccion);
+        proyecto.setPeriodo(periodo);
+        proyecto.setDirector(directorInicial);
+        proyecto.setTipoTrabajo(tiposTrabajo.get(0));
+        proyecto.setTitulo(propuesta.getTitulo());
+        proyecto.setEstado("ANTEPROYECTO");
+
+        proyectoTitulacionRepository.save(proyecto);
     }
 
     private String valueOrDefault(String value, String defaultValue) {

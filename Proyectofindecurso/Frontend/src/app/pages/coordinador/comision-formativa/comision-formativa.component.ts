@@ -2,10 +2,16 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CatalogoCarrera, ComisionFormativa, CoordinadorService, DirectorCarga } from '../../../services/coordinador';
+import { CatalogosBasicosService, PeriodoTitulacion } from '../../../services/catalogos-basicos.service';
 
 interface MiembroSeleccionado {
   idDocente: number | null;
   cargo: string;
+}
+
+interface OpcionPeriodoActivo {
+  etiqueta: string;
+  valor: string;
 }
 
 @Component({
@@ -59,6 +65,7 @@ interface MiembroSeleccionado {
         <p class="help" *ngIf="carreraCoordinador">Carrera del coordinador: <strong>{{ carreraCoordinador.nombre }}</strong></p>
         <p *ngIf="mensaje" class="message">{{ mensaje }}</p>
         <p *ngIf="error" class="error">{{ error }}</p>
+        <p *ngIf="periodosActivos.length === 0" class="warning">No hay periodos activos disponibles para crear comisiones.</p>
 
         <div class="form-grid">
           <div class="field">
@@ -67,7 +74,12 @@ interface MiembroSeleccionado {
           </div>
           <div class="field">
             <label>Periodo académico</label>
-            <input type="text" placeholder="Ej. 2024-1" [(ngModel)]="nuevaComision.periodoAcademico" />
+            <select [(ngModel)]="nuevaComision.periodoAcademico">
+              <option value="" [disabled]="periodosActivos.length === 0">Seleccione un periodo activo</option>
+              <option *ngFor="let periodo of opcionesPeriodoActivas" [value]="periodo.valor">
+                {{ periodo.etiqueta }}
+              </option>
+            </select>
           </div>
           <div class="field">
             <label>Estado</label>
@@ -103,7 +115,7 @@ interface MiembroSeleccionado {
             + Agregar docente
           </button>
 
-          <button type="button" (click)="guardarComision()" [disabled]="guardando || !carreraCoordinador?.idCarrera">
+          <button type="button" (click)="guardarComision()" [disabled]="guardando || !carreraCoordinador?.idCarrera || periodosActivos.length === 0 || !nuevaComision.periodoAcademico">
             {{ guardando ? 'Guardando...' : 'Guardar comisión' }}
           </button>
         </div>
@@ -250,12 +262,19 @@ interface MiembroSeleccionado {
         color: #b91c1c;
         font-weight: 600;
       }
+
+      .warning {
+        color: #92400e;
+        font-weight: 600;
+      }
     `
   ]
 })
 export class ComisionFormativaComponent implements OnInit {
   comisiones: ComisionFormativa[] = [];
   carreras: CatalogoCarrera[] = [];
+  periodosActivos: PeriodoTitulacion[] = [];
+  opcionesPeriodoActivas: OpcionPeriodoActivo[] = [];
   docentesDisponibles: DirectorCarga[] = [];
   carreraCoordinador: CatalogoCarrera | null = null;
 
@@ -269,10 +288,14 @@ export class ComisionFormativaComponent implements OnInit {
   mensaje = '';
   error = '';
 
-  constructor(private coordinadorService: CoordinadorService) {}
+  constructor(
+    private coordinadorService: CoordinadorService,
+    private catalogosBasicosService: CatalogosBasicosService
+  ) {}
 
   ngOnInit(): void {
     this.cargarCarreraCoordinador();
+    this.cargarPeriodosActivos();
     this.cargarDocentes();
     this.cargarComisiones();
   }
@@ -288,6 +311,41 @@ export class ComisionFormativaComponent implements OnInit {
         this.error = 'No se pudo cargar la carrera del coordinador.';
       }
     });
+  }
+
+  cargarPeriodosActivos(): void {
+    this.catalogosBasicosService.listarPeriodosActivos().subscribe({
+      next: (data) => {
+        this.periodosActivos = data;
+        this.opcionesPeriodoActivas = data.map((periodo) => ({
+          etiqueta: periodo.descripcion,
+          valor: this.construirPeriodoAcademico(periodo)
+        }));
+        this.nuevaComision.periodoAcademico = this.opcionesPeriodoActivas.length > 0 ? this.opcionesPeriodoActivas[0].valor : '';
+      },
+      error: () => {
+        this.error = 'No se pudo cargar el listado de periodos activos.';
+      }
+    });
+  }
+
+  construirPeriodoAcademico(periodo: PeriodoTitulacion): string {
+    const descripcionLimpia = (periodo.descripcion ?? '').trim().replace(/\s+/g, ' ');
+    if (descripcionLimpia.length <= 20) {
+      return descripcionLimpia;
+    }
+
+    const fechaInicio = (periodo.fechaInicio ?? '').toString();
+    const fechaFin = (periodo.fechaFin ?? '').toString();
+    const anioInicio = fechaInicio.slice(0, 4);
+    const anioFin = fechaFin.slice(0, 4);
+    const etiquetaFechas = anioInicio && anioFin ? `${anioInicio}-${anioFin}` : '';
+
+    if (etiquetaFechas && etiquetaFechas.length <= 20) {
+      return etiquetaFechas;
+    }
+
+    return descripcionLimpia.slice(0, 20);
   }
 
   cargarDocentes(): void {
@@ -335,7 +393,7 @@ export class ComisionFormativaComponent implements OnInit {
     }
 
     if (!this.nuevaComision.periodoAcademico.trim()) {
-      this.error = 'Ingrese el periodo académico.';
+      this.error = 'Seleccione un periodo académico activo.';
       return;
     }
 
@@ -372,7 +430,7 @@ export class ComisionFormativaComponent implements OnInit {
         },
         error: () => {
           this.guardando = false;
-          this.error = 'No se pudo guardar la comisión. Verifique los datos.';
+          this.error = 'No se pudo guardar la comisión. Verifique que el periodo no exceda 20 caracteres.';
         }
       });
   }

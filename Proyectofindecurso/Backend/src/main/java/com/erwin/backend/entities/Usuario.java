@@ -1,3 +1,4 @@
+
 package com.erwin.backend.entities;
 
 import jakarta.persistence.*;
@@ -18,7 +19,7 @@ public class Usuario {
     private String correoInstitucional;
 
     @Column(nullable = false, length = 20)
-    private String rol; // ADMIN/DOCENTE/ESTUDIANTE (texto)
+    private String rol;
 
     @Column(nullable = false, length = 50)
     private String username;
@@ -35,12 +36,22 @@ public class Usuario {
     @Column(nullable = false)
     private Boolean activo = true;
 
-    // ✅ FK real a roles_sistema (esto llena usuario.id_rol)
+    // ✅ NUEVO — credenciales BD
+    @Column(name = "username_db")
+    private String usernameDb;
+
+    @Column(name = "password_db_encrypted")
+    private String passwordDbEncrypted;
+
+    // ✅ FK real a roles_sistema
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "id_rol", nullable = false)
     private RolSistema rolSistema;
 
+    // ======================
     // GETTERS
+    // ======================
+
     public Integer getIdUsuario() { return idUsuario; }
     public String getCedula() { return cedula; }
     public String getCorreoInstitucional() { return correoInstitucional; }
@@ -53,7 +64,14 @@ public class Usuario {
     public Boolean getActivo() { return activo; }
     public RolSistema getRolSistema() { return rolSistema; }
 
+    // ✅ nuevos getters
+    public String getUsernameDb() { return usernameDb; }
+    public String getPasswordDbEncrypted() { return passwordDbEncrypted; }
+
+    // ======================
     // SETTERS
+    // ======================
+
     public void setCedula(String cedula) { this.cedula = cedula; }
     public void setCorreoInstitucional(String correoInstitucional) { this.correoInstitucional = correoInstitucional; }
     public void setRol(String rol) { this.rol = rol; }
@@ -64,4 +82,10 @@ public class Usuario {
     public void setRolAsignado(String rolAsignado) { this.rolAsignado = rolAsignado; }
     public void setActivo(Boolean activo) { this.activo = activo; }
     public void setRolSistema(RolSistema rolSistema) { this.rolSistema = rolSistema; }
+
+    // ✅ nuevos setters
+    public void setUsernameDb(String usernameDb) { this.usernameDb = usernameDb; }
+    public void setPasswordDbEncrypted(String passwordDbEncrypted) {
+        this.passwordDbEncrypted = passwordDbEncrypted;
+    }
 }

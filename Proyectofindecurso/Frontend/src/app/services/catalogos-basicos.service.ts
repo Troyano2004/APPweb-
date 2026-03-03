@@ -184,6 +184,6 @@ export class CatalogosBasicosService {
 
   // ==================== MODALIDADES (para usar en selects) ====================
   listarModalidades(): Observable<Modalidad[]> {
-    return this.http.get<Modalidad[]>('http://localhost:8080/api/modalidad-titulacion');
+    return this.http.get<Modalidad[]>(`${this.baseUrl}/modalidades`);
   }
 }
