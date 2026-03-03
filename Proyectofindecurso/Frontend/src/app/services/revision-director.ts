@@ -63,4 +63,7 @@ export class RevisionDirectorService {
   aprobar(idDocente: number, idDocumento: number) {
     return this.http.post(`${this.baseUrl}/director/${idDocente}/documento/${idDocumento}/aprobar`, {});
   }
+  revisarConIa(idDocumento: number): Observable<unknown> {
+    return this.http.post(`${this.API_URL}/api/revision-ia/evaluar/${idDocumento}`, {});
+  }
 }

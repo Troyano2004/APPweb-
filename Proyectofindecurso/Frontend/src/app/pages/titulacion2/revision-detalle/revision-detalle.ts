@@ -141,6 +141,23 @@ export class RevisionDetalle implements OnInit {
     });
   }
 
+  revisarConIa(): void {
+    if (!this.idDocumento) return;
+    this.loading.set(true);
+    this.error.set(null);
+
+    this.api.revisarConIa(this.idDocumento).subscribe({
+      next: () => {
+        this.cargarDocumento();
+        this.cargarObs();
+      },
+      error: (err) => {
+        this.loading.set(false);
+        this.error.set(err?.error?.message ?? 'Error revisando documento con IA');
+      }
+    });
+  }
+
   renderContenido(contenido: string | null | undefined): string {
     const value = (contenido ?? '').trim();
     if (!value) return '';

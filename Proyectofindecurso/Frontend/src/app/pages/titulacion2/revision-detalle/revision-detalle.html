@@ -34,6 +34,10 @@
         <span class="btn-icon">✓</span>
         Aprobar
       </button>
+      <button class="btn btn-ai" type="button" (click)="revisarConIa()" [disabled]="loading() || !documento()">
+        <span class="btn-icon">🤖</span>
+        Revisar con IA
+      </button>
       <button class="btn btn-secondary" type="button" (click)="exportarPdf()" [disabled]="loading() || !documento()">
         <span class="btn-icon">📄</span>
         Exportar PDF
