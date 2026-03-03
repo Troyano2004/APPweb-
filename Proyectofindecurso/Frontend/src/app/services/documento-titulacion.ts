@@ -39,6 +39,11 @@ export interface DocumentoTitulacionDto {
   bibliografia: string | null;
   anexos: string | null;
 
+  feedbackIa?: string | null;
+  estadoRevisionIa?: string | null;
+  fechaRevisionIa?: string | null;
+
+
   tribunal?: string | null;
   fechaSustentacion?: string | null;
   horaSustentacion?: string | null;

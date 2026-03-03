@@ -590,3 +590,16 @@ $radius-xl: 16px;
     border-radius: $radius-sm;
   }
 }
+.ai-result-card {
+  margin-bottom: 1.5rem;
+  border: 1px solid $gray-200;
+  border-radius: $radius-lg;
+  padding: 1rem 1.25rem;
+  background: #f8fbff;
+}
+
+.ai-result-textarea {
+  width: 100%;
+  resize: vertical;
+  background: $white;
+}

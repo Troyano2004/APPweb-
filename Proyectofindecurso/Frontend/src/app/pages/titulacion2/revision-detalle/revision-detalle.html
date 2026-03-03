@@ -51,6 +51,25 @@
     <span class="error-text">{{ msg }}</span>
   </div>
 
+  <div class="content-card ai-result-card">
+    <div class="card-header-section">
+      <h2 class="section-title">Resultado de revisión con IA</h2>
+      <p class="section-subtitle">Aquí se mostrará el análisis generado al presionar "Revisar con IA".</p>
+    </div>
+
+    <div class="form-grid">
+      <div class="form-group form-group-full">
+        <label class="form-label">Respuesta de la IA</label>
+        <textarea
+          class="form-textarea ai-result-textarea"
+          rows="6"
+          name="resultadoIa"
+          [value]="aiResult() || ''"
+          readonly
+          placeholder="Aún no hay respuesta de IA para este documento."></textarea>
+      </div>
+    </div>
+  </div>
   <!-- Contenido del documento para revisar -->
   <div class="document-content-section">
     <div class="section-header">
