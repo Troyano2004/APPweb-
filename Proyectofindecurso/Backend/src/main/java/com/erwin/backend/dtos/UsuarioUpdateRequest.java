@@ -1,50 +1,33 @@
+
 package com.erwin.backend.dtos;
 
 public class UsuarioUpdateRequest {
 
     private String nombres;
     private String apellidos;
-    private String rol;      // ADMIN / DOCENTE / ESTUDIANTE
-    private Boolean activo;  // opcional
-    private String password; // opcional
 
-    public String getNombres() {
-        return nombres;
-    }
+    // null => no tocar roles
+    // []   => inválido (si llega, tu Service/Repo debe lanzar error o el SP)
+    // [..] => reemplazar roles
+    private Integer[] idsRolApp;
 
-    public void setNombres(String nombres) {
-        this.nombres = nombres;
-    }
+    private Boolean activo;
+    private String password;
 
-    public String getApellidos() {
-        return apellidos;
-    }
+    public UsuarioUpdateRequest() {}
 
-    public void setApellidos(String apellidos) {
-        this.apellidos = apellidos;
-    }
+    public String getNombres() { return nombres; }
+    public void setNombres(String nombres) { this.nombres = nombres; }
 
-    public String getRol() {
-        return rol;
-    }
+    public String getApellidos() { return apellidos; }
+    public void setApellidos(String apellidos) { this.apellidos = apellidos; }
 
-    public void setRol(String rol) {
-        this.rol = rol;
-    }
+    public Integer[] getIdsRolApp() { return idsRolApp; }
+    public void setIdsRolApp(Integer[] idsRolApp) { this.idsRolApp = idsRolApp; }
 
-    public Boolean getActivo() {
-        return activo;
-    }
+    public Boolean getActivo() { return activo; }
+    public void setActivo(Boolean activo) { this.activo = activo; }
 
-    public void setActivo(Boolean activo) {
-        this.activo = activo;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
+    public String getPassword() { return password; }
+    public void setPassword(String password) { this.password = password; }
 }

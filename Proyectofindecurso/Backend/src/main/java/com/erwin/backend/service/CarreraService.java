@@ -75,11 +75,16 @@ public class CarreraService {
     }
 
     private CarreraDto convertirADto(Carrera c) {
-        return new CarreraDto(
-            c.getIdCarrera(),
-            c.getNombre(),
-            c.getFacultad() != null ? c.getFacultad().getIdFacultad() : null,
-            c.getFacultad() != null ? c.getFacultad().getNombre() : null
-        );
+        CarreraDto dto = new CarreraDto();
+
+        dto.setIdCarrera(c.getIdCarrera());
+        dto.setNombre(c.getNombre());
+
+        if (c.getFacultad() != null) {
+            dto.setIdFacultad(c.getFacultad().getIdFacultad());
+            dto.setNombreFacultad(c.getFacultad().getNombre());
+        }
+
+        return dto;
     }
 }

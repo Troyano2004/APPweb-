@@ -1,0 +1,122 @@
+<div class="wrap">
+
+  <div class="toolbar no-print">
+    <button class="btn ghost" (click)="volver()">Volver</button>
+    <button class="btn" (click)="guardar()" [disabled]="cargando">Guardar</button>
+    <button class="btn ghost" (click)="imprimir()">Imprimir / PDF</button>
+    <button class="btn ghost" (click)="cargarSiExiste()">Refrescar</button>
+  </div>
+
+  <div class="alert warn" *ngIf="cargando">Cargando...</div>
+  <div class="alert" *ngIf="!cargando && mensaje">{{ mensaje }}</div>
+
+  <div class="paper" [formGroup]="form">
+
+    <div class="title">ACTA DE REVISIÓN (DIRECTOR)</div>
+
+    <!-- PARTICIPANTES -->
+    <table class="tbl">
+      <thead>
+      <tr>
+        <th>Participantes</th>
+        <th>Cargo</th>
+        <th>Firmas</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td><div class="fix">Director (autollenado por el backend al guardar)</div></td>
+        <td>
+          <input class="inp" formControlName="directorCargo" />
+          <div class="err" *ngIf="form.get('directorCargo')?.touched && form.get('directorCargo')?.invalid">Requerido</div>
+        </td>
+        <td><input class="inp" formControlName="directorFirma" placeholder="Firma (texto) opcional" /></td>
+      </tr>
+
+      <tr>
+        <td><div class="fix">Estudiante (autollenado por el backend al guardar)</div></td>
+        <td>
+          <input class="inp" formControlName="estudianteCargo" />
+          <div class="err" *ngIf="form.get('estudianteCargo')?.touched && form.get('estudianteCargo')?.invalid">Requerido</div>
+        </td>
+        <td><input class="inp" formControlName="estudianteFirma" placeholder="Firma (texto) opcional" /></td>
+      </tr>
+      </tbody>
+    </table>
+
+    <!-- PROYECTO -->
+    <div class="section">
+      <div class="sec-h">Proyecto de Integración Curricular:</div>
+      <input class="inp big" formControlName="tituloProyecto" placeholder="Título del proyecto" />
+      <div class="err" *ngIf="form.get('tituloProyecto')?.touched && form.get('tituloProyecto')?.invalid">
+        Requerido (min 5, máx 600).
+      </div>
+    </div>
+
+    <!-- PROCESO DE REVISIÓN -->
+    <div class="section">
+      <div class="sec-h">Proceso de revisión:</div>
+
+      <table class="tbl">
+        <thead>
+        <tr>
+          <th style="width:28%">Objetivo</th>
+          <th style="width:52%">Detalle de la revisión</th>
+          <th style="width:20%">Nivel de Cumplimiento</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td>
+            <textarea class="ta" rows="10" formControlName="objetivo"></textarea>
+            <div class="err" *ngIf="form.get('objetivo')?.touched && form.get('objetivo')?.invalid">
+              Requerido (min 10).
+            </div>
+          </td>
+
+          <td>
+            <textarea class="ta" rows="10" formControlName="detalleRevision"></textarea>
+            <div class="err" *ngIf="form.get('detalleRevision')?.touched && form.get('detalleRevision')?.invalid">
+              Requerido (min 10).
+            </div>
+          </td>
+
+          <td class="radioCell">
+            <label class="radio"><input type="radio" value="NINGUNO" formControlName="cumplimiento"> Ninguno</label>
+            <label class="radio"><input type="radio" value="PARCIAL" formControlName="cumplimiento"> Parcial</label>
+            <label class="radio"><input type="radio" value="COMPLETO" formControlName="cumplimiento"> Completo</label>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+    <!-- OBSERVACIONES -->
+    <div class="section">
+      <div class="sec-h">Observaciones del Director:</div>
+      <textarea class="ta" rows="6" formControlName="observaciones"
+                placeholder="Escribe aquí observaciones adicionales para el estudiante...">
+  </textarea>
+
+      <div class="err"
+           *ngIf="form.get('observaciones')?.touched && form.get('observaciones')?.invalid">
+        Máximo 8000 caracteres.
+      </div>
+    </div>
+
+
+    <!-- CONCLUSIÓN -->
+    <div class="section">
+      <div class="sec-h">Conclusión:</div>
+      <textarea class="ta" rows="6" formControlName="conclusion"></textarea>
+      <div class="err" *ngIf="form.get('conclusion')?.touched && form.get('conclusion')?.invalid">
+        Requerido (min 10).
+      </div>
+    </div>
+
+    <div class="footer">
+      Documento generado desde el sistema
+    </div>
+
+  </div>
+</div>
+

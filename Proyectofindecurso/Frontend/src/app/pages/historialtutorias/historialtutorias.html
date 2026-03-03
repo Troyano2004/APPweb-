@@ -1,0 +1,56 @@
+<div class="page">
+  <div class="head">
+    <div>
+      <div class="title">Historial de tutorías</div>
+      <div class="sub">Revisa las observaciones que dejó el director en cada tutoría (si hay acta).</div>
+    </div>
+    <button class="btn ghost" (click)="cargar()" [disabled]="cargando">Refrescar</button>
+  </div>
+
+  <div class="alert warn" *ngIf="cargando">Cargando...</div>
+  <div class="alert" *ngIf="!cargando && mensaje">{{ mensaje }}</div>
+
+  <div class="list" *ngIf="!cargando && items.length">
+    <div class="card" *ngFor="let t of items">
+
+      <div class="row">
+        <div class="left">
+          <div class="t1">Tutoría #{{ t.idTutoria }}</div>
+          <div class="meta">
+            <span><b>Fecha:</b> {{ t.fecha }}</span>
+            <span><b>Hora:</b> {{ t.hora || '-' }}</span>
+            <span><b>Modalidad:</b> {{ t.modalidad }}</span>
+            <span><b>Estado:</b> {{ t.estado }}</span>
+            <span><b>Director:</b> {{ t.directorNombre || '-' }}</span>
+          </div>
+        </div>
+
+        <div class="right">
+          <button class="btn small" (click)="toggle(t)">
+            {{ openId === t.idTutoria ? 'Ocultar' : 'Ver observaciones' }}
+          </button>
+        </div>
+      </div>
+
+      <div class="detail" *ngIf="openId === t.idTutoria">
+        <div class="empty" *ngIf="!t.idActa">
+          Esta tutoría aún no tiene acta (sin observaciones).
+        </div>
+
+        <div class="box" *ngIf="t.idActa">
+          <div class="k">Cumplimiento</div>
+          <div class="v">{{ t.cumplimiento || '-' }}</div>
+
+          <div class="k mt">Observaciones</div>
+          <div class="v pre">{{ t.observaciones || 'Sin observaciones.' }}</div>
+
+          <div class="k mt">Conclusión</div>
+          <div class="v pre">{{ t.conclusion || '-' }}</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+

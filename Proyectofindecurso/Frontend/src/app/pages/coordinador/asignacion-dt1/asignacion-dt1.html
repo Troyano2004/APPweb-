@@ -1,0 +1,95 @@
+<section class="page">
+  <header class="page-header">
+    <h1>Coordinación · DT1</h1>
+    <p>Habilitar docentes DT1 y asignar tutores a estudiantes.</p>
+
+    <div class="info">
+      <div><b>Carrera:</b> {{ carreraNombre }}</div>
+      <div><b>Periodo activo:</b> {{ periodoNombre }}</div>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button type="button" (click)="cambiarTab('docentes')" [class.active]="tab === 'docentes'">
+      Docentes (Habilitar DT1)
+    </button>
+
+    <button type="button" (click)="cambiarTab('tutores')" [class.active]="tab === 'tutores'">
+      Tutores (Asignar a estudiante)
+    </button>
+  </div>
+
+  <div *ngIf="mensaje" class="msg" [class.ok]="msgType==='ok'" [class.err]="msgType==='error'">
+    {{ mensaje }}
+  </div>
+
+  <!-- ================= TAB 1: DOCENTES ================= -->
+  <div *ngIf="tab === 'docentes'" class="card">
+    <h3>Habilitar docente como DT1</h3>
+
+    <form [formGroup]="formDocente" class="form">
+      <label>Docente de la carrera</label>
+
+      <select formControlName="idDocente">
+        <option [ngValue]="null">-- Selecciona --</option>
+        <option *ngFor="let d of docentesCarrera" [ngValue]="d.id">
+          {{ d.nombre }}
+        </option>
+      </select>
+
+      <small class="error" *ngIf="formDocente.get('idDocente')?.touched && formDocente.get('idDocente')?.invalid">
+        Selecciona un docente.
+      </small>
+
+      <button type="button" (click)="habilitarDocenteDt1()" [disabled]="cargando">
+        {{ cargando ? 'Guardando...' : 'Habilitar como DT1' }}
+      </button>
+    </form>
+
+    <hr />
+
+    <h4>DT1 habilitados en este periodo</h4>
+    <div *ngIf="docentesDt1.length === 0" class="hint">Aún no hay docentes DT1 habilitados.</div>
+
+    <ul *ngIf="docentesDt1.length > 0">
+      <li *ngFor="let d of docentesDt1">{{ d.nombre }}</li>
+    </ul>
+  </div>
+
+  <!-- ================= TAB 2: TUTORES ================= -->
+  <div *ngIf="tab === 'tutores'" class="card">
+    <h3>Asignar tutor a estudiante</h3>
+
+    <form [formGroup]="formTutor" class="form">
+      <label>Estudiante (sin tutor)</label>
+      <select formControlName="idEstudiante">
+        <option [ngValue]="null">-- Selecciona --</option>
+        <option *ngFor="let e of estudiantes" [ngValue]="e.id">
+          {{ e.nombre }}
+        </option>
+      </select>
+
+      <small class="error" *ngIf="formTutor.get('idEstudiante')?.touched && formTutor.get('idEstudiante')?.invalid">
+        Selecciona un estudiante.
+      </small>
+
+      <label>Docente DT1</label>
+      <select formControlName="idDocente">
+        <option [ngValue]="null">-- Selecciona --</option>
+        <option *ngFor="let d of docentesDt1" [ngValue]="d.id">
+          {{ d.nombre }}
+        </option>
+      </select>
+
+      <small class="error" *ngIf="formTutor.get('idDocente')?.touched && formTutor.get('idDocente')?.invalid">
+        Selecciona un docente DT1.
+      </small>
+
+      <button type="button" (click)="asignarTutor()" [disabled]="cargando">
+        {{ cargando ? 'Asignando...' : 'Asignar tutor' }}
+      </button>
+
+      <p class="hint">* El backend valida que no se repita tutor en el mismo periodo.</p>
+    </form>
+  </div>
+</section>

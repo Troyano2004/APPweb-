@@ -23,15 +23,18 @@ import { VisualizarProyectoComponent } from './pages/coordinador/visualizar-proy
 import { LoginComponent } from './pages/login/login';
 import { AdminUsuariosComponent } from './pages/admin-usuario/admin-usuarios';
 import { RolesComponent } from './pages/roles/roles';
-import { authGuard, loginGuard, roleGuard } from './guards/auth.guard';
+import { AsignacionDt1  } from './pages/coordinador/asignacion-dt1/asignacion-dt1';
+import { authGuard, loginGuard } from './guards/auth.guard';
 import { CarreraModalidadComponent } from './pages/catalogos/carrera-modalidad/carrera-modalidad.component';
 
-import { UniversidadComponent } from './pages/catalogos/universidad/universidad.component';
-import { FacultadComponent } from './pages/catalogos/facultad/facultad.component';
-import { CarreraComponent } from './pages/catalogos/carrera/carrera.component';
-import { ModalidadCatalogoComponent } from './pages/catalogos/modalidad/modalidad-catalogo.component';
-import { PeriodoComponent } from './pages/catalogos/periodo/periodo.component';
-import { TipoTrabajoComponent } from './pages/catalogos/tipo-trabajo/tipo-trabajo.component';
+// ✅ Nuevos imports agregados
+import { Historialtutorias } from './pages/historialtutorias/historialtutorias';
+import { Dt1EnviadosComponent } from './pages/dt1/dt1lista/dt1lista';
+import { Dt1RevisionComponent } from './pages/dt1/dt1revision/dt1revision';
+import { AnteproyectoComponent } from './pages/anteproyecto/anteproyecto';
+import { Actadirector } from './pages/director/actadirector/actadirector';
+import { Tutoriasdirector } from './pages/director/tutoriasdirector/tutoriasdirector';
+import { DirectorMisAnteproyectosComponent } from './pages/director/directoranteproyectos/directoranteproyectos';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'login' },
@@ -43,6 +46,18 @@ export const routes: Routes = [
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
       { path: 'dashboard', component: DashboardComponent, data: { title: 'Dashboard' } },
+
+      // ✅ Rutas nuevas para Estudiante/Anteproyecto
+      { path: 'anteproyecto/nuevo', component: AnteproyectoComponent, data: { title: 'Registrar anteproyecto' } },
+      { path: 'tutorias/historial', component: Historialtutorias, data: { title: 'Historial de Tutorías' } },
+
+      // ✅ Rutas nuevas para Director / DT1
+      { path: 'director/mis-anteproyectos', component: DirectorMisAnteproyectosComponent, data: { title: 'Mis anteproyectos' } },
+      { path: 'director/tutorias', component: Tutoriasdirector, data: { title: 'Tutorías (Director)' } },
+      { path: 'director/acta', component: Actadirector, data: { title: 'Acta de revisión (Director)' } },
+      { path: 'dt1/lista', component: Dt1EnviadosComponent, data: { title: 'DT1 - Lista' } },
+      { path: 'dt1/revision', component: Dt1RevisionComponent, data: { title: 'DT1 - Revisión' } },
+
       { path: 'estudiantes', component: EstudiantesComponent, data: { title: 'Estudiantes' } },
       {
         path: 'titulacion2/documento',
@@ -67,46 +82,19 @@ export const routes: Routes = [
         redirectTo: 'titulacion2/revisar/:idDocumento'
       },
 
-      {
-        path: 'catalogos/universidad',
-        component: UniversidadComponent,
-        canActivate: [roleGuard('ROLE_COORDINADOR', 'ROLE_ADMIN')],
-        data: { title: 'Universidad' }
-      },
-      {
-        path: 'catalogos/facultad',
-        component: FacultadComponent,
-        canActivate: [roleGuard('ROLE_COORDINADOR', 'ROLE_ADMIN')],
-        data: { title: 'Facultad' }
-      },
-      {
-        path: 'catalogos/carrera',
-        component: CarreraComponent,
-        canActivate: [roleGuard('ROLE_COORDINADOR', 'ROLE_ADMIN')],
-        data: { title: 'Carrera' }
-      },
-      {
-        path: 'catalogos/modalidad',
-        component: ModalidadCatalogoComponent,
-        canActivate: [roleGuard('ROLE_COORDINADOR', 'ROLE_ADMIN')],
-        data: { title: 'Modalidad Titulación' }
-      },
-      {
-        path: 'catalogos/periodo',
-        component: PeriodoComponent,
-        canActivate: [roleGuard('ROLE_COORDINADOR', 'ROLE_ADMIN')],
-        data: { title: 'Período Académico' }
-      },
+      { path: 'catalogos/universidad', component: PlaceholderPageComponent, data: { title: 'Universidad' } },
+      { path: 'catalogos/facultad', component: PlaceholderPageComponent, data: { title: 'Facultad' } },
+      { path: 'catalogos/carrera', component: PlaceholderPageComponent, data: { title: 'Carrera' } },
+      { path: 'catalogos/modalidad', component: PlaceholderPageComponent, data: { title: 'Modalidad Titulación' } },
+      { path: 'catalogos/periodo', component: PlaceholderPageComponent, data: { title: 'Período Académico' } },
       {
         path: 'catalogos/tipo-trabajo',
-        component: TipoTrabajoComponent,
-        canActivate: [roleGuard('ROLE_COORDINADOR', 'ROLE_ADMIN')],
+        component: PlaceholderPageComponent,
         data: { title: 'Tipo Trabajo Titulación' }
       },
       {
         path: 'catalogos/carrera-modalidad',
         component: CarreraModalidadComponent,
-        canActivate: [roleGuard('ROLE_COORDINADOR', 'ROLE_ADMIN')],
         data: { title: 'Carrera-Modalidad' }
       },
 
@@ -125,7 +113,6 @@ export const routes: Routes = [
 
       { path: 'tutorias/nueva', component: PlaceholderPageComponent, data: { title: 'Registrar tutoría' } },
       { path: 'tutorias/actas', component: PlaceholderPageComponent, data: { title: 'Actas de tutoría' } },
-      { path: 'tutorias/historial', component: PlaceholderPageComponent, data: { title: 'Historial' } },
 
       {
         path: 'proyecto/documento',
@@ -195,6 +182,11 @@ export const routes: Routes = [
         path: 'coordinador/proyecto',
         component: VisualizarProyectoComponent,
         data: { title: 'Visualización de proyecto' }
+      },
+      {
+        path: 'coordinador/dt1-asignacion',
+        component: AsignacionDt1,
+        data: { title: 'DT1 - Asignación Docentes y Tutores' }
       },
 
       { path: '**', redirectTo: 'dashboard' }

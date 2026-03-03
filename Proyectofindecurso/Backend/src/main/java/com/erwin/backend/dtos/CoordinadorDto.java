@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CoordinadorDtos {
+public class CoordinadorDto {
     public static class SeguimientoProyectoDto {
         private Integer idProyecto;
         private Integer idEstudiante;

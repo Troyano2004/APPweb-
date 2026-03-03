@@ -1,0 +1,83 @@
+<div class="container">
+  <div class="form-card">
+    <div class="form-head">
+      <div class="form-title">Programar Nueva Tutoría</div>
+      <p>Completa los datos para agendar una sesión con el estudiante.</p>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="crear()" class="grid-form">
+      <div class="field">
+        <label>Fecha *</label>
+        <input type="date" formControlName="fecha" class="input">
+      </div>
+
+      <div class="field">
+        <label>Hora</label>
+        <input type="time" formControlName="hora" class="input">
+      </div>
+
+      <div class="field">
+        <label>Modalidad</label>
+        <select formControlName="modalidad" class="input">
+          <option value="PRESENCIAL">Presencial</option>
+          <option value="VIRTUAL">Virtual</option>
+        </select>
+      </div>
+
+      <div class="actions">
+        <button type="submit" class="btn primary" [disabled]="cargando">
+          {{ cargando ? 'Guardando...' : 'Programar Tutoría' }}
+        </button>
+      </div>
+    </form>
+
+    <div *ngIf="mensaje" class="alert">{{ mensaje }}</div>
+  </div>
+
+  <br>
+
+  <div class="list-card">
+    <div class="list-head">
+      <div>
+        <div class="list-title">Listado</div>
+        <div class="list-sub">Tutorías registradas para el anteproyecto seleccionado.</div>
+      </div>
+      <button class="btn ghost" (click)="volver()">Volver</button>
+    </div>
+
+    <div class="empty-mini" *ngIf="!tutorias?.length">
+      No hay tutorías registradas.
+    </div>
+
+    <div class="table-wrap" *ngIf="tutorias?.length">
+      <table class="t">
+        <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Hora</th>
+          <th>Modalidad</th>
+          <th>Estado</th>
+          <th class="right">Acciones</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr *ngFor="let t of tutorias">
+          <td><span class="pill">{{ t.fecha }}</span></td>
+          <td class="mono">{{ t.hora || '-' }}</td>
+          <td>{{ t.modalidad }}</td>
+          <td>
+              <span class="status" [ngClass]="(t.estado || '').toLowerCase()">
+                {{ t.estado }}
+              </span>
+          </td>
+          <td class="right">
+            <button class="btn ghost" (click)="abrirActa(t)">Acta</button>
+            <button class="btn danger" (click)="cancelar(t)">Cancelar</button>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+

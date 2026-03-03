@@ -1,15 +1,14 @@
-// Proyectofindecurso/Backend/src/main/java/com/erwin/backend/service/ImageStorageService.java
 package com.erwin.backend.service;
 
+import com.azure.storage.blob.BlobClient;
+import com.azure.storage.blob.BlobContainerClient;
+import com.azure.storage.blob.BlobServiceClient;
+import com.azure.storage.blob.BlobServiceClientBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.Set;
 import java.util.UUID;
 
@@ -19,8 +18,12 @@ public class ImageStorageService {
     private static final long MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
     private static final Set<String> ALLOWED_EXTENSIONS = Set.of("jpg", "jpeg", "png", "gif", "webp", "bmp", "svg");
 
-    @Value("${app.uploads.images-dir:uploads/images}")
-    private String imagesDir;
+    // Inyectamos las credenciales desde el application.properties
+    @Value("${azure.storage.connection-string}")
+    private String connectionString;
+
+    @Value("${azure.storage.container-name}")
+    private String containerName;
 
     public String storeImage(MultipartFile file) {
         if (file == null || file.isEmpty()) {
@@ -43,15 +46,27 @@ public class ImageStorageService {
         }
 
         String storedFileName = UUID.randomUUID() + "." + extension;
-        Path uploadPath = Paths.get(imagesDir).toAbsolutePath().normalize();
 
         try {
-            Files.createDirectories(uploadPath);
-            Path target = uploadPath.resolve(storedFileName);
-            Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
-            return storedFileName;
+            // Conexión con tu cuenta appwebtroyano2026
+            BlobServiceClient blobServiceClient = new BlobServiceClientBuilder()
+                    .connectionString(connectionString)
+                    .buildClient();
+
+            // Referencia a tu contenedor (carpeta)
+            BlobContainerClient containerClient = blobServiceClient.getBlobContainerClient(containerName);
+
+            // Preparar el archivo que se va a subir
+            BlobClient blobClient = containerClient.getBlobClient(storedFileName);
+
+            // Subir a Azure
+            blobClient.upload(file.getInputStream(), file.getSize(), true);
+
+            // Retornar la URL pública generada por Azure
+            return blobClient.getBlobUrl();
+
         } catch (IOException e) {
-            throw new IllegalStateException("No se pudo guardar la imagen", e);
+            throw new IllegalStateException("No se pudo guardar la imagen en Azure", e);
         }
     }
 
