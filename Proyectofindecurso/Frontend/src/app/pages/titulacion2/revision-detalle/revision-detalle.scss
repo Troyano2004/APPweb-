@@ -208,7 +208,16 @@ $radius-xl: 16px;
     box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
   }
 }
+.btn-ai {
+  background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+  color: $white;
+  border: 1px solid #1e40af;
 
+  &:hover:not(:disabled) {
+    background: linear-gradient(180deg, #1d4ed8 0%, #1e3a8a 100%);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+  }
+}
 // ===============================================
 // DOCUMENT VIEWER
 // ===============================================
@@ -580,4 +589,17 @@ $radius-xl: 16px;
     height: auto;
     border-radius: $radius-sm;
   }
+}
+.ai-result-card {
+  margin-bottom: 1.5rem;
+  border: 1px solid $gray-200;
+  border-radius: $radius-lg;
+  padding: 1rem 1.25rem;
+  background: #f8fbff;
+}
+
+.ai-result-textarea {
+  width: 100%;
+  resize: vertical;
+  background: $white;
 }
