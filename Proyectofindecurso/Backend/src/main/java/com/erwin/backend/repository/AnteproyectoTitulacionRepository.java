@@ -14,10 +14,10 @@ import java.util.Optional;
 public interface AnteproyectoTitulacionRepository extends JpaRepository<AnteproyectoTitulacion, Integer> {
     Optional<AnteproyectoTitulacion> findByPropuesta_IdPropuesta(Integer IdpPropuesta);
 
-    List<AnteproyectoTitulacion> findByCarrera_IdCarreraAndEleccion_Periodo_IdPeriodoAndEstadoIgnoreCase(
+    List<AnteproyectoTitulacion> findByCarrera_IdCarreraAndEleccion_Periodo_IdPeriodoAndEstadoInIgnoreCase(
             Integer idCarrera,
             Integer idPeriodo,
-            String estado
+            List<String> estados
     );
 
     List<AnteproyectoTitulacion> findByEstudiante_IdEstudianteAndEleccion_Periodo_IdPeriodoAndEstadoIgnoreCase(
