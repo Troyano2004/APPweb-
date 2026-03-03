@@ -1,4 +1,3 @@
-
 package com.erwin.backend.service;
 
 import com.erwin.backend.config.DbSessionFilter;
@@ -35,26 +34,27 @@ public class AuthService {
                 .findByUsername(usernameLogin)
                 .orElseThrow(() -> new RuntimeException("Usuario no existe"));
 
-        // ✅ 1) Validar password del aplicativo (BCrypt)
-        if (!passwordEncoder.matches(passwordApp, usuario.getPasswordHash())) {
-            throw new RuntimeException("Contraseña incorrecta");
-        }
+        // ✅ 1) Validar password del aplicativo (BCrypt o texto plano - PRUEBAS)
+        validarPasswordMixto(passwordApp, usuario.getPasswordHash());
 
-        // ✅ 2) Credenciales BD (username_db y password_db_encrypted)
+        // ✅ 2) Credenciales BD (OPCIONAL EN PRUEBAS)
         String dbUser = (usuario.getUsernameDb() != null && !usuario.getUsernameDb().trim().isEmpty())
                 ? usuario.getUsernameDb().trim()
-                : usuario.getUsername().trim();
+                : (usuario.getUsername() != null ? usuario.getUsername().trim() : null);
 
         String dbPassEncrypted = usuario.getPasswordDbEncrypted();
-        if (dbPassEncrypted == null || dbPassEncrypted.trim().isEmpty()) {
-            throw new RuntimeException("El usuario no tiene password BD configurada (password_db_encrypted)");
+
+        // ✅ 3) Guardar en sesión SOLO si existe password_db_encrypted
+        if (dbUser != null && dbPassEncrypted != null && !dbPassEncrypted.trim().isEmpty()) {
+            String dbPass = CryptoUtil.decrypt(dbPassEncrypted.trim());
+            session.setAttribute(DbSessionFilter.SES_DB_USER, dbUser); // "DB_USER"
+            session.setAttribute(DbSessionFilter.SES_DB_PASS, dbPass); // "DB_PASS"
+        } else {
+            // Modo prueba: si no hay credenciales BD, igual dejamos iniciar sesión.
+            // (Opcional) limpiar por si quedó algo viejo
+            session.removeAttribute(DbSessionFilter.SES_DB_USER);
+            session.removeAttribute(DbSessionFilter.SES_DB_PASS);
         }
-
-        String dbPass = CryptoUtil.decrypt(dbPassEncrypted);
-
-        // ✅ 3) Guardar en sesión con las llaves que tu filtro realmente lee: DB_USER / DB_PASS
-        session.setAttribute(DbSessionFilter.SES_DB_USER, dbUser); // "DB_USER"
-        session.setAttribute(DbSessionFilter.SES_DB_PASS, dbPass); // "DB_PASS"
 
         // ✅ 4) Rol para frontend
         String rolFrontend = convertirRol(usuario.getRolAsignado());
@@ -65,6 +65,35 @@ public class AuthService {
                 usuario.getNombres(),
                 usuario.getApellidos()
         );
+    }
+
+    /**
+     * Permite login con passwordHash BCrypt o en texto plano (solo pruebas).
+     */
+    private void validarPasswordMixto(String rawPassword, String storedPassword) {
+        if (rawPassword == null) {
+            throw new RuntimeException("Contraseña incorrecta");
+        }
+        if (storedPassword == null || storedPassword.trim().isEmpty()) {
+            throw new RuntimeException("El usuario no tiene passwordHash configurado");
+        }
+
+        String stored = storedPassword.trim();
+
+        // Detecta BCrypt típico: $2a$ / $2b$ / $2y$
+        boolean esBcrypt = stored.matches("^\\$2[aby]\\$\\d\\d\\$.+");
+
+        boolean ok;
+        if (esBcrypt) {
+            ok = passwordEncoder.matches(rawPassword, stored);
+        } else {
+            // Texto plano
+            ok = rawPassword.equals(stored);
+        }
+
+        if (!ok) {
+            throw new RuntimeException("Contraseña incorrecta");
+        }
     }
 
     private String convertirRol(String rolAsignado) {
