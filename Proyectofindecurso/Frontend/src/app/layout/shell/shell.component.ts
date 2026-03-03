@@ -11,7 +11,6 @@ import { CommonModule } from '@angular/common';
 import { filter, Subscription } from 'rxjs';
 import { getSessionUser } from '../../services/session';
 
-// ✅ Agregado COORDINADOR al type
 type AppRole = 'ADMIN' | 'DOCENTE' | 'ESTUDIANTE' | 'COORDINADOR';
 
 interface MenuItem {
@@ -45,13 +44,16 @@ export class ShellComponent implements OnInit, OnDestroy {
 
   private readonly subscriptions = new Subscription();
 
-  // ✅ MENÚ MAESTRO ACTUALIZADO CON TODO LO DE LA VERSIÓN OFICIAL
   private readonly ALL_SECTIONS: MenuSection[] = [
     {
       title: 'Dashboard',
       icon: '🏠',
       roles: ['ADMIN', 'DOCENTE', 'ESTUDIANTE', 'COORDINADOR'],
-      items: [{ label: 'Resumen general', path: '/app/dashboard' }],
+      items: [
+        { label: 'Resumen general', path: '/app/dashboard', roles: ['ADMIN', 'COORDINADOR'] },
+        { label: 'Mi panel docente', path: '/app/dashboard', roles: ['DOCENTE'] },
+        { label: 'Mi panel', path: '/app/dashboard', roles: ['ESTUDIANTE'] },
+      ],
     },
     {
       title: 'Catálogos Académicos',
@@ -78,6 +80,19 @@ export class ShellComponent implements OnInit, OnDestroy {
       ],
     },
     {
+      title: 'Propuesta y Anteproyecto',
+      icon: '📝',
+      roles: ['ADMIN', 'DOCENTE', 'ESTUDIANTE'],
+      items: [
+        { label: 'Propuestas pendientes', path: '/app/propuesta/pendientes', roles: ['ADMIN', 'DOCENTE'] },
+        { label: 'Registrar propuesta', path: '/app/propuesta/nueva', roles: ['ESTUDIANTE', 'ADMIN'] },
+        { label: 'Registrar anteproyecto', path: '/app/anteproyecto/nuevo', roles: ['ESTUDIANTE', 'ADMIN'] },
+        { label: 'Revisión por director', path: '/app/propuesta/revision', roles: ['DOCENTE', 'ADMIN'] },
+        { label: 'Historial observaciones', path: '/app/tutorias/historial', roles: ['ESTUDIANTE', 'ADMIN'] },
+        { label: 'Historial observaciones', path: '/app/propuesta/historial', roles: ['DOCENTE'] },
+      ],
+    },
+    {
       title: 'Tutorías y Dirección',
       icon: '👨‍🏫',
       roles: ['DOCENTE', 'ADMIN'],
@@ -86,6 +101,20 @@ export class ShellComponent implements OnInit, OnDestroy {
         { label: 'Tutorías', path: '/app/director/tutorias' },
         { label: 'Acta de revisión', path: '/app/director/acta' },
         { label: 'Revisión Final Anteproyecto', path: '/app/dt1/lista' },
+        { label: 'Registrar tutoría', path: '/app/tutorias/nueva' },
+        { label: 'Actas de tutoría', path: '/app/tutorias/actas' },
+        { label: 'Historial', path: '/app/tutorias/historial', roles: ['ADMIN'] },
+      ],
+    },
+    {
+      title: 'Proyecto de Titulación',
+      icon: '📄',
+      roles: ['ADMIN', 'DOCENTE'],
+      items: [
+        { label: 'Documento por secciones', path: '/app/proyecto/documento' },
+        { label: 'Revisión por secciones', path: '/app/proyecto/revision' },
+        { label: 'Correcciones', path: '/app/proyecto/correcciones' },
+        { label: 'Estado del proyecto', path: '/app/proyecto/estado' },
       ],
     },
     {
@@ -96,6 +125,36 @@ export class ShellComponent implements OnInit, OnDestroy {
         { label: 'Documento de titulación', path: '/app/titulacion2/documento', roles: ['ESTUDIANTE'] },
         { label: 'Documentos pendientes', path: '/app/titulacion2/revision', roles: ['DOCENTE'] },
         { label: 'Workflow Proceso', path: '/app/titulacion2/workflow', roles: ['ADMIN', 'DOCENTE'] },
+      ],
+    },
+    {
+      title: 'Documentos',
+      icon: '🗂️',
+      roles: ['ADMIN', 'DOCENTE', 'ESTUDIANTE'],
+      items: [
+        { label: 'Habilitantes', path: '/app/documentos/habilitantes' },
+        { label: 'Versiones', path: '/app/documentos/versiones' },
+        { label: 'Expediente', path: '/app/documentos/expediente' },
+      ],
+    },
+    {
+      title: 'Legalización',
+      icon: '⚖️',
+      roles: ['ADMIN', 'COORDINADOR'],
+      items: [
+        { label: 'Validación legal', path: '/app/legalizacion/validacion' },
+        { label: 'Checklist', path: '/app/legalizacion/checklist' },
+        { label: 'Aprobación final', path: '/app/legalizacion/aprobacion' },
+      ],
+    },
+    {
+      title: 'Reportes',
+      icon: '📊',
+      roles: ['ADMIN', 'DOCENTE', 'COORDINADOR'],
+      items: [
+        { label: 'Expediente por estudiante', path: '/app/reportes/expediente' },
+        { label: 'Por período', path: '/app/reportes/periodo' },
+        { label: 'Actas y constancias', path: '/app/reportes/actas' },
       ],
     },
     {
@@ -112,16 +171,6 @@ export class ShellComponent implements OnInit, OnDestroy {
         { label: 'Reportes', path: '/app/coordinador/reportes' },
         { label: 'Comisión formativa', path: '/app/coordinador/comision' },
         { label: 'DT1 - Docentes y Tutores', path: '/app/coordinador/dt1-asignacion' },
-      ],
-    },
-    {
-      title: 'Propuesta y Anteproyecto',
-      icon: '📝',
-      roles: ['ESTUDIANTE'],
-      items: [
-        { label: 'Registrar propuesta', path: '/app/propuesta/nueva' },
-        { label: 'Registrar anteproyecto', path: '/app/anteproyecto/nuevo' },
-        { label: 'Historial observaciones', path: '/app/tutorias/historial' },
       ],
     },
     {
@@ -156,11 +205,12 @@ export class ShellComponent implements OnInit, OnDestroy {
     this.subscriptions.unsubscribe();
   }
 
-  // ✅ MÉTODOS DE UI
-  toggleCollapse() { this.isCollapsed = !this.isCollapsed; }
-  toggleMobile() { this.isMobileOpen = !this.isMobileOpen; }
-  closeMobile() { this.isMobileOpen = false; }
-  toggleSection(index: number) { this.openSectionIndex = this.openSectionIndex === index ? -1 : index; }
+  toggleCollapse(): void { this.isCollapsed = !this.isCollapsed; }
+  toggleMobile(): void { this.isMobileOpen = !this.isMobileOpen; }
+  closeMobile(): void { this.isMobileOpen = false; }
+  toggleSection(index: number): void {
+    this.openSectionIndex = this.openSectionIndex === index ? -1 : index;
+  }
 
   logout(): void {
     localStorage.removeItem('usuario');
@@ -172,34 +222,28 @@ export class ShellComponent implements OnInit, OnDestroy {
     const user = getSessionUser();
     if (!user) return;
 
-    // 1. Construir nombre completo (Limpiando nulos y espacios)
     const fullName = [user['nombres'], user['apellidos']]
-      .map(v => String(v ?? '').trim()) // String() es más seguro que .toString()
+      .map(v => String(v ?? '').trim())
       .filter(v => v.length > 0)
       .join(' ');
 
-    // 2. Fallback al username (Forzando que sea string para evitar el error TS2322)
     const backupName = String(user['username'] || user['usuarioLogin'] || 'Usuario');
-
     this.userName = fullName || backupName;
 
-    // 3. Formatear el rol
     this.userRole = String(user['rol'] ?? '').replace('ROLE_', '').trim() || 'Sistema';
   }
 
-  // ✅ LÓGICA DE FILTRADO POR ROL
   private buildMenuByRole(): MenuSection[] {
     const role = this.getNormalizedRole();
     if (!role) return [];
 
     return this.ALL_SECTIONS
-      .filter((sec) => !sec.roles || sec.roles.includes(role))
-      .map((sec) => ({
+      .filter(sec => !sec.roles || sec.roles.includes(role))
+      .map(sec => ({
         ...sec,
-        // Filtra también los items individuales si tienen la propiedad roles
-        items: sec.items.filter((it) => !it.roles || it.roles.includes(role)),
+        items: sec.items.filter(it => !it.roles || it.roles.includes(role)),
       }))
-      .filter((sec) => sec.items.length > 0);
+      .filter(sec => sec.items.length > 0);
   }
 
   private getNormalizedRole(): AppRole | null {
@@ -210,7 +254,7 @@ export class ShellComponent implements OnInit, OnDestroy {
     if (clean === 'ADMIN') return 'ADMIN';
     if (clean === 'DOCENTE') return 'DOCENTE';
     if (clean === 'ESTUDIANTE') return 'ESTUDIANTE';
-    if (clean === 'COORDINADOR') return 'COORDINADOR'; // ✅ Agregado
+    if (clean === 'COORDINADOR') return 'COORDINADOR';
     return null;
   }
 

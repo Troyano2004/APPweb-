@@ -105,6 +105,17 @@ public class DocumentoTitulacion {
     @Column(name = "anexos", columnDefinition = "TEXT")
     private String anexos;
 
+
+    // ====== Campos para la revisión de la IA ======
+    @Column(name = "feedback_ia", columnDefinition = "TEXT")
+    private String feedbackIa;
+
+    @Column(name = "estado_revision_ia", length = 50)
+    private String estadoRevisionIa;
+
+    @Column(name = "fecha_revision_ia")
+    private LocalDateTime fechaRevisionIa;
+
     // Auditoría
     @Column(name = "creado_en", nullable = false)
     private LocalDateTime creadoEn;

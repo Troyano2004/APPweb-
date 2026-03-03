@@ -15,4 +15,6 @@ public interface AnteproyectoVersionRepository extends JpaRepository<Anteproyect
     Optional<Anteproyectotitulacionversion> findTopByAnteproyecto_IdAnteproyectoOrderByNumeroVersionDesc(Integer idAnteproyecto);
     Optional<Anteproyectotitulacionversion>
     findFirstByAnteproyecto_IdAnteproyectoOrderByNumeroVersionDesc(Integer idAnteproyecto);
+
+
 }

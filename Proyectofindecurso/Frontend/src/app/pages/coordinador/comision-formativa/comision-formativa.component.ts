@@ -91,10 +91,11 @@ interface OpcionPeriodoActivo {
         </div>
 
         <h4>Docentes de la comisión</h4>
+
         <div class="member-row" *ngFor="let miembro of miembrosSeleccionados; let i = index">
           <select [(ngModel)]="miembro.idDocente">
             <option [ngValue]="null">Seleccione docente</option>
-            <option *ngFor="let docente of docentesDisponibles" [ngValue]="docente.idDocente">
+            <option *ngFor="let docente of getDocentesParaFila(i)" [ngValue]="docente.idDocente">
               {{ docente.director }}
             </option>
           </select>
@@ -105,7 +106,11 @@ interface OpcionPeriodoActivo {
             <option value="VOCAL">VOCAL</option>
           </select>
 
-          <button type="button" class="danger" (click)="quitarMiembro(i)" [disabled]="miembrosSeleccionados.length === 1 || guardando">
+          <button
+            type="button"
+            class="danger"
+            (click)="quitarMiembro(i)"
+            [disabled]="miembrosSeleccionados.length === 1 || guardando">
             Quitar
           </button>
         </div>
@@ -115,7 +120,10 @@ interface OpcionPeriodoActivo {
             + Agregar docente
           </button>
 
-          <button type="button" (click)="guardarComision()" [disabled]="guardando || !carreraCoordinador?.idCarrera || periodosActivos.length === 0 || !nuevaComision.periodoAcademico">
+          <button
+            type="button"
+            (click)="guardarComision()"
+            [disabled]="guardando || !carreraCoordinador?.idCarrera || periodosActivos.length === 0 || !nuevaComision.periodoAcademico">
             {{ guardando ? 'Guardando...' : 'Guardar comisión' }}
           </button>
         </div>
@@ -283,6 +291,7 @@ export class ComisionFormativaComponent implements OnInit {
     periodoAcademico: '',
     estado: 'ACTIVA'
   };
+
   miembrosSeleccionados: MiembroSeleccionado[] = [{ idDocente: null, cargo: 'PRESIDENTE' }];
   guardando = false;
   mensaje = '';
@@ -372,7 +381,41 @@ export class ComisionFormativaComponent implements OnInit {
     return comision.miembros.map((miembro) => `${miembro.docente} (${miembro.cargo})`).join(', ');
   }
 
+  // ✅ NUEVO: ids ya seleccionados
+  private getIdsSeleccionados(): Set<number> {
+    return new Set(
+      this.miembrosSeleccionados
+        .map((m) => m.idDocente)
+        .filter((id): id is number => id !== null && id !== undefined)
+    );
+  }
+
+  /**
+   * ✅ NUEVO: lista de docentes para la fila indexFila
+   * - Oculta docentes ya usados en otras filas
+   * - Mantiene visible el docente ya seleccionado en esta fila
+   */
+  getDocentesParaFila(indexFila: number): DirectorCarga[] {
+    const seleccionActual = this.miembrosSeleccionados[indexFila]?.idDocente ?? null;
+    const idsSeleccionados = this.getIdsSeleccionados();
+
+    return this.docentesDisponibles.filter((d) => {
+      if (d?.idDocente == null) return false;
+
+      if (seleccionActual !== null && d.idDocente === seleccionActual) return true;
+
+      return !idsSeleccionados.has(d.idDocente);
+    });
+  }
+
   agregarMiembro(): void {
+    // (opcional) evita crear más filas de las que hay docentes
+    const seleccionados = this.miembrosSeleccionados.filter((m) => m.idDocente != null).length;
+    if (this.docentesDisponibles.length > 0 && seleccionados >= this.docentesDisponibles.length) {
+      this.error = 'Ya no hay docentes disponibles para agregar.';
+      return;
+    }
+
     this.miembrosSeleccionados.push({ idDocente: null, cargo: 'VOCAL' });
   }
 

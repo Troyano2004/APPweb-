@@ -3,16 +3,9 @@ package com.erwin.backend.service;
 import com.erwin.backend.dtos.Dt1DetalleResponse;
 import com.erwin.backend.dtos.Dt1EnviadoResponse;
 import com.erwin.backend.dtos.Dt1RevisionRequest;
-import com.erwin.backend.entities.AnteproyectoTitulacion;
-import com.erwin.backend.entities.Anteproyectotitulacionversion;
-import com.erwin.backend.entities.Dt1TutorEstudiante;
-import com.erwin.backend.entities.PeriodoTitulacion;
-import com.erwin.backend.repository.AnteproyectoTitulacionRepository;
-import com.erwin.backend.repository.AnteproyectoVersionRepository;
-import com.erwin.backend.repository.Dt1TutorEstudianteRepository;
-import com.erwin.backend.repository.PeriodoTitulacionRepository;
+import com.erwin.backend.entities.*;
+import com.erwin.backend.repository.*;
 import org.springframework.http.HttpStatus;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -24,30 +17,33 @@ public class Dt1Service {
 
     private final AnteproyectoTitulacionRepository anteRepo;
     private final AnteproyectoVersionRepository verRepo;
-    private final Dt1TutorEstudianteRepository dt1TutorRepo; // ✅ CAMBIO REAL
-    private final Dt1PdfService pdf;
+    private final Dt1AsignacionRepository dt1AsignacionRepo;
+    private final Dt1RevisionRepository revisionRepo;
+    private final DocenteRepository docenteRepo;
     private final PeriodoTitulacionRepository periodoRepo;
 
-    // Mantienes SP para revisar/pdf
-    private final JdbcTemplate jdbc;
+    private final Dt1PdfService pdf;
 
     public Dt1Service(
             AnteproyectoTitulacionRepository anteRepo,
             AnteproyectoVersionRepository verRepo,
-            Dt1TutorEstudianteRepository dt1TutorRepo,
-            JdbcTemplate jdbc,
-            Dt1PdfService pdf, PeriodoTitulacionRepository periodoRepo
-            ) {
+            Dt1AsignacionRepository dt1AsignacionRepo,
+            Dt1RevisionRepository revisionRepo,
+            DocenteRepository docenteRepo,
+            PeriodoTitulacionRepository periodoRepo,
+            Dt1PdfService pdf
+    ) {
         this.anteRepo = anteRepo;
         this.verRepo = verRepo;
-        this.dt1TutorRepo = dt1TutorRepo;
-        this.jdbc = jdbc;
-        this.pdf = pdf;
+        this.dt1AsignacionRepo = dt1AsignacionRepo;
+        this.revisionRepo = revisionRepo;
+        this.docenteRepo = docenteRepo;
         this.periodoRepo = periodoRepo;
+        this.pdf = pdf;
     }
 
     // =============================
-    // ✅ ENVIADOS (SOLO MIS TUTORADOS)
+    // ✅ ENVIADOS (EN MI CARRERA/PERIODO COMO DT1)
     // =============================
     @Transactional(readOnly = true)
     public List<Dt1EnviadoResponse> enviados(Integer idDocente) {
@@ -61,25 +57,22 @@ public class Dt1Service {
 
         Integer idPeriodoActual = periodoActual.getIdPeriodo();
 
-        // SOLO tutorados del PERIODO ACTUAL
-        List<Dt1TutorEstudiante> tutorados =
-                dt1TutorRepo.findByDocente_IdDocenteAndPeriodo_IdPeriodoAndActivoTrue(idDocente, idPeriodoActual);
+        List<Dt1Asignacion> asignaciones = dt1AsignacionRepo
+                .findByDocente_IdDocenteAndPeriodo_IdPeriodoAndActivoTrue(idDocente, idPeriodoActual);
 
-        if (tutorados.isEmpty()) return List.of();
+        if (asignaciones.isEmpty()) return List.of();
 
         Map<Integer, Dt1EnviadoResponse> unicos = new LinkedHashMap<>();
 
-        for (Dt1TutorEstudiante te : tutorados) {
+        for (Dt1Asignacion asg : asignaciones) {
+            Integer idCarrera = asg.getCarrera().getIdCarrera();
 
-            Integer idEstudiante = te.getEstudiante().getIdEstudiante();
-
-            List<AnteproyectoTitulacion> anteproyectos =
-                    anteRepo.findByEstudiante_IdEstudianteAndEleccion_Periodo_IdPeriodoAndEstadoIgnoreCase(
-                            idEstudiante, idPeriodoActual, "ENVIADO"
+            List<AnteproyectoTitulacion> anteproyectos = anteRepo
+                    .findByCarrera_IdCarreraAndEleccion_Periodo_IdPeriodoAndEstadoInIgnoreCase(
+                            idCarrera, idPeriodoActual, List.of("EN_REVISION", "ENVIADO")
                     );
 
             for (AnteproyectoTitulacion ap : anteproyectos) {
-
                 Optional<Anteproyectotitulacionversion> ov =
                         verRepo.findTopByAnteproyecto_IdAnteproyectoOrderByNumeroVersionDesc(ap.getIdAnteproyecto());
 
@@ -115,7 +108,7 @@ public class Dt1Service {
     }
 
     // =============================
-    // ✅ DETALLE (SOLO SI SOY TUTOR DEL ESTUDIANTE)
+    // ✅ DETALLE (SOLO SI SOY DT1 ASIGNADO A ESA CARRERA/PERIODO)
     // =============================
     @Transactional(readOnly = true)
     public Dt1DetalleResponse detalle(Integer idAnteproyecto, Integer idDocente) {
@@ -126,14 +119,13 @@ public class Dt1Service {
         AnteproyectoTitulacion ap = anteRepo.findById(idAnteproyecto)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "NO_EXISTE"));
 
-        validarDocenteEsTutorDelAnteproyecto(ap, idDocente);
+        validarDocenteEsDt1Asignado(ap, idDocente);
 
         Anteproyectotitulacionversion v = verRepo
                 .findTopByAnteproyecto_IdAnteproyectoOrderByNumeroVersionDesc(idAnteproyecto)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "SIN_VERSION"));
 
         Dt1DetalleResponse d = new Dt1DetalleResponse();
-
         d.setIdAnteproyecto(ap.getIdAnteproyecto());
         d.setEstadoAnteproyecto(safe(ap.getEstado()));
 
@@ -162,7 +154,10 @@ public class Dt1Service {
     }
 
     // =============================
-    // ✅ REVISAR (SP) - SOLO SI SOY TUTOR
+    // ✅ REVISAR (JPA) - Solo si:
+    // 1) docente es DT1 asignado a carrera+periodo del anteproyecto
+    // 2) anteproyecto.estado == ENVIADO
+    // 3) ultima version.estadoVersion == ENVIADO
     // =============================
     @Transactional
     public void revisar(Dt1RevisionRequest req) {
@@ -170,82 +165,105 @@ public class Dt1Service {
         if (req == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "DATOS_REQUERIDOS");
         if (req.getIdAnteproyecto() == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID_ANTEPROYECTO_REQUERIDO");
         if (req.getIdDocente() == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID_DOCENTE_REQUERIDO");
-        if (safe(req.getDecision()).isBlank()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "DECISION_REQUERIDA");
+
+        String decision = safe(req.getDecision()).toUpperCase();
+        if (!(decision.equals("APROBADO") || decision.equals("RECHAZADO"))) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "DECISION_INVALIDA");
+        }
 
         AnteproyectoTitulacion ap = anteRepo.findById(req.getIdAnteproyecto())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "NO_EXISTE"));
 
-        validarDocenteEsTutorDelAnteproyecto(ap, req.getIdDocente());
+        validarDocenteEsDt1Asignado(ap, req.getIdDocente());
 
-        jdbc.update(
-                "call sp_dt1_revisar(?,?,?,?)",
-                req.getIdAnteproyecto(),
-                req.getIdDocente(),
-                req.getDecision(),
-                req.getObservacion()
-        );
+        // ✅ validar estado anteproyecto
+        String estadoAnte = safe(ap.getEstado()).toUpperCase();
+        if (estadoAnte.equals("APROBADO") || estadoAnte.equals("RECHAZADO")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "YA_REVISADO");
+        }
+        if (!estadoAnte.equals("ENVIADO")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "NO_ENVIADO");
+        }
+
+        // ✅ ultima version
+        Anteproyectotitulacionversion v = verRepo
+                .findTopByAnteproyecto_IdAnteproyectoOrderByNumeroVersionDesc(ap.getIdAnteproyecto())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "SIN_VERSION"));
+
+        String estadoVer = safe(v.getEstadoVersion()).toUpperCase();
+        if (!estadoVer.equals("ENVIADO")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "VERSION_NO_ENVIADA");
+        }
+
+        // ✅ actualizar estados
+        ap.setEstado(decision);               // APROBADO / RECHAZADO
+        v.setEstadoVersion(decision);         // APROBADO / RECHAZADO
+        // si tu entity tiene fechaRevision como columna DB default, puedes no setearla aquí
+
+        anteRepo.save(ap);
+        verRepo.save(v);
+
+        // ✅ guardar historial dt1_revision
+        Docente docente = docenteRepo.findById(req.getIdDocente())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "DOCENTE_NO_EXISTE"));
+
+        Dt1Revision r = new Dt1Revision();
+        r.setAnteproyecto(ap);
+        r.setVersion(v);
+        r.setDocente(docente);
+        r.setDecision(decision);
+        r.setObservacion(safe(req.getObservacion()));
+
+        revisionRepo.save(r);
     }
 
     // =============================
-    // ✅ PDF (SP) - SOLO SI SOY TUTOR
+    // ✅ PDF (SIN FN) - usando detalle() (JPA)
     // =============================
     @Transactional(readOnly = true)
     public byte[] generarPdf(Integer idAnteproyecto, Integer idDocente) {
 
-        if (idAnteproyecto == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID_ANTEPROYECTO_REQUERIDO");
-        if (idDocente == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID_DOCENTE_REQUERIDO");
-
-        AnteproyectoTitulacion ap = anteRepo.findById(idAnteproyecto)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "NO_EXISTE"));
-
-        validarDocenteEsTutorDelAnteproyecto(ap, idDocente);
-
-        Map<String, Object> d;
-        try {
-            d = jdbc.queryForMap("select * from fn_dt1_detalle(?,?)", idAnteproyecto, idDocente);
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "NO_EXISTE");
-        }
+        Dt1DetalleResponse d = detalle(idAnteproyecto, idDocente);
 
         String html = pdf.leerHtml("dt1pdf.html");
 
-        html = html.replace("{{ESTUDIANTE}}", pdf.seguro(d.get("estudiante")))
-                .replace("{{PERIODO}}", pdf.seguro(d.get("periodo")))
-                .replace("{{ESTADO}}", pdf.seguro(d.get("estado_anteproyecto")))
-                .replace("{{VERSION}}", pdf.seguro(d.get("numero_version")))
-                .replace("{{FECHA_ENVIO}}", pdf.seguro(d.get("fecha_envio")))
-                .replace("{{ID_ANTEPROYECTO}}", pdf.seguro(d.get("id_anteproyecto")))
-                .replace("{{TITULO}}", pdf.seguro(d.get("titulo")))
-                .replace("{{TEMA}}", pdf.seguro(d.get("tema_investigacion")))
-                .replace("{{PROBLEMA}}", pdf.seguro(d.get("planteamiento_problema")))
-                .replace("{{OBJ_GEN}}", pdf.seguro(d.get("objetivos_generales")))
-                .replace("{{OBJ_ESP}}", pdf.seguro(d.get("objetivos_especificos")))
-                .replace("{{MARCO}}", pdf.seguro(d.get("marco_teorico")))
-                .replace("{{METODO}}", pdf.seguro(d.get("metodologia")))
-                .replace("{{RESULTADOS}}", pdf.seguro(d.get("resultados_esperados")))
-                .replace("{{BIBLIO}}", pdf.seguro(d.get("bibliografia")));
+        html = html.replace("{{ESTUDIANTE}}", pdf.seguro(d.getEstudiante()))
+                .replace("{{PERIODO}}", pdf.seguro(d.getPeriodo()))
+                .replace("{{ESTADO}}", pdf.seguro(d.getEstadoAnteproyecto()))
+                .replace("{{VERSION}}", pdf.seguro(d.getNumeroVersion()))
+                .replace("{{FECHA_ENVIO}}", pdf.seguro(d.getFechaEnvio()))
+                .replace("{{ID_ANTEPROYECTO}}", pdf.seguro(d.getIdAnteproyecto()))
+                .replace("{{TITULO}}", pdf.seguro(d.titulo))
+                .replace("{{TEMA}}", pdf.seguro(d.temaInvestigacion))
+                .replace("{{PROBLEMA}}", pdf.seguro(d.planteamientoProblema))
+                .replace("{{OBJ_GEN}}", pdf.seguro(d.objetivosGenerales))
+                .replace("{{OBJ_ESP}}", pdf.seguro(d.objetivosEspecificos))
+                .replace("{{MARCO}}", pdf.seguro(d.marcoTeorico))
+                .replace("{{METODO}}", pdf.seguro(d.metodologia))
+                .replace("{{RESULTADOS}}", pdf.seguro(d.resultadosEsperados))
+                .replace("{{BIBLIO}}", pdf.seguro(d.bibliografia));
 
         return pdf.aPdf(html);
     }
 
     // ==========================================================
-    // ✅ VALIDACIÓN CENTRAL
+    // ✅ VALIDACIÓN: docente debe ser DT1 asignado a carrera+periodo del anteproyecto
     // ==========================================================
-    private void validarDocenteEsTutorDelAnteproyecto(AnteproyectoTitulacion ante, Integer idDocente) {
+    private void validarDocenteEsDt1Asignado(AnteproyectoTitulacion ante, Integer idDocente) {
 
-        if (ante.getEstudiante() == null || ante.getEleccion() == null || ante.getEleccion().getPeriodo() == null) {
+        if (ante.getCarrera() == null || ante.getEleccion() == null || ante.getEleccion().getPeriodo() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ANTEPROYECTO_SIN_DATOS_PARA_VALIDAR");
         }
 
-        Integer idEstudiante = ante.getEstudiante().getIdEstudiante();
+        Integer idCarrera = ante.getCarrera().getIdCarrera();
         Integer idPeriodo = ante.getEleccion().getPeriodo().getIdPeriodo();
 
-        boolean esTutor = dt1TutorRepo.existsByDocente_IdDocenteAndEstudiante_IdEstudianteAndPeriodo_IdPeriodoAndActivoTrue(
-                idDocente, idEstudiante, idPeriodo
+        boolean esDt1 = dt1AsignacionRepo.existsByDocente_IdDocenteAndCarrera_IdCarreraAndPeriodo_IdPeriodoAndActivoTrue(
+                idDocente, idCarrera, idPeriodo
         );
 
-        if (!esTutor) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "NO_ES_TUTOR_DEL_ESTUDIANTE");
+        if (!esDt1) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "NO_ES_DT1_ASIGNADO");
         }
     }
 
