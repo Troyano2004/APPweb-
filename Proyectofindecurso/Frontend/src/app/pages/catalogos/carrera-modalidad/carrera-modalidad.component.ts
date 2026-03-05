@@ -80,6 +80,32 @@ export class CarreraModalidadComponent implements OnInit {
     return this.relaciones().some((r) => r.idCarrera === idCarrera && r.idModalidad === idModalidad && r.activo);
   }
 
+  eliminar(item: CarreraModalidadDto): void {
+    if (!this.canManage()) {
+      this.error.set('No tienes permisos para gestionar este catálogo.');
+      return;
+    }
+
+    const confirmado = confirm(`¿Deseas eliminar la modalidad "${item.modalidad}" de la carrera "${item.carrera}"?`);
+    if (!confirmado) return;
+
+    this.saving.set(true);
+    this.error.set(null);
+    this.ok.set(null);
+
+    this.catalogosApi.eliminarCarreraModalidad(item.idCarrera, item.idModalidad).subscribe({
+      next: () => {
+        this.ok.set('Asignación eliminada correctamente.');
+        this.saving.set(false);
+        this.cargarDatos();
+      },
+      error: (err) => {
+        this.error.set(err?.error?.message ?? 'No se pudo eliminar la asignación.');
+        this.saving.set(false);
+      }
+    });
+  }
+
   guardar(): void {
     if (!this.canManage()) {
       this.error.set('No tienes permisos para gestionar este catálogo.');

@@ -46,4 +46,9 @@ export class CatalogosService {
     const params = new HttpParams().set('idCarrera', idCarrera).set('idModalidad', idModalidad);
     return this.http.post<void>(`${this.API_URL}/carrera-modalidad`, null, { params });
   }
+  eliminarCarreraModalidad(idCarrera: number, idModalidad: number): Observable<void> {
+    const params = new HttpParams().set('idCarrera', idCarrera).set('idModalidad', idModalidad);
+    return this.http.delete<void>(`${this.API_URL}/carrera-modalidad`, { params });
+  }
+
 }

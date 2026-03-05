@@ -6,6 +6,7 @@ label { display:grid; gap:.35rem; font-weight:600; color:#111827; }
 select { border:1px solid #d1d5db; border-radius:10px; padding:.6rem .75rem; }
 .btn { border:0; border-radius:10px; padding:.65rem .95rem; cursor:pointer; font-weight:700; }
 .btn.primary { background:#0f7a3a; color:#fff; }
+.btn.danger { background:#dc2626; color:#fff; padding:.45rem .75rem; border-radius:8px; font-size:.85rem; }
 .btn:disabled { opacity:.65; cursor:not-allowed; }
 .alert { padding:.75rem .85rem; border-radius:10px; font-weight:600; }
 .alert.error { background:#fef2f2; color:#991b1b; }

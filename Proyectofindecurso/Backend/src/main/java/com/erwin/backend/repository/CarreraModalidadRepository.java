@@ -10,4 +10,6 @@ public interface CarreraModalidadRepository extends JpaRepository<Carreramodalid
     boolean existsById_IdCarreraAndId_IdModalidadAndActivoTrue(Integer idCarrera, Integer idIdModalidad);
 
     List<Carreramodalidad> findById_IdCarreraAndActivoTrue(Integer idCarrera);
+
+    List<Carreramodalidad> findById_IdCarrera(Integer idCarrera);
 }

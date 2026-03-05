@@ -171,7 +171,7 @@ export class UniversidadComponent implements OnInit {
     if (!confirm('¿Eliminar?')) return;
     this.service.eliminarUniversidad(id).subscribe({
       next: () => { this.mensaje = 'Eliminado'; this.cargar(); setTimeout(() => this.mensaje = '', 3000); },
-      error: () => { this.error = 'Error al eliminar'; }
+      error: (err) => { this.error = err?.error?.message || 'Error al eliminar'; }
     });
   }
 
