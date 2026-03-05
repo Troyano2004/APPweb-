@@ -3,8 +3,11 @@ package com.erwin.backend.service;
 import com.erwin.backend.dtos.FacultadDto;
 import com.erwin.backend.entities.Facultad;
 import com.erwin.backend.entities.Universidad;
+import com.erwin.backend.repository.CarreraModalidadRepository;
+import com.erwin.backend.repository.CarreraRepository;
 import com.erwin.backend.repository.FacultadRepository;
 import com.erwin.backend.repository.UniversidadRepository;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,10 +20,15 @@ public class FacultadService {
 
     private final FacultadRepository facultadRepo;
     private final UniversidadRepository universidadRepo;
+    private final CarreraRepository carreraRepo;
+    private final CarreraModalidadRepository carreraModalidadRepo;
 
-    public FacultadService(FacultadRepository facultadRepo, UniversidadRepository universidadRepo) {
+    public FacultadService(FacultadRepository facultadRepo, UniversidadRepository universidadRepo,
+                           CarreraRepository carreraRepo, CarreraModalidadRepository carreraModalidadRepo) {
         this.facultadRepo = facultadRepo;
         this.universidadRepo = universidadRepo;
+        this.carreraRepo = carreraRepo;
+        this.carreraModalidadRepo = carreraModalidadRepo;
     }
 
     public List<FacultadDto> listarTodas() {
@@ -68,10 +76,20 @@ public class FacultadService {
     }
 
     public void eliminar(Integer id) {
-        if (!facultadRepo.existsById(id)) {
-            throw new RuntimeException("Facultad no encontrada");
+        Facultad facultad = facultadRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Facultad no encontrada"));
+
+        var carreras = carreraRepo.findByFacultadIdFacultad(id);
+        for (var carrera : carreras) {
+            carreraModalidadRepo.deleteAll(carreraModalidadRepo.findById_IdCarrera(carrera.getIdCarrera()));
         }
-        facultadRepo.deleteById(id);
+
+        try {
+            carreraRepo.deleteAll(carreras);
+            facultadRepo.delete(facultad);
+        } catch (DataIntegrityViolationException ex) {
+            throw new RuntimeException("No se puede eliminar la facultad porque tiene registros asociados en otros módulos.", ex);
+        }
     }
 
     private FacultadDto convertirADto(Facultad f) {

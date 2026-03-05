@@ -52,6 +52,12 @@ public class CatalogoController {
         service.asignarModalidad(idCarrera, idModalidad);
     }
 
+    @DeleteMapping("/carrera-modalidad")
+    public void eliminarModalidad(@RequestParam Integer idCarrera,
+                                  @RequestParam Integer idModalidad) {
+        service.desactivarModalidad(idCarrera, idModalidad);
+    }
+
     public static class CrearModalidadRequest {
         public String nombre;
     }

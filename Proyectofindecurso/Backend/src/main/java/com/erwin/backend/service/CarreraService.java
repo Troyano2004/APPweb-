@@ -3,8 +3,10 @@ package com.erwin.backend.service;
 import com.erwin.backend.dtos.CarreraDto;
 import com.erwin.backend.entities.Carrera;
 import com.erwin.backend.entities.Facultad;
+import com.erwin.backend.repository.CarreraModalidadRepository;
 import com.erwin.backend.repository.CarreraRepository;
 import com.erwin.backend.repository.FacultadRepository;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,10 +19,12 @@ public class CarreraService {
 
     private final CarreraRepository carreraRepo;
     private final FacultadRepository facultadRepo;
+    private final CarreraModalidadRepository carreraModalidadRepo;
 
-    public CarreraService(CarreraRepository carreraRepo, FacultadRepository facultadRepo) {
+    public CarreraService(CarreraRepository carreraRepo, FacultadRepository facultadRepo, CarreraModalidadRepository carreraModalidadRepo) {
         this.carreraRepo = carreraRepo;
         this.facultadRepo = facultadRepo;
+        this.carreraModalidadRepo = carreraModalidadRepo;
     }
 
     public List<CarreraDto> listarTodas() {
@@ -68,10 +72,16 @@ public class CarreraService {
     }
 
     public void eliminar(Integer id) {
-        if (!carreraRepo.existsById(id)) {
-            throw new RuntimeException("Carrera no encontrada");
+        Carrera carrera = carreraRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Carrera no encontrada"));
+
+        carreraModalidadRepo.deleteAll(carreraModalidadRepo.findById_IdCarrera(id));
+
+        try {
+            carreraRepo.delete(carrera);
+        } catch (DataIntegrityViolationException ex) {
+            throw new RuntimeException("No se puede eliminar la carrera porque tiene registros asociados (estudiantes, propuestas u otros módulos).", ex);
         }
-        carreraRepo.deleteById(id);
     }
 
     private CarreraDto convertirADto(Carrera c) {

@@ -77,6 +77,17 @@ public class CatalogoService {
         carreraModalidadRepo.save(cm);
     }
 
+    public void desactivarModalidad(Integer idCarrera, Integer idModalidad) {
+        Carreramodalidadid id = new Carreramodalidadid(idCarrera, idModalidad);
+        Carreramodalidad existente = carreraModalidadRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("La relación carrera-modalidad no existe"));
+
+        if (Boolean.TRUE.equals(existente.getActivo())) {
+            existente.setActivo(false);
+            carreraModalidadRepo.save(existente);
+        }
+    }
+
     public List<CarreraModalidadDto> carreraModalidad() {
         return carreraModalidadRepo.findAll().stream()
                 .map(cm -> new CarreraModalidadDto(
