@@ -5,10 +5,9 @@ public class UsuarioCreateRequest {
 
     private String cedula;
     private String correoInstitucional;
-
     private String username;
 
-    // ✅ password del sistema (BCrypt)
+    // password del sistema (BCrypt)
     private String passwordApp;
 
     private String nombres;
@@ -16,6 +15,9 @@ public class UsuarioCreateRequest {
 
     // Uno o muchos roles
     private Integer[] idsRolApp = new Integer[0];
+
+    // ✅ NUEVO: rol principal (obligatorio para sp_crear_usuario_v4)
+    private Integer idRolAppPrincipal;
 
     private Boolean activo;
 
@@ -33,9 +35,7 @@ public class UsuarioCreateRequest {
     public void setUsername(String username) { this.username = username; }
 
     public String getPasswordApp() { return passwordApp; }
-    public void setPasswordApp(String passwordApp) {
-        this.passwordApp = passwordApp;
-    }
+    public void setPasswordApp(String passwordApp) { this.passwordApp = passwordApp; }
 
     public String getNombres() { return nombres; }
     public void setNombres(String nombres) { this.nombres = nombres; }
@@ -45,8 +45,13 @@ public class UsuarioCreateRequest {
 
     public Integer[] getIdsRolApp() { return idsRolApp; }
     public void setIdsRolApp(Integer[] idsRolApp) {
-        this.idsRolApp =
-                (idsRolApp != null) ? idsRolApp : new Integer[0];
+        this.idsRolApp = (idsRolApp != null) ? idsRolApp : new Integer[0];
+    }
+
+    // ✅ NUEVO getter/setter
+    public Integer getIdRolAppPrincipal() { return idRolAppPrincipal; }
+    public void setIdRolAppPrincipal(Integer idRolAppPrincipal) {
+        this.idRolAppPrincipal = idRolAppPrincipal;
     }
 
     public Boolean getActivo() { return activo; }

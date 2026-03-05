@@ -1,3 +1,4 @@
+
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -8,9 +9,19 @@ import {
   RolesService,
   PermisoDto,
   RolAppDto,
+  RolBdDto,
   RolAppCreateRequest,
   RolAppUpdateRequest,
 } from '../../services/roles.service';
+
+// Catálogo fijo de roles_sistema (id coincide con la BD)
+const ROLES_SISTEMA = [
+  { idRol: 1, label: 'ADMIN',                 rolBd: 'rol_admin' },
+  { idRol: 2, label: 'DOCENTE',               rolBd: 'rol_docente' },
+  { idRol: 3, label: 'ESTUDIANTE',            rolBd: 'rol_estudiante' },
+  { idRol: 4, label: 'COORDINADOR',           rolBd: 'rol_coordinador' },
+  { idRol: 5, label: 'DIRECTOR_ADMINISTRATIVO', rolBd: 'rol_director_administrativo' },
+];
 
 @Component({
   selector: 'app-roles',
@@ -34,9 +45,18 @@ export class RolesComponent implements OnInit {
   roles: RolAppDto[] = [];
   permisos: PermisoDto[] = [];
 
+  // ✅ NUEVO: roles físicos de la BD
+  rolesBd: RolBdDto[] = [];
+
+  // catálogo de roles_sistema para el select
+  rolesSistema = ROLES_SISTEMA;
+
   // permisos seleccionados (IDs)
   selectedPermisos: number[] = [];
   permTouched = false;
+
+  // ✅ NUEVO: rol base seleccionado en el form
+  selectedIdRolBase: number | null = null;
 
   form!: FormGroup;
 
@@ -57,27 +77,22 @@ export class RolesComponent implements OnInit {
     this.cargarTodo();
   }
 
-  // ✅ trackBy correcto
-  trackByRolId = (_: number, r: RolAppDto) => r.idRolApp;
+  trackByRolId    = (_: number, r: RolAppDto) => r.idRolApp;
   trackByPermisoId = (_: number, p: PermisoDto) => p.idPermiso;
+  trackByRolBd    = (_: number, r: RolBdDto)  => r.rolBd;
 
   volver(): void {
     this.router.navigate(['/admin/usuarios']);
   }
 
-  // getter filtrado
   get rolesFiltrados(): RolAppDto[] {
     const t = (this.q || '').trim().toLowerCase();
     if (!t) return this.roles;
-
     return this.roles.filter(r => {
       const perms = (r.permisos || []).join(', ').toLowerCase();
-      const estado = (r.activo ? 'activo' : 'inactivo');
-      return (
-        `${r.idRolApp} ${r.nombre} ${r.descripcion || ''} ${perms} ${estado}`
-          .toLowerCase()
-          .includes(t)
-      );
+      const estado = r.activo ? 'activo' : 'inactivo';
+      return `${r.idRolApp} ${r.nombre} ${r.descripcion || ''} ${perms} ${estado} ${r.rolBd || ''}`
+        .toLowerCase().includes(t);
     });
   }
 
@@ -92,9 +107,7 @@ export class RolesComponent implements OnInit {
         this.permisos = (perms || []).filter(p => p.activo);
         this.cdr.detectChanges();
       },
-      error: () => {
-        this.cdr.detectChanges();
-      }
+      error: () => this.cdr.detectChanges()
     });
 
     // roles APP
@@ -110,6 +123,15 @@ export class RolesComponent implements OnInit {
         this.cdr.detectChanges();
       }
     });
+
+    // ✅ NUEVO: roles físicos de BD
+    this.rolesService.listarRolesBd().subscribe({
+      next: (rbd) => {
+        this.rolesBd = rbd || [];
+        this.cdr.detectChanges();
+      },
+      error: () => this.cdr.detectChanges()
+    });
   }
 
   // ---------------- MODAL ----------------
@@ -117,11 +139,11 @@ export class RolesComponent implements OnInit {
     this.modalOpen = true;
     this.editMode = false;
     this.selectedId = null;
+    this.selectedIdRolBase = null;
 
     this.form.reset({ nombre: '', descripcion: '', activo: true });
     this.selectedPermisos = [];
     this.permTouched = false;
-
     this.cdr.detectChanges();
   }
 
@@ -134,6 +156,9 @@ export class RolesComponent implements OnInit {
     this.selectedPermisos = this.permisos
       .filter(p => (r.permisos || []).includes(p.codigo))
       .map(p => p.idPermiso);
+
+    // ✅ precargar idRolBase
+    this.selectedIdRolBase = r.idRolBase ?? null;
 
     this.form.patchValue({
       nombre: r.nombre,
@@ -153,17 +178,22 @@ export class RolesComponent implements OnInit {
   // ---------------- PERMISOS ----------------
   togglePermiso(idPermiso: number): void {
     this.permTouched = true;
-
     const exists = this.selectedPermisos.includes(idPermiso);
     this.selectedPermisos = exists
       ? this.selectedPermisos.filter(x => x !== idPermiso)
       : [...this.selectedPermisos, idPermiso];
-
     this.cdr.detectChanges();
   }
 
   isPermisoChecked(idPermiso: number): boolean {
     return this.selectedPermisos.includes(idPermiso);
+  }
+
+  // ✅ NUEVO: etiqueta del rol base seleccionado
+  get rolBaseLabel(): string {
+    if (!this.selectedIdRolBase) return '—';
+    const found = this.rolesSistema.find(r => r.idRol === this.selectedIdRolBase);
+    return found ? `${found.label} (${found.rolBd})` : '—';
   }
 
   // ---------------- GUARDAR ----------------
@@ -186,6 +216,7 @@ export class RolesComponent implements OnInit {
       nombre: (this.form.value.nombre || '').toString().trim().toUpperCase(),
       descripcion: (this.form.value.descripcion || '').toString().trim(),
       activo: !!this.form.value.activo,
+      idRolBase: this.selectedIdRolBase,   // ✅ NUEVO
     };
 
     // CREAR
@@ -196,10 +227,7 @@ export class RolesComponent implements OnInit {
       };
 
       this.rolesService.crearRolApp(body).subscribe({
-        next: () => {
-          this.closeModal();
-          this.cargarTodo();
-        },
+        next: () => { this.closeModal(); this.cargarTodo(); },
         error: () => {
           this.errorMsg = 'No se pudo crear el rol del aplicativo.';
           this.cdr.detectChanges();
@@ -210,20 +238,14 @@ export class RolesComponent implements OnInit {
 
     // EDITAR
     if (this.selectedId == null) return;
-
     const id = this.selectedId;
 
-    const bodyUp: RolAppUpdateRequest = {
-      ...payloadBase
-    };
+    const bodyUp: RolAppUpdateRequest = { ...payloadBase };
 
     this.rolesService.editarRolApp(id, bodyUp).subscribe({
       next: () => {
         this.rolesService.asignarPermisosRolApp(id, { permisos: [...this.selectedPermisos] }).subscribe({
-          next: () => {
-            this.closeModal();
-            this.cargarTodo();
-          },
+          next: () => { this.closeModal(); this.cargarTodo(); },
           error: () => {
             this.errorMsg = 'Se editó el rol, pero falló la asignación de permisos.';
             this.cdr.detectChanges();
@@ -244,9 +266,7 @@ export class RolesComponent implements OnInit {
 
     this.rolesService.cambiarEstadoRolApp(id, { activo: nuevo }).subscribe({
       next: () => {
-        this.roles = this.roles.map(x =>
-          x.idRolApp === id ? { ...x, activo: nuevo } : x
-        );
+        this.roles = this.roles.map(x => x.idRolApp === id ? { ...x, activo: nuevo } : x);
         this.cdr.detectChanges();
       },
       error: () => {

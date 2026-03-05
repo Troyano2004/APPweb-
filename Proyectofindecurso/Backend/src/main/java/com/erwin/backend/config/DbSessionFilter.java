@@ -1,6 +1,7 @@
 
 package com.erwin.backend.config;
 
+import com.erwin.backend.security.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -18,59 +19,69 @@ public class DbSessionFilter extends OncePerRequestFilter {
 
     private static final Logger log = LoggerFactory.getLogger(DbSessionFilter.class);
 
-    // Llaves de sesión (usa estas mismas en AuthService)
     public static final String SES_DB_USER = "SES_DB_USER";
     public static final String SES_DB_PASS = "SES_DB_PASS";
 
-    // Para no spamear logs
-    private static final String LAST_MODE = "LAST_DB_MODE";
+    // ✅ El usuario de arranque/default — debe coincidir con spring.datasource.username
+    private static final String DEFAULT_USER = "auth_reader";
 
-    // Tu default real (según application.properties)
-    private static final String DEFAULT_USER = "auth_writer";
+    private final JwtService jwtService;
+
+    public DbSessionFilter(JwtService jwtService) {
+        this.jwtService = jwtService;
+    }
 
     @Override
     protected void doFilterInternal(
-            HttpServletRequest request,
+            HttpServletRequest  request,
             HttpServletResponse response,
-            FilterChain filterChain
+            FilterChain         filterChain
     ) throws ServletException, IOException {
-
-        HttpSession session = request.getSession(false);
 
         String user = null;
         String pass = null;
 
-        if (session != null) {
-            user = (String) session.getAttribute(SES_DB_USER);
-            pass = (String) session.getAttribute(SES_DB_PASS);
-        }
-
-        boolean hasCreds = user != null && !user.isBlank() && pass != null && !pass.isBlank();
-        String modeNow = hasCreds ? ("SWITCHED:" + user) : ("DEFAULT:" + DEFAULT_USER);
-
-        // Log SOLO cuando cambia (por sesión)
-        if (session != null) {
-            String last = (String) session.getAttribute(LAST_MODE);
-            if (last == null || !last.equals(modeNow)) {
-                session.setAttribute(LAST_MODE, modeNow);
-
-                if (hasCreds) {
-                    log.info("🟢 DB SWITCH -> ahora usando usuario BD = {} | sessionId={} | path={}",
-                            user, session.getId(), request.getRequestURI());
-                } else {
-                    log.info("🟡 DB DEFAULT -> ahora usando usuario BD = {} | sessionId={} | path={}",
-                            DEFAULT_USER, session.getId(), request.getRequestURI());
+        // ✅ PRIORIDAD 1: leer credenciales BD desde el JWT (Authorization: Bearer ...)
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7);
+            if (jwtService.isTokenValid(token)) {
+                String dbUser = jwtService.extractDbUser(token);
+                String dbPass = jwtService.extractDbPass(token);
+                if (dbUser != null && !dbUser.isBlank()
+                        && dbPass != null && !dbPass.isBlank()) {
+                    user = dbUser;
+                    pass = dbPass;
                 }
             }
+        }
+
+        // ✅ PRIORIDAD 2 (fallback): leer de sesión HTTP (para clientes con cookie)
+        if (user == null || user.isBlank()) {
+            HttpSession session = request.getSession(false);
+            if (session != null) {
+                String sesUser = (String) session.getAttribute(SES_DB_USER);
+                String sesPass = (String) session.getAttribute(SES_DB_PASS);
+                if (sesUser != null && !sesUser.isBlank()
+                        && sesPass != null && !sesPass.isBlank()) {
+                    user = sesUser;
+                    pass = sesPass;
+                }
+            }
+        }
+
+        boolean switched = user != null && !user.isBlank();
+
+        if (switched) {
+            log.info("🟢 DB SWITCH -> usuario BD = {} | path={}",
+                    user, request.getRequestURI());
         } else {
-            // Si no hay sesión, estás en default (esto puede repetirse por requests públicos).
-            // Si te molesta el spam, lo quitamos.
-            log.info("🟡 DB DEFAULT (sin sesión) -> usando usuario BD = {} | path={}",
+            log.debug("🟡 DB DEFAULT -> usuario BD = {} | path={}",
                     DEFAULT_USER, request.getRequestURI());
         }
 
         try {
-            if (hasCreds) {
+            if (switched) {
                 DbContextHolder.set(user, pass);
             }
             filterChain.doFilter(request, response);

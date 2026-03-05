@@ -1,3 +1,4 @@
+
 package com.erwin.backend.dtos;
 
 import java.util.List;
@@ -9,9 +10,16 @@ public class RolAppDto {
     private Boolean activo;
     private List<String> permisos;
 
+    // ✅ NUEVO: id del rol base de BD (roles_sistema) al que pertenece
+    private Integer idRolBase;
+
+    // ✅ NUEVO: nombre del rol en pg_roles (ej: rol_admin, rol_docente...)
+    private String rolBd;
+
     public RolAppDto() {}
 
-    public RolAppDto(Integer idRolApp, String nombre, String descripcion, Boolean activo, List<String> permisos) {
+    public RolAppDto(Integer idRolApp, String nombre, String descripcion,
+                     Boolean activo, List<String> permisos) {
         this.idRolApp = idRolApp;
         this.nombre = nombre;
         this.descripcion = descripcion;
@@ -33,4 +41,11 @@ public class RolAppDto {
 
     public List<String> getPermisos() { return permisos; }
     public void setPermisos(List<String> permisos) { this.permisos = permisos; }
+
+    // ✅ NUEVOS
+    public Integer getIdRolBase() { return idRolBase; }
+    public void setIdRolBase(Integer idRolBase) { this.idRolBase = idRolBase; }
+
+    public String getRolBd() { return rolBd; }
+    public void setRolBd(String rolBd) { this.rolBd = rolBd; }
 }

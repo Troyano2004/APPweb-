@@ -11,7 +11,19 @@ export interface RolAppDTO {
   descripcion?: string | null;
   activo?: boolean | null;
 
+  // ✅ NUEVO: id del rol base de BD (1=ADMIN, 2=DOCENTE, 3=ESTUDIANTE, etc.)
   idRolBase?: number | null;
+
+  // ✅ NUEVO: nombre del rol en pg_roles (ej: rol_admin)
+  rolBd?: string | null;
+}
+
+/** Rol físico de la BD (pg_roles), mostrado dinámicamente */
+export interface RolBdDTO {
+  rolBd: string;        // ej: rol_admin
+  rolApp: string | null; // ej: ROLE_ADMIN
+  idRolApp: number | null;
+  rolBase: string | null; // ej: ADMIN
 }
 
 export interface UsuarioDTO {
@@ -33,26 +45,21 @@ export interface UsuarioCreateRequest {
   cedula: string;
   correoInstitucional: string;
   username: string;
-
-  // ✅ backend espera esto
   passwordApp: string;
-
   nombres: string;
   apellidos: string;
-
   idsRolApp: number[];
+  // ✅ NUEVO: rol principal (obligatorio para sp_crear_usuario_v4)
+  idRolAppPrincipal: number;
   activo: boolean;
 }
 
 export interface UsuarioUpdateRequest {
   nombres?: string;
   apellidos?: string;
-
   idsRolApp?: number[] | null;
-
   activo?: boolean;
-
-  password?: string; // "" => no cambiar
+  password?: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -78,8 +85,13 @@ export class AdminUsuariosService {
     return this.http.patch<void>(`${this.baseUrl}/admin/usuarios/${idUsuario}/estado`, { activo });
   }
 
-  // ===== ROLES APP =====
+  // ===== ROLES APP (con idRolBase y rolBd) =====
   listarRolesApp(): Observable<RolAppDTO[]> {
     return this.http.get<RolAppDTO[]>(`${this.baseUrl}/rol-app`);
+  }
+
+  // ✅ NUEVO: Roles físicos de la BD (pg_roles) - vista dinámica
+  listarRolesBd(): Observable<RolBdDTO[]> {
+    return this.http.get<RolBdDTO[]>(`${this.baseUrl}/roles-bd`);
   }
 }
