@@ -7,6 +7,7 @@ import {
   PropuestaTemaDto,
   TemaBancoDto
 } from '../../../services/comision-temas';
+import { CatalogoCarrera, CatalogosService } from '../../../services/catalogos';
 import { getSessionEntityId, getSessionUser } from '../../../services/session';
 
 @Component({
@@ -23,6 +24,7 @@ export class PropuestaNuevaComponent implements OnInit {
   temasDisponibles = signal<TemaBancoDto[]>([]);
   loading = signal(false);
   loadingTemas = signal(false);
+  loadingCarreras = signal(false);
   loadingModalidad = signal(false);
   saving = signal(false);
   guardandoModalidad = signal(false);
@@ -30,6 +32,7 @@ export class PropuestaNuevaComponent implements OnInit {
   ok = signal<string | null>(null);
   estadoModalidad = signal<EstadoModalidadDto | null>(null);
   modalidadSeleccionada = signal<number | null>(null);
+  carreras = signal<CatalogoCarrera[]>([]);
 
   form = {
     idCarrera: 1,
@@ -44,12 +47,29 @@ export class PropuestaNuevaComponent implements OnInit {
     bibliografia: ''
   };
 
-  constructor(private readonly api: ComisionTemasService) {}
+  constructor(
+    private readonly api: ComisionTemasService,
+    private readonly catalogosApi: CatalogosService
+  ) {}
 
   ngOnInit(): void {
     this.cargarEstadoModalidad();
+    this.cargarCarreras();
     this.cargarTemasDisponibles();
     this.cargarHistorial();
+  }
+
+  get nombreCarreraSeleccionada(): string {
+    const idCarrera = this.form.idCarrera;
+    if (!idCarrera) return '';
+    return this.carreras().find((c) => c.idCarrera === idCarrera)?.nombre ?? '';
+  }
+
+  get temasFiltradosPorCarrera(): TemaBancoDto[] {
+    const nombreCarrera = this.normalizarTexto(this.nombreCarreraSeleccionada);
+    if (!nombreCarrera) return this.temasDisponibles();
+
+    return this.temasDisponibles().filter((tema) => this.normalizarTexto(tema.carrera) === nombreCarrera);
   }
 
   get tieneModalidadSeleccionada(): boolean {
@@ -73,11 +93,33 @@ export class PropuestaNuevaComponent implements OnInit {
         if (estado.idCarrera) {
           this.form.idCarrera = estado.idCarrera;
         }
+        this.onSeleccionCarrera();
         this.loadingModalidad.set(false);
       },
       error: (err) => {
         this.error.set(err?.error?.message ?? 'No se pudo validar la modalidad de titulación.');
         this.loadingModalidad.set(false);
+      }
+    });
+  }
+
+  cargarCarreras(): void {
+    this.loadingCarreras.set(true);
+    this.catalogosApi.listarCarreras().subscribe({
+      next: (resp) => {
+        const carreras = resp ?? [];
+        this.carreras.set(carreras);
+
+        if (!carreras.some((c) => c.idCarrera === this.form.idCarrera)) {
+          this.form.idCarrera = carreras[0]?.idCarrera ?? this.form.idCarrera;
+        }
+
+        this.onSeleccionCarrera();
+        this.loadingCarreras.set(false);
+      },
+      error: (err) => {
+        this.error.set(err?.error?.message ?? 'No se pudo cargar el catálogo de carreras.');
+        this.loadingCarreras.set(false);
       }
     });
   }
@@ -128,6 +170,13 @@ export class PropuestaNuevaComponent implements OnInit {
         this.loadingTemas.set(false);
       }
     });
+  }
+
+  onSeleccionCarrera(): void {
+    const temaSeleccionado = this.temasFiltradosPorCarrera.some((tema) => tema.idTema === this.form.idTema);
+    if (!temaSeleccionado) {
+      this.form.idTema = null;
+    }
   }
 
   onSeleccionTema(): void {
@@ -221,5 +270,13 @@ export class PropuestaNuevaComponent implements OnInit {
           this.cargarEstadoModalidad();
         }
       });
+  }
+
+  private normalizarTexto(valor: string | null | undefined): string {
+    return (valor ?? '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .toLowerCase();
   }
 }

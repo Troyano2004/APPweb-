@@ -17,8 +17,10 @@ export class AprobacionTemasComponent implements OnInit {
   propuestas = signal<PropuestaTemaDto[]>([]);
   loading = signal(false);
   error = signal<string | null>(null);
+  procesandoId = signal<number | null>(null);
 
   observaciones: Record<number, string> = {};
+  propuestasDecididas = new Set<number>();
 
   constructor(private readonly api: ComisionTemasService) {}
 
@@ -36,7 +38,13 @@ export class AprobacionTemasComponent implements OnInit {
     this.error.set(null);
     this.api.listarPropuestasComision(this.idDocente).subscribe({
       next: (resp) => {
-        this.propuestas.set(resp ?? []);
+        const propuestas = resp ?? [];
+        this.propuestas.set(propuestas);
+        this.propuestasDecididas = new Set(
+          propuestas
+            .filter((propuesta) => propuesta.estado === 'APROBADA' || propuesta.estado === 'RECHAZADA')
+            .map((propuesta) => propuesta.idPropuesta)
+        );
         this.loading.set(false);
       },
       error: (err) => {
@@ -46,11 +54,32 @@ export class AprobacionTemasComponent implements OnInit {
     });
   }
 
+  estaBloqueada(propuesta: PropuestaTemaDto): boolean {
+    return this.procesandoId() === propuesta.idPropuesta || this.propuestasDecididas.has(propuesta.idPropuesta);
+  }
+
   decidir(propuesta: PropuestaTemaDto, estado: 'APROBADA' | 'RECHAZADA'): void {
-    if (!this.idDocente) return;
+    if (!this.idDocente || this.estaBloqueada(propuesta)) return;
+
+    this.procesandoId.set(propuesta.idPropuesta);
+    this.error.set(null);
+
     this.api.decidirPropuesta(this.idDocente, propuesta.idPropuesta, estado, this.observaciones[propuesta.idPropuesta] ?? '').subscribe({
-      next: () => this.cargar(),
-      error: (err) => this.error.set(err?.error?.message ?? 'No se pudo registrar la decisión.')
+      next: () => {
+        this.propuestasDecididas.add(propuesta.idPropuesta);
+        this.propuestas.update((list) =>
+          list.map((item) =>
+            item.idPropuesta === propuesta.idPropuesta
+              ? { ...item, estado, observaciones: this.observaciones[propuesta.idPropuesta] ?? item.observaciones }
+              : item
+          )
+        );
+        this.procesandoId.set(null);
+      },
+      error: (err) => {
+        this.error.set(err?.error?.message ?? 'No se pudo registrar la decisión.');
+        this.procesandoId.set(null);
+      }
     });
   }
 }

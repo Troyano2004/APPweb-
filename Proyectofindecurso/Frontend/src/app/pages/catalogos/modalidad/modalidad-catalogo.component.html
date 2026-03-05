@@ -43,12 +43,30 @@
           <tr>
             <th>ID</th>
             <th>Modalidad</th>
+            <th>Acciones</th>
           </tr>
           </thead>
           <tbody>
           <tr *ngFor="let m of modalidades()">
             <td>{{ m.idModalidad }}</td>
-            <td>{{ m.nombre }}</td>
+            <td>
+              <ng-container *ngIf="editandoId() !== m.idModalidad; else editRow">
+                {{ m.nombre }}
+              </ng-container>
+              <ng-template #editRow>
+                <input type="text" [ngModel]="nombreEdicion()" (ngModelChange)="nombreEdicion.set($event)" />
+              </ng-template>
+            </td>
+            <td class="actions">
+              <ng-container *ngIf="editandoId() !== m.idModalidad">
+                <button class="btn secondary" (click)="iniciarEdicion(m)" [disabled]="saving()">Editar</button>
+                <button class="btn danger" (click)="eliminar(m)" [disabled]="saving()">Eliminar</button>
+              </ng-container>
+              <ng-container *ngIf="editandoId() === m.idModalidad">
+                <button class="btn primary" (click)="guardarEdicion(m)" [disabled]="saving()">Guardar</button>
+                <button class="btn secondary" (click)="cancelarEdicion()" [disabled]="saving()">Cancelar</button>
+              </ng-container>
+            </td>
           </tr>
           </tbody>
         </table>

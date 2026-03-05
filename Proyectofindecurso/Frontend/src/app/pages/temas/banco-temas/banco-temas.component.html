@@ -4,7 +4,7 @@
       <h1>Banco de temas (Comisión)</h1>
       <p>Registra nuevos temas y mantén actualizado el banco para los estudiantes.</p>
     </div>
-    <button class="btn secondary" (click)="cargar()" [disabled]="loading()">Recargar</button>
+    <button class="btn secondary" (click)="cargar()" [disabled]="loading() || loadingCarreras()">Recargar</button>
   </header>
 
   <div class="alert error" *ngIf="error()">{{ error() }}</div>
@@ -13,9 +13,15 @@
   <div class="grid">
     <article class="card">
       <h2>Nuevo tema</h2>
-      <label>Carrera (id)
-        <input type="number" [(ngModel)]="form.idCarrera" min="1" />
+      <label>Carrera
+        <select [(ngModel)]="form.idCarrera" [disabled]="loadingCarreras() || carreras().length === 0">
+          <option *ngFor="let carrera of carreras()" [ngValue]="carrera.idCarrera">
+            {{ carrera.nombre }}
+          </option>
+        </select>
       </label>
+      <small *ngIf="loadingCarreras()">Cargando carreras...</small>
+      <small *ngIf="!loadingCarreras() && carreras().length === 0">No hay carreras disponibles.</small>
       <label>Título
         <input type="text" [(ngModel)]="form.titulo" placeholder="Ej: IA aplicada a educación" />
       </label>
@@ -25,7 +31,7 @@
       <label>Observaciones (opcional)
         <textarea rows="3" [(ngModel)]="form.observaciones"></textarea>
       </label>
-      <button class="btn primary" (click)="guardarTema()" [disabled]="saving()">Agregar al banco</button>
+      <button class="btn primary" (click)="guardarTema()" [disabled]="saving() || loadingCarreras() || carreras().length === 0">Agregar al banco</button>
     </article>
 
     <article class="card">
