@@ -1,3 +1,4 @@
+
 package com.erwin.backend.service;
 
 import com.erwin.backend.config.DbSessionFilter;
@@ -6,6 +7,7 @@ import com.erwin.backend.dtos.LoginResponse;
 import com.erwin.backend.entities.Usuario;
 import com.erwin.backend.repository.UsuarioRepository;
 import com.erwin.backend.security.CryptoUtil;
+import com.erwin.backend.security.JwtService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -15,10 +17,14 @@ public class AuthService {
 
     private final UsuarioRepository usuarioRepo;
     private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
 
-    public AuthService(UsuarioRepository usuarioRepo, PasswordEncoder passwordEncoder) {
-        this.usuarioRepo = usuarioRepo;
+    public AuthService(UsuarioRepository usuarioRepo,
+                       PasswordEncoder passwordEncoder,
+                       JwtService jwtService) {
+        this.usuarioRepo   = usuarioRepo;
         this.passwordEncoder = passwordEncoder;
+        this.jwtService    = jwtService;
     }
 
     public LoginResponse login(LoginRequest req, HttpSession session) {
@@ -28,83 +34,71 @@ public class AuthService {
         }
 
         String usernameLogin = req.getUsuarioLogin().trim();
-        String passwordApp = req.getPassword().trim();
+        String passwordApp   = req.getPassword().trim();
 
         Usuario usuario = usuarioRepo
                 .findByUsername(usernameLogin)
                 .orElseThrow(() -> new RuntimeException("Usuario no existe"));
 
-        // ✅ 1) Validar password del aplicativo (BCrypt o texto plano - PRUEBAS)
         validarPasswordMixto(passwordApp, usuario.getPasswordHash());
 
-        // ✅ 2) Credenciales BD (OPCIONAL EN PRUEBAS)
-        String dbUser = (usuario.getUsernameDb() != null && !usuario.getUsernameDb().trim().isEmpty())
+        // ✅ Resolver usuario BD
+        String dbUser = (usuario.getUsernameDb() != null && !usuario.getUsernameDb().isBlank())
                 ? usuario.getUsernameDb().trim()
-                : (usuario.getUsername() != null ? usuario.getUsername().trim() : null);
+                : usuario.getUsername().trim();
 
+        String dbPassPlain = "";
         String dbPassEncrypted = usuario.getPasswordDbEncrypted();
 
-        // ✅ 3) Guardar en sesión SOLO si existe password_db_encrypted
-        if (dbUser != null && dbPassEncrypted != null && !dbPassEncrypted.trim().isEmpty()) {
-            String dbPass = CryptoUtil.decrypt(dbPassEncrypted.trim());
-            session.setAttribute(DbSessionFilter.SES_DB_USER, dbUser); // "DB_USER"
-            session.setAttribute(DbSessionFilter.SES_DB_PASS, dbPass); // "DB_PASS"
+        if (dbPassEncrypted != null && !dbPassEncrypted.isBlank()) {
+            dbPassPlain = CryptoUtil.decrypt(dbPassEncrypted.trim());
+        }
+
+        // ✅ Guardar en sesión (por si se usa desde requests con cookie)
+        if (!dbUser.isBlank() && !dbPassPlain.isBlank()) {
+            session.setAttribute(DbSessionFilter.SES_DB_USER, dbUser);
+            session.setAttribute(DbSessionFilter.SES_DB_PASS, dbPassPlain);
         } else {
-            // Modo prueba: si no hay credenciales BD, igual dejamos iniciar sesión.
-            // (Opcional) limpiar por si quedó algo viejo
             session.removeAttribute(DbSessionFilter.SES_DB_USER);
             session.removeAttribute(DbSessionFilter.SES_DB_PASS);
         }
 
-        // ✅ 4) Rol para frontend
+        // ✅ CLAVE: generar JWT con credenciales BD embebidas
+        String token = jwtService.generateToken(usernameLogin, dbUser, dbPassPlain);
+
         String rolFrontend = convertirRol(usuario.getRolAsignado());
 
         return new LoginResponse(
                 usuario.getIdUsuario(),
                 rolFrontend,
                 usuario.getNombres(),
-                usuario.getApellidos()
+                usuario.getApellidos(),
+                token   // ← asegúrate de tener este campo en LoginResponse
         );
     }
 
-    /**
-     * Permite login con passwordHash BCrypt o en texto plano (solo pruebas).
-     */
     private void validarPasswordMixto(String rawPassword, String storedPassword) {
-        if (rawPassword == null) {
-            throw new RuntimeException("Contraseña incorrecta");
-        }
-        if (storedPassword == null || storedPassword.trim().isEmpty()) {
+        if (rawPassword == null) throw new RuntimeException("Contraseña incorrecta");
+        if (storedPassword == null || storedPassword.isBlank())
             throw new RuntimeException("El usuario no tiene passwordHash configurado");
-        }
 
         String stored = storedPassword.trim();
-
-        // Detecta BCrypt típico: $2a$ / $2b$ / $2y$
         boolean esBcrypt = stored.matches("^\\$2[aby]\\$\\d\\d\\$.+");
 
-        boolean ok;
-        if (esBcrypt) {
-            ok = passwordEncoder.matches(rawPassword, stored);
-        } else {
-            // Texto plano
-            ok = rawPassword.equals(stored);
-        }
+        boolean ok = esBcrypt
+                ? passwordEncoder.matches(rawPassword, stored)
+                : rawPassword.equals(stored);
 
-        if (!ok) {
-            throw new RuntimeException("Contraseña incorrecta");
-        }
+        if (!ok) throw new RuntimeException("Contraseña incorrecta");
     }
 
     private String convertirRol(String rolAsignado) {
         if (rolAsignado == null) return "";
-
-        String rol = rolAsignado.trim().toUpperCase();
-
-        if (rol.equals("ADMIN")) return "ROLE_ADMIN";
-        if (rol.equals("DOCENTE")) return "ROLE_DOCENTE";
-        if (rol.equals("ESTUDIANTE")) return "ROLE_ESTUDIANTE";
-
-        return rol;
+        return switch (rolAsignado.trim().toUpperCase()) {
+            case "ADMIN"      -> "ROLE_ADMIN";
+            case "DOCENTE"    -> "ROLE_DOCENTE";
+            case "ESTUDIANTE" -> "ROLE_ESTUDIANTE";
+            default           -> rolAsignado.trim().toUpperCase();
+        };
     }
 }

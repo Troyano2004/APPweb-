@@ -1,3 +1,4 @@
+
 package com.erwin.backend.service;
 
 import com.erwin.backend.dtos.*;
@@ -16,10 +17,23 @@ public class RolAppService {
         this.repo = repo;
     }
 
+    // ====================================================
+    // LISTAR ROLES APP
+    // ====================================================
     public List<RolAppDto> listar() {
         return repo.listarRolesApp();
     }
 
+    // ====================================================
+    // LISTAR ROLES DE LA BD (vista dinámica v_roles_bd_dinamico)
+    // ====================================================
+    public List<RolBdDto> listarRolesBd() {
+        return repo.listarRolesBd();
+    }
+
+    // ====================================================
+    // CREAR (con idRolBase)
+    // ====================================================
     @Transactional
     public RolAppDto crear(RolAppCreateRequest req) {
         if (req == null) throw new RuntimeException("Body requerido");
@@ -28,7 +42,9 @@ public class RolAppService {
         if (req.getPermisos() == null || req.getPermisos().isEmpty())
             throw new RuntimeException("Debe seleccionar al menos un permiso");
 
-        Integer id = repo.crearRolApp(req.getNombre(), req.getDescripcion(), req.getActivo(), req.getPermisos());
+        // ✅ Pasar idRolBase al repositorio
+        Integer id = repo.crearRolApp(req.getNombre(), req.getDescripcion(),
+                req.getActivo(), req.getPermisos(), req.getIdRolBase());
 
         return repo.listarRolesApp().stream()
                 .filter(x -> x.getIdRolApp().equals(id))
@@ -36,10 +52,20 @@ public class RolAppService {
                 .orElseThrow(() -> new RuntimeException("Rol app no existe"));
     }
 
+    // ====================================================
+    // EDITAR (con idRolBase)
+    // ====================================================
     @Transactional
     public RolAppDto editar(Integer id, RolAppUpdateRequest req) {
         if (req == null) throw new RuntimeException("Body requerido");
-        repo.editarRolApp(id, req.getNombre(), req.getDescripcion(), req.getActivo());
+
+        // ✅ Pasar idRolBase al repositorio (puede ser null = no cambiar)
+        Integer idRolBase = null;
+        if (req instanceof RolAppUpdateRequestExtended extended) {
+            idRolBase = extended.getIdRolBase();
+        }
+
+        repo.editarRolApp(id, req.getNombre(), req.getDescripcion(), req.getActivo(), idRolBase);
 
         return repo.listarRolesApp().stream()
                 .filter(x -> x.getIdRolApp().equals(id))
@@ -47,6 +73,9 @@ public class RolAppService {
                 .orElseThrow(() -> new RuntimeException("Rol app no existe"));
     }
 
+    // ====================================================
+    // CAMBIAR ESTADO
+    // ====================================================
     @Transactional
     public RolAppDto cambiarEstado(Integer id, RolAppEstadoRequest req) {
         if (req == null || req.getActivo() == null)
@@ -60,6 +89,9 @@ public class RolAppService {
                 .orElseThrow(() -> new RuntimeException("Rol app no existe"));
     }
 
+    // ====================================================
+    // ASIGNAR PERMISOS
+    // ====================================================
     @Transactional
     public RolAppDto asignarPermisos(Integer id, RolAppPermisosRequest req) {
         if (req == null || req.getPermisos() == null || req.getPermisos().isEmpty())

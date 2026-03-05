@@ -1,18 +1,47 @@
-
-
 <div class="page">
   <div class="wrap">
 
     <div class="hero">
       <div class="hero-left">
         <h1>Control de Roles</h1>
-        <p>Administración de <b>roles del aplicativo</b> y asignación de permisos (BD)</p>
+        <p>Roles del aplicativo y <b>roles físicos de la base de datos</b></p>
       </div>
-
       <div class="hero-right">
         <button type="button" class="back-link" (click)="volver()">Volver</button>
       </div>
     </div>
+
+    <!-- ================== CARD ROLES BD (DINÁMICO) ================== -->
+    <div class="card" style="margin-bottom: 24px;">
+      <div class="section-title">
+        <h2>Roles físicos de la Base de Datos</h2>
+        <p>Roles de PostgreSQL (pg_roles) mostrados dinámicamente — son los roles reales que existen en la BD</p>
+      </div>
+
+      <div class="table-card">
+        <table class="table">
+          <thead>
+          <tr>
+            <th>Rol BD (pg_roles)</th>
+            <th>Rol Aplicativo</th>
+            <th>Rol Base</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr *ngFor="let r of rolesBd; trackBy: trackByRolBd">
+            <td><span class="badge badge-info">{{ r.rolBd }}</span></td>
+            <td class="mono">{{ r.rolApp || '—' }}</td>
+            <td>{{ r.rolBase || '—' }}</td>
+          </tr>
+          <tr *ngIf="rolesBd.length === 0">
+            <td colspan="3" class="empty-row">No se encontraron roles físicos.</td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <!-- ================== FIN CARD ROLES BD ================== -->
+
 
     <!-- ================== CARD ROLES APP ================== -->
     <div class="card">
@@ -24,72 +53,57 @@
 
       <div class="toolbar">
         <div class="toolbar-left">
-          <button type="button" class="btn btn-success" (click)="openCreate()">
-            ＋ Nuevo rol
-          </button>
-
-          <button type="button" class="btn btn-secondary" (click)="cargarTodo()">
-            ↻ Recargar
-          </button>
+          <button type="button" class="btn btn-success" (click)="openCreate()">＋ Nuevo rol</button>
+          <button type="button" class="btn btn-secondary" (click)="cargarTodo()">↻ Recargar</button>
         </div>
 
         <div class="toolbar-right">
           <div class="search">
             <span class="search-icon">🔎</span>
-            <input
-              type="text"
-              [(ngModel)]="q"
-              placeholder="Buscar (rol, descripción, permisos, estado...)"
-            />
+            <input type="text" [(ngModel)]="q" placeholder="Buscar (rol, descripción, permisos, estado...)" />
           </div>
         </div>
       </div>
 
-      <!-- mensajes -->
       <div *ngIf="loading" class="msg-loading">Cargando...</div>
-
-      <div *ngIf="errorMsg" class="msg-error">
-        {{ errorMsg }}
-      </div>
+      <div *ngIf="errorMsg" class="msg-error">{{ errorMsg }}</div>
 
       <div class="table-card">
         <table class="table">
           <thead>
           <tr>
             <th style="width: 70px;">ID</th>
-            <th>Rol</th>
+            <th>Rol App</th>
+            <th>Rol BD vinculado</th>
             <th>Descripción</th>
             <th>Permisos</th>
             <th style="width: 140px;">Estado</th>
-            <th style="width: 260px;">Acciones</th>
+            <th style="width: 220px;">Acciones</th>
           </tr>
           </thead>
 
           <tbody>
           <tr *ngFor="let r of rolesFiltrados; trackBy: trackByRolId">
             <td>{{ r.idRolApp }}</td>
-
             <td class="mono">{{ r.nombre }}</td>
-
+            <!-- ✅ NUEVO: muestra el rol BD vinculado -->
+            <td>
+              <span class="badge badge-info" *ngIf="r.rolBd; else sinRolBd">{{ r.rolBd }}</span>
+              <ng-template #sinRolBd><span class="muted">—</span></ng-template>
+            </td>
             <td>{{ r.descripcion || '-' }}</td>
-
             <td class="perms-cell">
               <span class="perms-text" [title]="permisosLabel(r)">
                 {{ permisosLabel(r) || '-' }}
               </span>
             </td>
-
             <td>
               <span class="badge" [ngClass]="r.activo ? 'badge-success' : 'badge-pending'">
                 {{ r.activo ? 'ACTIVO' : 'INACTIVO' }}
               </span>
             </td>
-
             <td class="actions">
-              <button type="button" class="btn btn-outline" (click)="openEdit(r)">
-                ✏️ Editar
-              </button>
-
+              <button type="button" class="btn btn-outline" (click)="openEdit(r)">✏️ Editar</button>
               <button
                 type="button"
                 class="btn"
@@ -101,16 +115,14 @@
           </tr>
 
           <tr *ngIf="!loading && rolesFiltrados.length === 0">
-            <td colspan="6" class="empty-row">
-              No hay roles del aplicativo para mostrar.
-            </td>
+            <td colspan="7" class="empty-row">No hay roles del aplicativo para mostrar.</td>
           </tr>
           </tbody>
         </table>
       </div>
 
     </div>
-    <!-- ================== FIN CARD ================== -->
+    <!-- ================== FIN CARD ROLES APP ================== -->
 
 
     <!-- ================== MODAL ================== -->
@@ -140,6 +152,23 @@
 
             <label style="grid-column: 1 / -1;">Descripción
               <input formControlName="descripcion" placeholder="Describe para qué sirve este rol" />
+            </label>
+
+            <!-- ✅ NUEVO: Rol base de BD -->
+            <label style="grid-column: 1 / -1;">
+              Rol base de BD
+              <small style="color:#888; margin-left:6px;">
+                (Vincula este rol del aplicativo con un rol físico de PostgreSQL para herencia de permisos en BD)
+              </small>
+              <select [(ngModel)]="selectedIdRolBase" [ngModelOptions]="{standalone: true}">
+                <option [ngValue]="null">— Sin vinculación —</option>
+                <option *ngFor="let rs of rolesSistema" [ngValue]="rs.idRol">
+                  {{ rs.label }} → {{ rs.rolBd }}
+                </option>
+              </select>
+              <small *ngIf="selectedIdRolBase" style="color:#2563eb;">
+                ✓ Heredará permisos del rol físico: <b>{{ rolBaseLabel }}</b>
+              </small>
             </label>
           </div>
 

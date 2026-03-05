@@ -1,6 +1,8 @@
+
 package com.erwin.backend.repository;
 
 import com.erwin.backend.dtos.RolAppDto;
+import com.erwin.backend.dtos.RolBdDto;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.springframework.stereotype.Repository;
@@ -17,30 +19,69 @@ public class RolAppSpRepository {
     @PersistenceContext
     private EntityManager em;
 
+    // ====================================================
+    // LISTAR ROLES APP (con id_rol_base y rol_bd)
+    // ====================================================
     public List<RolAppDto> listarRolesApp() {
+        // ✅ Se agrega id_rol_base directamente de la tabla rol_app
         List<Object[]> rows = em.createNativeQuery(
-                "SELECT id_rol_app, nombre, descripcion, activo, permisos FROM sp_listar_roles_app()"
+                "SELECT ra.id_rol_app, ra.nombre, ra.descripcion, ra.activo, " +
+                        "       (SELECT array_agg(p.codigo ORDER BY p.codigo) " +
+                        "          FROM rol_app_permiso rap " +
+                        "          JOIN permiso p ON p.id_permiso = rap.id_permiso " +
+                        "         WHERE rap.id_rol_app = ra.id_rol_app) AS permisos, " +
+                        "       ra.id_rol_base, " +
+                        "       rs.nombre_rol_bd AS rol_bd " +
+                        "  FROM rol_app ra " +
+                        "  LEFT JOIN roles_sistema rs ON rs.id_rol = ra.id_rol_base " +
+                        " ORDER BY ra.id_rol_app"
         ).getResultList();
 
         List<RolAppDto> out = new ArrayList<>();
         for (Object[] r : rows) {
-            out.add(new RolAppDto(
+            RolAppDto dto = new RolAppDto(
                     ((Number) r[0]).intValue(),
                     (String) r[1],
                     (String) r[2],
                     (Boolean) r[3],
                     toStringList(r[4])
-            ));
+            );
+            // ✅ id_rol_base y rol_bd
+            if (r[5] != null) dto.setIdRolBase(((Number) r[5]).intValue());
+            if (r[6] != null) dto.setRolBd((String) r[6]);
+
+            out.add(dto);
         }
         return out;
     }
 
-    // ================== CREAR ==================
+    // ====================================================
+    // LISTAR ROLES BD DINÁMICOS (desde v_roles_bd_dinamico)
+    // ====================================================
+    public List<RolBdDto> listarRolesBd() {
+        List<Object[]> rows = em.createNativeQuery(
+                "SELECT rol_bd, rol_app, id_rol_app, rol_base FROM public.v_roles_bd_dinamico ORDER BY rol_bd"
+        ).getResultList();
 
-    public Integer crearRolApp(String nombre, String descripcion, Boolean activo, List<Integer> permisos) {
+        List<RolBdDto> out = new ArrayList<>();
+        for (Object[] r : rows) {
+            RolBdDto dto = new RolBdDto();
+            dto.setRolBd((String) r[0]);
+            dto.setRolApp(r[1] != null ? (String) r[1] : null);
+            dto.setIdRolApp(r[2] != null ? ((Number) r[2]).intValue() : null);
+            dto.setRolBase(r[3] != null ? (String) r[3] : null);
+            out.add(dto);
+        }
+        return out;
+    }
 
-        // En Hibernate 7 / Spring Boot 4, lo más estable es mandar literal y castear a int4[]
-        String permisosLiteral = toPgIntArrayLiteral(permisos); // "{1,2,3}"
+    // ====================================================
+    // CREAR (con idRolBase)
+    // ====================================================
+    public Integer crearRolApp(String nombre, String descripcion, Boolean activo,
+                               List<Integer> permisos, Integer idRolBase) {
+
+        String permisosLiteral = toPgIntArrayLiteral(permisos);
 
         Object result = em.createNativeQuery(
                         "SELECT sp_crear_rol_app(?1, ?2, ?3, CAST(?4 AS int4[]))"
@@ -51,23 +92,44 @@ public class RolAppSpRepository {
                 .setParameter(4, permisosLiteral)
                 .getSingleResult();
 
-        return ((Number) result).intValue();
+        Integer newId = ((Number) result).intValue();
+
+        // ✅ Si se envió idRolBase, actualizar el campo en la tabla rol_app
+        if (idRolBase != null) {
+            em.createNativeQuery("UPDATE rol_app SET id_rol_base = ?1 WHERE id_rol_app = ?2")
+                    .setParameter(1, idRolBase)
+                    .setParameter(2, newId)
+                    .executeUpdate();
+        }
+
+        return newId;
     }
 
-    // ================== EDITAR (RETURNS VOID) ==================
+    // ====================================================
+    // EDITAR (con idRolBase)
+    // ====================================================
+    public void editarRolApp(Integer id, String nombre, String descripcion,
+                             Boolean activo, Integer idRolBase) {
 
-    public void editarRolApp(Integer id, String nombre, String descripcion, Boolean activo) {
-        // RETURNS VOID => llamar con SELECT y consumir resultado
         em.createNativeQuery("SELECT sp_editar_rol_app(?1, ?2, ?3, ?4)")
                 .setParameter(1, id)
                 .setParameter(2, nombre)
                 .setParameter(3, descripcion)
                 .setParameter(4, activo)
                 .getSingleResult();
+
+        // ✅ Actualizar id_rol_base si se envió
+        if (idRolBase != null) {
+            em.createNativeQuery("UPDATE rol_app SET id_rol_base = ?1 WHERE id_rol_app = ?2")
+                    .setParameter(1, idRolBase)
+                    .setParameter(2, id)
+                    .executeUpdate();
+        }
     }
 
-    // ================== CAMBIAR ESTADO (RETURNS VOID) ==================
-
+    // ====================================================
+    // CAMBIAR ESTADO
+    // ====================================================
     public void cambiarEstadoRolApp(Integer id, Boolean activo) {
         em.createNativeQuery("SELECT sp_cambiar_estado_rol_app(?1, ?2)")
                 .setParameter(1, id)
@@ -75,8 +137,9 @@ public class RolAppSpRepository {
                 .getSingleResult();
     }
 
-    // ================== ASIGNAR PERMISOS (RETURNS VOID, recibe int4[]) ==================
-
+    // ====================================================
+    // ASIGNAR PERMISOS
+    // ====================================================
     public void asignarPermisosRolApp(Integer id, List<Integer> permisos) {
         String permisosLiteral = toPgIntArrayLiteral(permisos);
 
@@ -86,15 +149,11 @@ public class RolAppSpRepository {
                 .getSingleResult();
     }
 
-    // ================== helpers ==================
-
-    /**
-     * Convierte List<Integer> a literal Postgres int[]: "{1,2,3}"
-     * (Si está vacío/null devuelve null; el SP valida y lanza error)
-     */
+    // ====================================================
+    // helpers
+    // ====================================================
     private String toPgIntArrayLiteral(List<Integer> permisos) {
         if (permisos == null || permisos.isEmpty()) return null;
-
         StringBuilder sb = new StringBuilder("{");
         for (int i = 0; i < permisos.size(); i++) {
             if (i > 0) sb.append(",");
@@ -106,9 +165,7 @@ public class RolAppSpRepository {
 
     private List<String> toStringList(Object arrayValue) {
         if (arrayValue == null) return Collections.emptyList();
-
         try {
-            // Caso 1: java.sql.Array (Postgres)
             if (arrayValue instanceof java.sql.Array sqlArray) {
                 Object raw = sqlArray.getArray();
                 if (raw instanceof Object[] arr) {
@@ -117,27 +174,18 @@ public class RolAppSpRepository {
                     return out;
                 }
             }
-
-            // Caso 2: String[]
             if (arrayValue instanceof String[] arr) return Arrays.asList(arr);
-
-            // Caso 3: Object[]
             if (arrayValue instanceof Object[] arr) {
                 List<String> out = new ArrayList<>();
                 for (Object v : arr) out.add(String.valueOf(v));
                 return out;
             }
-
-            // Caso 4: List
             if (arrayValue instanceof List<?> list) {
                 List<String> out = new ArrayList<>();
                 for (Object v : list) out.add(String.valueOf(v));
                 return out;
             }
-
-            // Fallback
             return Collections.singletonList(String.valueOf(arrayValue));
-
         } catch (SQLException e) {
             throw new RuntimeException("No se pudo leer array permisos", e);
         }
