@@ -1,3 +1,4 @@
+
 <div class="page">
   <div class="wrap">
 
@@ -6,13 +7,14 @@
         <h1>Control de Roles</h1>
         <p>Roles del aplicativo y <b>roles físicos de la base de datos</b></p>
       </div>
+
       <div class="hero-right">
         <button type="button" class="back-link" (click)="volver()">Volver</button>
       </div>
     </div>
 
-    <!-- ================== CARD ROLES BD (DINÁMICO) ================== -->
-    <div class="card" style="margin-bottom: 24px;">
+    <!-- CARD ROLES BD -->
+    <div class="card card-spaced">
       <div class="section-title">
         <h2>Roles físicos de la Base de Datos</h2>
         <p>Roles de PostgreSQL (pg_roles) mostrados dinámicamente — son los roles reales que existen en la BD</p>
@@ -27,12 +29,14 @@
             <th>Rol Base</th>
           </tr>
           </thead>
+
           <tbody>
           <tr *ngFor="let r of rolesBd; trackBy: trackByRolBd">
             <td><span class="badge badge-info">{{ r.rolBd }}</span></td>
             <td class="mono">{{ r.rolApp || '—' }}</td>
             <td>{{ r.rolBase || '—' }}</td>
           </tr>
+
           <tr *ngIf="rolesBd.length === 0">
             <td colspan="3" class="empty-row">No se encontraron roles físicos.</td>
           </tr>
@@ -40,10 +44,8 @@
         </table>
       </div>
     </div>
-    <!-- ================== FIN CARD ROLES BD ================== -->
 
-
-    <!-- ================== CARD ROLES APP ================== -->
+    <!-- CARD ROLES APP -->
     <div class="card">
 
       <div class="section-title">
@@ -85,23 +87,30 @@
           <tbody>
           <tr *ngFor="let r of rolesFiltrados; trackBy: trackByRolId">
             <td>{{ r.idRolApp }}</td>
+
             <td class="mono">{{ r.nombre }}</td>
-            <!-- ✅ NUEVO: muestra el rol BD vinculado -->
+
             <td>
               <span class="badge badge-info" *ngIf="r.rolBd; else sinRolBd">{{ r.rolBd }}</span>
-              <ng-template #sinRolBd><span class="muted">—</span></ng-template>
+              <ng-template #sinRolBd>
+                <span class="muted">—</span>
+              </ng-template>
             </td>
+
             <td>{{ r.descripcion || '-' }}</td>
+
             <td class="perms-cell">
-              <span class="perms-text" [title]="permisosLabel(r)">
-                {{ permisosLabel(r) || '-' }}
-              </span>
+                <span class="perms-text" [title]="permisosLabel(r)">
+                  {{ permisosLabel(r) || '-' }}
+                </span>
             </td>
+
             <td>
-              <span class="badge" [ngClass]="r.activo ? 'badge-success' : 'badge-pending'">
-                {{ r.activo ? 'ACTIVO' : 'INACTIVO' }}
-              </span>
+                <span class="badge" [ngClass]="r.activo ? 'badge-success' : 'badge-pending'">
+                  {{ r.activo ? 'ACTIVO' : 'INACTIVO' }}
+                </span>
             </td>
+
             <td class="actions">
               <button type="button" class="btn btn-outline" (click)="openEdit(r)">✏️ Editar</button>
               <button
@@ -122,10 +131,8 @@
       </div>
 
     </div>
-    <!-- ================== FIN CARD ROLES APP ================== -->
 
-
-    <!-- ================== MODAL ================== -->
+    <!-- MODAL -->
     <div class="modal-backdrop" *ngIf="modalOpen" (click)="closeModal()"></div>
 
     <div class="modal" *ngIf="modalOpen">
@@ -133,40 +140,47 @@
 
         <div class="modal-header">
           <h3>{{ editMode ? 'Editar rol del aplicativo' : 'Nuevo rol del aplicativo' }}</h3>
-          <button type="button" class="btn btn-secondary" (click)="closeModal()">✕</button>
+
+          <button type="button" class="btn btn-secondary btn-icon" (click)="closeModal()">
+            ✕
+          </button>
         </div>
 
         <form class="modal-body" [formGroup]="form" (submit)="$event.preventDefault()">
 
           <div class="grid">
-            <label>Nombre del rol *
+            <label>
+              <span>Nombre del rol *</span>
               <input formControlName="nombre" placeholder="Ej: BECADO, TESISTA, COORDINADOR..." />
             </label>
 
-            <label>Estado *
+            <label>
+              <span>Estado *</span>
               <select formControlName="activo">
                 <option [ngValue]="true">Activo</option>
                 <option [ngValue]="false">Inactivo</option>
               </select>
             </label>
 
-            <label style="grid-column: 1 / -1;">Descripción
+            <label class="full-width">
+              <span>Descripción</span>
               <input formControlName="descripcion" placeholder="Describe para qué sirve este rol" />
             </label>
 
-            <!-- ✅ NUEVO: Rol base de BD -->
-            <label style="grid-column: 1 / -1;">
-              Rol base de BD
-              <small style="color:#888; margin-left:6px;">
+            <label class="full-width">
+              <span>Rol base de BD</span>
+              <small class="field-help">
                 (Vincula este rol del aplicativo con un rol físico de PostgreSQL para herencia de permisos en BD)
               </small>
+
               <select [(ngModel)]="selectedIdRolBase" [ngModelOptions]="{standalone: true}">
                 <option [ngValue]="null">— Sin vinculación —</option>
                 <option *ngFor="let rs of rolesSistema" [ngValue]="rs.idRol">
                   {{ rs.label }} → {{ rs.rolBd }}
                 </option>
               </select>
-              <small *ngIf="selectedIdRolBase" style="color:#2563eb;">
+
+              <small *ngIf="selectedIdRolBase" class="field-ok">
                 ✓ Heredará permisos del rol físico: <b>{{ rolBaseLabel }}</b>
               </small>
             </label>
@@ -183,17 +197,18 @@
                 class="perm-card"
                 *ngFor="let p of permisos; trackBy: trackByPermisoId"
                 [class.checked]="isPermisoChecked(p.idPermiso)"
-                (click)="togglePermiso(p.idPermiso)"
-              >
+                (click)="togglePermiso(p.idPermiso)">
+
                 <div class="perm-top">
                   <input
                     type="checkbox"
                     [checked]="isPermisoChecked(p.idPermiso)"
                     (click)="$event.stopPropagation()"
-                    (change)="togglePermiso(p.idPermiso)"
-                  />
+                    (change)="togglePermiso(p.idPermiso)" />
+
                   <span class="perm-code">{{ p.codigo }}</span>
                 </div>
+
                 <div class="perm-desc">{{ p.descripcion }}</div>
               </div>
             </div>
@@ -212,7 +227,6 @@
 
       </div>
     </div>
-    <!-- ================== FIN MODAL ================== -->
 
   </div>
 </div>
