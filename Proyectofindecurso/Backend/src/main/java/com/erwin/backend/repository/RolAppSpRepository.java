@@ -22,16 +22,17 @@ public class RolAppSpRepository {
     // ====================================================
     // LISTAR ROLES APP (con id_rol_base y rol_bd)
     // ====================================================
+    // ✅ CORRECCIÓN 1: "permiso" → "permisos"  (nombre real de la tabla en la BD)
+    // ✅ CORRECCIÓN 2: "rs.nombre_rol_bd" → "rs.nombre_rol"  (nombre real de la columna)
     public List<RolAppDto> listarRolesApp() {
-        // ✅ Se agrega id_rol_base directamente de la tabla rol_app
         List<Object[]> rows = em.createNativeQuery(
                 "SELECT ra.id_rol_app, ra.nombre, ra.descripcion, ra.activo, " +
                         "       (SELECT array_agg(p.codigo ORDER BY p.codigo) " +
                         "          FROM rol_app_permiso rap " +
-                        "          JOIN permiso p ON p.id_permiso = rap.id_permiso " +
+                        "          JOIN permisos p ON p.id_permiso = rap.id_permiso " +  // ← FIX: permisos (con S)
                         "         WHERE rap.id_rol_app = ra.id_rol_app) AS permisos, " +
                         "       ra.id_rol_base, " +
-                        "       rs.nombre_rol_bd AS rol_bd " +
+                        "       rs.nombre_rol AS rol_bd " +  // ← FIX: nombre_rol (no nombre_rol_bd)
                         "  FROM rol_app ra " +
                         "  LEFT JOIN roles_sistema rs ON rs.id_rol = ra.id_rol_base " +
                         " ORDER BY ra.id_rol_app"
@@ -46,10 +47,8 @@ public class RolAppSpRepository {
                     (Boolean) r[3],
                     toStringList(r[4])
             );
-            // ✅ id_rol_base y rol_bd
             if (r[5] != null) dto.setIdRolBase(((Number) r[5]).intValue());
             if (r[6] != null) dto.setRolBd((String) r[6]);
-
             out.add(dto);
         }
         return out;
@@ -58,15 +57,18 @@ public class RolAppSpRepository {
     // ====================================================
     // LISTAR ROLES BD DINÁMICOS (desde v_roles_bd_dinamico)
     // ====================================================
+    // ✅ CORRECCIÓN: columnas reales de la vista v_roles_bd_dinamico:
+    //    nombre_rol_bd, nombre_rol_app, id_rol_app, rol_base
     public List<RolBdDto> listarRolesBd() {
         List<Object[]> rows = em.createNativeQuery(
-                "SELECT rol_bd, rol_app, id_rol_app, rol_base FROM public.v_roles_bd_dinamico ORDER BY rol_bd"
+                "SELECT nombre_rol_bd, nombre_rol_app, id_rol_app, rol_base " +
+                        "FROM public.v_roles_bd_dinamico ORDER BY nombre_rol_bd"
         ).getResultList();
 
         List<RolBdDto> out = new ArrayList<>();
         for (Object[] r : rows) {
             RolBdDto dto = new RolBdDto();
-            dto.setRolBd((String) r[0]);
+            dto.setRolBd(r[0] != null ? (String) r[0] : null);
             dto.setRolApp(r[1] != null ? (String) r[1] : null);
             dto.setIdRolApp(r[2] != null ? ((Number) r[2]).intValue() : null);
             dto.setRolBase(r[3] != null ? (String) r[3] : null);
@@ -94,7 +96,6 @@ public class RolAppSpRepository {
 
         Integer newId = ((Number) result).intValue();
 
-        // ✅ Si se envió idRolBase, actualizar el campo en la tabla rol_app
         if (idRolBase != null) {
             em.createNativeQuery("UPDATE rol_app SET id_rol_base = ?1 WHERE id_rol_app = ?2")
                     .setParameter(1, idRolBase)
@@ -118,7 +119,6 @@ public class RolAppSpRepository {
                 .setParameter(4, activo)
                 .getSingleResult();
 
-        // ✅ Actualizar id_rol_base si se envió
         if (idRolBase != null) {
             em.createNativeQuery("UPDATE rol_app SET id_rol_base = ?1 WHERE id_rol_app = ?2")
                     .setParameter(1, idRolBase)
