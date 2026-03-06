@@ -297,6 +297,34 @@
 
             </div>
 
+            <div class="roles-box">
+
+              <div class="roles-title">
+                Roles adicionales
+              </div>
+
+              <div class="roles-grid">
+
+                <div
+                  class="role-card"
+                  *ngFor="let r of rolesApp"
+                  [class.checked]="isExtraSelectedUpdate(r.idRolApp)"
+                  [class.disabled]="updateRolPrincipalId === r.idRolApp"
+                  (click)="updateRolPrincipalId === r.idRolApp ? null : toggleExtraRoleUpdate(r.idRolApp)">
+
+                  <input
+                    type="checkbox"
+                    [checked]="isExtraSelectedUpdate(r.idRolApp)"
+                    [disabled]="updateRolPrincipalId === r.idRolApp">
+
+                  {{r.nombre}}
+
+                </div>
+
+              </div>
+
+            </div>
+
             <label>
 
               Password (opcional)
