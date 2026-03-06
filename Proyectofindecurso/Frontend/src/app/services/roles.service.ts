@@ -12,25 +12,27 @@ export interface PermisoDto {
   activo: boolean;
 }
 
-/** Rol del aplicativo */
 export interface RolAppDto {
   idRolApp: number;
   nombre: string;
   descripcion: string | null;
   activo: boolean;
   permisos: string[];
-
-  // ✅ NUEVO: vinculación con rol base de BD
   idRolBase?: number | null;
-  rolBd?: string | null;       // nombre en pg_roles, ej: rol_admin
+  rolBd?: string | null;
 }
 
-/** Rol físico de la BD (pg_roles) - mostrado dinámicamente */
 export interface RolBdDto {
-  rolBd: string;               // ej: rol_admin
-  rolApp: string | null;       // ej: ROLE_ADMIN
+  rolBd: string;
+  rolApp: string | null;
   idRolApp: number | null;
-  rolBase: string | null;      // ej: ADMIN
+  rolBase: string | null;
+}
+
+// ✅ Viene dinámicamente de la BD (tabla roles_sistema)
+export interface RolSistemaDto {
+  idRol: number;
+  nombreRol: string;
 }
 
 export interface RolAppCreateRequest {
@@ -38,7 +40,6 @@ export interface RolAppCreateRequest {
   descripcion?: string;
   activo: boolean;
   permisos: number[];
-  // ✅ NUEVO: id del rol base de BD
   idRolBase?: number | null;
 }
 
@@ -46,7 +47,6 @@ export interface RolAppUpdateRequest {
   nombre?: string;
   descripcion?: string;
   activo?: boolean;
-  // ✅ NUEVO: id del rol base de BD
   idRolBase?: number | null;
 }
 
@@ -58,13 +58,6 @@ export interface RolPermisosRequest {
   permisos: number[];
 }
 
-/* ========= Catálogo de roles_sistema (para el select en el form) ========= */
-export interface RolSistemaDto {
-  idRol: number;
-  nombreRol: string;   // ej: ADMIN
-  nombreRolBd: string; // ej: rol_admin
-}
-
 /* ========= SERVICE ========= */
 
 @Injectable({ providedIn: 'root' })
@@ -74,10 +67,9 @@ export class RolesService {
   private readonly rolAppUrl = `${this.baseUrl}/rol-app`;
   private readonly permisosUrl = `${this.baseUrl}/permisos`;
   private readonly rolesBdUrl = `${this.baseUrl}/roles-bd`;
+  private readonly rolesSistemaUrl = `${this.baseUrl}/roles-sistema`; // ✅ NUEVO
 
   constructor(private http: HttpClient) {}
-
-  /* ====== rol_app ====== */
 
   listarRolesApp(): Observable<RolAppDto[]> {
     return this.http.get<RolAppDto[]>(this.rolAppUrl);
@@ -99,15 +91,16 @@ export class RolesService {
     return this.http.post<RolAppDto>(`${this.rolAppUrl}/${id}/permisos`, body);
   }
 
-  /* ====== permisos ====== */
-
   listarPermisos(): Observable<PermisoDto[]> {
     return this.http.get<PermisoDto[]>(this.permisosUrl);
   }
 
-  /* ====== roles BD dinámicos ====== */
-
   listarRolesBd(): Observable<RolBdDto[]> {
     return this.http.get<RolBdDto[]>(this.rolesBdUrl);
+  }
+
+  // ✅ NUEVO: carga roles_sistema desde la BD (dinámico, sin hardcodeo)
+  listarRolesSistema(): Observable<RolSistemaDto[]> {
+    return this.http.get<RolSistemaDto[]>(this.rolesSistemaUrl);
   }
 }

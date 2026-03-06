@@ -2,6 +2,8 @@
 package com.erwin.backend.controller;
 
 import com.erwin.backend.dtos.*;
+import com.erwin.backend.entities.RolSistema;
+import com.erwin.backend.repository.RolesSistemaRepository;
 import com.erwin.backend.service.RolAppService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,31 +15,38 @@ import java.util.List;
 public class RolAppController {
 
     private final RolAppService service;
+    private final RolesSistemaRepository rolesSistemaRepository;
 
-    public RolAppController(RolAppService service) {
+    public RolAppController(RolAppService service, RolesSistemaRepository rolesSistemaRepository) {
         this.service = service;
+        this.rolesSistemaRepository = rolesSistemaRepository;
     }
 
-    // ✅ Lista roles del aplicativo (con idRolBase y rolBd incluidos)
+    // Lista roles del aplicativo (con idRolBase y rolBd incluidos)
     @GetMapping("/rol-app")
     public ResponseEntity<List<RolAppDto>> listar() {
         return ResponseEntity.ok(service.listar());
     }
 
-    // ✅ NUEVO: Lista roles físicos de la BD (pg_roles) dinámicamente
-    // El frontend los muestra en la pantalla de Roles como venían del video
+    // Lista roles físicos de la BD (pg_roles) dinámicamente
     @GetMapping("/roles-bd")
     public ResponseEntity<List<RolBdDto>> listarRolesBd() {
         return ResponseEntity.ok(service.listarRolesBd());
     }
 
-    // ✅ Crear rol app (acepta idRolBase en el body)
+    // ✅ NUEVO: Lista roles_sistema directamente desde la BD (para el dropdown del form)
+    @GetMapping("/roles-sistema")
+    public ResponseEntity<List<RolSistema>> listarRolesSistema() {
+        return ResponseEntity.ok(rolesSistemaRepository.findAll());
+    }
+
+    // Crear rol app (acepta idRolBase en el body)
     @PostMapping("/rol-app")
     public ResponseEntity<RolAppDto> crear(@RequestBody RolAppCreateRequest req) {
         return ResponseEntity.ok(service.crear(req));
     }
 
-    // ✅ Editar (acepta idRolBase en el body via RolAppUpdateRequestExtended)
+    // Editar (acepta idRolBase en el body via RolAppUpdateRequestExtended)
     @PutMapping("/rol-app/{id}")
     public ResponseEntity<RolAppDto> editar(@PathVariable Integer id,
                                             @RequestBody RolAppUpdateRequestExtended req) {

@@ -10,18 +10,10 @@ import {
   PermisoDto,
   RolAppDto,
   RolBdDto,
+  RolSistemaDto,
   RolAppCreateRequest,
   RolAppUpdateRequest,
 } from '../../services/roles.service';
-
-// Catálogo fijo de roles_sistema (id coincide con la BD)
-const ROLES_SISTEMA = [
-  { idRol: 1, label: 'ADMIN',                 rolBd: 'rol_admin' },
-  { idRol: 2, label: 'DOCENTE',               rolBd: 'rol_docente' },
-  { idRol: 3, label: 'ESTUDIANTE',            rolBd: 'rol_estudiante' },
-  { idRol: 4, label: 'COORDINADOR',           rolBd: 'rol_coordinador' },
-  { idRol: 5, label: 'DIRECTOR_ADMINISTRATIVO', rolBd: 'rol_director_administrativo' },
-];
 
 @Component({
   selector: 'app-roles',
@@ -32,7 +24,6 @@ const ROLES_SISTEMA = [
 })
 export class RolesComponent implements OnInit {
 
-  // UI
   q = '';
   loading = false;
   errorMsg = '';
@@ -41,21 +32,15 @@ export class RolesComponent implements OnInit {
   editMode = false;
   selectedId: number | null = null;
 
-  // data
   roles: RolAppDto[] = [];
   permisos: PermisoDto[] = [];
-
-  // ✅ NUEVO: roles físicos de la BD
   rolesBd: RolBdDto[] = [];
 
-  // catálogo de roles_sistema para el select
-  rolesSistema = ROLES_SISTEMA;
+  // ✅ Cargado dinámicamente desde /roles-sistema (ya no hardcodeado)
+  rolesSistema: RolSistemaDto[] = [];
 
-  // permisos seleccionados (IDs)
   selectedPermisos: number[] = [];
   permTouched = false;
-
-  // ✅ NUEVO: rol base seleccionado en el form
   selectedIdRolBase: number | null = null;
 
   form!: FormGroup;
@@ -77,9 +62,10 @@ export class RolesComponent implements OnInit {
     this.cargarTodo();
   }
 
-  trackByRolId    = (_: number, r: RolAppDto) => r.idRolApp;
-  trackByPermisoId = (_: number, p: PermisoDto) => p.idPermiso;
-  trackByRolBd    = (_: number, r: RolBdDto)  => r.rolBd;
+  trackByRolId     = (_: number, r: RolAppDto)    => r.idRolApp;
+  trackByPermisoId = (_: number, p: PermisoDto)   => p.idPermiso;
+  trackByRolBd     = (_: number, r: RolBdDto)     => r.rolBd;
+  trackByRolSistema = (_: number, r: RolSistemaDto) => r.idRol;
 
   volver(): void {
     this.router.navigate(['/admin/usuarios']);
@@ -101,7 +87,7 @@ export class RolesComponent implements OnInit {
     this.loading = true;
     this.cdr.detectChanges();
 
-    // permisos
+    // Permisos
     this.rolesService.listarPermisos().subscribe({
       next: (perms) => {
         this.permisos = (perms || []).filter(p => p.activo);
@@ -110,7 +96,7 @@ export class RolesComponent implements OnInit {
       error: () => this.cdr.detectChanges()
     });
 
-    // roles APP
+    // Roles APP
     this.rolesService.listarRolesApp().subscribe({
       next: (roles) => {
         this.roles = [...(roles || [])];
@@ -124,10 +110,19 @@ export class RolesComponent implements OnInit {
       }
     });
 
-    // ✅ NUEVO: roles físicos de BD
+    // Roles físicos BD
     this.rolesService.listarRolesBd().subscribe({
       next: (rbd) => {
         this.rolesBd = rbd || [];
+        this.cdr.detectChanges();
+      },
+      error: () => this.cdr.detectChanges()
+    });
+
+    // ✅ roles_sistema desde la BD (dinámico)
+    this.rolesService.listarRolesSistema().subscribe({
+      next: (rs) => {
+        this.rolesSistema = rs || [];
         this.cdr.detectChanges();
       },
       error: () => this.cdr.detectChanges()
@@ -140,7 +135,6 @@ export class RolesComponent implements OnInit {
     this.editMode = false;
     this.selectedId = null;
     this.selectedIdRolBase = null;
-
     this.form.reset({ nombre: '', descripcion: '', activo: true });
     this.selectedPermisos = [];
     this.permTouched = false;
@@ -152,12 +146,10 @@ export class RolesComponent implements OnInit {
     this.editMode = true;
     this.selectedId = r.idRolApp;
 
-    // códigos -> ids para checks
     this.selectedPermisos = this.permisos
       .filter(p => (r.permisos || []).includes(p.codigo))
       .map(p => p.idPermiso);
 
-    // ✅ precargar idRolBase
     this.selectedIdRolBase = r.idRolBase ?? null;
 
     this.form.patchValue({
@@ -189,11 +181,11 @@ export class RolesComponent implements OnInit {
     return this.selectedPermisos.includes(idPermiso);
   }
 
-  // ✅ NUEVO: etiqueta del rol base seleccionado
+  // ✅ Etiqueta dinámica del rol base seleccionado
   get rolBaseLabel(): string {
     if (!this.selectedIdRolBase) return '—';
     const found = this.rolesSistema.find(r => r.idRol === this.selectedIdRolBase);
-    return found ? `${found.label} (${found.rolBd})` : '—';
+    return found ? found.nombreRol : '—';
   }
 
   // ---------------- GUARDAR ----------------
@@ -213,13 +205,12 @@ export class RolesComponent implements OnInit {
     }
 
     const payloadBase = {
-      nombre: (this.form.value.nombre || '').toString().trim().toUpperCase(),
+      nombre: (() => { const n = (this.form.value.nombre || '').toString().trim().toUpperCase(); return n.startsWith('ROLE_') ? n : 'ROLE_' + n; })(),
       descripcion: (this.form.value.descripcion || '').toString().trim(),
       activo: !!this.form.value.activo,
-      idRolBase: this.selectedIdRolBase,   // ✅ NUEVO
+      idRolBase: this.selectedIdRolBase,  // ✅ ID real de la BD
     };
 
-    // CREAR
     if (!this.editMode) {
       const body: RolAppCreateRequest = {
         ...payloadBase,
@@ -236,7 +227,6 @@ export class RolesComponent implements OnInit {
       return;
     }
 
-    // EDITAR
     if (this.selectedId == null) return;
     const id = this.selectedId;
 
@@ -276,7 +266,6 @@ export class RolesComponent implements OnInit {
     });
   }
 
-  // ---------------- UTIL ----------------
   permisosLabel(r: RolAppDto): string {
     return (r.permisos || []).join(', ');
   }

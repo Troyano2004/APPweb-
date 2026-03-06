@@ -151,7 +151,7 @@
           <div class="grid">
             <label>
               <span>Nombre del rol *</span>
-              <input formControlName="nombre" placeholder="Ej: BECADO, TESISTA, COORDINADOR..." />
+              <input formControlName="nombre" placeholder="Ej: BECADO, TESISTA, COORDINADOR... (se agregará ROLE_ automáticamente)" />
             </label>
 
             <label>
@@ -176,7 +176,7 @@
               <select [(ngModel)]="selectedIdRolBase" [ngModelOptions]="{standalone: true}">
                 <option [ngValue]="null">— Sin vinculación —</option>
                 <option *ngFor="let rs of rolesSistema" [ngValue]="rs.idRol">
-                  {{ rs.label }} → {{ rs.rolBd }}
+                  {{ rs.nombreRol }}
                 </option>
               </select>
 
