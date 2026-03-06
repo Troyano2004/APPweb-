@@ -1,3 +1,5 @@
+
+
 <div class="page">
   <div class="wrap">
 
@@ -20,7 +22,6 @@
       </div>
 
       <div class="toolbar">
-
         <div class="toolbar-left">
           <button class="btn btn-success" (click)="abrirNuevo()">＋ Nuevo usuario</button>
           <button class="btn btn-secondary" (click)="recargar()">↻ Recargar</button>
@@ -35,14 +36,12 @@
               placeholder="Buscar (usuario, nombre, rol, estado...)">
           </div>
         </div>
-
       </div>
 
       <div *ngIf="cargando" class="msg-loading">Cargando...</div>
       <div *ngIf="errorMsg" class="msg-error">{{ errorMsg }}</div>
 
       <div class="table-card">
-
         <table class="table">
 
           <thead>
@@ -58,49 +57,39 @@
           </thead>
 
           <tbody>
-
           <tr *ngFor="let u of usuariosFiltrados">
-
-            <td>{{u.idUsuario}}</td>
+            <td>{{ u.idUsuario }}</td>
 
             <td class="mono">
-              {{u.username}}
+              {{ u.username }}
             </td>
 
-            <td>{{u.nombres}}</td>
-
-            <td>{{u.apellidos}}</td>
+            <td>{{ u.nombres }}</td>
+            <td>{{ u.apellidos }}</td>
 
             <td>
-
-              <span class="badge badge-info" *ngIf="u.rolApp; else sinRol">
-                {{u.rolApp}}
-              </span>
+                <span class="badge badge-info" *ngIf="u.rolApp; else sinRol">
+                  {{ u.rolApp }}
+                </span>
 
               <ng-template #sinRol>
                 <span class="muted">(sin roles)</span>
               </ng-template>
 
               <div *ngIf="u.rolesApp">
-                {{u.rolesApp}}
+                {{ u.rolesApp }}
               </div>
-
             </td>
 
             <td>
-
-              <span
-                class="badge"
-                [ngClass]="u.activo ? 'badge-success' : 'badge-pending'">
-
-                {{u.activo ? 'ACTIVO' : 'INACTIVO'}}
-
-              </span>
-
+                <span
+                  class="badge"
+                  [ngClass]="u.activo ? 'badge-success' : 'badge-pending'">
+                  {{ u.activo ? 'ACTIVO' : 'INACTIVO' }}
+                </span>
             </td>
 
             <td class="actions">
-
               <button
                 class="btn btn-outline"
                 (click)="abrirEditar(u)">
@@ -111,13 +100,9 @@
                 class="btn"
                 [ngClass]="u.activo ? 'btn-warning' : 'btn-primary'"
                 (click)="toggleActivo(u)">
-
-                {{u.activo ? 'Desactivar' : 'Activar'}}
-
+                {{ u.activo ? 'Desactivar' : 'Activar' }}
               </button>
-
             </td>
-
           </tr>
 
           <tr *ngIf="!cargando && usuariosFiltrados.length === 0">
@@ -125,90 +110,83 @@
               No hay usuarios para mostrar
             </td>
           </tr>
-
           </tbody>
 
         </table>
-
       </div>
 
     </div>
 
     <!-- MODAL -->
-
-    <div class="modal-backdrop" *ngIf="modalAbierto"></div>
+    <div class="modal-backdrop" *ngIf="modalAbierto" (click)="cerrarModal()"></div>
 
     <div class="modal" *ngIf="modalAbierto">
-
       <div class="modal-card">
 
         <div class="modal-header">
-
-          <h3>
-            {{modoEdicion ? 'Editar usuario' : 'Nuevo usuario'}}
-          </h3>
+          <h3>{{ modoEdicion ? 'Editar usuario' : 'Nuevo usuario' }}</h3>
 
           <button
-            class="btn btn-secondary"
+            type="button"
+            class="btn btn-secondary btn-icon"
             (click)="cerrarModal()">
             ✕
           </button>
-
         </div>
 
-        <div class="modal-msg" *ngIf="warnMsg">
-          {{warnMsg}}
-        </div>
+        <div class="modal-alerts" *ngIf="warnMsg || errorMsg">
+          <div class="modal-msg" *ngIf="warnMsg">
+            {{ warnMsg }}
+          </div>
 
-        <div class="modal-msg error" *ngIf="errorMsg">
-          {{errorMsg}}
+          <div class="modal-msg error" *ngIf="errorMsg">
+            {{ errorMsg }}
+          </div>
         </div>
 
         <div class="modal-body">
 
           <!-- CREATE -->
-
           <ng-container *ngIf="!modoEdicion">
 
             <div class="grid">
 
               <label>
-                Cédula *
+                <span>Cédula *</span>
                 <input [(ngModel)]="formCreate.cedula">
               </label>
 
               <label>
-                Correo institucional *
+                <span>Correo institucional *</span>
                 <input [(ngModel)]="formCreate.correoInstitucional">
               </label>
 
               <label>
-                Username *
+                <span>Username *</span>
                 <input [(ngModel)]="formCreate.username">
               </label>
 
               <label>
-                Password *
+                <span>Password *</span>
                 <input
                   type="password"
                   [(ngModel)]="formCreate.passwordApp">
               </label>
 
               <label>
-                Nombres *
+                <span>Nombres *</span>
                 <input [(ngModel)]="formCreate.nombres">
               </label>
 
               <label>
-                Apellidos *
+                <span>Apellidos *</span>
                 <input [(ngModel)]="formCreate.apellidos">
               </label>
 
-              <label style="grid-column:1/-1">
-                Rol principal *
+              <label class="full-width">
+                <span>Rol principal *</span>
 
                 <select [(ngModel)]="createRolPrincipalId">
-
                   <option [ngValue]="null" disabled>
                     Seleccione rol principal
                   </option>
@@ -216,25 +194,17 @@
                   <option
                     *ngFor="let ra of rolesApp"
                     [ngValue]="ra.idRolApp">
-
-                    {{ra.nombre}}
-
+                    {{ ra.nombre }}
                   </option>
-
                 </select>
-
               </label>
 
             </div>
 
             <div class="roles-box">
-
-              <div class="roles-title">
-                Roles adicionales
-              </div>
+              <div class="roles-title">Roles adicionales</div>
 
               <div class="roles-grid">
-
                 <div
                   class="role-card"
                   *ngFor="let r of rolesApp"
@@ -247,38 +217,32 @@
                     [checked]="isExtraSelectedCreate(r.idRolApp)"
                     [disabled]="createRolPrincipalId === r.idRolApp">
 
-                  {{r.nombre}}
-
+                  <span class="role-name">{{ r.nombre }}</span>
                 </div>
-
               </div>
-
             </div>
 
           </ng-container>
 
           <!-- UPDATE -->
-
           <ng-container *ngIf="modoEdicion">
 
             <div class="grid">
 
               <label>
-                Nombres
+                <span>Nombres</span>
                 <input [(ngModel)]="formUpdate.nombres">
               </label>
 
               <label>
-                Apellidos
+                <span>Apellidos</span>
                 <input [(ngModel)]="formUpdate.apellidos">
               </label>
 
-              <label style="grid-column:1/-1">
-
-                Rol principal *
+              <label class="full-width">
+                <span>Rol principal *</span>
 
                 <select [(ngModel)]="updateRolPrincipalId">
-
                   <option [ngValue]="null" disabled>
                     Seleccione rol principal
                   </option>
@@ -286,25 +250,17 @@
                   <option
                     *ngFor="let ra of rolesApp"
                     [ngValue]="ra.idRolApp">
-
-                    {{ra.nombre}}
-
+                    {{ ra.nombre }}
                   </option>
-
                 </select>
-
               </label>
 
             </div>
 
             <div class="roles-box">
-
-              <div class="roles-title">
-                Roles adicionales
-              </div>
+              <div class="roles-title">Roles adicionales</div>
 
               <div class="roles-grid">
-
                 <div
                   class="role-card"
                   *ngFor="let r of rolesApp"
@@ -317,22 +273,16 @@
                     [checked]="isExtraSelectedUpdate(r.idRolApp)"
                     [disabled]="updateRolPrincipalId === r.idRolApp">
 
-                  {{r.nombre}}
-
+                  <span class="role-name">{{ r.nombre }}</span>
                 </div>
-
               </div>
-
             </div>
 
-            <label>
-
-              Password (opcional)
-
+            <label class="block">
+              <span>Password (opcional)</span>
               <input
                 type="password"
                 [(ngModel)]="formUpdate.password">
-
             </label>
 
           </ng-container>
@@ -340,26 +290,23 @@
         </div>
 
         <div class="modal-footer">
-
           <button
+            type="button"
             class="btn btn-secondary"
             (click)="cerrarModal()">
             Cancelar
           </button>
 
           <button
+            type="button"
             class="btn btn-success"
             [disabled]="cargando || !puedeGuardar()"
             (click)="guardar()">
-
             Guardar
-
           </button>
-
         </div>
 
       </div>
-
     </div>
 
   </div>
