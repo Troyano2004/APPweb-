@@ -1,5 +1,6 @@
-package com.erwin.backend.service; // Asegúrate de que este sea tu paquete correcto
+package com.erwin.backend.service;
 
+import com.erwin.backend.dtos.RevisionIARequest;
 import com.erwin.backend.entities.DocumentoTitulacion;
 import com.erwin.backend.repository.DocumentoTitulacionRepository;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -22,18 +23,10 @@ public class RevisionIAService {
     @Autowired
     private DocumentoTitulacionRepository documentoRepository;
 
-    // URL usando "latest" para que nunca caduque el modelo
     private final String geminiApiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent";
-
-    // TODO: Pega tu clave real aquí
     private final String geminiApiKey = "";
 
-    /**
-     * Este es el método que falta y que el Controlador está intentando llamar.
-     * Se encarga de buscar el documento, mandarlo a la IA y guardar el resultado.
-     */
-    public DocumentoTitulacion evaluarTituloYObjetivos(Integer documentoId) {
-        // 1. Obtener el documento de la base de datos
+    public DocumentoTitulacion evaluarTituloYObjetivos(Integer documentoId, RevisionIARequest request) {
         DocumentoTitulacion doc = documentoRepository.findById(documentoId)
                 .orElseThrow(() -> new RuntimeException("Documento no encontrado"));
 
@@ -41,10 +34,8 @@ public class RevisionIAService {
         String objetivoGeneral = doc.getObjetivoGeneral() != null ? doc.getObjetivoGeneral() : "";
         String objetivosEspecificos = doc.getObjetivosEspecificos() != null ? doc.getObjetivosEspecificos() : "";
 
-        // 2. Llamar a la API de Google Gemini
-        String respuestaIA = llamarApiDeGemini(titulo, objetivoGeneral, objetivosEspecificos);
+        String respuestaIA = llamarApiDeGemini(titulo, objetivoGeneral, objetivosEspecificos, request);
 
-        // 3. Guardar el resultado en la base de datos
         doc.setEstadoRevisionIa("EVALUADO");
         doc.setFeedbackIa(respuestaIA);
         doc.setFechaRevisionIa(LocalDateTime.now());
@@ -52,54 +43,85 @@ public class RevisionIAService {
         return documentoRepository.save(doc);
     }
 
-    /**
-     * Este método hace la petición HTTP POST a Google imitando el comando curl.
-     */
-    private String llamarApiDeGemini(String titulo, String objGeneral, String objEspecificos) {
+    private String llamarApiDeGemini(String titulo,
+                                     String objGeneral,
+                                     String objEspecificos,
+                                     RevisionIARequest request) {
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
 
-        // Configuramos las cabeceras (pasando la API Key de forma segura)
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("X-goog-api-key", geminiApiKey);
 
-        // Creamos la instrucción detallada para la IA
-        String prompt = String.format("Eres un evaluador académico experto. Revisa si los siguientes objetivos " +
-                        "están correctamente alineados y se adaptan al título de la tesis.\n" +
-                        "Título: %s\nObjetivo General: %s\nObjetivos Específicos: %s\n\n" +
-                        "Responde únicamente con un formato JSON válido con dos propiedades: " +
-                        "'estado' (ALINEADO o REQUIERE_MODIFICACION) y 'feedback' (tu explicación detallada).",
-                titulo, objGeneral, objEspecificos);
+        String modo = request != null && request.getModo() != null ? request.getModo().trim() : "";
+        String promptPersonalizado = request != null && request.getPromptPersonalizado() != null
+                ? request.getPromptPersonalizado().trim()
+                : "";
 
-        // Construimos la estructura JSON que pide Gemini
+        String promptBase = construirPromptBasePorModo(modo);
+        String promptFinal = construirPromptFinal(promptBase, promptPersonalizado, titulo, objGeneral, objEspecificos);
+
         Map<String, Object> requestBody = new HashMap<>();
         Map<String, Object> parts = new HashMap<>();
-        parts.put("text", prompt);
+        parts.put("text", promptFinal);
 
         Map<String, Object> contents = new HashMap<>();
         contents.put("parts", List.of(parts));
 
         requestBody.put("contents", List.of(contents));
 
-        HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
+        HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(requestBody, headers);
 
         try {
-            // Ejecutamos la petición POST
-            String responseBody = restTemplate.postForObject(geminiApiUrl, request, String.class);
+            String responseBody = restTemplate.postForObject(geminiApiUrl, requestEntity, String.class);
 
-            // Parseamos la respuesta para extraer solo el texto generado
             ObjectMapper mapper = new ObjectMapper();
             JsonNode rootNode = mapper.readTree(responseBody);
 
             JsonNode textNode = rootNode.path("candidates").get(0)
                     .path("content").path("parts").get(0).path("text");
 
-            // Limpiamos la respuesta en caso de que la IA le agregue formato markdown (```json)
             return textNode.asText().replaceAll("```json", "").replaceAll("```", "").trim();
 
         } catch (Exception e) {
             e.printStackTrace();
             return "{\"estado\": \"ERROR\", \"feedback\": \"Error al comunicarse con Gemini: " + e.getMessage() + "\"}";
         }
+    }
+
+    private String construirPromptBasePorModo(String modo) {
+        switch (modo) {
+            case "estilo-academico":
+                return "Eres un corrector académico experto. Evalúa redacción, gramática, cohesión y claridad. " +
+                        "Propón mejoras concretas y ejemplos de reformulación.";
+            case "metodologia-rigor":
+                return "Eres un metodólogo de investigación. Evalúa rigor, coherencia metodológica, variables, " +
+                        "validez y viabilidad. Entrega hallazgos críticos y acciones de mejora.";
+            case "innovacion-impacto":
+                return "Eres un evaluador de innovación. Determina nivel de originalidad, impacto potencial y " +
+                        "factibilidad de implementación, proponiendo mejoras creativas.";
+            case "evaluacion-integral":
+            default:
+                return "Eres un evaluador académico experto. Revisa alineación entre título, objetivo general y " +
+                        "objetivos específicos, destacando fortalezas y oportunidades de mejora.";
+        }
+    }
+
+    private String construirPromptFinal(String promptBase,
+                                        String promptPersonalizado,
+                                        String titulo,
+                                        String objGeneral,
+                                        String objEspecificos) {
+        String instruccionUsuario = !promptPersonalizado.isBlank()
+                ? "Instrucción adicional del docente: " + promptPersonalizado + "\n"
+                : "";
+
+        return promptBase + "\n" +
+                instruccionUsuario +
+                "Título: " + titulo + "\n" +
+                "Objetivo General: " + objGeneral + "\n" +
+                "Objetivos Específicos: " + objEspecificos + "\n\n" +
+                "Responde ÚNICAMENTE en JSON válido con este formato: " +
+                "{\"estado\":\"ALINEADO|REQUIERE_MODIFICACION\",\"feedback\":\"texto\",\"sugerencias\":[\"...\"]}";
     }
 }
