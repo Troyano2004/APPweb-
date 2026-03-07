@@ -261,6 +261,14 @@ $sga-hover: #e9f6ef;
   font-size: 1rem;
 }
 
+// ============================================================
+// Profile Dropdown
+// ============================================================
+
+.profile-dropdown-wrapper {
+  position: relative;
+}
+
 .avatar {
   display: flex;
   align-items: center;
@@ -268,6 +276,14 @@ $sga-hover: #e9f6ef;
   background: rgba(255, 255, 255, 0.18);
   padding: 0.35rem 0.65rem;
   border-radius: 0.75rem;
+  border: none;
+  cursor: pointer;
+  color: #ffffff;
+  transition: background 0.2s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.28);
+  }
 
   .avatar-circle {
     width: 36px;
@@ -278,28 +294,190 @@ $sga-hover: #e9f6ef;
     background: #ffffff;
     color: $sga-green-dark;
     font-weight: 700;
+    font-size: 0.85rem;
+    flex-shrink: 0;
   }
 
   .avatar-info {
     display: flex;
     flex-direction: column;
     font-size: 0.8rem;
+    text-align: left;
+
+    strong {
+      font-weight: 600;
+      white-space: nowrap;
+      max-width: 140px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
 
     span {
-      opacity: 0.8;
+      opacity: 0.85;
+      font-size: 0.75rem;
+    }
+  }
+
+  .avatar-chevron {
+    font-size: 0.75rem;
+    opacity: 0.8;
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+
+    &.open {
+      transform: rotate(180deg);
     }
   }
 }
 
-.logout {
+.profile-dropdown {
+  position: absolute;
+  top: calc(100% + 0.6rem);
+  right: 0;
+  width: 280px;
   background: #ffffff;
-  color: $sga-green-dark;
-  border: none;
-  border-radius: 0.65rem;
-  padding: 0.5rem 0.9rem;
+  border-radius: 1rem;
+  box-shadow: 0 8px 32px rgba(15, 23, 42, 0.16), 0 2px 8px rgba(15, 23, 42, 0.08);
+  border: 1px solid $sga-border;
+  z-index: 100;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(-8px) scale(0.97);
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+
+  &.open {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: all;
+  }
+}
+
+.dropdown-user-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1rem 0.85rem;
+}
+
+.dropdown-avatar-big {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, $sga-green 0%, $sga-green-dark 100%);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 1rem;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.dropdown-user-info {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  strong {
+    font-size: 0.9rem;
+    color: #111827;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .dropdown-email {
+    font-size: 0.78rem;
+    color: #6b7280;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: $sga-border;
+  margin: 0.25rem 0;
+}
+
+.dropdown-section-label {
+  padding: 0.55rem 1rem 0.3rem;
+  font-size: 0.72rem;
   font-weight: 600;
+  color: #9ca3af;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.dropdown-roles {
+  padding: 0.2rem 0.5rem 0.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.role-option {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.55rem 0.65rem;
+  border: none;
+  background: transparent;
+  border-radius: 0.6rem;
   cursor: pointer;
-  box-shadow: 0 6px 16px rgba(15, 122, 58, 0.2);
+  text-align: left;
+  transition: background 0.15s ease;
+  color: #374151;
+  font-size: 0.88rem;
+
+  &:hover {
+    background: $sga-hover;
+  }
+
+  &.active {
+    color: $sga-green-dark;
+    font-weight: 600;
+    background: rgba(15, 122, 58, 0.07);
+  }
+
+  .role-check {
+    width: 18px;
+    text-align: center;
+    font-size: 0.85rem;
+    color: $sga-green;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .role-label {
+    flex: 1;
+  }
+}
+
+.dropdown-action {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.65rem 1rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font-size: 0.88rem;
+  transition: background 0.15s ease;
+  color: #374151;
+
+  &:hover {
+    background: #fef2f2;
+    color: #dc2626;
+  }
+}
+
+.logout-action {
+  margin-bottom: 0.25rem;
 }
 
 .content {
@@ -366,10 +544,11 @@ $sga-hover: #e9f6ef;
   }
 
   .avatar {
-    display: none;
-  }
-
-  .logout {
-    display: none;
+    .avatar-info {
+      display: none;
+    }
+    .avatar-chevron {
+      display: none;
+    }
   }
 }

@@ -1,5 +1,7 @@
 export interface SessionUser {
   rol?: string;
+  roles?: string[];
+  rolActivo?: string;
   [key: string]: unknown;
 }
 
@@ -51,6 +53,33 @@ export const getSessionEntityId = (user: SessionUser | null, kind: 'estudiante' 
   return null;
 };
 
+export const getAvailableRoles = (): string[] => {
+  const user = getSessionUser();
+  if (!user) return [];
+
+  const roles = user['roles'];
+  if (Array.isArray(roles) && roles.length > 0) {
+    return roles as string[];
+  }
+
+  const singleRole = user['rol'];
+  return singleRole ? [String(singleRole)] : [];
+};
+
+export const getActiveRole = (): string => {
+  const user = getSessionUser();
+  if (!user) return '';
+  return String(user['rolActivo'] || user['rol'] || '');
+};
+
+export const setActiveRole = (role: string): void => {
+  const user = getSessionUser();
+  if (!user) return;
+  user.rolActivo = role;
+  user.rol = role;
+  setSessionUser(user);
+};
+
 export const getRoleHomeRoute = (rol: unknown): string | null => {
   const normalizedRole = normalizeRole(rol);
 
@@ -58,6 +87,9 @@ export const getRoleHomeRoute = (rol: unknown): string | null => {
   if (normalizedRole === 'ROLE_COORDINADOR') return '/app/dashboard';
   if (normalizedRole === 'ROLE_DOCENTE') return '/app/dashboard';
   if (normalizedRole === 'ROLE_ESTUDIANTE') return '/app/dashboard';
+  if (normalizedRole === 'ROLE_DIRECTOR') return '/app/dashboard';
+  if (normalizedRole === 'ROLE_TRIBUNAL') return '/app/dashboard';
+  if (normalizedRole === 'ROLE_COMISION_FORMATIVA') return '/app/dashboard';
 
   return null;
 };
