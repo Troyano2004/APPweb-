@@ -1,4 +1,5 @@
 
+
 package com.erwin.backend.config;
 
 import jakarta.servlet.http.HttpSessionEvent;
@@ -12,8 +13,8 @@ public class SessionLogListener implements HttpSessionListener {
 
     private static final Logger log = LoggerFactory.getLogger(SessionLogListener.class);
 
-    // ✅ Debe coincidir con spring.datasource.username
-    private static final String DEFAULT_USER = "auth_writer";
+    // ✅ CORREGIDO: debe ser auth_reader (usuario de arranque real)
+    private static final String DEFAULT_USER = "auth_reader";
 
     @Override
     public void sessionCreated(HttpSessionEvent se) {
