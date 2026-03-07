@@ -1,6 +1,7 @@
 package com.erwin.backend.controller;
 
 import com.erwin.backend.entities.DocumentoTitulacion;
+import com.erwin.backend.dtos.RevisionIARequest;
 import com.erwin.backend.service.RevisionIAService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -15,10 +16,11 @@ public class RevisionIAController {
     private RevisionIAService revisionIAService;
 
     @PostMapping("/evaluar/{idDocumento}")
-    public ResponseEntity<DocumentoTitulacion> evaluarDocumento(@PathVariable Integer idDocumento) {
+    public ResponseEntity<DocumentoTitulacion> evaluarDocumento(@PathVariable Integer idDocumento,
+                                                                @RequestBody(required = false) RevisionIARequest request) {
         try {
             // Llama al servicio de Gemini que creamos antes
-            DocumentoTitulacion docActualizado = revisionIAService.evaluarTituloYObjetivos(idDocumento);
+            DocumentoTitulacion docActualizado = revisionIAService.evaluarTituloYObjetivos(idDocumento, request);
             return ResponseEntity.ok(docActualizado);
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
