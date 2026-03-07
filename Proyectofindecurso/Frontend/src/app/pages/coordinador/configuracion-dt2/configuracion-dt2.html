@@ -1,0 +1,148 @@
+<div class="dt2-config">
+  <h2>Configuración Inicial — Titulación II</h2>
+  <p class="subtitle">Asigna Docente DT2, Director TIC y Tribunal a proyectos con anteproyecto aprobado.</p>
+  <div class="alert error" *ngIf="error()">{{ error() }}</div>
+  <div class="alert ok" *ngIf="ok()">{{ ok() }}</div>
+  <div class="layout">
+    <!-- Panel izquierdo: lista de proyectos -->
+    <div class="panel-lista">
+      <h3>Proyectos pendientes ({{ proyectos().length }})</h3>
+      <div *ngIf="loading()" class="loading">Cargando...</div>
+      <div class="proyecto-card"
+           *ngFor="let p of proyectos()"
+           [class.activo]="proyectoSeleccionado()?.idProyecto === p.idProyecto"
+           (click)="seleccionarProyecto(p)">
+        <div class="proyecto-titulo">{{ p.titulo }}</div>
+        <div class="proyecto-meta">{{ p.estudiante }} · {{ p.carrera }}</div>
+        <div class="proyecto-checks">
+          <span [class]="p.tieneDocenteDt2 ? 'check ok' : 'check pendiente'">DT2 {{ p.tieneDocenteDt2 ? '✓' : '○' }}</span>
+          <span [class]="p.tieneDirector ? 'check ok' : 'check pendiente'">Dir {{ p.tieneDirector ? '✓' : '○' }}</span>
+          <span [class]="p.tieneTribunal ? 'check ok' : 'check pendiente'">Trib {{ p.tieneTribunal ? '✓' : '○' }}</span>
+        </div>
+        <span *ngIf="p.configuracionCompleta" class="badge completo">Completo</span>
+      </div>
+      <div *ngIf="!loading() && proyectos().length === 0" class="empty">
+        No hay proyectos pendientes de configuración.
+      </div>
+    </div>
+    <!-- Panel derecho: detalle + formularios -->
+    <div class="panel-detalle" *ngIf="proyectoSeleccionado(); else sinSeleccion">
+      <h3>{{ proyectoSeleccionado()!.titulo }}</h3>
+      <p>{{ proyectoSeleccionado()!.estudiante }} · {{ proyectoSeleccionado()!.periodo }}</p>
+      <!-- Configuración actual -->
+      <div class="config-actual" *ngIf="configuracion()">
+        <div class="config-item">
+          <span class="label">Docente DT2:</span>
+          <span>{{ configuracion()!.docenteDt2 || '— Sin asignar —' }}</span>
+        </div>
+        <div class="config-item">
+          <span class="label">Director:</span>
+          <span>{{ configuracion()!.director || '— Sin asignar —' }}</span>
+        </div>
+        <div class="config-item">
+          <span class="label">Tribunal:</span>
+          <span *ngIf="configuracion()!.tribunal?.length">
+            <span *ngFor="let m of configuracion()!.tribunal" class="miembro-tag">
+              {{ m.nombre }} ({{ m.cargo }})
+            </span>
+          </span>
+          <span *ngIf="!configuracion()!.tribunal?.length">— Sin asignar —</span>
+        </div>
+      </div>
+      <!-- Tabs -->
+      <div class="tabs">
+        <button [class.active]="tab() === 'docente'" (click)="setTab('docente')">Docente DT2</button>
+        <button [class.active]="tab() === 'director'" (click)="setTab('director')">Director TIC</button>
+        <button [class.active]="tab() === 'tribunal'" (click)="setTab('tribunal')">Tribunal</button>
+      </div>
+      <!-- Tab: Asignar Docente DT2 -->
+      <form *ngIf="tab() === 'docente'" [formGroup]="formDocente" (ngSubmit)="asignarDocente()">
+        <div class="form-row">
+          <label>Docente DT2</label>
+          <select formControlName="idDocenteDt2">
+            <option [value]="null" disabled>Selecciona docente</option>
+            <option *ngFor="let d of docentes()" [value]="d.idDocente">
+              {{ d.director }} ({{ d.proyectosAsignados }} proyectos)
+            </option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Período</label>
+          <input formControlName="periodo" placeholder="Ej: 2025-A" />
+        </div>
+        <div class="form-row">
+          <label>Observación</label>
+          <input formControlName="observacion" placeholder="Opcional" />
+        </div>
+        <button type="submit" [disabled]="loading()">
+          {{ loading() ? 'Guardando...' : 'Asignar Docente DT2' }}
+        </button>
+      </form>
+      <!-- Tab: Asignar Director -->
+      <form *ngIf="tab() === 'director'" [formGroup]="formDirector" (ngSubmit)="asignarDirector()">
+        <div class="form-row">
+          <label>Director TIC</label>
+          <select formControlName="idDirector">
+            <option [value]="null" disabled>Selecciona director</option>
+            <option *ngFor="let d of docentes()" [value]="d.idDocente">
+              {{ d.director }}
+            </option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Período</label>
+          <input formControlName="periodo" placeholder="Ej: 2025-A" />
+        </div>
+        <div class="form-row">
+          <label>Motivo de cambio <small>(requerido si ya tiene director)</small></label>
+          <input formControlName="motivo" placeholder="Motivo justificado" />
+        </div>
+        <button type="submit" [disabled]="loading()">
+          {{ loading() ? 'Guardando...' : 'Asignar Director' }}
+        </button>
+      </form>
+      <!-- Tab: Asignar Tribunal -->
+      <form *ngIf="tab() === 'tribunal'" [formGroup]="formTribunal" (ngSubmit)="asignarTribunal()">
+        <div class="form-row">
+          <label>Período</label>
+          <input formControlName="periodo" placeholder="Ej: 2025-A" />
+        </div>
+        <div class="tribunal-header">
+          <span>Miembros del Tribunal (mínimo 3)</span>
+          <button type="button" (click)="addMiembro()">+ Miembro</button>
+        </div>
+        <div formArrayName="miembros">
+          <div class="miembro-row" *ngFor="let m of miembros.controls; let i = index" [formGroupName]="i">
+            <select formControlName="idDocente">
+              <option [value]="null" disabled>Docente</option>
+              <option *ngFor="let d of docentes()" [value]="d.idDocente">{{ d.director }}</option>
+            </select>
+            <select formControlName="cargo">
+              <option value="PRESIDENTE">Presidente</option>
+              <option value="VOCAL">Vocal</option>
+              <option value="SUPLENTE">Suplente</option>
+            </select>
+            <button type="button" class="btn-remove" (click)="removeMiembro(i)" *ngIf="miembros.length > 3">✕</button>
+          </div>
+        </div>
+        <button type="submit" [disabled]="loading()">
+          {{ loading() ? 'Guardando...' : 'Asignar Tribunal' }}
+        </button>
+      </form>
+      <!-- Bitácora -->
+      <div class="bitacora" *ngIf="configuracion()?.bitacora?.length">
+        <h4>Bitácora de asignaciones</h4>
+        <div class="bitacora-row" *ngFor="let b of configuracion()!.bitacora">
+          <span class="tipo">{{ b.tipo }}</span>
+          <span>{{ b.nombreAsignado }} {{ b.cargo ? '(' + b.cargo + ')' : '' }}</span>
+          <span class="fecha">{{ b.fecha | date: 'dd/MM/yyyy HH:mm' }}</span>
+        </div>
+      </div>
+    </div>
+    <ng-template #sinSeleccion>
+      <div class="panel-detalle empty-panel">
+        <p>Selecciona un proyecto de la lista para configurarlo.</p>
+      </div>
+    </ng-template>
+  </div>
+</div>

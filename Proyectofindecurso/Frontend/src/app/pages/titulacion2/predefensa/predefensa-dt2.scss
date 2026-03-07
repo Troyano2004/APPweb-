@@ -1,0 +1,111 @@
+.predefensa-dt2 {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+  h2 { margin: 0 0 4px; font-size: 1.4rem; }
+  .subtitle { color: #666; margin: 0 0 20px; font-size: .9rem; }
+  .alert {
+    padding: 10px 16px; border-radius: 6px; margin-bottom: 16px; font-size: .9rem;
+    &.error { background: #fff0f0; border-left: 4px solid #e53e3e; color: #c53030; }
+    &.ok    { background: #f0fff4; border-left: 4px solid #38a169; color: #276749; }
+  }
+  .loading { color: #666; padding: 8px 0; }
+  .layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+  .panel-lista {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px;
+    h3 { margin: 0 0 12px; font-size: 1rem; }
+  }
+  .proyecto-card {
+    padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 8px;
+    cursor: pointer;
+    &:hover { background: #f7fafc; }
+    &.activo { background: #ebf8ff; border-color: #3182ce; }
+  }
+  .proyecto-titulo { font-weight: 600; font-size: .85rem; }
+  .proyecto-meta { font-size: .8rem; color: #666; margin-top: 2px; }
+  .empty { color: #999; font-size: .9rem; text-align: center; padding: 16px 0; }
+  .panel-detalle {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px;
+    h3 { margin: 0 0 16px; }
+    &.empty-panel { display: flex; align-items: center; justify-content: center; min-height: 200px; color: #999; }
+  }
+  .predefensa-estado {
+    background: #f7fafc; border-radius: 8px; padding: 16px; margin-bottom: 16px;
+  }
+  .estado-row {
+    display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; font-size: .9rem;
+    .lbl { font-weight: 600; color: #4a5568; }
+  }
+  .badge {
+    padding: 3px 8px; border-radius: 4px; font-size: .8rem; font-weight: 600; color: #fff; background: #718096;
+    &.PENDIENTE { background: #718096; }
+    &.EN_PROCESO { background: #3182ce; }
+    &.APROBADA { background: #38a169; }
+    &.CON_OBSERVACIONES { background: #d69e2e; color: #fff; }
+  }
+  .notas-grid {
+    display: flex; gap: 12px; margin: 12px 0; flex-wrap: wrap;
+    .nota-card {
+      flex: 1; min-width: 100px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;
+      padding: 12px; text-align: center;
+      &.destacado { border-color: #3182ce; background: #ebf8ff; }
+      .nota-val { display: block; font-size: 1.6rem; font-weight: 700; color: #2d3748; }
+      .nota-lbl { font-size: .75rem; color: #718096; }
+    }
+  }
+  .progreso-tribunal {
+    display: flex; gap: 12px; align-items: center; font-size: .85rem; color: #4a5568;
+    .warn-badge { background: #feebc8; color: #c05621; padding: 2px 8px; border-radius: 4px; font-size: .8rem; }
+  }
+  .evaluaciones {
+    margin-top: 12px;
+    h4 { margin: 0 0 8px; font-size: .9rem; }
+  }
+  .eval-row {
+    display: flex; gap: 12px; align-items: center; padding: 6px 10px; font-size: .85rem;
+    border-bottom: 1px solid #f0f0f0;
+    .nombre { flex: 1; }
+    .nota-ev { font-weight: 700; color: #2d3748; min-width: 30px; }
+    .corr { background: #feebc8; color: #c05621; padding: 2px 6px; border-radius: 4px; font-size: .75rem; }
+  }
+  .no-predefensa {
+    background: #fffbeb; border-left: 4px solid #d69e2e; padding: 10px 14px; border-radius: 4px;
+    margin-bottom: 16px; font-size: .9rem; color: #744210;
+  }
+  .tabs {
+    display: flex; gap: 4px; margin-bottom: 16px;
+    button {
+      padding: 7px 14px; border: 1px solid #e2e8f0; background: #f7fafc;
+      border-radius: 6px 6px 0 0; cursor: pointer; font-size: .85rem;
+      &.active { background: #fff; border-bottom-color: #fff; font-weight: 600; color: #3182ce; }
+    }
+  }
+  .calificar-section {
+    background: #f7fafc; border-radius: 8px; padding: 16px; margin-bottom: 16px;
+    h4 { margin: 0 0 12px; font-size: .95rem; }
+  }
+  form {
+    .form-row {
+      margin-bottom: 12px;
+      label { display: block; font-size: .85rem; font-weight: 600; color: #4a5568; margin-bottom: 4px; }
+      input[type=text], input[type=number], input[type=date], input[type=time], textarea, select {
+        width: 100%; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px;
+        font-size: .9rem; box-sizing: border-box; font-family: inherit;
+        &:focus { outline: none; border-color: #3182ce; }
+      }
+    }
+    .form-row-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-check label { display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: normal; }
+    button[type=submit] {
+      border: none; padding: 10px 24px; border-radius: 6px; cursor: pointer; font-size: .9rem; color: #fff;
+      &:disabled { opacity: .6; cursor: not-allowed; }
+      &.btn-docente { background: #6b46c1; }
+      &.btn-tribunal { background: #2b6cb0; }
+    }
+  }
+}
