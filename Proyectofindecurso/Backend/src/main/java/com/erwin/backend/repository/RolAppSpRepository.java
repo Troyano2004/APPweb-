@@ -18,31 +18,37 @@ public class RolAppSpRepository {
     @PersistenceContext
     private EntityManager em;
 
+    // ✅ CORREGIDO: la query ahora también trae id_rol_base
     public List<RolAppDto> listarRolesApp() {
         List<Object[]> rows = em.createNativeQuery(
-                "SELECT id_rol_app, nombre, descripcion, activo, permisos FROM sp_listar_roles_app()"
+                "SELECT ra.id_rol_app, ra.nombre, ra.descripcion, ra.activo, " +
+                        "COALESCE(ARRAY(SELECT p.codigo FROM public.permisos p " +
+                        "  JOIN public.rol_app_permiso rap ON rap.id_permiso = p.id_permiso " +
+                        "  WHERE rap.id_rol_app = ra.id_rol_app), '{}'), " +
+                        "ra.id_rol_base " +
+                        "FROM public.rol_app ra " +
+                        "ORDER BY ra.id_rol_app"
         ).getResultList();
 
         List<RolAppDto> out = new ArrayList<>();
         for (Object[] r : rows) {
+            Integer idRolBase = r[5] != null ? ((Number) r[5]).intValue() : null;
             out.add(new RolAppDto(
                     ((Number) r[0]).intValue(),
-                    (String) r[1],
-                    (String) r[2],
+                    (String)  r[1],
+                    (String)  r[2],
                     (Boolean) r[3],
-                    toStringList(r[4])
+                    toStringList(r[4]),
+                    idRolBase   // ✅ NUEVO
             ));
         }
         return out;
     }
 
     // ================== CREAR ==================
-    // ── FIX Error 2: ahora se envía p_id_rol_base como 5° parámetro ──
     public Integer crearRolApp(String nombre, String descripcion, Boolean activo,
                                List<Integer> permisos, Integer idRolBase) {
-
         String permisosLiteral = toPgIntArrayLiteral(permisos);
-
         Object result = em.createNativeQuery(
                         "SELECT sp_crear_rol_app(?1, ?2, ?3, CAST(?4 AS int4[]), ?5)"
                 )
@@ -50,17 +56,14 @@ public class RolAppSpRepository {
                 .setParameter(2, descripcion)
                 .setParameter(3, activo)
                 .setParameter(4, permisosLiteral)
-                .setParameter(5, idRolBase)   // puede ser null si el SP lo acepta
+                .setParameter(5, idRolBase)
                 .getSingleResult();
-
         return ((Number) result).intValue();
     }
 
-    // ================== EDITAR (RETURNS VOID) ==================
-    // ── FIX Error 2: ahora se envía p_id_rol_base como 5° parámetro ──
+    // ================== EDITAR ==================
     public void editarRolApp(Integer id, String nombre, String descripcion,
                              Boolean activo, Integer idRolBase) {
-        // RETURNS VOID — subquery para que Hibernate reciba una fila real
         em.createNativeQuery(
                         "SELECT 1 FROM (SELECT sp_editar_rol_app(?1, ?2, ?3, ?4, ?5)) AS _t"
                 )
@@ -72,7 +75,7 @@ public class RolAppSpRepository {
                 .getSingleResult();
     }
 
-    // ================== CAMBIAR ESTADO (RETURNS VOID) ==================
+    // ================== CAMBIAR ESTADO ==================
     public void cambiarEstadoRolApp(Integer id, Boolean activo) {
         em.createNativeQuery(
                         "SELECT 1 FROM (SELECT sp_cambiar_estado_rol_app(?1, ?2)) AS _t"
@@ -83,12 +86,8 @@ public class RolAppSpRepository {
     }
 
     // ================== ASIGNAR PERMISOS ==================
-    // ── FIX Error 4: subquery para que Hibernate reciba una fila real
-    //    "SELECT void_func(), 1" da error de sintaxis en PostgreSQL.
-    //    La forma correcta es: SELECT 1 FROM (SELECT void_func()) AS _t  ──
     public void asignarPermisosRolApp(Integer id, List<Integer> permisos) {
         String permisosLiteral = toPgIntArrayLiteral(permisos);
-
         em.createNativeQuery(
                         "SELECT 1 FROM (SELECT sp_asignar_permisos_rol_app(?1, CAST(?2 AS int4[]))) AS _t"
                 )
@@ -98,14 +97,8 @@ public class RolAppSpRepository {
     }
 
     // ================== helpers ==================
-
-    /**
-     * Convierte List<Integer> a literal Postgres int[]: "{1,2,3}"
-     * Retorna null si la lista está vacía (el SP lanzará excepción descriptiva).
-     */
     private String toPgIntArrayLiteral(List<Integer> permisos) {
         if (permisos == null || permisos.isEmpty()) return null;
-
         StringBuilder sb = new StringBuilder("{");
         for (int i = 0; i < permisos.size(); i++) {
             if (i > 0) sb.append(",");
@@ -117,7 +110,6 @@ public class RolAppSpRepository {
 
     private List<String> toStringList(Object arrayValue) {
         if (arrayValue == null) return Collections.emptyList();
-
         try {
             if (arrayValue instanceof java.sql.Array sqlArray) {
                 Object raw = sqlArray.getArray();
