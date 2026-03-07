@@ -1,3 +1,4 @@
+
 package com.erwin.backend.dtos;
 
 import java.util.List;
@@ -7,6 +8,9 @@ public class RolAppCreateRequest {
     private String descripcion;
     private Boolean activo;
     private List<Integer> permisos;
+
+    // ── FIX Error 2: campo obligatorio para asignar el rol base de PostgreSQL ──
+    private Integer idRolBase;
 
     public String getNombre() { return nombre; }
     public void setNombre(String nombre) { this.nombre = nombre; }
@@ -19,4 +23,7 @@ public class RolAppCreateRequest {
 
     public List<Integer> getPermisos() { return permisos; }
     public void setPermisos(List<Integer> permisos) { this.permisos = permisos; }
+
+    public Integer getIdRolBase() { return idRolBase; }
+    public void setIdRolBase(Integer idRolBase) { this.idRolBase = idRolBase; }
 }
