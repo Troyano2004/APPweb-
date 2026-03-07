@@ -2,13 +2,11 @@
 package com.erwin.backend.controller;
 
 import com.erwin.backend.dtos.ImageUploadResponseDto;
+import com.erwin.backend.service.FileStorageService;
 import com.erwin.backend.service.ImageStorageService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Map;
@@ -18,12 +16,15 @@ import java.util.Map;
 public class UploadController {
 
     private final ImageStorageService imageStorageService;
+    private final FileStorageService  fileStorageService;
 
-    public UploadController(ImageStorageService imageStorageService) {
+    public UploadController(ImageStorageService imageStorageService,
+                            FileStorageService  fileStorageService) {
         this.imageStorageService = imageStorageService;
+        this.fileStorageService  = fileStorageService;
     }
 
-    // ── Imágenes (existente) ─────────────────────────────────────────────────
+    // ── Imágenes (existente sin cambios) ────────────────────────────────────
     @PostMapping("/images")
     public ResponseEntity<?> uploadImage(@RequestParam("file") MultipartFile file) {
         try {
@@ -37,11 +38,11 @@ public class UploadController {
         }
     }
 
-    // ── PDFs / Archivos (nuevo — para documentos habilitantes) ───────────────
+    // ── PDFs / Documentos habilitantes ──────────────────────────────────────
     @PostMapping("/files")
     public ResponseEntity<?> uploadFile(@RequestParam("file") MultipartFile file) {
         try {
-            String azureUrl = imageStorageService.storeImage(file);
+            String azureUrl = fileStorageService.storeFile(file);
             return ResponseEntity.ok(Map.of(
                     "url",      azureUrl,
                     "filename", file.getOriginalFilename() != null
