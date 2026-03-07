@@ -60,9 +60,10 @@ public class RolAppSpRepository {
     // ── FIX Error 2: ahora se envía p_id_rol_base como 5° parámetro ──
     public void editarRolApp(Integer id, String nombre, String descripcion,
                              Boolean activo, Integer idRolBase) {
-        // RETURNS VOID — usar executeUpdate() en vez de getSingleResult()
-        // para evitar NoResultException de Hibernate
-        em.createNativeQuery("SELECT sp_editar_rol_app(?1, ?2, ?3, ?4, ?5)")
+        // RETURNS VOID — subquery para que Hibernate reciba una fila real
+        em.createNativeQuery(
+                        "SELECT 1 FROM (SELECT sp_editar_rol_app(?1, ?2, ?3, ?4, ?5)) AS _t"
+                )
                 .setParameter(1, id)
                 .setParameter(2, nombre)
                 .setParameter(3, descripcion)
@@ -73,23 +74,23 @@ public class RolAppSpRepository {
 
     // ================== CAMBIAR ESTADO (RETURNS VOID) ==================
     public void cambiarEstadoRolApp(Integer id, Boolean activo) {
-        em.createNativeQuery("SELECT sp_cambiar_estado_rol_app(?1, ?2)")
+        em.createNativeQuery(
+                        "SELECT 1 FROM (SELECT sp_cambiar_estado_rol_app(?1, ?2)) AS _t"
+                )
                 .setParameter(1, id)
                 .setParameter(2, activo)
                 .getSingleResult();
     }
 
     // ================== ASIGNAR PERMISOS ==================
-    // ── FIX Error 4: el SP retorna void, wrappear en SELECT para que
-    //    Hibernate no lance NoResultException ──
+    // ── FIX Error 4: subquery para que Hibernate reciba una fila real
+    //    "SELECT void_func(), 1" da error de sintaxis en PostgreSQL.
+    //    La forma correcta es: SELECT 1 FROM (SELECT void_func()) AS _t  ──
     public void asignarPermisosRolApp(Integer id, List<Integer> permisos) {
         String permisosLiteral = toPgIntArrayLiteral(permisos);
 
-        // Llamada como función: SELECT retorna void (null row),
-        // getSingleResult() lanza NoResultException en algunas versiones.
-        // Solución: envolver en una expresión que retorne 1.
         em.createNativeQuery(
-                        "SELECT sp_asignar_permisos_rol_app(?1, CAST(?2 AS int4[])), 1 AS ok"
+                        "SELECT 1 FROM (SELECT sp_asignar_permisos_rol_app(?1, CAST(?2 AS int4[]))) AS _t"
                 )
                 .setParameter(1, id)
                 .setParameter(2, permisosLiteral)
