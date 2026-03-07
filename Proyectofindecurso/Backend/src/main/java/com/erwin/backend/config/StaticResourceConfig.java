@@ -1,3 +1,4 @@
+
 // Proyectofindecurso/Backend/src/main/java/com/erwin/backend/config/StaticResourceConfig.java
 package com.erwin.backend.config;
 
