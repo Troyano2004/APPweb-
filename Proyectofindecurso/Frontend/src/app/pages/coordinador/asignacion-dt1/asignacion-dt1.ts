@@ -78,6 +78,36 @@ export class AsignacionDt1 implements OnInit {
     this.cargarInformacionConId(idUsuario);
   }
 
+  private CargarInformacionAcademica(idUsuario : number)
+  {
+    this.cargando = true;
+    this.api.getInformacionAcademicaDt1(idUsuario)
+      .pipe(finalize(()=>(this.cargando=false))).subscribe({
+      next:(info)=>
+      {
+        this.carreraNombre = info.carrera;
+        this.periodoNombre = info.periodoAcademico;
+
+      },
+      error: (err)=>{
+        this.mensaje = this.errMsg(err);
+      }
+    });
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   private cargarInformacionConId(idUsuario: number): void {
     this.limpiarMensaje();

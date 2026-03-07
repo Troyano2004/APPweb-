@@ -48,6 +48,9 @@
     <button class="btn-login" (click)="login()" [disabled]="isLoading">
       {{ isLoading ? 'Cargando...' : 'Iniciar Sesión' }}
     </button>
+    <button class="btn-link" type="button" (click)="irRegistroEstudiante()" [disabled]="isLoading">
+      ¿Eres estudiante? Regístrate aquí
+    </button>
   </div>
 
   <footer>

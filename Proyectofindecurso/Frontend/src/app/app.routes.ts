@@ -35,10 +35,13 @@ import { AnteproyectoComponent } from './pages/anteproyecto/anteproyecto';
 import { Actadirector } from './pages/director/actadirector/actadirector';
 import { Tutoriasdirector } from './pages/director/tutoriasdirector/tutoriasdirector';
 import { DirectorMisAnteproyectosComponent } from './pages/director/directoranteproyectos/directoranteproyectos';
+import { RegistroEstudianteComponent } from './pages/registro-estudiante/registro-estudiante';
+import { GestionSolicitudesComponent } from './pages/gestion-solicitudes/gestion-solicitudes';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'login' },
   { path: 'login', component: LoginComponent, canActivate: [loginGuard], data: { title: 'Login' } },
+  { path: 'registro-estudiante', component: RegistroEstudianteComponent, data: { title: 'Registro Estudiante' } },
   {
     path: 'app',
     component: ShellComponent,
@@ -142,6 +145,7 @@ export const routes: Routes = [
       { path: 'admin/usuarios', component: AdminUsuariosComponent, data: { title: 'Usuarios' } },
       { path: 'admin/roles', component: RolesComponent, data: { title: 'Roles del aplicativo' } },
       { path: 'admin/parametros', component: PlaceholderPageComponent, data: { title: 'Parámetros' } },
+      { path: 'admin/gestion-solicitudes', component: GestionSolicitudesComponent, data: { title: 'Gestión de Solicitudes' } },
 
       {
         path: 'coordinador/seguimiento',

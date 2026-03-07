@@ -181,6 +181,7 @@ export class ShellComponent implements OnInit, OnDestroy {
         { label: 'Usuarios', path: '/app/admin/usuarios' },
         { label: 'Roles y permisos', path: '/app/admin/roles' },
         { label: 'Parámetros', path: '/app/admin/parametros' },
+        { label: 'Gestión de solicitudes', path: '/app/admin/gestion-solicitudes' },
       ],
     },
   ];
