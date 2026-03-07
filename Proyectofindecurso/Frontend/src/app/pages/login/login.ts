@@ -1,3 +1,4 @@
+
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -43,8 +44,8 @@ export class LoginComponent {
 
     this.authService.login(this.usuarioLogin, this.password)
       .pipe(
-        timeout(8000), // ✅ si no responde en 8s, cae al error
-        finalize(() => this.isLoading = false) // ✅ apaga loading SIEMPRE
+        timeout(8000),
+        finalize(() => this.isLoading = false)
       )
       .subscribe({
         next: (resp: any) => {
@@ -58,14 +59,11 @@ export class LoginComponent {
 
           this.router.navigate([homeRoute]);
         },
-        error: (err) => {
-          // ✅ Si fue timeout
+        error: (err: any) => {   // ✅ FIX: tipo explícito any para evitar TS7006
           if (err?.name === 'TimeoutError') {
             this.errorMessage = 'El servidor tardó demasiado. Intente nuevamente.';
             return;
           }
-
-          // ✅ Mensaje del backend s'i existe
           this.errorMessage = err?.error?.message || 'Usuario o contraseña incorrectos';
         }
       });
