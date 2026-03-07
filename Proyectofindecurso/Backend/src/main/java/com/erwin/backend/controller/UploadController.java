@@ -1,3 +1,4 @@
+
 package com.erwin.backend.controller;
 
 import com.erwin.backend.dtos.ImageUploadResponseDto;
@@ -22,15 +23,31 @@ public class UploadController {
         this.imageStorageService = imageStorageService;
     }
 
+    // ── Imágenes (existente) ─────────────────────────────────────────────────
     @PostMapping("/images")
     public ResponseEntity<?> uploadImage(@RequestParam("file") MultipartFile file) {
         try {
-            // El servicio ahora retorna directamente la URL de Azure
             String azureUrl = imageStorageService.storeImage(file);
-
-            // Angular espera un JSON con la propiedad "url"
             return ResponseEntity.ok(new ImageUploadResponseDto(azureUrl, azureUrl));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", e.getMessage()));
+        }
+    }
 
+    // ── PDFs / Archivos (nuevo — para documentos habilitantes) ───────────────
+    @PostMapping("/files")
+    public ResponseEntity<?> uploadFile(@RequestParam("file") MultipartFile file) {
+        try {
+            String azureUrl = imageStorageService.storeImage(file);
+            return ResponseEntity.ok(Map.of(
+                    "url",      azureUrl,
+                    "filename", file.getOriginalFilename() != null
+                            ? file.getOriginalFilename()
+                            : "documento.pdf"
+            ));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         } catch (IllegalStateException e) {
