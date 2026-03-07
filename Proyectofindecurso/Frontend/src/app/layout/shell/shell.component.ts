@@ -37,6 +37,7 @@ export class ShellComponent implements OnInit, OnDestroy {
   isCollapsed = false;
   isMobileOpen = false;
   openSectionIndex = 0;
+  readonly routerLinkActiveOptions = { exact: true };
   currentTitle = 'Dashboard';
   breadcrumb = 'Inicio / Dashboard';
   userName = 'Usuario';
@@ -197,12 +198,15 @@ export class ShellComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadUserData();
     this.menuSections = this.buildMenuByRole();
-    this.openSectionIndex = this.menuSections.length ? 0 : -1;
     this.updateTitles();
+    this.syncOpenSectionWithRoute(this.router.url);
 
     const sub = this.router.events
       .pipe(filter((event) => event instanceof NavigationEnd))
-      .subscribe(() => this.updateTitles());
+      .subscribe(() => {
+        this.updateTitles();
+        this.syncOpenSectionWithRoute(this.router.url);
+      });
     this.subscriptions.add(sub);
   }
 
@@ -256,11 +260,26 @@ export class ShellComponent implements OnInit, OnDestroy {
     const raw = String(user?.['rol'] ?? '').trim().toUpperCase();
     const clean = raw.replace('ROLE_', '');
 
-    if (clean === 'ADMIN') return 'ADMIN';
-    if (clean === 'DOCENTE') return 'DOCENTE';
-    if (clean === 'ESTUDIANTE') return 'ESTUDIANTE';
-    if (clean === 'COORDINADOR') return 'COORDINADOR';
+    if (clean.includes('ADMIN')) return 'ADMIN';
+    if (clean.includes('DOCENTE')) return 'DOCENTE';
+    if (clean.includes('ESTUDIANTE')) return 'ESTUDIANTE';
+    if (clean.includes('COORDINADOR')) return 'COORDINADOR';
     return null;
+  }
+
+  private syncOpenSectionWithRoute(url: string): void {
+    const index = this.menuSections.findIndex(section =>
+      section.items.some(item => url === item.path || url.startsWith(`${item.path}/`))
+    );
+
+    if (index >= 0) {
+      this.openSectionIndex = index;
+      return;
+    }
+
+    if (this.openSectionIndex < 0 && this.menuSections.length) {
+      this.openSectionIndex = 0;
+    }
   }
 
   private updateTitles(): void {

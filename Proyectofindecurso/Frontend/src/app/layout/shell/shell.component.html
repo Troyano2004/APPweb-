@@ -25,6 +25,7 @@
             *ngFor="let item of section.items"
             [routerLink]="item.path"
             routerLinkActive="active"
+            [routerLinkActiveOptions]="routerLinkActiveOptions"
             (click)="closeMobile()"
           >
             <span class="bullet"></span>

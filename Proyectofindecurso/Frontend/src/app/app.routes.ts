@@ -41,6 +41,11 @@ import { AnteproyectoComponent } from './pages/anteproyecto/anteproyecto';
 import { Actadirector } from './pages/director/actadirector/actadirector';
 import { Tutoriasdirector } from './pages/director/tutoriasdirector/tutoriasdirector';
 import { DirectorMisAnteproyectosComponent } from './pages/director/directoranteproyectos/directoranteproyectos';
+import { ConfiguracionDt2Component } from './pages/coordinador/configuracion-dt2/configuracion-dt2';
+import { PredefensaDt2Component } from './pages/titulacion2/predefensa/predefensa-dt2';
+import { SustentacionDt2Component } from './pages/titulacion2/sustentacion/sustentacion-dt2';
+import { SeguimientoDt2Component } from './pages/director/seguimiento-dt2/seguimiento-dt2';
+import { AntiplagioDt2Component } from './pages/director/antiplagio-dt2/antiplagio-dt2';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'login' },
@@ -61,6 +66,8 @@ export const routes: Routes = [
       { path: 'director/mis-anteproyectos', component: DirectorMisAnteproyectosComponent, data: { title: 'Mis anteproyectos' } },
       { path: 'director/tutorias', component: Tutoriasdirector, data: { title: 'Tutorías (Director)' } },
       { path: 'director/acta', component: Actadirector, data: { title: 'Acta de revisión (Director)' } },
+      { path: 'director/seguimiento-dt2', component: SeguimientoDt2Component, data: { title: 'Seguimiento DT2' } },
+      { path: 'director/antiplagio-dt2', component: AntiplagioDt2Component, data: { title: 'Antiplagio COMPILATIO' } },
       { path: 'dt1/lista', component: Dt1EnviadosComponent, data: { title: 'DT1 - Lista' } },
       { path: 'dt1/revision', component: Dt1RevisionComponent, data: { title: 'DT1 - Revisión' } },
 
@@ -80,6 +87,12 @@ export const routes: Routes = [
         path: 'titulacion2/workflow',
         component: TitulacionWorkflowComponent,
         data: { title: 'Workflow Titulación II' }
+      },
+      { path: 'titulacion2/predefensa', component: PredefensaDt2Component, data: { title: 'Predefensa DT2' } },
+      {
+        path: 'titulacion2/sustentacion',
+        component: SustentacionDt2Component,
+        data: { title: 'Sustentación Final DT2' }
       },
       { path: 'titulacion2/revision', pathMatch: 'full', redirectTo: 'titulacion2/revisar' },
       {
@@ -193,6 +206,11 @@ export const routes: Routes = [
         path: 'coordinador/dt1-asignacion',
         component: AsignacionDt1,
         data: { title: 'DT1 - Asignación Docentes y Tutores' }
+      },
+      {
+        path: 'coordinador/configuracion-dt2',
+        component: ConfiguracionDt2Component,
+        data: { title: 'Configuración Inicial DT2' }
       },
 
       { path: '**', redirectTo: 'dashboard' }
