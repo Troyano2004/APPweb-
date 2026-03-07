@@ -24,26 +24,28 @@ public class Usuario {
     @Column(nullable = false, length = 50)
     private String username;
 
-    @Column(name = "password_hash")
+    @Column(name = "password_hash", length = 255)
     private String passwordHash;
 
+    @Column(length = 100)
     private String nombres;
+
+    @Column(length = 100)
     private String apellidos;
 
-    @Column(name = "rol_asignado")
+    @Column(name = "rol_asignado", length = 20)
     private String rolAsignado;
 
     @Column(nullable = false)
     private Boolean activo = true;
 
-    // ✅ NUEVO — credenciales BD
-    @Column(name = "username_db")
+    @Column(name = "username_db", length = 50)
     private String usernameDb;
 
-    @Column(name = "password_db_encrypted")
+    @Column(name = "password_db_encrypted", columnDefinition = "TEXT")
     private String passwordDbEncrypted;
 
-    // ✅ FK real a roles_sistema
+    // FK real a roles_sistema
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "id_rol", nullable = false)
     private RolSistema rolSistema;
@@ -63,8 +65,6 @@ public class Usuario {
     public String getRolAsignado() { return rolAsignado; }
     public Boolean getActivo() { return activo; }
     public RolSistema getRolSistema() { return rolSistema; }
-
-    // ✅ nuevos getters
     public String getUsernameDb() { return usernameDb; }
     public String getPasswordDbEncrypted() { return passwordDbEncrypted; }
 
@@ -82,8 +82,6 @@ public class Usuario {
     public void setRolAsignado(String rolAsignado) { this.rolAsignado = rolAsignado; }
     public void setActivo(Boolean activo) { this.activo = activo; }
     public void setRolSistema(RolSistema rolSistema) { this.rolSistema = rolSistema; }
-
-    // ✅ nuevos setters
     public void setUsernameDb(String usernameDb) { this.usernameDb = usernameDb; }
     public void setPasswordDbEncrypted(String passwordDbEncrypted) {
         this.passwordDbEncrypted = passwordDbEncrypted;

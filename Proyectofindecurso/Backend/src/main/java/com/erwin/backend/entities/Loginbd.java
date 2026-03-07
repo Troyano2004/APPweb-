@@ -18,10 +18,10 @@ public class Loginbd {
     @Column(name="id_login_bd")
     private Integer idLoginBd;
 
-    @Column(name="username_bd", nullable=false, unique=true)
+    @Column(name="username_bd", nullable=false, unique=true, length=50)
     private String usernameBd;
 
-    @Column(name="password_bd", nullable=false)
+    @Column(name="password_bd", nullable=false, length=255)
     private String passwordBd; // HASH
 
     @Column(nullable=false)
