@@ -43,29 +43,36 @@ export class LoginComponent {
 
     this.authService.login(this.usuarioLogin, this.password)
       .pipe(
-        timeout(8000), // ✅ si no responde en 8s, cae al error
-        finalize(() => this.isLoading = false) // ✅ apaga loading SIEMPRE
+        timeout(8000),
+        finalize(() => this.isLoading = false)
       )
       .subscribe({
         next: (resp: any) => {
-          setSessionUser(resp || {});
+          // Determinar rol activo inicial (el rol principal)
+          const rolActivo = resp?.rol ?? '';
 
-          const homeRoute = getRoleHomeRoute(resp?.rol);
+          // Guardar sesión incluyendo todos los roles disponibles y el rol activo
+          setSessionUser({
+            ...(resp || {}),
+            rol: rolActivo,
+            rolActivo: rolActivo,
+            roles: Array.isArray(resp?.roles) ? resp.roles : (rolActivo ? [rolActivo] : []),
+          });
+
+          const homeRoute = getRoleHomeRoute(rolActivo);
           if (!homeRoute) {
-            this.errorMessage = 'Rol no reconocido: ' + (resp?.rol ?? '');
+            this.errorMessage = 'Rol no reconocido: ' + (rolActivo ?? '');
             return;
           }
 
           this.router.navigate([homeRoute]);
         },
         error: (err) => {
-          // ✅ Si fue timeout
           if (err?.name === 'TimeoutError') {
             this.errorMessage = 'El servidor tardó demasiado. Intente nuevamente.';
             return;
           }
 
-          // ✅ Mensaje del backend s'i existe
           this.errorMessage = err?.error?.message || 'Usuario o contraseña incorrectos';
         }
       });

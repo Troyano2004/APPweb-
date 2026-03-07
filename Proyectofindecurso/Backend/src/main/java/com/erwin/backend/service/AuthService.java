@@ -10,6 +10,10 @@ import jakarta.servlet.http.HttpSession;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+
 @Service
 public class AuthService {
 
@@ -34,42 +38,50 @@ public class AuthService {
                 .findByUsername(usernameLogin)
                 .orElseThrow(() -> new RuntimeException("Usuario no existe"));
 
-        // ✅ 1) Validar password del aplicativo (BCrypt o texto plano - PRUEBAS)
         validarPasswordMixto(passwordApp, usuario.getPasswordHash());
 
-        // ✅ 2) Credenciales BD (OPCIONAL EN PRUEBAS)
         String dbUser = (usuario.getUsernameDb() != null && !usuario.getUsernameDb().trim().isEmpty())
                 ? usuario.getUsernameDb().trim()
                 : (usuario.getUsername() != null ? usuario.getUsername().trim() : null);
 
         String dbPassEncrypted = usuario.getPasswordDbEncrypted();
 
-        // ✅ 3) Guardar en sesión SOLO si existe password_db_encrypted
         if (dbUser != null && dbPassEncrypted != null && !dbPassEncrypted.trim().isEmpty()) {
             String dbPass = CryptoUtil.decrypt(dbPassEncrypted.trim());
-            session.setAttribute(DbSessionFilter.SES_DB_USER, dbUser); // "DB_USER"
-            session.setAttribute(DbSessionFilter.SES_DB_PASS, dbPass); // "DB_PASS"
+            session.setAttribute(DbSessionFilter.SES_DB_USER, dbUser);
+            session.setAttribute(DbSessionFilter.SES_DB_PASS, dbPass);
         } else {
-            // Modo prueba: si no hay credenciales BD, igual dejamos iniciar sesión.
-            // (Opcional) limpiar por si quedó algo viejo
             session.removeAttribute(DbSessionFilter.SES_DB_USER);
             session.removeAttribute(DbSessionFilter.SES_DB_PASS);
         }
 
-        // ✅ 4) Rol para frontend
-        String rolFrontend = convertirRol(usuario.getRolAsignado());
+        // Rol principal del usuario
+        String rolPrincipal = convertirRol(usuario.getRolAsignado());
+
+        // Construir lista de todos los roles disponibles para el usuario
+        List<String> roles = new ArrayList<>();
+        roles.add(rolPrincipal);
+
+        // Agregar roles adicionales asignados
+        Set<String> rolesAdicionales = usuario.getRolesAplicativo();
+        if (rolesAdicionales != null) {
+            for (String rolAdicional : rolesAdicionales) {
+                String rolConvertido = convertirRol(rolAdicional);
+                if (!rolConvertido.isEmpty() && !roles.contains(rolConvertido)) {
+                    roles.add(rolConvertido);
+                }
+            }
+        }
 
         return new LoginResponse(
                 usuario.getIdUsuario(),
-                rolFrontend,
+                rolPrincipal,
+                roles,
                 usuario.getNombres(),
                 usuario.getApellidos()
         );
     }
 
-    /**
-     * Permite login con passwordHash BCrypt o en texto plano (solo pruebas).
-     */
     private void validarPasswordMixto(String rawPassword, String storedPassword) {
         if (rawPassword == null) {
             throw new RuntimeException("Contraseña incorrecta");
@@ -79,15 +91,12 @@ public class AuthService {
         }
 
         String stored = storedPassword.trim();
-
-        // Detecta BCrypt típico: $2a$ / $2b$ / $2y$
         boolean esBcrypt = stored.matches("^\\$2[aby]\\$\\d\\d\\$.+");
 
         boolean ok;
         if (esBcrypt) {
             ok = passwordEncoder.matches(rawPassword, stored);
         } else {
-            // Texto plano
             ok = rawPassword.equals(stored);
         }
 
@@ -104,6 +113,13 @@ public class AuthService {
         if (rol.equals("ADMIN")) return "ROLE_ADMIN";
         if (rol.equals("DOCENTE")) return "ROLE_DOCENTE";
         if (rol.equals("ESTUDIANTE")) return "ROLE_ESTUDIANTE";
+        if (rol.equals("COORDINADOR")) return "ROLE_COORDINADOR";
+        if (rol.equals("DIRECTOR")) return "ROLE_DIRECTOR";
+        if (rol.equals("TRIBUNAL")) return "ROLE_TRIBUNAL";
+        if (rol.equals("COMISION_FORMATIVA")) return "ROLE_COMISION_FORMATIVA";
+
+        // Si ya viene con prefijo ROLE_
+        if (rol.startsWith("ROLE_")) return rol;
 
         return rol;
     }

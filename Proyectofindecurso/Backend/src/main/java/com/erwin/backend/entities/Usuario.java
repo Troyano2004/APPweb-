@@ -3,6 +3,9 @@ package com.erwin.backend.entities;
 
 import jakarta.persistence.*;
 
+import java.util.HashSet;
+import java.util.Set;
+
 @Entity
 @Table(name = "usuario")
 public class Usuario {
@@ -36,22 +39,23 @@ public class Usuario {
     @Column(nullable = false)
     private Boolean activo = true;
 
-    // ✅ NUEVO — credenciales BD
     @Column(name = "username_db")
     private String usernameDb;
 
     @Column(name = "password_db_encrypted")
     private String passwordDbEncrypted;
 
-    // ✅ FK real a roles_sistema
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "id_rol", nullable = false)
     private RolSistema rolSistema;
 
-    // ======================
-    // GETTERS
-    // ======================
+    // Roles adicionales del aplicativo (soporte multi-rol por usuario)
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "usuario_roles_aplicativo", joinColumns = @JoinColumn(name = "id_usuario"))
+    @Column(name = "rol_aplicativo", length = 40)
+    private Set<String> rolesAplicativo = new HashSet<>();
 
+    // GETTERS
     public Integer getIdUsuario() { return idUsuario; }
     public String getCedula() { return cedula; }
     public String getCorreoInstitucional() { return correoInstitucional; }
@@ -63,15 +67,11 @@ public class Usuario {
     public String getRolAsignado() { return rolAsignado; }
     public Boolean getActivo() { return activo; }
     public RolSistema getRolSistema() { return rolSistema; }
-
-    // ✅ nuevos getters
     public String getUsernameDb() { return usernameDb; }
     public String getPasswordDbEncrypted() { return passwordDbEncrypted; }
+    public Set<String> getRolesAplicativo() { return rolesAplicativo; }
 
-    // ======================
     // SETTERS
-    // ======================
-
     public void setCedula(String cedula) { this.cedula = cedula; }
     public void setCorreoInstitucional(String correoInstitucional) { this.correoInstitucional = correoInstitucional; }
     public void setRol(String rol) { this.rol = rol; }
@@ -82,10 +82,7 @@ public class Usuario {
     public void setRolAsignado(String rolAsignado) { this.rolAsignado = rolAsignado; }
     public void setActivo(Boolean activo) { this.activo = activo; }
     public void setRolSistema(RolSistema rolSistema) { this.rolSistema = rolSistema; }
-
-    // ✅ nuevos setters
     public void setUsernameDb(String usernameDb) { this.usernameDb = usernameDb; }
-    public void setPasswordDbEncrypted(String passwordDbEncrypted) {
-        this.passwordDbEncrypted = passwordDbEncrypted;
-    }
+    public void setPasswordDbEncrypted(String passwordDbEncrypted) { this.passwordDbEncrypted = passwordDbEncrypted; }
+    public void setRolesAplicativo(Set<String> rolesAplicativo) { this.rolesAplicativo = rolesAplicativo; }
 }
