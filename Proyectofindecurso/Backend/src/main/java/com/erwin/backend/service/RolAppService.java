@@ -1,3 +1,4 @@
+
 package com.erwin.backend.service;
 
 import com.erwin.backend.dtos.*;
@@ -28,7 +29,17 @@ public class RolAppService {
         if (req.getPermisos() == null || req.getPermisos().isEmpty())
             throw new RuntimeException("Debe seleccionar al menos un permiso");
 
-        Integer id = repo.crearRolApp(req.getNombre(), req.getDescripcion(), req.getActivo(), req.getPermisos());
+        // ── FIX Error 2: se pasa idRolBase al SP ──────────────────────────
+        if (req.getIdRolBase() == null)
+            throw new RuntimeException("Debe seleccionar un Rol Base del sistema (Admin, Docente, Estudiante, etc.)");
+
+        Integer id = repo.crearRolApp(
+                req.getNombre(),
+                req.getDescripcion(),
+                req.getActivo(),
+                req.getPermisos(),
+                req.getIdRolBase()   // ← parámetro nuevo
+        );
 
         return repo.listarRolesApp().stream()
                 .filter(x -> x.getIdRolApp().equals(id))
@@ -39,7 +50,10 @@ public class RolAppService {
     @Transactional
     public RolAppDto editar(Integer id, RolAppUpdateRequest req) {
         if (req == null) throw new RuntimeException("Body requerido");
-        repo.editarRolApp(id, req.getNombre(), req.getDescripcion(), req.getActivo());
+
+        // ── FIX Error 2: se pasa idRolBase al SP (puede ser null → COALESCE mantiene el valor) ──
+        repo.editarRolApp(id, req.getNombre(), req.getDescripcion(),
+                req.getActivo(), req.getIdRolBase());
 
         return repo.listarRolesApp().stream()
                 .filter(x -> x.getIdRolApp().equals(id))
@@ -62,6 +76,7 @@ public class RolAppService {
 
     @Transactional
     public RolAppDto asignarPermisos(Integer id, RolAppPermisosRequest req) {
+        // ── FIX Error 4: validación explícita antes de llamar al SP ──────
         if (req == null || req.getPermisos() == null || req.getPermisos().isEmpty())
             throw new RuntimeException("Debe seleccionar al menos un permiso");
 

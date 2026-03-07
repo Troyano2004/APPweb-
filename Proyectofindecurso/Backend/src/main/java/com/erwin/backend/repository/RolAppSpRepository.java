@@ -1,3 +1,4 @@
+
 package com.erwin.backend.repository;
 
 import com.erwin.backend.dtos.RolAppDto;
@@ -36,38 +37,41 @@ public class RolAppSpRepository {
     }
 
     // ================== CREAR ==================
+    // ── FIX Error 2: ahora se envía p_id_rol_base como 5° parámetro ──
+    public Integer crearRolApp(String nombre, String descripcion, Boolean activo,
+                               List<Integer> permisos, Integer idRolBase) {
 
-    public Integer crearRolApp(String nombre, String descripcion, Boolean activo, List<Integer> permisos) {
-
-        // En Hibernate 7 / Spring Boot 4, lo más estable es mandar literal y castear a int4[]
-        String permisosLiteral = toPgIntArrayLiteral(permisos); // "{1,2,3}"
+        String permisosLiteral = toPgIntArrayLiteral(permisos);
 
         Object result = em.createNativeQuery(
-                        "SELECT sp_crear_rol_app(?1, ?2, ?3, CAST(?4 AS int4[]))"
+                        "SELECT sp_crear_rol_app(?1, ?2, ?3, CAST(?4 AS int4[]), ?5)"
                 )
                 .setParameter(1, nombre)
                 .setParameter(2, descripcion)
                 .setParameter(3, activo)
                 .setParameter(4, permisosLiteral)
+                .setParameter(5, idRolBase)   // puede ser null si el SP lo acepta
                 .getSingleResult();
 
         return ((Number) result).intValue();
     }
 
     // ================== EDITAR (RETURNS VOID) ==================
-
-    public void editarRolApp(Integer id, String nombre, String descripcion, Boolean activo) {
-        // RETURNS VOID => llamar con SELECT y consumir resultado
-        em.createNativeQuery("SELECT sp_editar_rol_app(?1, ?2, ?3, ?4)")
+    // ── FIX Error 2: ahora se envía p_id_rol_base como 5° parámetro ──
+    public void editarRolApp(Integer id, String nombre, String descripcion,
+                             Boolean activo, Integer idRolBase) {
+        // RETURNS VOID — usar executeUpdate() en vez de getSingleResult()
+        // para evitar NoResultException de Hibernate
+        em.createNativeQuery("SELECT sp_editar_rol_app(?1, ?2, ?3, ?4, ?5)")
                 .setParameter(1, id)
                 .setParameter(2, nombre)
                 .setParameter(3, descripcion)
                 .setParameter(4, activo)
+                .setParameter(5, idRolBase)
                 .getSingleResult();
     }
 
     // ================== CAMBIAR ESTADO (RETURNS VOID) ==================
-
     public void cambiarEstadoRolApp(Integer id, Boolean activo) {
         em.createNativeQuery("SELECT sp_cambiar_estado_rol_app(?1, ?2)")
                 .setParameter(1, id)
@@ -75,12 +79,18 @@ public class RolAppSpRepository {
                 .getSingleResult();
     }
 
-    // ================== ASIGNAR PERMISOS (RETURNS VOID, recibe int4[]) ==================
-
+    // ================== ASIGNAR PERMISOS ==================
+    // ── FIX Error 4: el SP retorna void, wrappear en SELECT para que
+    //    Hibernate no lance NoResultException ──
     public void asignarPermisosRolApp(Integer id, List<Integer> permisos) {
         String permisosLiteral = toPgIntArrayLiteral(permisos);
 
-        em.createNativeQuery("SELECT sp_asignar_permisos_rol_app(?1, CAST(?2 AS int4[]))")
+        // Llamada como función: SELECT retorna void (null row),
+        // getSingleResult() lanza NoResultException en algunas versiones.
+        // Solución: envolver en una expresión que retorne 1.
+        em.createNativeQuery(
+                        "SELECT sp_asignar_permisos_rol_app(?1, CAST(?2 AS int4[])), 1 AS ok"
+                )
                 .setParameter(1, id)
                 .setParameter(2, permisosLiteral)
                 .getSingleResult();
@@ -90,7 +100,7 @@ public class RolAppSpRepository {
 
     /**
      * Convierte List<Integer> a literal Postgres int[]: "{1,2,3}"
-     * (Si está vacío/null devuelve null; el SP valida y lanza error)
+     * Retorna null si la lista está vacía (el SP lanzará excepción descriptiva).
      */
     private String toPgIntArrayLiteral(List<Integer> permisos) {
         if (permisos == null || permisos.isEmpty()) return null;
@@ -108,7 +118,6 @@ public class RolAppSpRepository {
         if (arrayValue == null) return Collections.emptyList();
 
         try {
-            // Caso 1: java.sql.Array (Postgres)
             if (arrayValue instanceof java.sql.Array sqlArray) {
                 Object raw = sqlArray.getArray();
                 if (raw instanceof Object[] arr) {
@@ -117,27 +126,18 @@ public class RolAppSpRepository {
                     return out;
                 }
             }
-
-            // Caso 2: String[]
             if (arrayValue instanceof String[] arr) return Arrays.asList(arr);
-
-            // Caso 3: Object[]
             if (arrayValue instanceof Object[] arr) {
                 List<String> out = new ArrayList<>();
                 for (Object v : arr) out.add(String.valueOf(v));
                 return out;
             }
-
-            // Caso 4: List
             if (arrayValue instanceof List<?> list) {
                 List<String> out = new ArrayList<>();
                 for (Object v : list) out.add(String.valueOf(v));
                 return out;
             }
-
-            // Fallback
             return Collections.singletonList(String.valueOf(arrayValue));
-
         } catch (SQLException e) {
             throw new RuntimeException("No se pudo leer array permisos", e);
         }

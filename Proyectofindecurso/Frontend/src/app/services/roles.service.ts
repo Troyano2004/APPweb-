@@ -1,3 +1,4 @@
+
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -11,9 +12,14 @@ export interface PermisoDto {
   activo: boolean;
 }
 
+export interface RolSistemaDto {
+  idRol: number;
+  nombreRol: string;
+}
+
 /** Rol del aplicativo */
 export interface RolAppDto {
-  idRolApp: number;              // ✅ debe llegar así del backend
+  idRolApp: number;
   nombre: string;
   descripcion: string | null;
   activo: boolean;
@@ -25,12 +31,14 @@ export interface RolAppCreateRequest {
   descripcion?: string;
   activo: boolean;
   permisos: number[];
+  idRolBase: number;        // ← FIX Error 2: obligatorio al crear
 }
 
 export interface RolAppUpdateRequest {
   nombre?: string;
   descripcion?: string;
   activo?: boolean;
+  idRolBase?: number | null; // ← FIX Error 2: opcional al editar
 }
 
 export interface EstadoRequest {
@@ -48,10 +56,16 @@ export class RolesService {
 
   private readonly baseUrl = 'http://localhost:8080';
 
-  private readonly rolAppUrl = `${this.baseUrl}/rol-app`;
-  private readonly permisosUrl = `${this.baseUrl}/permisos`;
+  private readonly rolAppUrl     = `${this.baseUrl}/rol-app`;
+  private readonly permisosUrl   = `${this.baseUrl}/permisos`;
+  private readonly rolesSistUrl  = `${this.baseUrl}/roles-sistema`;
 
   constructor(private http: HttpClient) {}
+
+  /* ====== roles_sistema (para el select "Rol base") ====== */
+  listarRolesSistema(): Observable<RolSistemaDto[]> {
+    return this.http.get<RolSistemaDto[]>(this.rolesSistUrl);
+  }
 
   /* ====== rol_app ====== */
 
