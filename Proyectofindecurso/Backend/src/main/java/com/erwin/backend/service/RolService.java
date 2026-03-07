@@ -8,7 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 @Service
-public class RolService {
+public class  RolService {
 
     private final RolSpRepository rolSpRepository;
 

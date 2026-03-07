@@ -11,4 +11,5 @@ public interface LoginAplicativoRepository extends JpaRepository<Loginaplicativo
     Optional<Loginaplicativo> findByUsuarioLoginIgnoreCase(String usuarioLogin);
 
     Optional<Loginaplicativo> findByUsuario_IdUsuario(Integer idUsuario);
+    boolean existsByUsuarioLogin(String usuarioLogin);
 }

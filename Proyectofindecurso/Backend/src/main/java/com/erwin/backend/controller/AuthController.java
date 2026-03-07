@@ -18,10 +18,9 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public LoginResponse login(@RequestBody LoginRequest req, HttpSession session) {
-        return authService.login(req, session);
+    public LoginResponse login(@RequestBody LoginRequest req) {
+        return authService.login(req);
     }
-
     // ✅ LOGOUT
     @PostMapping("/logout")
     public void logout(HttpSession session) {
