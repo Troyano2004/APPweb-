@@ -1,0 +1,155 @@
+<div class="predefensa-dt2">
+  <h2>Predefensa — Titulación II</h2>
+  <p class="subtitle">Calificación: 60% Docente DT2 + 40% Tribunal. Nota mínima aprobatoria: 7.00</p>
+
+  <div class="alert error" *ngIf="error()">{{ error() }}</div>
+  <div class="alert ok" *ngIf="ok()">{{ ok() }}</div>
+
+  <div class="layout">
+    <!-- Lista proyectos -->
+    <div class="panel-lista">
+      <h3>Proyectos en Predefensa</h3>
+      <div *ngIf="loading() && proyectos().length === 0" class="loading">Cargando...</div>
+      <div class="proyecto-card"
+           *ngFor="let p of proyectos()"
+           [class.activo]="proyectoSeleccionado()?.idProyecto === p.idProyecto"
+           (click)="seleccionarProyecto(p)">
+        <div class="proyecto-titulo">{{ p.titulo }}</div>
+        <div class="proyecto-meta">{{ p.estudiante }}</div>
+      </div>
+      <div *ngIf="!loading() && proyectos().length === 0" class="empty">
+        No hay proyectos en etapa de Predefensa.
+      </div>
+    </div>
+
+    <!-- Detalle -->
+    <div class="panel-detalle" *ngIf="proyectoSeleccionado(); else sinSeleccion">
+      <h3>{{ proyectoSeleccionado()!.titulo }}</h3>
+
+      <!-- Estado actual predefensa -->
+      <div class="predefensa-estado" *ngIf="predefensa()">
+        <div class="estado-row">
+          <span class="lbl">Estado:</span>
+          <span class="badge {{ predefensa()!.estado }}">{{ predefensa()!.estado }}</span>
+          <span class="lbl">Fecha:</span>
+          <span>{{ predefensa()!.fecha | date: 'dd/MM/yyyy' }} {{ predefensa()!.hora }}</span>
+          <span class="lbl">Lugar:</span>
+          <span>{{ predefensa()!.lugar }}</span>
+        </div>
+
+        <div class="notas-grid" *ngIf="predefensa()!.notaDocenteDt2 !== null || predefensa()!.promedioTribunal !== null">
+          <div class="nota-card">
+            <span class="nota-val">{{ predefensa()!.notaDocenteDt2 ?? '—' }}</span>
+            <span class="nota-lbl">Docente DT2 (60%)</span>
+          </div>
+          <div class="nota-card">
+            <span class="nota-val">{{ predefensa()!.promedioTribunal ?? '—' }}</span>
+            <span class="nota-lbl">Tribunal (40%)</span>
+          </div>
+          <div class="nota-card destacado" *ngIf="predefensa()!.notaFinalPonderada !== null">
+            <span class="nota-val">{{ predefensa()!.notaFinalPonderada }}</span>
+            <span class="nota-lbl">Nota Final</span>
+          </div>
+        </div>
+
+        <div class="progreso-tribunal">
+          <span>Calificaciones tribunal: {{ predefensa()!.miembrosQueCalificaron }}/{{ predefensa()!.totalMiembrosTribunal }}</span>
+          <span *ngIf="predefensa()!.solicitudCorrecciones" class="warn-badge">⚠ Tribunal solicitó correcciones</span>
+        </div>
+
+        <!-- Evaluaciones individuales tribunal -->
+        <div class="evaluaciones" *ngIf="predefensa()!.evaluacionesTribunal?.length">
+          <h4>Evaluaciones del tribunal</h4>
+          <div class="eval-row" *ngFor="let e of predefensa()!.evaluacionesTribunal">
+            <span class="nombre">{{ e.nombreDocente }} ({{ e.cargo }})</span>
+            <span class="nota-ev">{{ e.nota }}</span>
+            <span *ngIf="e.solicitudCorrecciones" class="corr">correcciones</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="no-predefensa" *ngIf="!predefensa()">
+        <p>No hay predefensa programada para este proyecto.</p>
+      </div>
+
+      <!-- Tabs de acción -->
+      <div class="tabs">
+        <button [class.active]="tab() === 'estado'" (click)="setTab('estado')">Estado</button>
+        <button [class.active]="tab() === 'programar'" (click)="setTab('programar')">Programar</button>
+        <button [class.active]="tab() === 'calificar'" (click)="setTab('calificar')">Calificar</button>
+      </div>
+
+      <!-- Tab: Programar -->
+      <form *ngIf="tab() === 'programar'" [formGroup]="formProgramar" (ngSubmit)="programar()">
+        <div class="form-row-grid">
+          <div class="form-row">
+            <label>Fecha</label>
+            <input type="date" formControlName="fecha" />
+          </div>
+          <div class="form-row">
+            <label>Hora</label>
+            <input type="time" formControlName="hora" />
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Lugar</label>
+          <input formControlName="lugar" placeholder="Aula, sala, link..." />
+        </div>
+        <div class="form-row">
+          <label>Observaciones</label>
+          <textarea formControlName="observaciones" rows="2"></textarea>
+        </div>
+        <button type="submit" [disabled]="loading()">{{ loading() ? 'Guardando...' : 'Programar Predefensa' }}</button>
+      </form>
+
+      <!-- Tab: Calificar -->
+      <div *ngIf="tab() === 'calificar'">
+        <div class="calificar-section">
+          <h4>Calificación Docente DT2 (60%)</h4>
+          <form [formGroup]="formCalificarDocente" (ngSubmit)="calificarDocente()">
+            <div class="form-row-grid">
+              <div class="form-row">
+                <label>Nota (0-10)</label>
+                <input type="number" formControlName="nota" min="0" max="10" step="0.01" />
+              </div>
+            </div>
+            <div class="form-row">
+              <label>Observaciones</label>
+              <textarea formControlName="observaciones" rows="2"></textarea>
+            </div>
+            <button type="submit" class="btn-docente" [disabled]="loading()">Registrar como Docente DT2</button>
+          </form>
+        </div>
+
+        <div class="calificar-section">
+          <h4>Calificación Miembro Tribunal (40% promedio)</h4>
+          <form [formGroup]="formCalificarTribunal" (ngSubmit)="calificarTribunal()">
+            <div class="form-row-grid">
+              <div class="form-row">
+                <label>Nota (0-10)</label>
+                <input type="number" formControlName="nota" min="0" max="10" step="0.01" />
+              </div>
+            </div>
+            <div class="form-row">
+              <label>Observaciones</label>
+              <textarea formControlName="observaciones" rows="2"></textarea>
+            </div>
+            <div class="form-row form-check">
+              <label>
+                <input type="checkbox" formControlName="solicitudCorrecciones" />
+                Solicitar correcciones al estudiante
+              </label>
+            </div>
+            <button type="submit" class="btn-tribunal" [disabled]="loading()">Registrar como Tribunal</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <ng-template #sinSeleccion>
+      <div class="panel-detalle empty-panel">
+        <p>Selecciona un proyecto para gestionar la predefensa.</p>
+      </div>
+    </ng-template>
+  </div>
+</div>

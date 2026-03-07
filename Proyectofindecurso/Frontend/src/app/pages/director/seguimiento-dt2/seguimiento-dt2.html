@@ -1,0 +1,152 @@
+<div class="seguimiento-dt2">
+  <h2>Seguimiento de Avances — Titulación II</h2>
+  <p class="subtitle">Registra asesorías y cierra cortes de evaluación.</p>
+
+  <div class="alert error" *ngIf="error()">{{ error() }}</div>
+  <div class="alert ok" *ngIf="ok()">{{ ok() }}</div>
+
+  <div class="layout">
+    <!-- Lista proyectos -->
+    <div class="panel-lista">
+      <h3>Mis proyectos ({{ proyectos().length }})</h3>
+      <div *ngIf="loading() && proyectos().length === 0" class="loading">Cargando...</div>
+      <div class="proyecto-card"
+           *ngFor="let p of proyectos()"
+           [class.activo]="proyectoSeleccionado()?.idProyecto === p.idProyecto"
+           (click)="seleccionarProyecto(p)">
+        <div class="proyecto-titulo">{{ p.titulo }}</div>
+        <div class="proyecto-meta">{{ p.estudiante }}</div>
+        <span class="badge" [class]="p.estadoProyecto">{{ p.estadoProyecto }}</span>
+      </div>
+      <div *ngIf="!loading() && proyectos().length === 0" class="empty">
+        No tienes proyectos asignados en DESARROLLO o PREDEFENSA.
+      </div>
+    </div>
+
+    <!-- Detalle -->
+    <div class="panel-detalle" *ngIf="proyectoSeleccionado(); else sinSeleccion">
+      <!-- Resumen seguimiento -->
+      <div class="seguimiento-resumen" *ngIf="seguimiento()">
+        <div class="stat">
+          <span class="val">{{ seguimiento()!.totalAsesorias }}</span>
+          <span class="lbl">Total asesorías</span>
+        </div>
+        <div class="stat">
+          <span class="val">{{ seguimiento()!.asesoriaCorte1 }}</span>
+          <span class="lbl">Corte 1</span>
+        </div>
+        <div class="stat">
+          <span class="val">{{ seguimiento()!.asesoriaCorte2 }}</span>
+          <span class="lbl">Corte 2</span>
+        </div>
+        <div class="stat">
+          <span class="val">{{ seguimiento()!.ultimoAvance }}%</span>
+          <span class="lbl">Último avance</span>
+        </div>
+      </div>
+
+      <!-- Actas -->
+      <div class="actas" *ngIf="seguimiento()?.actas?.length">
+        <h4>Actas de corte</h4>
+        <div class="acta-row" *ngFor="let a of seguimiento()!.actas">
+          <span class="corte">Corte {{ a.numeroCorte }}</span>
+          <span class="nota">Nota: {{ a.notaCorte }}</span>
+          <span class="total">{{ a.totalAsesorias }} asesorías</span>
+          <span *ngIf="!a.asesoriasSuficientes" class="warn">⚠ Menos de 5</span>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button [class.active]="tab() === 'asesorias'" (click)="setTab('asesorias')">
+          Historial ({{ asesorias().length }})
+        </button>
+        <button [class.active]="tab() === 'registrar'" (click)="setTab('registrar')">Nueva asesoría</button>
+        <button [class.active]="tab() === 'corte'" (click)="setTab('corte')">Cerrar corte</button>
+      </div>
+
+      <!-- Tab: Historial asesorías -->
+      <div *ngIf="tab() === 'asesorias'">
+        <div *ngIf="asesorias().length === 0" class="empty">Sin asesorías registradas.</div>
+        <div class="asesoria-row" *ngFor="let a of asesorias()">
+          <div class="asesoria-header">
+            <span class="corte-badge">Corte {{ a.numeroCorte }}</span>
+            <span class="fecha">{{ a.fecha | date: 'dd/MM/yyyy HH:mm' }}</span>
+            <span class="avance">{{ a.porcentajeAvance }}% avance</span>
+          </div>
+          <div class="obs">{{ a.observaciones }}</div>
+          <a *ngIf="a.evidenciaUrl" [href]="a.evidenciaUrl" target="_blank" class="link-evidencia">Ver evidencia</a>
+        </div>
+      </div>
+
+      <!-- Tab: Registrar asesoría -->
+      <form *ngIf="tab() === 'registrar'" [formGroup]="formAsesoria" (ngSubmit)="registrarAsesoria()">
+        <div class="form-row">
+          <label>Fecha y hora</label>
+          <input type="datetime-local" formControlName="fecha" />
+        </div>
+        <div class="form-row">
+          <label>Observaciones</label>
+          <textarea formControlName="observaciones" rows="3" placeholder="Detalles de la asesoría..."></textarea>
+        </div>
+        <div class="form-row">
+          <label>URL Evidencia <small>(opcional)</small></label>
+          <input formControlName="evidenciaUrl" placeholder="https://..." />
+        </div>
+        <div class="form-row-grid">
+          <div class="form-row">
+            <label>% Avance</label>
+            <input type="number" formControlName="porcentajeAvance" min="0" max="100" />
+          </div>
+          <div class="form-row">
+            <label>Número de corte</label>
+            <select formControlName="numeroCorte">
+              <option [value]="1">Corte 1</option>
+              <option [value]="2">Corte 2</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>Calificación <small>(opcional)</small></label>
+            <input type="number" formControlName="calificacion" min="0" max="10" step="0.1" />
+          </div>
+        </div>
+        <button type="submit" [disabled]="loading()">
+          {{ loading() ? 'Guardando...' : 'Registrar asesoría' }}
+        </button>
+      </form>
+
+      <!-- Tab: Cerrar corte -->
+      <form *ngIf="tab() === 'corte'" [formGroup]="formCorte" (ngSubmit)="cerrarCorte()">
+        <p class="info">
+          Se requieren mínimo 5 asesorías por corte. Si no se cumple, el acta se genera con advertencia.
+        </p>
+        <div class="form-row-grid">
+          <div class="form-row">
+            <label>Número de corte</label>
+            <select formControlName="numeroCorte">
+              <option [value]="1">Corte 1</option>
+              <option [value]="2">Corte 2</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>Nota del corte (0-10)</label>
+            <input type="number" formControlName="notaCorte" min="0" max="10" step="0.01" />
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Observaciones</label>
+          <textarea formControlName="observaciones" rows="2" placeholder="Comentarios del cierre..."></textarea>
+        </div>
+        <button type="submit" [disabled]="loading()">
+          {{ loading() ? 'Cerrando...' : 'Cerrar corte y generar acta' }}
+        </button>
+      </form>
+    </div>
+
+    <ng-template #sinSeleccion>
+      <div class="panel-detalle empty-panel">
+        <p>Selecciona un proyecto para gestionar el seguimiento.</p>
+      </div>
+    </ng-template>
+  </div>
+</div>
