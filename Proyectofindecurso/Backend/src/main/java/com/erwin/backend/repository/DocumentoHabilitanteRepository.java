@@ -1,3 +1,4 @@
+
 package com.erwin.backend.repository;
 
 import com.erwin.backend.entities.DocumentoHabilitante;
@@ -38,7 +39,26 @@ public interface DocumentoHabilitanteRepository extends JpaRepository<DocumentoH
     """)
     boolean todosAprobados(@Param("idProyecto") Integer idProyecto);
 
-    /** Habilitantes pendientes de validar por un director */
+    /**
+     * ✅ FIX PRINCIPAL: Documentos ENVIADO donde el docente es Director del proyecto.
+     *
+     * ANTES (BUGGY): buscaba por validadoPor.idDocente, pero ese campo es NULL
+     * hasta que alguien valide — por eso el docente nunca veía nada.
+     *
+     * AHORA: busca documentos en estado ENVIADO cuyos proyectos tienen
+     * al docente como director (proyecto.director.idDocente = idDocente).
+     */
+    @Query("""
+        SELECT d FROM DocumentoHabilitante d
+        WHERE d.estado = 'ENVIADO'
+          AND d.proyecto.director.idDocente = :idDocente
+    """)
+    List<DocumentoHabilitante> findPendientesPorDirector(@Param("idDocente") Integer idDocente);
+
+    /**
+     * Habilitantes ya validados por un docente (historial).
+     * Este sí usa validadoPor porque ya fueron procesados.
+     */
     List<DocumentoHabilitante> findByValidadoPor_IdDocenteAndEstado(
             Integer idDocente, String estado);
 
