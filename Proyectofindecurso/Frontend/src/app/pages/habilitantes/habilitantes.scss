@@ -1,0 +1,572 @@
+/* ================================================================
+   Documentos Habilitantes — habilitantes.scss
+   Estilo alineado con el design system existente del proyecto
+   ================================================================ */
+
+// ── Variables ────────────────────────────────────────────────────
+$primary:      #2563eb;
+$primary-dark: #1d4ed8;
+$success:      #16a34a;
+$danger:       #dc2626;
+$warning:      #d97706;
+$neutral:      #6b7280;
+$bg-page:      #f8fafc;
+$bg-card:      #ffffff;
+$border:       #e2e8f0;
+$text:         #1e293b;
+$text-muted:   #64748b;
+$radius:       10px;
+$shadow:       0 1px 4px rgba(0, 0, 0, .08);
+$shadow-lg:    0 8px 24px rgba(0, 0, 0, .12);
+
+// ── Wrapper ───────────────────────────────────────────────────────
+.hab-wrapper {
+  padding: 24px;
+  background: $bg-page;
+  min-height: 100%;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  color: $text;
+}
+
+// ── Header ────────────────────────────────────────────────────────
+.hab-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 12px;
+
+  &__left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  &__icon {
+    font-size: 2rem;
+    line-height: 1;
+  }
+  &__title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+    color: $text;
+  }
+  &__sub {
+    font-size: .85rem;
+    color: $text-muted;
+    margin: 2px 0 0;
+  }
+  &__right { display: flex; align-items: center; }
+}
+
+.hab-role-badge {
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-size: .82rem;
+  font-weight: 600;
+  background: #dbeafe;
+  color: $primary;
+
+  &.role-director {
+    background: #dcfce7;
+    color: $success;
+  }
+}
+
+// ── Alertas ───────────────────────────────────────────────────────
+.hab-alert {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-radius: $radius;
+  font-size: .9rem;
+  margin-bottom: 16px;
+
+  &--error {
+    background: #fef2f2;
+    border: 1px solid #fca5a5;
+    color: $danger;
+  }
+  &--ok {
+    background: #f0fdf4;
+    border: 1px solid #86efac;
+    color: $success;
+  }
+}
+
+// ── Loading ────────────────────────────────────────────────────────
+.hab-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 32px;
+  justify-content: center;
+  color: $text-muted;
+}
+.hab-spinner {
+  width: 22px;
+  height: 22px;
+  border: 3px solid $border;
+  border-top-color: $primary;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+// ── Content ────────────────────────────────────────────────────────
+.hab-content { max-width: 900px; }
+
+// ── Progreso ──────────────────────────────────────────────────────
+.hab-progress-card {
+  background: $bg-card;
+  border: 1px solid $border;
+  border-radius: $radius;
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  margin-bottom: 16px;
+  box-shadow: $shadow;
+  flex-wrap: wrap;
+  transition: border-color .3s;
+
+  &--ok {
+    border-color: $success;
+    background: #f0fdf4;
+  }
+
+  &__info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__counts {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    font-size: 2rem;
+    font-weight: 800;
+  }
+}
+
+.count-ok    { color: $success; }
+.count-sep   { color: $neutral; font-size: 1.4rem; }
+.count-total { color: $text-muted; }
+
+.hab-progress-card__label {
+  font-size: .85rem;
+  color: $text-muted;
+  margin: 0;
+}
+
+.hab-badge-habilitado {
+  display: inline-block;
+  background: #dcfce7;
+  color: $success;
+  border-radius: 12px;
+  padding: 3px 12px;
+  font-size: .82rem;
+  font-weight: 600;
+  margin-top: 4px;
+}
+.hab-badge-falta {
+  display: inline-block;
+  background: #fef9c3;
+  color: $warning;
+  border-radius: 12px;
+  padding: 3px 12px;
+  font-size: .82rem;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.hab-progress-bar-wrap {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.hab-progress-bar {
+  flex: 1;
+  height: 8px;
+  background: $border;
+  border-radius: 4px;
+  overflow: hidden;
+
+  &__fill {
+    height: 100%;
+    background: $success;
+    border-radius: 4px;
+    transition: width .4s ease;
+  }
+}
+.hab-progress-pct {
+  font-size: .85rem;
+  font-weight: 700;
+  color: $text-muted;
+  white-space: nowrap;
+}
+
+.hab-project-title {
+  font-size: .88rem;
+  color: $text-muted;
+  margin-bottom: 20px;
+  strong { color: $text; }
+}
+
+// ── Section title (director) ───────────────────────────────────────
+.hab-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: $text;
+}
+
+.hab-empty {
+  text-align: center;
+  padding: 48px;
+  color: $text-muted;
+  font-size: .95rem;
+  span { font-size: 2rem; display: block; margin-bottom: 8px; }
+}
+
+// ── Lista de tarjetas ──────────────────────────────────────────────
+.hab-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+// ── Tarjeta habilitante ────────────────────────────────────────────
+.hab-card {
+  background: $bg-card;
+  border: 1px solid $border;
+  border-left: 4px solid $border;
+  border-radius: $radius;
+  padding: 18px 20px;
+  box-shadow: $shadow;
+  transition: box-shadow .2s;
+
+  &:hover { box-shadow: $shadow-lg; }
+
+  &--aprobado  { border-left-color: $success;  background: #f9fff9; }
+  &--rechazado { border-left-color: $danger;   background: #fff9f9; }
+  &--enviado   { border-left-color: $warning;  background: #fffdf0; }
+  &--pendiente { border-left-color: $neutral;  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 6px;
+  }
+  &__icon { font-size: 1.4rem; }
+  &__meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    flex: 1;
+  }
+  &__tipo {
+    font-weight: 700;
+    font-size: .95rem;
+    color: $text;
+  }
+  &__student {
+    font-size: .85rem;
+    color: $text-muted;
+  }
+  &__desc {
+    font-size: .83rem;
+    color: $text-muted;
+    margin: 4px 0 10px;
+    line-height: 1.5;
+  }
+  &__file {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+  &__date {
+    font-size: .78rem;
+    color: $text-muted;
+  }
+  &__comment {
+    background: #fef9c3;
+    border-left: 3px solid $warning;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: .83rem;
+    color: #92400e;
+    margin-bottom: 10px;
+  }
+  &__comment-label {
+    font-weight: 600;
+    display: block;
+    margin-bottom: 2px;
+  }
+  &__actions {
+    margin-top: 12px;
+    display: flex;
+    gap: 10px;
+  }
+}
+
+// ── Badges de estado ──────────────────────────────────────────────
+.hab-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: .77rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.badge-aprobado  { background: #dcfce7; color: $success; }
+.badge-rechazado { background: #fee2e2; color: $danger; }
+.badge-enviado   { background: #fef9c3; color: $warning; }
+.badge-pendiente { background: #f1f5f9; color: $neutral; }
+
+// ── Bloque antiplagio ─────────────────────────────────────────────
+.hab-antiplagio {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  background: #eff6ff;
+  border-radius: 8px;
+  font-size: .83rem;
+  margin-bottom: 10px;
+  border: 1px solid #bfdbfe;
+
+  &--rechazado {
+    background: #fef2f2;
+    border-color: #fca5a5;
+  }
+
+  &__label { color: $text-muted; }
+  &__pct   { font-weight: 800; font-size: 1rem; color: $text; }
+  &__umbral { color: $text-muted; }
+  &__result {
+    font-weight: 700;
+    &.ok  { color: $success; }
+    &.err { color: $danger; }
+  }
+}
+
+// ── Link archivo ──────────────────────────────────────────────────
+.hab-link-file {
+  color: $primary;
+  font-size: .85rem;
+  font-weight: 600;
+  text-decoration: none;
+  &:hover { text-decoration: underline; }
+}
+
+// ── Botones ───────────────────────────────────────────────────────
+.hab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-size: .88rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: background .2s, opacity .2s;
+
+  &:disabled { opacity: .55; cursor: not-allowed; }
+
+  &--primary {
+    background: $primary;
+    color: #fff;
+    &:not(:disabled):hover { background: $primary-dark; }
+  }
+  &--ghost {
+    background: transparent;
+    color: $text-muted;
+    border: 1px solid $border;
+    &:not(:disabled):hover { background: #f1f5f9; }
+  }
+}
+
+// ── Modal overlay ─────────────────────────────────────────────────
+.hab-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, .45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.hab-modal {
+  background: $bg-card;
+  border-radius: 14px;
+  box-shadow: $shadow-lg;
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 28px;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin: 0;
+      color: $text;
+    }
+  }
+  &__close {
+    background: none;
+    border: none;
+    font-size: 1.1rem;
+    cursor: pointer;
+    color: $text-muted;
+    padding: 4px 8px;
+    border-radius: 6px;
+    &:hover { background: #f1f5f9; }
+  }
+  &__tipo-info {
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 18px;
+    font-size: .88rem;
+    strong { display: block; font-size: 1rem; margin-bottom: 4px; }
+    p { margin: 4px 0; color: $text-muted; }
+  }
+  &__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid $border;
+  }
+}
+
+// ── Upload área ───────────────────────────────────────────────────
+.hab-upload-area {
+  margin-bottom: 18px;
+}
+.hab-upload-label {
+  display: block;
+  border: 2px dashed $primary;
+  border-radius: 10px;
+  padding: 28px 20px;
+  text-align: center;
+  cursor: pointer;
+  background: #eff6ff;
+  transition: background .2s;
+  &:hover { background: #dbeafe; }
+}
+.hab-upload-prompt {
+  color: $primary;
+  font-weight: 600;
+  font-size: .9rem;
+  small { color: $text-muted; font-weight: 400; }
+}
+.hab-upload-loading {
+  color: $warning;
+  font-weight: 600;
+}
+.hab-upload-done {
+  color: $success;
+  font-weight: 700;
+}
+
+// ── Formulario antiplagio ─────────────────────────────────────────
+.hab-antiplagio-form {
+  border: 1px solid $border;
+  border-radius: 10px;
+  padding: 16px;
+  background: #eff6ff;
+  margin-bottom: 14px;
+}
+
+.hab-form-group {
+  margin-bottom: 14px;
+  label {
+    display: block;
+    font-size: .84rem;
+    font-weight: 600;
+    color: $text;
+    margin-bottom: 5px;
+  }
+  small {
+    display: block;
+    font-size: .76rem;
+    color: $text-muted;
+    margin-top: 3px;
+  }
+}
+.req { color: $danger; }
+
+.hab-input,
+.hab-textarea {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid $border;
+  border-radius: 8px;
+  font-size: .9rem;
+  color: $text;
+  background: $bg-card;
+  box-sizing: border-box;
+  transition: border-color .2s;
+  &:focus {
+    outline: none;
+    border-color: $primary;
+    box-shadow: 0 0 0 3px rgba($primary, .12);
+  }
+}
+.hab-textarea { resize: vertical; }
+
+// ── Toggle decisión ──────────────────────────────────────────────
+.hab-decision-toggle {
+  display: flex;
+  gap: 10px;
+}
+.hab-toggle-btn {
+  flex: 1;
+  padding: 10px;
+  border: 2px solid $border;
+  border-radius: 8px;
+  font-size: .9rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: #f8fafc;
+  color: $text-muted;
+  transition: all .2s;
+
+  &.active-ok  { border-color: $success; background: #dcfce7; color: $success; }
+  &.active-err { border-color: $danger;  background: #fee2e2; color: $danger; }
+  &:not(.active-ok):not(.active-err):hover { background: $border; }
+}
+
+// ── Responsive ───────────────────────────────────────────────────
+@media (max-width: 640px) {
+  .hab-wrapper { padding: 14px; }
+  .hab-progress-card { flex-direction: column; align-items: flex-start; }
+  .hab-modal { padding: 18px; }
+  .hab-header { flex-direction: column; align-items: flex-start; }
+}
