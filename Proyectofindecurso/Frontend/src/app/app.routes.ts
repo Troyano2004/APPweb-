@@ -1,4 +1,6 @@
+
 import { Routes } from '@angular/router';
+import { DocumentosHabilitantesComponent } from './pages/habilitantes/habilitantes';
 import { ShellComponent } from './layout/shell/shell.component';
 import { DashboardComponent } from './pages/dashboard/dashboard.component';
 import { PropuestasPendientesComponent } from './pages/propuestas-pendientes/propuestas-pendientes.component';
@@ -129,7 +131,7 @@ export const routes: Routes = [
       { path: 'proyecto/correcciones', component: PlaceholderPageComponent, data: { title: 'Correcciones' } },
       { path: 'proyecto/estado', component: PlaceholderPageComponent, data: { title: 'Estado del proyecto' } },
 
-      { path: 'documentos/habilitantes', component: PlaceholderPageComponent, data: { title: 'Habilitantes' } },
+      { path: 'documentos/habilitantes', component: DocumentosHabilitantesComponent, data: { title: 'Habilitantes' } },
       { path: 'documentos/versiones', component: PlaceholderPageComponent, data: { title: 'Versiones' } },
       { path: 'documentos/expediente', component: PlaceholderPageComponent, data: { title: 'Expediente' } },
 
