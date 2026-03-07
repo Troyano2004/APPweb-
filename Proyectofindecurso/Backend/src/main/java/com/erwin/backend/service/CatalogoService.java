@@ -52,6 +52,47 @@ public class CatalogoService {
         return modalidadRepo.save(modalidad);
     }
 
+    public Modalidadtitulacion actualizarModalidad(Integer idModalidad, String nombre) {
+        if (idModalidad == null) {
+            throw new RuntimeException("El id de modalidad es obligatorio");
+        }
+        if (nombre == null || nombre.trim().isEmpty()) {
+            throw new RuntimeException("El nombre de la modalidad es obligatorio");
+        }
+
+        String normalizado = nombre.trim();
+        Modalidadtitulacion modalidad = modalidadRepo.findById(idModalidad)
+                .orElseThrow(() -> new RuntimeException("Modalidad no encontrada"));
+
+        modalidadRepo.findByNombreIgnoreCase(normalizado)
+                .filter(existente -> !existente.getIdModalidad().equals(idModalidad))
+                .ifPresent(existente -> {
+                    throw new RuntimeException("Ya existe una modalidad con ese nombre");
+                });
+
+        modalidad.setNombre(normalizado);
+        return modalidadRepo.save(modalidad);
+    }
+
+    public void eliminarModalidad(Integer idModalidad) {
+        if (idModalidad == null) {
+            throw new RuntimeException("El id de modalidad es obligatorio");
+        }
+
+        Modalidadtitulacion modalidad = modalidadRepo.findById(idModalidad)
+                .orElseThrow(() -> new RuntimeException("Modalidad no encontrada"));
+
+        if (carreraModalidadRepo.existsById_IdModalidadAndActivoTrue(idModalidad)) {
+            throw new RuntimeException("La modalidad tiene carreras activas asociadas. Desasígnala antes de eliminarla");
+        }
+
+        if (carreraModalidadRepo.existsById_IdModalidad(idModalidad)) {
+            throw new RuntimeException("La modalidad tiene historial de asignaciones. No se puede eliminar");
+        }
+
+        modalidadRepo.delete(modalidad);
+    }
+
     public PeriodoTitulacion periodoActivo() {
         return periodoRepo.findByActivoTrue()
                 .orElseThrow(() -> new RuntimeException("No hay período activo"));
@@ -75,6 +116,17 @@ public class CatalogoService {
         cm.setModalidad(modalidadRepo.findById(idModalidad).orElseThrow(() -> new RuntimeException("Modalidad no encontrada")));
         cm.setActivo(true);
         carreraModalidadRepo.save(cm);
+    }
+
+    public void desactivarModalidad(Integer idCarrera, Integer idModalidad) {
+        Carreramodalidadid id = new Carreramodalidadid(idCarrera, idModalidad);
+        Carreramodalidad existente = carreraModalidadRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("La relación carrera-modalidad no existe"));
+
+        if (Boolean.TRUE.equals(existente.getActivo())) {
+            existente.setActivo(false);
+            carreraModalidadRepo.save(existente);
+        }
     }
 
     public List<CarreraModalidadDto> carreraModalidad() {

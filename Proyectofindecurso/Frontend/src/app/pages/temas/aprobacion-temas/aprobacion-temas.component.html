@@ -20,13 +20,21 @@
       <p><strong>Estado actual:</strong> {{ p.estado }}</p>
 
       <label>Observaciones de comisión
-        <textarea rows="3" [(ngModel)]="observaciones[p.idPropuesta]"></textarea>
+        <textarea rows="3" [(ngModel)]="observaciones[p.idPropuesta]" [disabled]="estaBloqueada(p)"></textarea>
       </label>
 
       <div class="actions">
-        <button class="btn ok" (click)="decidir(p, 'APROBADA')">Aprobar</button>
-        <button class="btn danger" (click)="decidir(p, 'RECHAZADA')">Rechazar</button>
+        <button class="btn ok" (click)="decidir(p, 'APROBADA')" [disabled]="estaBloqueada(p)">
+          {{ procesandoId() === p.idPropuesta ? 'Guardando...' : 'Aprobar' }}
+        </button>
+        <button class="btn danger" (click)="decidir(p, 'RECHAZADA')" [disabled]="estaBloqueada(p)">
+          {{ procesandoId() === p.idPropuesta ? 'Guardando...' : 'Rechazar' }}
+        </button>
       </div>
+
+      <small *ngIf="propuestasDecididas.has(p.idPropuesta)">
+        Decisión registrada. Esta propuesta ya no se puede modificar.
+      </small>
     </article>
   </div>
 </section>

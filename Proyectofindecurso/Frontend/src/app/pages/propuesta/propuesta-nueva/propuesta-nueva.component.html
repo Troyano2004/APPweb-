@@ -45,20 +45,29 @@
   <div class="grid">
     <article class="card" [class.card-disabled]="!tieneModalidadSeleccionada">
       <h2>Paso 2: Nueva propuesta</h2>
+      <label>Carrera
+        <select [(ngModel)]="form.idCarrera" (ngModelChange)="onSeleccionCarrera()" [disabled]="!tieneModalidadSeleccionada || loadingCarreras()">
+          <option *ngFor="let carrera of carreras()" [ngValue]="carrera.idCarrera">
+            {{ carrera.nombre }}
+          </option>
+        </select>
+      </label>
+      <small *ngIf="loadingCarreras()">Cargando catálogo de carreras...</small>
+      <small *ngIf="!loadingCarreras() && carreras().length === 0" class="warn-inline">No hay carreras disponibles para seleccionar.</small>
+      <small *ngIf="nombreCarreraSeleccionada">Carrera seleccionada: <strong>{{ nombreCarreraSeleccionada }}</strong></small>
+
       <label>Tema sugerido por comisión
         <select [(ngModel)]="form.idTema" (ngModelChange)="onSeleccionTema()" [disabled]="!tieneModalidadSeleccionada">
           <option [ngValue]="null">-- Selecciona un tema --</option>
-          <option *ngFor="let t of temasDisponibles()" [ngValue]="t.idTema">
+          <option *ngFor="let t of temasFiltradosPorCarrera" [ngValue]="t.idTema">
             {{ t.titulo }} ({{ t.carrera }})
           </option>
         </select>
       </label>
       <small *ngIf="loadingTemas()">Cargando temas disponibles...</small>
-      <small *ngIf="!loadingTemas() && temasDisponibles().length === 0">No hay temas cargados por la comisión para tu carrera.</small>
+      <small *ngIf="!loadingTemas() && temasDisponibles().length === 0">No hay temas cargados por la comisión.</small>
+      <small *ngIf="!loadingTemas() && temasDisponibles().length > 0 && temasFiltradosPorCarrera.length === 0">No hay temas para la carrera seleccionada.</small>
 
-      <label>Carrera (id)
-        <input type="number" [(ngModel)]="form.idCarrera" min="1" [disabled]="!tieneModalidadSeleccionada" />
-      </label>
       <label>Título
         <input type="text" [(ngModel)]="form.titulo" [disabled]="!tieneModalidadSeleccionada" />
       </label>

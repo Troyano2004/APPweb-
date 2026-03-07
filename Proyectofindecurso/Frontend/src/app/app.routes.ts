@@ -26,6 +26,12 @@ import { RolesComponent } from './pages/roles/roles';
 import { AsignacionDt1  } from './pages/coordinador/asignacion-dt1/asignacion-dt1';
 import { authGuard, loginGuard } from './guards/auth.guard';
 import { CarreraModalidadComponent } from './pages/catalogos/carrera-modalidad/carrera-modalidad.component';
+import { UniversidadComponent } from './pages/catalogos/universidad/universidad.component';
+import { FacultadComponent } from './pages/catalogos/facultad/facultad.component';
+import { CarreraComponent } from './pages/catalogos/carrera/carrera.component';
+import { ModalidadCatalogoComponent } from './pages/catalogos/modalidad/modalidad-catalogo.component';
+import { PeriodoComponent } from './pages/catalogos/periodo/periodo.component';
+import { TipoTrabajoComponent } from './pages/catalogos/tipo-trabajo/tipo-trabajo.component';
 
 // ✅ Nuevos imports agregados
 import { Historialtutorias } from './pages/historialtutorias/historialtutorias';
@@ -82,14 +88,14 @@ export const routes: Routes = [
         redirectTo: 'titulacion2/revisar/:idDocumento'
       },
 
-      { path: 'catalogos/universidad', component: PlaceholderPageComponent, data: { title: 'Universidad' } },
-      { path: 'catalogos/facultad', component: PlaceholderPageComponent, data: { title: 'Facultad' } },
-      { path: 'catalogos/carrera', component: PlaceholderPageComponent, data: { title: 'Carrera' } },
-      { path: 'catalogos/modalidad', component: PlaceholderPageComponent, data: { title: 'Modalidad Titulación' } },
-      { path: 'catalogos/periodo', component: PlaceholderPageComponent, data: { title: 'Período Académico' } },
+      { path: 'catalogos/universidad', component: UniversidadComponent, data: { title: 'Universidad' } },
+      { path: 'catalogos/facultad', component: FacultadComponent, data: { title: 'Facultad' } },
+      { path: 'catalogos/carrera', component: CarreraComponent, data: { title: 'Carrera' } },
+      { path: 'catalogos/modalidad', component: ModalidadCatalogoComponent, data: { title: 'Modalidad Titulación' } },
+      { path: 'catalogos/periodo', component: PeriodoComponent, data: { title: 'Período Académico' } },
       {
         path: 'catalogos/tipo-trabajo',
-        component: PlaceholderPageComponent,
+        component: TipoTrabajoComponent,
         data: { title: 'Tipo Trabajo Titulación' }
       },
       {

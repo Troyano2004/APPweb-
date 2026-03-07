@@ -38,6 +38,15 @@ export class CatalogosService {
     return this.http.post<CatalogoModalidad>(`${this.API_URL}/modalidades`, { nombre });
   }
 
+  actualizarModalidad(idModalidad: number, nombre: string): Observable<CatalogoModalidad> {
+    return this.http.put<CatalogoModalidad>(`${this.API_URL}/modalidades/${idModalidad}`, { nombre });
+  }
+
+  eliminarModalidad(idModalidad: number): Observable<void> {
+    return this.http.delete<void>(`${this.API_URL}/modalidades/${idModalidad}`);
+  }
+
+
   listarCarreraModalidad(): Observable<CarreraModalidadDto[]> {
     return this.http.get<CarreraModalidadDto[]>(`${this.API_URL}/carrera-modalidad`);
   }
@@ -46,4 +55,9 @@ export class CatalogosService {
     const params = new HttpParams().set('idCarrera', idCarrera).set('idModalidad', idModalidad);
     return this.http.post<void>(`${this.API_URL}/carrera-modalidad`, null, { params });
   }
+  eliminarCarreraModalidad(idCarrera: number, idModalidad: number): Observable<void> {
+    const params = new HttpParams().set('idCarrera', idCarrera).set('idModalidad', idModalidad);
+    return this.http.delete<void>(`${this.API_URL}/carrera-modalidad`, { params });
+  }
+
 }

@@ -20,6 +20,9 @@ export class ModalidadCatalogoComponent implements OnInit {
   readonly modalidades = signal<CatalogoModalidad[]>([]);
   readonly nombreNueva = signal('');
 
+  readonly editandoId = signal<number | null>(null);
+  readonly nombreEdicion = signal('');
+
   readonly canManage = computed(() => {
     const user = getSessionUser();
     return hasRole(user?.rol, 'ROLE_COORDINADOR', 'ROLE_ADMIN');
@@ -43,6 +46,84 @@ export class ModalidadCatalogoComponent implements OnInit {
       error: (err) => {
         this.error.set(err?.error?.message ?? 'No se pudo cargar modalidades.');
         this.loading.set(false);
+      }
+    });
+  }
+  iniciarEdicion(item: CatalogoModalidad): void {
+    this.editandoId.set(item.idModalidad);
+    this.nombreEdicion.set((item.nombre || '').trim());
+    this.error.set(null);
+    this.ok.set(null);
+  }
+
+  cancelarEdicion(): void {
+    this.editandoId.set(null);
+    this.nombreEdicion.set('');
+  }
+
+  guardarEdicion(item: CatalogoModalidad): void {
+    if (!this.canManage()) {
+      this.error.set('No tienes permisos para gestionar modalidades.');
+      return;
+    }
+
+    const nombre = this.nombreEdicion().trim();
+    if (!nombre) {
+      this.error.set('El nombre de modalidad es obligatorio.');
+      return;
+    }
+
+    const existe = this.modalidades().some(
+      (m) => m.idModalidad !== item.idModalidad && (m.nombre || '').trim().toUpperCase() === nombre.toUpperCase()
+    );
+    if (existe) {
+      this.error.set('Esa modalidad ya existe.');
+      return;
+    }
+
+    this.saving.set(true);
+    this.error.set(null);
+    this.ok.set(null);
+
+    this.catalogosApi.actualizarModalidad(item.idModalidad, nombre).subscribe({
+      next: () => {
+        this.ok.set('Modalidad actualizada correctamente.');
+        this.saving.set(false);
+        this.cancelarEdicion();
+        this.cargar();
+      },
+      error: (err) => {
+        this.error.set(err?.error?.message ?? 'No se pudo actualizar la modalidad.');
+        this.saving.set(false);
+      }
+    });
+  }
+
+  eliminar(item: CatalogoModalidad): void {
+    if (!this.canManage()) {
+      this.error.set('No tienes permisos para gestionar modalidades.');
+      return;
+    }
+
+    const confirmado = confirm(`¿Deseas eliminar la modalidad "${item.nombre}"?`);
+    if (!confirmado) {
+      return;
+    }
+
+    this.saving.set(true);
+    this.error.set(null);
+    this.ok.set(null);
+
+    this.catalogosApi.eliminarModalidad(item.idModalidad).subscribe({
+      next: () => {
+        this.ok.set('Modalidad eliminada correctamente.');
+        this.saving.set(false);
+        this.cancelarEdicion();
+        this.cargar();
+      },
+      error: (err) => {
+        this.error.set(err?.error?.message ?? 'No se pudo eliminar la modalidad.');
+        this.saving.set(false);
       }
     });
   }

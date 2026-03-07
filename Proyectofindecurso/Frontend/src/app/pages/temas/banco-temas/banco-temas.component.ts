@@ -2,6 +2,7 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ComisionTemasService, TemaBancoDto } from '../../../services/comision-temas';
+import { CatalogoCarrera, CatalogosService } from '../../../services/catalogos';
 import { getSessionEntityId, getSessionUser } from '../../../services/session';
 
 @Component({
@@ -16,9 +17,11 @@ export class BancoTemasComponent implements OnInit {
 
   temas = signal<TemaBancoDto[]>([]);
   loading = signal(false);
+  loadingCarreras = signal(false);
   saving = signal(false);
   error = signal<string | null>(null);
   ok = signal<string | null>(null);
+  carreras = signal<CatalogoCarrera[]>([]);
 
   form = {
     idCarrera: 1,
@@ -27,10 +30,34 @@ export class BancoTemasComponent implements OnInit {
     observaciones: ''
   };
 
-  constructor(private readonly api: ComisionTemasService) {}
+  constructor(
+    private readonly api: ComisionTemasService,
+    private readonly catalogosApi: CatalogosService
+  ) {}
 
   ngOnInit(): void {
+    this.cargarCarreras();
     this.cargar();
+  }
+
+  cargarCarreras(): void {
+    this.loadingCarreras.set(true);
+    this.catalogosApi.listarCarreras().subscribe({
+      next: (resp) => {
+        const carreras = resp ?? [];
+        this.carreras.set(carreras);
+
+        if (!carreras.some((c) => c.idCarrera === this.form.idCarrera)) {
+          this.form.idCarrera = carreras[0]?.idCarrera ?? this.form.idCarrera;
+        }
+
+        this.loadingCarreras.set(false);
+      },
+      error: (err) => {
+        this.error.set(err?.error?.message ?? 'No se pudo cargar el catálogo de carreras.');
+        this.loadingCarreras.set(false);
+      }
+    });
   }
 
   cargar(): void {

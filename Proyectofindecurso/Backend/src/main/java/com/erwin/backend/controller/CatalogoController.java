@@ -36,6 +36,20 @@ public class CatalogoController {
         return service.crearModalidad(req.nombre);
     }
 
+    @PutMapping("/modalidades/{idModalidad}")
+    public Modalidadtitulacion actualizarModalidad(@PathVariable Integer idModalidad,
+                                                   @RequestBody CrearModalidadRequest req) {
+        if (req == null) {
+            throw new RuntimeException("Body requerido");
+        }
+        return service.actualizarModalidad(idModalidad, req.nombre);
+    }
+
+    @DeleteMapping("/modalidades/{idModalidad}")
+    public void eliminarModalidad(@PathVariable Integer idModalidad) {
+        service.eliminarModalidad(idModalidad);
+    }
+
     @GetMapping("/periodo-activo")
     public PeriodoTitulacion periodoActivo() {
         return service.periodoActivo();
@@ -50,6 +64,12 @@ public class CatalogoController {
     public void asignarModalidad(@RequestParam Integer idCarrera,
                                  @RequestParam Integer idModalidad) {
         service.asignarModalidad(idCarrera, idModalidad);
+    }
+
+    @DeleteMapping("/carrera-modalidad")
+    public void eliminarModalidad(@RequestParam Integer idCarrera,
+                                  @RequestParam Integer idModalidad) {
+        service.desactivarModalidad(idCarrera, idModalidad);
     }
 
     public static class CrearModalidadRequest {
