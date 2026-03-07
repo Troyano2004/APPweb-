@@ -9,4 +9,5 @@ public interface TribunalProyectoRepository extends JpaRepository<TribunalProyec
     List<TribunalProyecto> findByProyecto_IdProyecto(Integer idProyecto);
     long countByProyecto_IdProyecto(Integer idProyecto);
     void deleteByProyecto_IdProyecto(Integer idProyecto);
+    boolean existsByProyecto_IdProyectoAndDocente_IdDocente(Integer idProyecto, Integer idDocente);
 }
