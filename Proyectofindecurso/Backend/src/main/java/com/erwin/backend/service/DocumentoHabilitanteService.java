@@ -1,4 +1,3 @@
-
 package com.erwin.backend.service;
 
 import com.erwin.backend.dtos.DocumentoHabilitanteDtos;
@@ -181,9 +180,16 @@ public class DocumentoHabilitanteService {
     // DIRECTOR: listar pendientes por validar
     // ────────────────────────────────────────────────────────────────────────────
 
+    /**
+     * ✅ FIX: Ahora usa findPendientesPorDirector() que busca documentos ENVIADO
+     * en proyectos donde el docente es el director asignado.
+     *
+     * Antes usaba findByValidadoPor_IdDocenteAndEstado() — ese campo (validadoPor)
+     * es NULL hasta que se valida, por lo que el docente nunca veía nada.
+     */
     public List<DocumentoHabilitanteDtos.HabilitanteDto> pendientesPorDirector(Integer idDocente) {
         return habilitanteRepo
-                .findByValidadoPor_IdDocenteAndEstado(idDocente, "ENVIADO")
+                .findPendientesPorDirector(idDocente)
                 .stream().map(this::toDto).toList();
     }
 
