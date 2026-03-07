@@ -1,4 +1,3 @@
-
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import {
   ActivatedRoute,
@@ -46,13 +45,13 @@ interface MenuSection {
   styleUrls: ['./shell.component.scss'],
 })
 export class ShellComponent implements OnInit, OnDestroy {
-  isCollapsed     = false;
-  isMobileOpen    = false;
+  isCollapsed      = false;
+  isMobileOpen     = false;
   openSectionIndex = 0;
-  currentTitle    = 'Dashboard';
-  breadcrumb      = 'Inicio / Dashboard';
-  userName        = 'Usuario';
-  userRole        = 'Sistema';
+  currentTitle     = 'Dashboard';
+  breadcrumb       = 'Inicio / Dashboard';
+  userName         = 'Usuario';
+  userRole         = 'Sistema';
 
   private readonly subscriptions = new Subscription();
 
@@ -130,13 +129,18 @@ export class ShellComponent implements OnInit, OnDestroy {
       ],
     },
     {
+      // ✅ Rutas actualizadas desde doc2 (más completo que doc1)
       title: 'Titulación II',
       icon: '🧐',
       roles: ['DOCENTE', 'DOCENTE_TITULADO', 'ESTUDIANTE', 'ADMIN'],
       items: [
-        { label: 'Documento de titulación', path: '/app/titulacion2/documento', roles: ['ESTUDIANTE'] },
-        { label: 'Documentos pendientes',   path: '/app/titulacion2/revision',  roles: ['DOCENTE','DOCENTE_TITULADO'] },
-        { label: 'Workflow Proceso',        path: '/app/titulacion2/workflow',   roles: ['ADMIN','DOCENTE','DOCENTE_TITULADO'] },
+        { label: 'Documento de titulación', path: '/app/titulacion2/documento',      roles: ['ESTUDIANTE'] },
+        { label: 'Documentos pendientes',   path: '/app/titulacion2/revisar',         roles: ['DOCENTE','DOCENTE_TITULADO'] },
+        { label: 'Workflow Proceso',        path: '/app/titulacion2/workflow',        roles: ['ADMIN','DOCENTE','DOCENTE_TITULADO'] },
+        { label: 'Seguimiento DT2',         path: '/app/director/seguimiento-dt2',   roles: ['DOCENTE','DOCENTE_TITULADO','ADMIN'] },
+        { label: 'Antiplagio COMPILATIO',   path: '/app/director/antiplagio-dt2',    roles: ['DOCENTE','DOCENTE_TITULADO','ADMIN'] },
+        { label: 'Predefensa',              path: '/app/titulacion2/predefensa',     roles: ['DOCENTE','DOCENTE_TITULADO','ADMIN'] },
+        { label: 'Sustentación Final',      path: '/app/titulacion2/sustentacion',   roles: ['DOCENTE','DOCENTE_TITULADO','ADMIN'] },
       ],
     },
     {
@@ -154,9 +158,9 @@ export class ShellComponent implements OnInit, OnDestroy {
       icon: '⚖️',
       roles: ['ADMIN', 'COORDINADOR', 'ABOGADO', 'SECRETARIO'],
       items: [
-        { label: 'Validación legal',  path: '/app/legalizacion/validacion' },
-        { label: 'Checklist',         path: '/app/legalizacion/checklist' },
-        { label: 'Aprobación final',  path: '/app/legalizacion/aprobacion' },
+        { label: 'Validación legal', path: '/app/legalizacion/validacion' },
+        { label: 'Checklist',        path: '/app/legalizacion/checklist' },
+        { label: 'Aprobación final', path: '/app/legalizacion/aprobacion' },
       ],
     },
     {
@@ -170,6 +174,7 @@ export class ShellComponent implements OnInit, OnDestroy {
       ],
     },
     {
+      // ✅ Rutas actualizadas desde doc2 (más items que doc1)
       title: 'Coordinación',
       icon: '🧭',
       roles: ['COORDINADOR', 'ADMIN'],
@@ -179,6 +184,9 @@ export class ShellComponent implements OnInit, OnDestroy {
         { label: 'Validación administrativa',     path: '/app/coordinador/validacion' },
         { label: 'Control de tutorías',           path: '/app/coordinador/tutorias' },
         { label: 'Observaciones administrativas', path: '/app/coordinador/observaciones' },
+        { label: 'DT2 - Configuración Inicial',   path: '/app/coordinador/configuracion-dt2' },
+        { label: 'DT2 - Predefensa',              path: '/app/titulacion2/predefensa' },
+        { label: 'DT2 - Sustentación Final',      path: '/app/titulacion2/sustentacion' },
         { label: 'Workflow Titulación II',        path: '/app/titulacion2/workflow' },
         { label: 'Reportes',                      path: '/app/coordinador/reportes' },
         { label: 'Comisión formativa',            path: '/app/coordinador/comision' },

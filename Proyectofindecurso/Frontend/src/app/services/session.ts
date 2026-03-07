@@ -1,7 +1,6 @@
-
 export interface SessionUser {
   rol?:   string;
-  roles?: string[];   // ✅ NUEVO: todos los roles
+  roles?: string[];   // ✅ todos los roles del usuario
   [key: string]: unknown;
 }
 
@@ -32,15 +31,21 @@ export const hasRole = (rol: unknown, ...expectedRoles: string[]): boolean => {
   return expectedRoles.map(item => normalizeRole(item)).includes(normalizedRole);
 };
 
-// ✅ NUEVO: devuelve todos los roles del usuario como array normalizado
-// Ejemplo: ["ROLE_COORDINADOR", "ROLE_DOCENTE"]
+// ✅ Devuelve todos los roles del usuario como array normalizado
+// Fix: solo usa el array "roles" si tiene elementos con contenido real
 export const getUserRoles = (): string[] => {
   const user = getSessionUser();
   if (!user) return [];
 
-  // Si el backend devolvió el array "roles"
-  if (Array.isArray(user.roles) && user.roles.length > 0) {
-    return user.roles.map(r => normalizeRole(r));
+  // Usa el array "roles" solo si tiene elementos no vacíos
+  if (Array.isArray(user.roles)) {
+    const fromArray = user.roles
+      .map(r => normalizeRole(r))
+      .filter(r => r.length > 0);
+
+    if (fromArray.length > 0) {
+      return fromArray;
+    }
   }
 
   // Fallback: usar el campo "rol" simple
@@ -48,7 +53,7 @@ export const getUserRoles = (): string[] => {
   return single ? [single] : [];
 };
 
-// ✅ NUEVO: verifica si el usuario tiene AL MENOS UNO de los roles indicados
+// ✅ Verifica si el usuario tiene AL MENOS UNO de los roles indicados
 export const hasAnyRole = (...expectedRoles: string[]): boolean => {
   const userRoles = getUserRoles();
   const normalized = expectedRoles.map(r => normalizeRole(r));
@@ -76,7 +81,7 @@ export const getSessionEntityId = (
 export const getRoleHomeRoute = (rol: unknown): string | null => {
   const userRoles = getUserRoles();
 
-  // Si ya hay roles en sesión, usar el primero para ruta inicial
+  // Usa el primer rol disponible para determinar la ruta inicial
   const primaryRole = userRoles.length > 0 ? userRoles[0] : normalizeRole(rol);
 
   if (primaryRole === 'ROLE_ADMIN')        return '/app/admin/usuarios';
