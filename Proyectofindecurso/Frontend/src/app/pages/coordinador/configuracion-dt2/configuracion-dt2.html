@@ -60,9 +60,13 @@
 
       <!-- Tabs -->
       <div class="tabs">
-        <button type="button" [class.active]="tab() === 'docente'"  (click)="setTab('docente')">Docente DT2</button>
-        <button type="button" [class.active]="tab() === 'director'" (click)="setTab('director')">Director TIC</button>
-        <button type="button" [class.active]="tab() === 'tribunal'" (click)="setTab('tribunal')">Tribunal</button>
+        <button type="button" [class.active]="tab() === 'docente'"    (click)="setTab('docente')">Docente DT2</button>
+        <button type="button" [class.active]="tab() === 'director'"   (click)="setTab('director')">Director TIC</button>
+        <button type="button" [class.active]="tab() === 'tribunal'"   (click)="setTab('tribunal')">Tribunal</button>
+        <button type="button" [class.active]="tab() === 'predefensa'" (click)="setTab('predefensa')"
+                *ngIf="proyectoSeleccionado()?.estadoProyecto === 'PREDEFENSA' || configuracion()?.configuracionCompleta">
+          Predefensa
+        </button>
       </div>
 
       <!-- ── Tab: Docente DT2 ── -->
@@ -157,6 +161,45 @@
 
         <button type="submit" [disabled]="loading() || opcionesPeriodo.length === 0">
           {{ loading() ? 'Guardando...' : 'Asignar Tribunal' }}
+        </button>
+      </form>
+
+      <!-- ── Tab: Predefensa ── -->
+      <form *ngIf="tab() === 'predefensa'" [formGroup]="formPredefensa" (ngSubmit)="programarPredefensa()">
+        <h4 style="margin-bottom:12px">Programar fecha de Predefensa</h4>
+        <p class="hint" *ngIf="predefensaActual()">
+          Ya programada: <strong>{{ predefensaActual()!.fecha | date:'dd/MM/yyyy' }}
+          {{ predefensaActual()!.hora }} — {{ predefensaActual()!.lugar }}</strong>. Puedes reprogramar.
+        </p>
+        <div class="form-row-grid">
+          <div class="form-row">
+            <label>Fecha</label>
+            <input type="date" formControlName="fecha" />
+            <span class="field-error" *ngIf="formPredefensa.get('fecha')?.invalid && formPredefensa.get('fecha')?.touched">
+              Requerido
+            </span>
+          </div>
+          <div class="form-row">
+            <label>Hora</label>
+            <input type="time" formControlName="hora" />
+            <span class="field-error" *ngIf="formPredefensa.get('hora')?.invalid && formPredefensa.get('hora')?.touched">
+              Requerido
+            </span>
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Lugar</label>
+          <input formControlName="lugar" placeholder="Aula, sala, enlace Meet..." />
+          <span class="field-error" *ngIf="formPredefensa.get('lugar')?.invalid && formPredefensa.get('lugar')?.touched">
+            Requerido
+          </span>
+        </div>
+        <div class="form-row">
+          <label>Observaciones</label>
+          <textarea formControlName="observaciones" rows="2"></textarea>
+        </div>
+        <button type="submit" [disabled]="loading()">
+          {{ loading() ? 'Guardando...' : 'Programar Predefensa' }}
         </button>
       </form>
 

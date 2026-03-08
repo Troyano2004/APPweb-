@@ -1,6 +1,8 @@
 package com.erwin.backend.controller;
 
 import com.erwin.backend.entities.*;
+import com.erwin.backend.repository.AnteproyectoTitulacionRepository;
+import com.erwin.backend.enums.EstadoDocumento;
 import com.erwin.backend.repository.*;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,6 +27,9 @@ public class ComisionTemasController {
     private final PeriodoTitulacionRepository periodoRepository;
     private final ProyectoTitulacionRepository proyectoTitulacionRepository;
     private final TipoTrabajoTitulacionRepository tipoTrabajoTitulacionRepository;
+    // ✅ NUEVO
+    private final DocumentoTitulacionRepository documentoTitulacionRepository;
+    private final AnteproyectoTitulacionRepository anteproyectoTitulacionRepository;
 
     public ComisionTemasController(BancoTemasRepository bancoTemasRepository,
                                    PropuestaTitulacionRepository propuestaRepository,
@@ -37,7 +42,10 @@ public class ComisionTemasController {
                                    CarreraModalidadRepository carreraModalidadRepository,
                                    PeriodoTitulacionRepository periodoRepository,
                                    ProyectoTitulacionRepository proyectoTitulacionRepository,
-                                   TipoTrabajoTitulacionRepository tipoTrabajoTitulacionRepository) {
+                                   TipoTrabajoTitulacionRepository tipoTrabajoTitulacionRepository,
+                                   // ✅ NUEVO
+                                   DocumentoTitulacionRepository documentoTitulacionRepository,
+                                   AnteproyectoTitulacionRepository anteproyectoTitulacionRepository) {
         this.bancoTemasRepository = bancoTemasRepository;
         this.propuestaRepository = propuestaRepository;
         this.comisionMiembroRepository = comisionMiembroRepository;
@@ -50,6 +58,9 @@ public class ComisionTemasController {
         this.periodoRepository = periodoRepository;
         this.proyectoTitulacionRepository = proyectoTitulacionRepository;
         this.tipoTrabajoTitulacionRepository = tipoTrabajoTitulacionRepository;
+        // ✅ NUEVO
+        this.documentoTitulacionRepository = documentoTitulacionRepository;
+        this.anteproyectoTitulacionRepository = anteproyectoTitulacionRepository;
     }
 
     @GetMapping("/estudiante/{idEstudiante}/estado-modalidad")
@@ -213,7 +224,12 @@ public class ComisionTemasController {
                 .orElseThrow(() -> new RuntimeException("Propuesta no encontrada"));
 
         if ("APROBADA".equals(propuestaActualizada.getEstado())) {
-            crearProyectoTitulacionDesdePropuesta(propuestaActualizada);
+            ProyectoTitulacion proyecto = crearProyectoTitulacionDesdePropuesta(propuestaActualizada);
+            // ✅ NUEVO: crear documento de titulación vacío junto con el proyecto
+            if (proyecto != null) {
+                crearAnteproyectoAprobadoDesdePropuesta(propuestaActualizada, proyecto);
+                crearDocumentoTitulacionDesdeProyecto(proyecto, propuestaActualizada);
+            }
         }
 
         return toPropuestaDto(propuestaActualizada);
@@ -353,13 +369,15 @@ public class ComisionTemasController {
         if (propuesta.getTema() != null && propuesta.getTema().getDocenteProponente() != null) {
             return propuesta.getTema().getDocenteProponente();
         }
-
         throw new RuntimeException("No se puede crear el proyecto: la propuesta aprobada no tiene docente director asociado");
     }
 
-    private void crearProyectoTitulacionDesdePropuesta(PropuestaTitulacion propuesta) {
-        if (proyectoTitulacionRepository.findByPropuesta_IdPropuesta(propuesta.getIdPropuesta()).isPresent()) {
-            return;
+    // ✅ CAMBIO: ahora retorna ProyectoTitulacion en lugar de void
+    private ProyectoTitulacion crearProyectoTitulacionDesdePropuesta(PropuestaTitulacion propuesta) {
+        // Si ya existe el proyecto, retornarlo (puede ser que ya exista el proyecto pero no el documento)
+        var proyectoExistente = proyectoTitulacionRepository.findByPropuesta_IdPropuesta(propuesta.getIdPropuesta());
+        if (proyectoExistente.isPresent()) {
+            return proyectoExistente.get();
         }
 
         EleccionTitulacion eleccion = propuesta.getEleccion();
@@ -391,7 +409,55 @@ public class ComisionTemasController {
         proyecto.setTitulo(propuesta.getTitulo());
         proyecto.setEstado("ANTEPROYECTO");
 
-        proyectoTitulacionRepository.save(proyecto);
+        return proyectoTitulacionRepository.save(proyecto);
+    }
+
+    /**
+     * ✅ NUEVO: Crea el DocumentoTitulacion vacío asociado al proyecto.
+     * Solo toma título y estudiante de la propuesta.
+     * Todos los campos de contenido quedan null (el estudiante los llena después).
+     * director queda null (se asignará cuando el coordinador configure el DT2).
+     */
+    private void crearDocumentoTitulacionDesdeProyecto(ProyectoTitulacion proyecto, PropuestaTitulacion propuesta) {
+        // Evitar duplicados
+        if (documentoTitulacionRepository.findByProyecto_IdProyecto(proyecto.getIdProyecto()).isPresent()) {
+            return;
+        }
+
+        DocumentoTitulacion documento = new DocumentoTitulacion();
+        documento.setProyecto(proyecto);
+        documento.setEstudiante(propuesta.getEstudiante());
+        documento.setTitulo(propuesta.getTitulo());
+        documento.setEstado(EstadoDocumento.BORRADOR);
+        documento.setAnio(LocalDate.now().getYear());
+        // director = null (se asigna después desde configuración DT2)
+        // todos los campos de contenido = null (el estudiante los completa)
+
+        documentoTitulacionRepository.save(documento);
+    }
+
+    /**
+     * ✅ NUEVO: Crea el anteproyecto automáticamente en estado APROBADO
+     * al momento de aprobar la propuesta, para que el proyecto aparezca
+     * de inmediato en la configuración DT2.
+     * Nota: en el futuro esto puede cambiarse para que el estudiante
+     * elabore el anteproyecto manualmente.
+     */
+    private void crearAnteproyectoAprobadoDesdePropuesta(PropuestaTitulacion propuesta,
+                                                         ProyectoTitulacion proyecto) {
+        // Evitar duplicados
+        if (anteproyectoTitulacionRepository.findByPropuesta_IdPropuesta(propuesta.getIdPropuesta()).isPresent()) {
+            return;
+        }
+
+        AnteproyectoTitulacion ante = new AnteproyectoTitulacion();
+        ante.setPropuesta(propuesta);
+        ante.setEleccion(propuesta.getEleccion());
+        ante.setEstudiante(propuesta.getEstudiante());
+        ante.setCarrera(propuesta.getCarrera());
+        ante.setEstado("APROBADO");
+
+        anteproyectoTitulacionRepository.save(ante);
     }
 
     private String valueOrDefault(String value, String defaultValue) {
@@ -439,8 +505,7 @@ public class ComisionTemasController {
             String docente,
             String estado,
             String observaciones
-    ) {
-    }
+    ) {}
 
     public record PropuestaDto(
             Integer idPropuesta,
@@ -451,14 +516,12 @@ public class ComisionTemasController {
             String estado,
             LocalDate fechaEnvio,
             String observaciones
-    ) {
-    }
+    ) {}
 
     public record ModalidadSimpleDto(
             Integer idModalidad,
             String nombre
-    ) {
-    }
+    ) {}
 
     public record EstadoModalidadDto(
             boolean tieneModalidad,

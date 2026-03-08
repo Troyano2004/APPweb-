@@ -27,7 +27,9 @@ export class AntiplagioDt2Component implements OnInit {
 
   archivoSeleccionado: File | null = null;
   formAntiplagio: FormGroup;
-  private idDirector = 0;
+
+  // ✅ CAMBIO: idDocenteDt2 en lugar de idDirector
+  private idDocenteDt2 = 0;
 
   constructor(private dt2: Dt2Service, private fb: FormBuilder) {
     this.formAntiplagio = this.fb.group({
@@ -38,7 +40,8 @@ export class AntiplagioDt2Component implements OnInit {
 
   ngOnInit(): void {
     const user = getSessionUser();
-    this.idDirector = getSessionEntityId(user, 'docente') ?? 0;
+    // ✅ CAMBIO: sigue siendo entidad docente pero semánticamente es el DT2
+    this.idDocenteDt2 = getSessionEntityId(user, 'docente') ?? 0;
     this.cargarProyectos();
   }
 
@@ -46,6 +49,8 @@ export class AntiplagioDt2Component implements OnInit {
     this.proyectoSeleccionado.set(p);
     this.error.set(null);
     this.ok.set(null);
+    this.archivoSeleccionado = null;
+    this.formAntiplagio.reset();
     this.cargarCertificado(p.idProyecto);
   }
 
@@ -73,6 +78,7 @@ export class AntiplagioDt2Component implements OnInit {
   subirAntiplagio(): void {
     const p = this.proyectoSeleccionado();
     if (!p) return;
+
     if (!this.archivoSeleccionado) {
       this.error.set('Debes seleccionar el informe COMPILATIO en PDF.');
       return;
@@ -85,7 +91,8 @@ export class AntiplagioDt2Component implements OnInit {
     const v = this.formAntiplagio.value;
     const fd = new FormData();
     fd.append('archivo', this.archivoSeleccionado);
-    fd.append('idDirector', String(this.idDirector));
+    // ✅ CAMBIO: idDocenteDt2 en lugar de idDirector
+    fd.append('idDocenteDt2', String(this.idDocenteDt2));
     fd.append('porcentajeCoincidencia', String(v.porcentajeCoincidencia));
     if (v.observaciones) fd.append('observaciones', v.observaciones);
 
@@ -93,26 +100,37 @@ export class AntiplagioDt2Component implements OnInit {
     this.error.set(null);
     this.ok.set(null);
 
-    this.dt2.registrarAntiplagio(p.idProyecto, fd).pipe(finalize(() => this.loading.set(false))).subscribe({
-      next: (cert) => {
-        this.certificado.set(cert);
-        const estado = cert.certificadoFavorable
-          ? '✓ FAVORABLE — proyecto avanza a Predefensa.'
-          : '✗ RECHAZADO — porcentaje >= 10%. Debe resubir con correcciones.';
-        this.ok.set(`Informe registrado. ${estado}`);
-        this.archivoSeleccionado = null;
-        this.formAntiplagio.reset();
-      },
-      error: (err: any) => this.error.set(err?.error?.mensaje ?? 'Error al registrar informe antiplagio')
-    });
+    this.dt2.registrarAntiplagio(p.idProyecto, fd)
+      .pipe(finalize(() => this.loading.set(false)))
+      .subscribe({
+        next: (cert) => {
+          this.certificado.set(cert);
+          // ✅ CAMBIO: mensaje actualizado — ahora el documento pasa a ANTIPLAGIO_APROBADO
+          const estado = cert.certificadoFavorable
+            ? '✓ FAVORABLE — el documento pasa a estado ANTIPLAGIO_APROBADO. El coordinador puede programar la predefensa.'
+            : '✗ RECHAZADO — porcentaje >= 10%. Debe corregir el documento y volver a subir el informe.';
+          this.ok.set(`Informe registrado. ${estado}`);
+          this.archivoSeleccionado = null;
+          this.formAntiplagio.reset();
+          // Recargar proyectos por si el estado del documento cambió
+          this.cargarProyectos();
+        },
+        error: (err: any) => this.error.set(
+          err?.error?.mensaje ?? err?.error?.message ?? 'Error al registrar informe antiplagio'
+        )
+      });
   }
 
   private cargarProyectos(): void {
     this.loading.set(true);
-    this.dt2.listarProyectosDirector(this.idDirector).pipe(finalize(() => this.loading.set(false))).subscribe({
-      next: data => this.proyectos.set(data),
-      error: () => this.error.set('Error al cargar proyectos')
-    });
+    // ✅ CAMBIO: listarProyectosDocenteDt2 en lugar de listarProyectosDirector
+    // Este endpoint devuelve los proyectos donde el docente está asignado como DT2
+    this.dt2.listarProyectosDocenteDt2(this.idDocenteDt2)
+      .pipe(finalize(() => this.loading.set(false)))
+      .subscribe({
+        next: data => this.proyectos.set(data),
+        error: () => this.error.set('Error al cargar proyectos')
+      });
   }
 
   private cargarCertificado(idProyecto: number): void {

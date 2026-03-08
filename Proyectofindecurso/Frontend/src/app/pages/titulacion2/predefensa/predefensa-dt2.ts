@@ -6,9 +6,10 @@ import {
   Dt2Service,
   ProyectoPendienteConfiguracionDto,
   PredefensaDto,
+  ConfiguracionProyectoDto,
   ProgramarPredefensaRequest
 } from '../../../services/dt2.service';
-import { getSessionUser, getSessionEntityId, normalizeRole } from '../../../services/session';
+import { getSessionUser, getSessionEntityId, getUserRoles } from '../../../services/session';
 
 @Component({
   selector: 'app-predefensa-dt2',
@@ -26,11 +27,13 @@ export class PredefensaDt2Component implements OnInit {
   proyectoSeleccionado = signal<ProyectoPendienteConfiguracionDto | null>(null);
   predefensa = signal<PredefensaDto | null>(null);
 
-  tab = signal<'estado' | 'programar' | 'calificar'>('estado');
+  tab = signal<'estado' | 'programar' | 'calificar-dt2' | 'calificar-tribunal'>('estado');
 
+  // ── Rol del usuario en este proyecto ──────────────────────
   esCoordinador = false;
-  esDocenteDt2 = false;
-  esTribunal = false;
+  esDocenteDt2  = false;  // es el DT2 asignado a este proyecto
+  esTribunal    = false;  // es miembro del tribunal de este proyecto
+
   private idDocente = 0;
   private idProyectoActual = 0;
 
@@ -40,9 +43,9 @@ export class PredefensaDt2Component implements OnInit {
 
   constructor(private dt2: Dt2Service, private fb: FormBuilder) {
     this.formProgramar = this.fb.group({
-      fecha: ['', Validators.required],
-      hora: ['', Validators.required],
-      lugar: ['', [Validators.required, Validators.minLength(3)]],
+      fecha:         ['', Validators.required],
+      hora:          ['', Validators.required],
+      lugar:         ['', [Validators.required, Validators.minLength(3)]],
       observaciones: ['']
     });
 
@@ -60,10 +63,10 @@ export class PredefensaDt2Component implements OnInit {
 
   ngOnInit(): void {
     const user = getSessionUser();
-    const rol = normalizeRole(user?.['rol']);
-    this.esCoordinador = rol === 'ROLE_COORDINADOR' || rol === 'COORDINADOR';
+    const roles = getUserRoles().map(r => r.replace('ROLE_', ''));
+    this.esCoordinador = roles.includes('COORDINADOR');
     this.idDocente = getSessionEntityId(user, 'docente') ?? 0;
-    this.cargarProyectosSegunRol();
+    this.cargarProyectos();
   }
 
   seleccionarProyecto(p: ProyectoPendienteConfiguracionDto): void {
@@ -71,11 +74,18 @@ export class PredefensaDt2Component implements OnInit {
     this.idProyectoActual = p.idProyecto;
     this.error.set(null);
     this.ok.set(null);
-    this.cargarPredefensa(p.idProyecto);
+    this.esDocenteDt2 = false;
+    this.esTribunal = false;
     this.tab.set('estado');
+    this.cargarPredefensa(p.idProyecto);
+    if (this.esCoordinador) {
+      this.tab.set('programar');
+    } else {
+      this.detectarRolEnProyecto(p.idProyecto);
+    }
   }
 
-  setTab(t: 'estado' | 'programar' | 'calificar'): void {
+  setTab(t: 'estado' | 'programar' | 'calificar-dt2' | 'calificar-tribunal'): void {
     this.tab.set(t);
     this.error.set(null);
     this.ok.set(null);
@@ -124,19 +134,50 @@ export class PredefensaDt2Component implements OnInit {
     }));
   }
 
-  private cargarProyectosSegunRol(): void {
+  // ── Detecta si el docente logueado es DT2 o Tribunal en este proyecto ──
+  private detectarRolEnProyecto(idProyecto: number): void {
+    this.dt2.getConfiguracion(idProyecto).subscribe({
+      next: (config: ConfiguracionProyectoDto) => {
+        // ¿Es el DT2 asignado?
+        this.esDocenteDt2 = config.idDocenteDt2 === this.idDocente;
+
+        // ¿Es miembro del tribunal?
+        this.esTribunal = config.tribunal?.some(m => m.idDocente === this.idDocente) ?? false;
+
+        // Pre-seleccionar tab según rol
+        if (this.esDocenteDt2) {
+          this.tab.set('calificar-dt2');
+        } else if (this.esTribunal) {
+          this.tab.set('calificar-tribunal');
+        } else {
+          this.tab.set('estado');
+        }
+      },
+      error: () => {
+        // Si no puede cargar configuración, mostrar solo estado
+        this.tab.set('estado');
+      }
+    });
+  }
+
+  private cargarProyectos(): void {
+    this.loading.set(true);
     if (this.esCoordinador) {
-      this.loading.set(true);
-      this.dt2.listarPendientesConfiguracion().pipe(finalize(() => this.loading.set(false))).subscribe({
-        next: data => this.proyectos.set(data.filter(p => p.estadoProyecto === 'PREDEFENSA')),
-        error: () => this.error.set('Error al cargar proyectos')
-      });
+      // ✅ Coordinador usa endpoint dedicado para proyectos en PREDEFENSA
+      this.dt2.listarProyectosEnPredefensa()
+        .pipe(finalize(() => this.loading.set(false)))
+        .subscribe({
+          next: data => this.proyectos.set(data),
+          error: () => this.error.set('Error al cargar proyectos')
+        });
     } else {
-      this.loading.set(true);
-      this.dt2.listarProyectosDirector(this.idDocente).pipe(finalize(() => this.loading.set(false))).subscribe({
-        next: data => this.proyectos.set(data.filter(p => p.estadoProyecto === 'PREDEFENSA')),
-        error: () => this.error.set('Error al cargar proyectos')
-      });
+      // Docente ve proyectos donde es director/DT2 en PREDEFENSA
+      this.dt2.listarProyectosDirector(this.idDocente)
+        .pipe(finalize(() => this.loading.set(false)))
+        .subscribe({
+          next: data => this.proyectos.set(data.filter(p => p.estadoProyecto === 'PREDEFENSA')),
+          error: () => this.error.set('Error al cargar proyectos')
+        });
     }
   }
 
@@ -155,8 +196,10 @@ export class PredefensaDt2Component implements OnInit {
       next: (res: any) => {
         this.ok.set(res?.mensaje ?? res?.estado ?? 'Operación completada');
         this.cargarPredefensa(this.idProyectoActual);
+        this.formCalificarDocente.reset();
+        this.formCalificarTribunal.reset();
       },
-      error: (err: any) => this.error.set(err?.error?.mensaje ?? 'Error en la operación')
+      error: (err: any) => this.error.set(err?.error?.mensaje ?? err?.error?.message ?? 'Error en la operación')
     });
   }
 }
