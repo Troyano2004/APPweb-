@@ -5,11 +5,16 @@ import { finalize } from 'rxjs/operators';
 import {
   Dt2Service,
   ProyectoPendienteConfiguracionDto,
-  ConfiguracionProyectoDto,
-  MiembroTribunalDto
+  ConfiguracionProyectoDto
 } from '../../../services/dt2.service';
 import { CoordinadorService, DirectorCarga } from '../../../services/coordinador';
+import { CatalogosBasicosService, PeriodoTitulacion } from '../../../services/catalogos-basicos.service';
 import { getSessionUser, getSessionEntityId } from '../../../services/session';
+
+interface OpcionPeriodo {
+  etiqueta: string;
+  valor: string;
+}
 
 @Component({
   selector: 'app-configuracion-dt2',
@@ -31,14 +36,22 @@ export class ConfiguracionDt2Component implements OnInit {
 
   tab = signal<'docente' | 'director' | 'tribunal'>('docente');
 
+  // Periodos
+  periodosActivos: PeriodoTitulacion[] = [];
+  opcionesPeriodo: OpcionPeriodo[] = [];
+
   formDocente: FormGroup;
   formDirector: FormGroup;
   formTribunal: FormGroup;
 
   private idRealizadoPor = 0;
-  periodo = '';
 
-  constructor(private dt2: Dt2Service, private coordinadorApi: CoordinadorService, private fb: FormBuilder) {
+  constructor(
+    private dt2: Dt2Service,
+    private coordinadorApi: CoordinadorService,
+    private catalogosBasicosService: CatalogosBasicosService,
+    private fb: FormBuilder
+  ) {
     this.formDocente = this.fb.group({
       idDocenteDt2: [null, [Validators.required, Validators.min(1)]],
       periodo: ['', Validators.required],
@@ -64,6 +77,7 @@ export class ConfiguracionDt2Component implements OnInit {
   ngOnInit(): void {
     const user = getSessionUser();
     this.idRealizadoPor = getSessionEntityId(user, 'docente') ?? 0;
+    this.cargarPeriodosActivos();
     this.cargarProyectos();
     this.cargarDocentes();
   }
@@ -73,6 +87,12 @@ export class ConfiguracionDt2Component implements OnInit {
   }
 
   addMiembro(): void {
+    const seleccionados = this.miembros.controls
+      .filter(c => c.get('idDocente')?.value != null).length;
+    if (this.docentes().length > 0 && seleccionados >= this.docentes().length) {
+      this.error.set('Ya no hay docentes disponibles para agregar.');
+      return;
+    }
     this.miembros.push(this.crearMiembro());
   }
 
@@ -133,6 +153,16 @@ export class ConfiguracionDt2Component implements OnInit {
       this.formTribunal.markAllAsTouched();
       return;
     }
+
+    // Validación extra de seguridad contra duplicados
+    const ids = this.miembros.controls
+      .map(c => c.get('idDocente')?.value)
+      .filter(id => id != null && id > 0);
+    if (new Set(ids).size !== ids.length) {
+      this.error.set('No se puede repetir el mismo docente en el tribunal.');
+      return;
+    }
+
     const v = this.formTribunal.value;
     this.ejecutar(() =>
       this.dt2.asignarTribunal(p.idProyecto, {
@@ -147,12 +177,67 @@ export class ConfiguracionDt2Component implements OnInit {
     return this.docentes().find(d => d.idDocente === idDocente)?.director ?? `Docente #${idDocente}`;
   }
 
+  /**
+   * Docentes disponibles para la fila i del tribunal.
+   * Oculta los ya usados en otras filas pero mantiene visible
+   * el docente ya seleccionado en esta fila.
+   */
+  getDocentesParaFila(indexFila: number): DirectorCarga[] {
+    const seleccionActual = this.miembros.at(indexFila)?.get('idDocente')?.value ?? null;
+    const idsSeleccionados = new Set(
+      this.miembros.controls
+        .map(c => c.get('idDocente')?.value)
+        .filter((id): id is number => id !== null && id !== undefined && id > 0)
+    );
+
+    return this.docentes().filter(d => {
+      if (d?.idDocente == null) return false;
+      if (seleccionActual !== null && d.idDocente === seleccionActual) return true;
+      return !idsSeleccionados.has(d.idDocente);
+    });
+  }
+
+  // ─── Periodos ────────────────────────────────────────────────
+  private cargarPeriodosActivos(): void {
+    this.catalogosBasicosService.listarPeriodosActivos().subscribe({
+      next: (data) => {
+        this.periodosActivos = data;
+        this.opcionesPeriodo = data.map(p => ({
+          etiqueta: p.descripcion,
+          valor: this.construirPeriodo(p)
+        }));
+        const primerValor = this.opcionesPeriodo.length > 0 ? this.opcionesPeriodo[0].valor : '';
+        this.formDocente.patchValue({ periodo: primerValor });
+        this.formDirector.patchValue({ periodo: primerValor });
+        this.formTribunal.patchValue({ periodo: primerValor });
+      },
+      error: () => {
+        this.error.set('No se pudo cargar el listado de periodos activos.');
+      }
+    });
+  }
+
+  private construirPeriodo(periodo: PeriodoTitulacion): string {
+    const descripcionLimpia = (periodo.descripcion ?? '').trim().replace(/\s+/g, ' ');
+    if (descripcionLimpia.length <= 20) return descripcionLimpia;
+
+    const anioInicio = (periodo.fechaInicio ?? '').toString().slice(0, 4);
+    const anioFin = (periodo.fechaFin ?? '').toString().slice(0, 4);
+    const etiqueta = anioInicio && anioFin ? `${anioInicio}-${anioFin}` : '';
+
+    if (etiqueta && etiqueta.length <= 20) return etiqueta;
+    return descripcionLimpia.slice(0, 20);
+  }
+
+  // ─── Internos ────────────────────────────────────────────────
   private cargarProyectos(): void {
     this.loading.set(true);
-    this.dt2.listarPendientesConfiguracion().pipe(finalize(() => this.loading.set(false))).subscribe({
-      next: data => this.proyectos.set(data),
-      error: () => this.error.set('Error al cargar proyectos pendientes')
-    });
+    this.dt2.listarPendientesConfiguracion()
+      .pipe(finalize(() => this.loading.set(false)))
+      .subscribe({
+        next: data => this.proyectos.set(data),
+        error: () => this.error.set('Error al cargar proyectos pendientes')
+      });
   }
 
   private cargarDocentes(): void {
