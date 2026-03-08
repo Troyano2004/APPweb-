@@ -256,7 +256,7 @@ export class Dt2Service {
 
   constructor(private http: HttpClient) {}
 
-  // M1
+  // ── M1 ──────────────────────────────────────────────────────────────────────
   listarPendientesConfiguracion(): Observable<ProyectoPendienteConfiguracionDto[]> {
     return this.http.get<ProyectoPendienteConfiguracionDto[]>(`${this.base}/proyectos/pendientes-configuracion`);
   }
@@ -277,9 +277,20 @@ export class Dt2Service {
     return this.http.post<MensajeDto>(`${this.base}/proyectos/${idProyecto}/asignar-tribunal`, req);
   }
 
-  // M2
+  // ── M2 ──────────────────────────────────────────────────────────────────────
   listarProyectosDirector(idDirector: number): Observable<ProyectoPendienteConfiguracionDto[]> {
     return this.http.get<ProyectoPendienteConfiguracionDto[]>(`${this.base}/director/${idDirector}/proyectos`);
+  }
+
+  // ✅ NUEVO: proyectos asignados al Docente DT2 con documento en APROBADO_POR_DIRECTOR
+
+  // ✅ NUEVO: proyectos en estado PREDEFENSA (para coordinador)
+  listarProyectosEnPredefensa(): Observable<ProyectoPendienteConfiguracionDto[]> {
+    return this.http.get<ProyectoPendienteConfiguracionDto[]>(`${this.base}/proyectos/en-predefensa`);
+  }
+
+  listarProyectosDocenteDt2(idDocenteDt2: number): Observable<ProyectoPendienteConfiguracionDto[]> {
+    return this.http.get<ProyectoPendienteConfiguracionDto[]>(`${this.base}/docente-dt2/${idDocenteDt2}/proyectos`);
   }
 
   registrarAsesoria(idProyecto: number, req: RegistrarAsesoriaRequest): Observable<AsesoriaDto> {
@@ -298,7 +309,7 @@ export class Dt2Service {
     return this.http.get<SeguimientoDto>(`${this.base}/proyectos/${idProyecto}/seguimiento`);
   }
 
-  // M3
+  // ── M3 ──────────────────────────────────────────────────────────────────────
   registrarAntiplagio(idProyecto: number, formData: FormData): Observable<CertificadoAntiplacioDto> {
     return this.http.post<CertificadoAntiplacioDto>(`${this.base}/proyectos/${idProyecto}/antiplagio`, formData);
   }
@@ -307,7 +318,7 @@ export class Dt2Service {
     return this.http.get<CertificadoAntiplacioDto>(`${this.base}/proyectos/${idProyecto}/antiplagio`);
   }
 
-  // M4
+  // ── M4 ──────────────────────────────────────────────────────────────────────
   programarPredefensa(idProyecto: number, req: ProgramarPredefensaRequest): Observable<MensajeDto> {
     return this.http.post<MensajeDto>(`${this.base}/proyectos/${idProyecto}/predefensa/programar`, req);
   }
@@ -324,7 +335,7 @@ export class Dt2Service {
     return this.http.post<PredefensaDto>(`${this.base}/proyectos/${idProyecto}/predefensa/calificar-tribunal`, req);
   }
 
-  // M5
+  // ── M5 ──────────────────────────────────────────────────────────────────────
   getDocumentosPrevios(idProyecto: number): Observable<DocumentosPreviosDto> {
     return this.http.get<DocumentosPreviosDto>(`${this.base}/proyectos/${idProyecto}/sustentacion/documentos`);
   }

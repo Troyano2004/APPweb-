@@ -5,7 +5,9 @@ import { finalize } from 'rxjs/operators';
 import {
   Dt2Service,
   ProyectoPendienteConfiguracionDto,
-  ConfiguracionProyectoDto
+  ConfiguracionProyectoDto,
+  PredefensaDto,
+  ProgramarPredefensaRequest
 } from '../../../services/dt2.service';
 import { CoordinadorService, DirectorCarga } from '../../../services/coordinador';
 import { CatalogosBasicosService, PeriodoTitulacion } from '../../../services/catalogos-basicos.service';
@@ -34,13 +36,16 @@ export class ConfiguracionDt2Component implements OnInit {
   proyectoSeleccionado = signal<ProyectoPendienteConfiguracionDto | null>(null);
   configuracion = signal<ConfiguracionProyectoDto | null>(null);
 
-  tab = signal<'docente' | 'director' | 'tribunal'>('docente');
+  tab = signal<'docente' | 'director' | 'tribunal' | 'predefensa'>('docente');
 
   // Periodos
   periodosActivos: PeriodoTitulacion[] = [];
   opcionesPeriodo: OpcionPeriodo[] = [];
 
+  predefensaActual = signal<PredefensaDto | null>(null);
+
   formDocente: FormGroup;
+  formPredefensa: FormGroup;
   formDirector: FormGroup;
   formTribunal: FormGroup;
 
@@ -62,6 +67,13 @@ export class ConfiguracionDt2Component implements OnInit {
       idDirector: [null, [Validators.required, Validators.min(1)]],
       periodo: ['', Validators.required],
       motivo: ['']
+    });
+
+    this.formPredefensa = this.fb.group({
+      fecha:         ['', Validators.required],
+      hora:          ['', Validators.required],
+      lugar:         ['', [Validators.required, Validators.minLength(3)]],
+      observaciones: ['']
     });
 
     this.formTribunal = this.fb.group({
@@ -105,9 +117,10 @@ export class ConfiguracionDt2Component implements OnInit {
     this.error.set(null);
     this.ok.set(null);
     this.cargarConfiguracion(p.idProyecto);
+    this.cargarPredefensa(p.idProyecto);
   }
 
-  setTab(t: 'docente' | 'director' | 'tribunal'): void {
+  setTab(t: 'docente' | 'director' | 'tribunal' | 'predefensa'): void {
     this.tab.set(t);
     this.error.set(null);
     this.ok.set(null);
@@ -171,6 +184,23 @@ export class ConfiguracionDt2Component implements OnInit {
         miembros: v.miembros.map((m: any) => ({ idDocente: Number(m.idDocente), cargo: m.cargo }))
       })
     );
+  }
+
+  programarPredefensa(): void {
+    const p = this.proyectoSeleccionado();
+    if (!p || this.formPredefensa.invalid) {
+      this.formPredefensa.markAllAsTouched();
+      return;
+    }
+    const v = this.formPredefensa.value;
+    const req: ProgramarPredefensaRequest = {
+      idRealizadoPor: this.idRealizadoPor,
+      fecha: v.fecha,
+      hora: v.hora + ':00',
+      lugar: v.lugar,
+      observaciones: v.observaciones
+    };
+    this.ejecutar(() => this.dt2.programarPredefensa(p.idProyecto, req));
   }
 
   nombreDocente(idDocente: number): string {
@@ -251,6 +281,13 @@ export class ConfiguracionDt2Component implements OnInit {
     this.dt2.getConfiguracion(idProyecto).subscribe({
       next: data => this.configuracion.set(data),
       error: () => {}
+    });
+  }
+
+  private cargarPredefensa(idProyecto: number): void {
+    this.dt2.getPredefensa(idProyecto).subscribe({
+      next: data => this.predefensaActual.set(data),
+      error: () => this.predefensaActual.set(null)
     });
   }
 
