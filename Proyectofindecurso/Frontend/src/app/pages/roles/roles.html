@@ -1,5 +1,4 @@
 
-
 <div class="page">
   <div class="wrap">
 
@@ -141,6 +140,31 @@
             <label style="grid-column: 1 / -1;">Descripción
               <input formControlName="descripcion" placeholder="Describe para qué sirve este rol" />
             </label>
+
+            <!-- ══ FIX Error 2: Select de Rol Base del sistema ══════════════ -->
+            <label style="grid-column: 1 / -1;">
+              Rol base del sistema *
+              <small style="color:#666; display:block; margin-bottom:4px;">
+                Define el perfil de acceso a la base de datos (obligatorio al crear).
+              </small>
+              <select
+                [(ngModel)]="selectedIdRolBase"
+                [ngModelOptions]="{standalone: true}"
+                [class.field-error]="rolBaseTouched && !editMode && !selectedIdRolBase"
+              >
+                <option [ngValue]="null">-- Seleccione --</option>
+                <option
+                  *ngFor="let rs of rolesSistema; trackBy: trackByRolSistId"
+                  [ngValue]="rs.idRol"
+                >
+                  {{ nombreRolSistema(rs) }}
+                </option>
+              </select>
+              <div class="perm-error" *ngIf="rolBaseTouched && !editMode && !selectedIdRolBase">
+                Debes seleccionar un rol base del sistema.
+              </div>
+            </label>
+            <!-- ═══════════════════════════════════════════════════════════ -->
           </div>
 
           <div class="perm-box">

@@ -1,0 +1,490 @@
+
+<!-- ================================================================
+     MÓDULO: Documentos Habilitantes — DT2 / Sustentación
+     Reglamento UIC-UTEQ Arts. 10, 11, 57, 59
+     ================================================================ -->
+
+<div class="hab-wrapper">
+
+  <!-- ── HEADER ──────────────────────────────────────────────────── -->
+  <div class="hab-header">
+    <div class="hab-header__left">
+      <div class="hab-header__icon-wrap">
+        <span class="hab-header__icon">📋</span>
+      </div>
+      <div>
+        <h1 class="hab-header__title">Documentos Habilitantes</h1>
+        <p class="hab-header__sub">
+          Fase de Sustentación — Desarrollo de Titulación II
+        </p>
+      </div>
+    </div>
+    <div class="hab-header__right">
+      <span class="hab-role-badge" [class.role-director]="esDirector()">
+        {{ esEstudiante() ? '🎓 Estudiante' : '👨‍🏫 Director / Coordinador' }}
+      </span>
+    </div>
+  </div>
+
+  <!-- ── ALERTAS ────────────────────────────────────────────────── -->
+  @if (error()) {
+    <div class="hab-alert hab-alert--error">
+      <span>⚠️</span> {{ error() }}
+    </div>
+  }
+  @if (ok()) {
+    <div class="hab-alert hab-alert--ok">
+      <span>✅</span> {{ ok() }}
+    </div>
+  }
+
+  <!-- ── LOADING ────────────────────────────────────────────────── -->
+  @if (loading()) {
+    <div class="hab-loading">
+      <div class="hab-spinner"></div>
+      <span>Cargando...</span>
+    </div>
+  }
+
+  <!-- ══════════════════════════════════════════════════════════════
+       VISTA ESTUDIANTE — Layout de 2 columnas
+  ══════════════════════════════════════════════════════════════ -->
+  @if (!loading() && esEstudiante() && resumen()) {
+    <div class="hab-layout">
+
+      <!-- ── COLUMNA PRINCIPAL (izquierda) ── -->
+      <div class="hab-main">
+
+        <!-- Tarjeta de progreso mejorada -->
+        <div class="hab-progress-card" [class.hab-progress-card--ok]="resumen()!.habilitadoParaSustentacion">
+          <div class="hab-progress-top">
+            <div class="hab-progress-counts">
+              <span class="count-ok">{{ resumen()!.aprobados }}</span>
+              <span class="count-sep">/</span>
+              <span class="count-total">{{ resumen()!.totalDocumentos }}</span>
+              <span class="count-label">documentos aprobados</span>
+            </div>
+            @if (resumen()!.habilitadoParaSustentacion) {
+              <span class="hab-badge-habilitado">🎉 Habilitado para sustentación</span>
+            } @else {
+              <span class="hab-badge-falta">⏳ Faltan documentos por aprobar</span>
+            }
+          </div>
+          <div class="hab-progress-bar-wrap">
+            <div class="hab-progress-bar">
+              <div class="hab-progress-bar__fill" [style.width.%]="progreso()"></div>
+            </div>
+            <span class="hab-progress-pct">{{ progreso() }}%</span>
+          </div>
+        </div>
+
+        <!-- Título del proyecto -->
+        <div class="hab-project-title">
+          <span class="hab-project-title__icon">🏗️</span>
+          <div>
+            <span class="hab-project-title__label">Proyecto:</span>
+            <span class="hab-project-title__name">{{ resumen()!.tituloProyecto }}</span>
+          </div>
+        </div>
+
+        <!-- Lista de documentos -->
+        <div class="hab-list">
+          @for (doc of resumen()!.documentos; track trackByTipo($index, doc)) {
+            <div class="hab-card" [class]="'hab-card--' + doc.estado.toLowerCase()">
+
+              <div class="hab-card__header">
+                <div class="hab-card__icon-wrap">
+                  @switch (doc.tipoDocumento) {
+                    @case ('INFORME_DIRECTOR')        { <span>📝</span> }
+                    @case ('CERTIFICADO_ANTIPLAGIO')  { <span>🔍</span> }
+                    @case ('TRABAJO_FINAL_PDF')       { <span>📚</span> }
+                    @case ('CERTIFICADO_PENSUM')      { <span>🎓</span> }
+                    @case ('CERTIFICADO_DEUDAS')      { <span>🏛️</span> }
+                    @case ('CERTIFICADO_IDIOMA')      { <span>🌐</span> }
+                    @case ('CERTIFICADO_PRACTICAS')   { <span>🏢</span> }
+                    @default                          { <span>📄</span> }
+                  }
+                </div>
+                <div class="hab-card__meta">
+                  <span class="hab-card__tipo">{{ doc.etiquetaTipo }}</span>
+                  <span class="hab-badge" [class]="badgeClass(doc.estado)">
+                    {{ badgeLabel(doc.estado) }}
+                  </span>
+                </div>
+              </div>
+
+              <p class="hab-card__desc">{{ doc.descripcionTipo }}</p>
+
+              @if (doc.urlArchivo) {
+                <div class="hab-card__file">
+                  <a [href]="doc.urlArchivo" target="_blank" class="hab-link-file">
+                    📎 {{ doc.nombreArchivo ?? 'Ver documento' }}
+                  </a>
+                  @if (doc.fechaSubida) {
+                    <span class="hab-card__date">
+                      Subido: {{ doc.fechaSubida | date:'dd/MM/yyyy HH:mm' }}
+                    </span>
+                  }
+                </div>
+              }
+
+              @if (esAntiplagio(doc.tipoDocumento) && doc.porcentajeCoincidencia !== null) {
+                <div class="hab-antiplagio" [class.hab-antiplagio--rechazado]="doc.resultadoAntiplagio === 'RECHAZADO'">
+                  <span class="hab-antiplagio__label">Coincidencia COMPILATIO:</span>
+                  <span class="hab-antiplagio__pct">{{ doc.porcentajeCoincidencia }}%</span>
+                  <span class="hab-antiplagio__umbral">(umbral: {{ doc.umbralPermitido }}%)</span>
+                  <span class="hab-antiplagio__result"
+                        [class.ok]="doc.resultadoAntiplagio === 'APROBADO'"
+                        [class.err]="doc.resultadoAntiplagio === 'RECHAZADO'">
+                    {{ doc.resultadoAntiplagio === 'APROBADO' ? '✓ Dentro del umbral' : '✗ Supera el umbral' }}
+                  </span>
+                </div>
+              }
+
+              @if (doc.comentarioValidacion) {
+                <div class="hab-card__comment">
+                  <span class="hab-card__comment-label">Observación del Director:</span>
+                  {{ doc.comentarioValidacion }}
+                </div>
+              }
+
+              @if (puedeSubir(doc)) {
+                <button class="hab-btn hab-btn--primary" (click)="abrirModalSubir(doc)">
+                  {{ doc.estado === 'RECHAZADO' ? '🔄 Volver a subir' : '⬆️ Subir documento' }}
+                </button>
+              }
+
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- ── COLUMNA LATERAL (derecha) ── -->
+      <aside class="hab-sidebar">
+
+        <!-- Resumen estadístico -->
+        <div class="hab-sidebar-card">
+          <h3 class="hab-sidebar-card__title">📊 Resumen</h3>
+          <div class="hab-stats-grid">
+            <div class="hab-stat hab-stat--aprobado">
+              <span class="hab-stat__num">{{ resumen()!.aprobados }}</span>
+              <span class="hab-stat__label">Aprobados</span>
+            </div>
+            <div class="hab-stat hab-stat--pendiente">
+              <span class="hab-stat__num">{{ resumen()!.pendientes }}</span>
+              <span class="hab-stat__label">Pendientes</span>
+            </div>
+            <div class="hab-stat hab-stat--rechazado">
+              <span class="hab-stat__num">{{ resumen()!.rechazados }}</span>
+              <span class="hab-stat__label">Rechazados</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Guía de estados -->
+        <div class="hab-sidebar-card">
+          <h3 class="hab-sidebar-card__title">📌 Estados</h3>
+          <ul class="hab-guide-list">
+            <li><span class="hab-badge badge-pendiente">○ Pendiente</span> Aún no subido</li>
+            <li><span class="hab-badge badge-enviado">⏳ En revisión</span> Esperando al director</li>
+            <li><span class="hab-badge badge-aprobado">✓ Aprobado</span> Validado</li>
+            <li><span class="hab-badge badge-rechazado">✗ Rechazado</span> Debe corregirse</li>
+          </ul>
+        </div>
+
+        <!-- Artículos del reglamento -->
+        <div class="hab-sidebar-card hab-sidebar-card--reglamento">
+          <h3 class="hab-sidebar-card__title">📖 Reglamento</h3>
+          <ul class="hab-reglamento-list">
+            <li><strong>Art. 57 num.2</strong> — Anti-plagio máx. 10%</li>
+            <li><strong>Art. 59a</strong> — Informe favorable del Director</li>
+            <li><strong>Art. 10</strong> — Pensum completo (SGA)</li>
+            <li><strong>Art. 11</strong> — Sin deudas administrativas</li>
+            <li><strong>Art. 18a</strong> — Idioma extranjero aprobado</li>
+            <li><strong>Art. 18b</strong> — Prácticas y servicio comunitario</li>
+          </ul>
+        </div>
+
+        <!-- Tip de ayuda -->
+        <div class="hab-sidebar-card hab-sidebar-card--tip">
+          <span class="hab-tip-icon">💡</span>
+          <p>Sube todos los documentos en formato <strong>PDF</strong>, máximo <strong>20 MB</strong> por archivo.</p>
+        </div>
+
+      </aside>
+    </div>
+  }
+
+  <!-- ══════════════════════════════════════════════════════════════
+       VISTA DIRECTOR / COORDINADOR — Layout de 2 columnas
+  ══════════════════════════════════════════════════════════════ -->
+  @if (!loading() && esDirector()) {
+    <div class="hab-layout">
+
+      <!-- ── COLUMNA PRINCIPAL (izquierda) ── -->
+      <div class="hab-main">
+
+        <div class="hab-section-title">
+          <span>⏳</span> Documentos pendientes de validación
+        </div>
+
+        @if (pendientes().length === 0) {
+          <div class="hab-empty">
+            <span>✅</span>
+            <p>No hay documentos pendientes de validación en este momento.</p>
+          </div>
+        }
+
+        <div class="hab-list">
+          @for (doc of pendientes(); track doc.id) {
+            <div class="hab-card hab-card--enviado">
+
+              <div class="hab-card__header">
+                <div class="hab-card__icon-wrap">
+                  @switch (doc.tipoDocumento) {
+                    @case ('INFORME_DIRECTOR')        { <span>📝</span> }
+                    @case ('CERTIFICADO_ANTIPLAGIO')  { <span>🔍</span> }
+                    @case ('TRABAJO_FINAL_PDF')       { <span>📚</span> }
+                    @case ('CERTIFICADO_PENSUM')      { <span>🎓</span> }
+                    @case ('CERTIFICADO_DEUDAS')      { <span>🏛️</span> }
+                    @case ('CERTIFICADO_IDIOMA')      { <span>🌐</span> }
+                    @case ('CERTIFICADO_PRACTICAS')   { <span>🏢</span> }
+                    @default                          { <span>📄</span> }
+                  }
+                </div>
+                <div class="hab-card__meta">
+                  <span class="hab-card__tipo">{{ doc.etiquetaTipo }}</span>
+                  <span class="hab-card__student">👤 {{ doc.nombreEstudiante }}</span>
+                  <span class="hab-badge badge-enviado">⏳ En revisión</span>
+                </div>
+              </div>
+
+              <p class="hab-card__desc">{{ doc.descripcionTipo }}</p>
+
+              @if (doc.urlArchivo) {
+                <div class="hab-card__file">
+                  <a [href]="doc.urlArchivo" target="_blank" class="hab-link-file">
+                    📎 {{ doc.nombreArchivo ?? 'Ver documento' }}
+                  </a>
+                  @if (doc.fechaSubida) {
+                    <span class="hab-card__date">
+                      Enviado: {{ doc.fechaSubida | date:'dd/MM/yyyy HH:mm' }}
+                    </span>
+                  }
+                </div>
+              }
+
+              @if (esAntiplagio(doc.tipoDocumento) && doc.porcentajeCoincidencia !== null) {
+                <div class="hab-antiplagio" [class.hab-antiplagio--rechazado]="doc.resultadoAntiplagio === 'RECHAZADO'">
+                  <span class="hab-antiplagio__label">Coincidencia COMPILATIO:</span>
+                  <span class="hab-antiplagio__pct">{{ doc.porcentajeCoincidencia }}%</span>
+                  <span class="hab-antiplagio__umbral">(umbral: {{ doc.umbralPermitido }}%)</span>
+                  <span class="hab-antiplagio__result"
+                        [class.ok]="doc.resultadoAntiplagio === 'APROBADO'"
+                        [class.err]="doc.resultadoAntiplagio === 'RECHAZADO'">
+                    {{ doc.resultadoAntiplagio === 'APROBADO' ? '✓ Dentro del umbral' : '✗ Supera el umbral' }}
+                  </span>
+                </div>
+              }
+
+              <div class="hab-card__actions">
+                <button class="hab-btn hab-btn--primary" (click)="abrirModalValidar(doc)">
+                  ✅ Validar documento
+                </button>
+              </div>
+
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- ── COLUMNA LATERAL DIRECTOR (derecha) ── -->
+      <aside class="hab-sidebar">
+
+        <!-- Estadística rápida -->
+        <div class="hab-sidebar-card hab-sidebar-card--director-stat">
+          <h3 class="hab-sidebar-card__title">📬 En tu bandeja</h3>
+          <div class="hab-director-count">
+            <span class="hab-director-count__num">{{ pendientes().length }}</span>
+            <span class="hab-director-count__label">documento(s)<br>pendiente(s)</span>
+          </div>
+        </div>
+
+        <!-- Guía de validación -->
+        <div class="hab-sidebar-card">
+          <h3 class="hab-sidebar-card__title">✅ Cómo validar</h3>
+          <ol class="hab-steps-list">
+            <li>Abre el documento PDF adjunto</li>
+            <li>Revisa que cumpla los requisitos del reglamento</li>
+            <li>Selecciona <strong>Aprobar</strong> o <strong>Rechazar</strong></li>
+            <li>Agrega un comentario si rechazas</li>
+            <li>Confirma la decisión</li>
+          </ol>
+        </div>
+
+        <!-- Artículos del reglamento -->
+        <div class="hab-sidebar-card hab-sidebar-card--reglamento">
+          <h3 class="hab-sidebar-card__title">📖 Reglamento</h3>
+          <ul class="hab-reglamento-list">
+            <li><strong>Art. 57 num.2</strong> — Anti-plagio máx. 10% (COMPILATIO)</li>
+            <li><strong>Art. 59a</strong> — Informe favorable del Director</li>
+            <li><strong>Art. 59b</strong> — Certifica diseño experimental</li>
+            <li><strong>Art. 10</strong> — Pensum completo (SGA)</li>
+            <li><strong>Art. 11</strong> — Sin deudas administrativas</li>
+          </ul>
+        </div>
+
+        <!-- Aviso importante -->
+        <div class="hab-sidebar-card hab-sidebar-card--tip">
+          <span class="hab-tip-icon">⚠️</span>
+          <p>Los documentos <strong>RECHAZADOS</strong> regresan al estudiante para que los corrija y vuelva a subir.</p>
+        </div>
+
+      </aside>
+    </div>
+  }
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODAL: Subir Documento (Estudiante)
+══════════════════════════════════════════════════════════════ -->
+@if (modalSubirOpen()) {
+  <div class="hab-overlay" (click)="cerrarModalSubir()">
+    <div class="hab-modal" (click)="$event.stopPropagation()">
+
+      <div class="hab-modal__header">
+        <h2>⬆️ Subir documento</h2>
+        <button class="hab-modal__close" (click)="cerrarModalSubir()">✕</button>
+      </div>
+
+      @if (docSeleccionado()) {
+        <div class="hab-modal__tipo-info">
+          <strong>{{ docSeleccionado()!.etiquetaTipo }}</strong>
+          <p>{{ docSeleccionado()!.descripcionTipo }}</p>
+        </div>
+      }
+
+      <div class="hab-upload-area">
+        <label class="hab-upload-label">
+          <input type="file" accept="application/pdf" (change)="onFileChange($event)" hidden />
+          @if (uploadingFile()) {
+            <span class="hab-upload-loading">⏳ Subiendo archivo...</span>
+          } @else if (archivoUrl()) {
+            <span class="hab-upload-done">✅ {{ archivoNombre() }}</span>
+          } @else {
+            <span class="hab-upload-prompt">
+              📁 Clic para seleccionar PDF<br>
+              <small>Máximo 20 MB</small>
+            </span>
+          }
+        </label>
+      </div>
+
+      @if (docSeleccionado()?.tipoDocumento === 'CERTIFICADO_ANTIPLAGIO') {
+        <div class="hab-antiplagio-form" [formGroup]="formSubir">
+          <div class="hab-form-group">
+            <label>% Coincidencia COMPILATIO <span class="req">*</span></label>
+            <input type="number" step="0.01" min="0" max="100"
+                   formControlName="porcentajeCoincidencia"
+                   class="hab-input"
+                   placeholder="Ej: 8.75" />
+            <small>Ingrese el porcentaje exacto que indica el reporte de COMPILATIO.</small>
+          </div>
+          <div class="hab-form-group">
+            <label>Umbral permitido (%)</label>
+            <input type="number" step="0.01" min="0" max="100"
+                   formControlName="umbralPermitido"
+                   class="hab-input"
+                   placeholder="10.00 (reglamento Art. 57 num.2)" />
+            <small>El reglamento establece máximo 10% (Art. 57 num.2).</small>
+          </div>
+        </div>
+      }
+
+      @if (error()) {
+        <div class="hab-alert hab-alert--error">{{ error() }}</div>
+      }
+
+      <div class="hab-modal__footer">
+        <button class="hab-btn hab-btn--ghost" (click)="cerrarModalSubir()" [disabled]="loading()">
+          Cancelar
+        </button>
+        <button class="hab-btn hab-btn--primary" (click)="confirmarSubida()"
+                [disabled]="loading() || uploadingFile() || !archivoUrl()">
+          {{ loading() ? 'Enviando...' : 'Confirmar envío' }}
+        </button>
+      </div>
+
+    </div>
+  </div>
+}
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODAL: Validar Documento (Director)
+══════════════════════════════════════════════════════════════ -->
+@if (modalValidarOpen()) {
+  <div class="hab-overlay" (click)="cerrarModalValidar()">
+    <div class="hab-modal" (click)="$event.stopPropagation()">
+
+      <div class="hab-modal__header">
+        <h2>✅ Validar documento habilitante</h2>
+        <button class="hab-modal__close" (click)="cerrarModalValidar()">✕</button>
+      </div>
+
+      @if (docSeleccionado()) {
+        <div class="hab-modal__tipo-info">
+          <strong>{{ docSeleccionado()!.etiquetaTipo }}</strong>
+          <p>Estudiante: <strong>{{ docSeleccionado()!.nombreEstudiante }}</strong></p>
+          @if (docSeleccionado()!.urlArchivo) {
+            <a [href]="docSeleccionado()!.urlArchivo" target="_blank" class="hab-link-file">
+              📎 Ver documento enviado
+            </a>
+          }
+        </div>
+      }
+
+      <div [formGroup]="formValidar">
+        <div class="hab-form-group">
+          <label>Decisión <span class="req">*</span></label>
+          <div class="hab-decision-toggle">
+            <button type="button"
+                    class="hab-toggle-btn"
+                    [class.active-ok]="formValidar.value.decision === 'APROBADO'"
+                    (click)="formValidar.patchValue({decision: 'APROBADO'})">
+              ✓ Aprobar
+            </button>
+            <button type="button"
+                    class="hab-toggle-btn"
+                    [class.active-err]="formValidar.value.decision === 'RECHAZADO'"
+                    (click)="formValidar.patchValue({decision: 'RECHAZADO'})">
+              ✗ Rechazar
+            </button>
+          </div>
+        </div>
+
+        <div class="hab-form-group">
+          <label>Comentario</label>
+          <textarea formControlName="comentario" class="hab-textarea" rows="3"
+                    placeholder="Observaciones para el estudiante (opcional si aprueba, recomendado si rechaza)...">
+          </textarea>
+        </div>
+      </div>
+
+      @if (error()) {
+        <div class="hab-alert hab-alert--error">{{ error() }}</div>
+      }
+
+      <div class="hab-modal__footer">
+        <button class="hab-btn hab-btn--ghost" (click)="cerrarModalValidar()" [disabled]="loading()">
+          Cancelar
+        </button>
+        <button class="hab-btn hab-btn--primary" (click)="confirmarValidacion()"
+                [disabled]="loading()">
+          {{ loading() ? 'Guardando...' : 'Confirmar decisión' }}
+        </button>
+      </div>
+
+    </div>
+  </div>
+}

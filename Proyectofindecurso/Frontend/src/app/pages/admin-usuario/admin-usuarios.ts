@@ -22,26 +22,27 @@ import {
 export class AdminUsuariosComponent implements OnInit {
 
   // ===== UI =====
-  filtro = '';
-  cargando = false;
-  errorMsg = '';
-  warnMsg = '';
+  filtro    = '';
+  cargando  = false;
+  errorMsg  = '';
+  warnMsg   = '';
 
   modalAbierto = false;
-  modoEdicion = false;
+  modoEdicion  = false;
 
   // ===== DATA =====
-  usuarios: UsuarioDTO[] = [];
-  rolesApp: RolAppDTO[] = [];
+  usuarios: UsuarioDTO[]  = [];
+  rolesApp: RolAppDTO[]   = [];
 
   // ===== FORMS =====
+  // El rol principal es obligatorio — define el tipo de usuario
   createRolPrincipalId: number | null = null;
   updateRolPrincipalId: number | null = null;
 
+  // Roles adicionales seleccionados (pueden ser de cualquier tipo)
   createRolesExtra: number[] = [];
   updateRolesExtra: number[] = [];
 
-  // ✅ CAMBIO: passwordApp
   formCreate = {
     cedula: '',
     correoInstitucional: '',
@@ -75,11 +76,8 @@ export class AdminUsuariosComponent implements OnInit {
   get usuariosFiltrados(): UsuarioDTO[] {
     const q = (this.filtro || '').toLowerCase().trim();
     if (!q) return this.usuarios;
-
     return this.usuarios.filter(u => {
-      const txt =
-        `${u.idUsuario} ${u.username} ${u.nombres} ${u.apellidos} ${u.rolApp ?? ''} ${u.rolesApp ?? ''} ${u.activo ? 'activo' : 'inactivo'}`
-          .toLowerCase();
+      const txt = `${u.idUsuario} ${u.username} ${u.nombres} ${u.apellidos} ${u.rolApp ?? ''} ${u.rolesApp ?? ''} ${u.activo ? 'activo' : 'inactivo'}`.toLowerCase();
       return txt.includes(q);
     });
   }
@@ -90,28 +88,9 @@ export class AdminUsuariosComponent implements OnInit {
     return this.rolesApp.find(r => r.idRolApp === id);
   }
 
-  private rolBaseOf(id: number | null | undefined): number | null {
-    const r = this.rolById(id);
-    return (r?.idRolBase ?? null);
-  }
-
-  private isSelectionCompatible(principalId: number | null, allSelected: number[]): boolean {
-    if (principalId == null) return false;
-
-    const base = this.rolBaseOf(principalId);
-    if (base == null) return true;
-
-    for (const id of allSelected) {
-      const b = this.rolBaseOf(id);
-      if (b != null && b !== base) return false;
-    }
-    return true;
-  }
-
   private buildIdsRolApp(principalId: number, extras: number[]): number[] {
     const cleanExtras = (extras || []).filter(x => x !== principalId);
-    const unique = Array.from(new Set([principalId, ...cleanExtras]));
-    return unique;
+    return Array.from(new Set([principalId, ...cleanExtras]));
   }
 
   // ===== CARGAS =====
@@ -130,7 +109,7 @@ export class AdminUsuariosComponent implements OnInit {
 
   recargar(): void {
     this.errorMsg = '';
-    this.warnMsg = '';
+    this.warnMsg  = '';
     this.cargando = true;
     this.cdr.detectChanges();
 
@@ -149,6 +128,9 @@ export class AdminUsuariosComponent implements OnInit {
   }
 
   // ===== VALIDACIÓN UI =====
+  // ✅ CORREGIDO: se elimina la restricción de "roles incompatibles"
+  // El backend (sp_crear_usuario_v3) ya maneja combinaciones de roles distintos
+  // creando automáticamente un rol compuesto en PostgreSQL.
   puedeGuardar(): boolean {
     if (!this.modalAbierto) return false;
     if (!this.rolesApp || this.rolesApp.length === 0) return false;
@@ -156,34 +138,22 @@ export class AdminUsuariosComponent implements OnInit {
     this.warnMsg = '';
 
     if (!this.modoEdicion) {
-      // CREATE
+      // CREATE: campos obligatorios
       if (!this.formCreate.cedula.trim()
         || !this.formCreate.correoInstitucional.trim()
         || !this.formCreate.username.trim()
-        || !this.formCreate.passwordApp.trim()   // ✅ CAMBIO
+        || !this.formCreate.passwordApp.trim()
         || !this.formCreate.nombres.trim()
         || !this.formCreate.apellidos.trim()
         || this.createRolPrincipalId == null
       ) return false;
 
-      const ids = this.buildIdsRolApp(this.createRolPrincipalId, this.createRolesExtra);
-      if (!this.isSelectionCompatible(this.createRolPrincipalId, ids)) {
-        this.warnMsg = '⚠️ Roles incompatibles: estás mezclando roles de distintos perfiles del sistema (Admin/Docente/Estudiante).';
-        return false;
-      }
-
       return true;
     }
 
     // UPDATE
-    if (this.usuarioEditandoId == null) return false;
+    if (this.usuarioEditandoId == null)    return false;
     if (this.updateRolPrincipalId == null) return false;
-
-    const ids = this.buildIdsRolApp(this.updateRolPrincipalId, this.updateRolesExtra);
-    if (!this.isSelectionCompatible(this.updateRolPrincipalId, ids)) {
-      this.warnMsg = '⚠️ Roles incompatibles: estás mezclando roles de distintos perfiles del sistema (Admin/Docente/Estudiante).';
-      return false;
-    }
 
     return true;
   }
@@ -191,7 +161,6 @@ export class AdminUsuariosComponent implements OnInit {
   // ===== ACCIONES =====
   toggleActivo(u: UsuarioDTO): void {
     const nuevoEstado = !u.activo;
-
     this.usuariosService.cambiarEstado(u.idUsuario, nuevoEstado).subscribe({
       next: () => {
         u.activo = nuevoEstado;
@@ -206,49 +175,37 @@ export class AdminUsuariosComponent implements OnInit {
 
   abrirNuevo(): void {
     this.errorMsg = '';
-    this.warnMsg = '';
-    this.modoEdicion = false;
+    this.warnMsg  = '';
+    this.modoEdicion      = false;
     this.usuarioEditandoId = null;
-    this.modalAbierto = true;
-
-    // ✅ CAMBIO: passwordApp
+    this.modalAbierto     = true;
     this.formCreate = {
-      cedula: '',
-      correoInstitucional: '',
-      username: '',
-      passwordApp: '',
-      nombres: '',
-      apellidos: '',
-      activo: true
+      cedula: '', correoInstitucional: '', username: '',
+      passwordApp: '', nombres: '', apellidos: '', activo: true
     };
-
     this.createRolPrincipalId = null;
-    this.createRolesExtra = [];
-
+    this.createRolesExtra     = [];
     this.cdr.detectChanges();
   }
 
   abrirEditar(u: UsuarioDTO): void {
     this.errorMsg = '';
-    this.warnMsg = '';
-    this.modoEdicion = true;
+    this.warnMsg  = '';
+    this.modoEdicion      = true;
     this.usuarioEditandoId = u.idUsuario;
-    this.modalAbierto = true;
+    this.modalAbierto     = true;
 
-    const ids = (u.idsRolApp || []).slice();
+    const ids      = (u.idsRolApp || []).slice();
     const principal = (u.idRolApp ?? null) ?? (ids.length ? ids[0] : null);
-    const extras = ids.filter(x => x !== principal);
+    const extras    = ids.filter(x => x !== principal);
 
     this.updateRolPrincipalId = principal;
-    this.updateRolesExtra = extras;
+    this.updateRolesExtra     = extras;
 
     this.formUpdate = {
-      nombres: u.nombres ?? '',
-      apellidos: u.apellidos ?? '',
-      activo: !!u.activo,
-      password: ''
+      nombres: u.nombres ?? '', apellidos: u.apellidos ?? '',
+      activo: !!u.activo, password: ''
     };
-
     this.cdr.detectChanges();
   }
 
@@ -260,40 +217,18 @@ export class AdminUsuariosComponent implements OnInit {
   // ===== roles extras =====
   toggleExtraRoleCreate(idRolApp: number): void {
     const exists = this.createRolesExtra.includes(idRolApp);
-    const next = exists
+    this.createRolesExtra = exists
       ? this.createRolesExtra.filter(x => x !== idRolApp)
       : [...this.createRolesExtra, idRolApp];
-
-    if (this.createRolPrincipalId != null) {
-      const ids = this.buildIdsRolApp(this.createRolPrincipalId, next);
-      if (!this.isSelectionCompatible(this.createRolPrincipalId, ids)) {
-        this.warnMsg = '⚠️ No se puede combinar estos roles: pertenecen a distintos perfiles del sistema (Admin/Docente/Estudiante).';
-        this.cdr.detectChanges();
-        return;
-      }
-    }
-
-    this.createRolesExtra = next;
     this.warnMsg = '';
     this.cdr.detectChanges();
   }
 
   toggleExtraRoleUpdate(idRolApp: number): void {
     const exists = this.updateRolesExtra.includes(idRolApp);
-    const next = exists
+    this.updateRolesExtra = exists
       ? this.updateRolesExtra.filter(x => x !== idRolApp)
       : [...this.updateRolesExtra, idRolApp];
-
-    if (this.updateRolPrincipalId != null) {
-      const ids = this.buildIdsRolApp(this.updateRolPrincipalId, next);
-      if (!this.isSelectionCompatible(this.updateRolPrincipalId, ids)) {
-        this.warnMsg = '⚠️ No se puede combinar estos roles: pertenecen a distintos perfiles del sistema (Admin/Docente/Estudiante).';
-        this.cdr.detectChanges();
-        return;
-      }
-    }
-
-    this.updateRolesExtra = next;
     this.warnMsg = '';
     this.cdr.detectChanges();
   }
@@ -307,23 +242,21 @@ export class AdminUsuariosComponent implements OnInit {
   }
 
   get selectedNamesCreate(): string[] {
-    const all = this.createRolPrincipalId != null
-      ? this.buildIdsRolApp(this.createRolPrincipalId, this.createRolesExtra)
-      : [];
-    return all.map(id => this.rolById(id)?.nombre || `ROL_${id}`);
+    if (this.createRolPrincipalId == null) return [];
+    return this.buildIdsRolApp(this.createRolPrincipalId, this.createRolesExtra)
+      .map(id => this.rolById(id)?.nombre || `ROL_${id}`);
   }
 
   get selectedNamesUpdate(): string[] {
-    const all = this.updateRolPrincipalId != null
-      ? this.buildIdsRolApp(this.updateRolPrincipalId, this.updateRolesExtra)
-      : [];
-    return all.map(id => this.rolById(id)?.nombre || `ROL_${id}`);
+    if (this.updateRolPrincipalId == null) return [];
+    return this.buildIdsRolApp(this.updateRolPrincipalId, this.updateRolesExtra)
+      .map(id => this.rolById(id)?.nombre || `ROL_${id}`);
   }
 
   // ===== GUARDAR =====
   guardar(): void {
     this.errorMsg = '';
-    this.warnMsg = '';
+    this.warnMsg  = '';
 
     // ===== CREATE =====
     if (!this.modoEdicion) {
@@ -335,21 +268,14 @@ export class AdminUsuariosComponent implements OnInit {
 
       const idsRolApp = this.buildIdsRolApp(this.createRolPrincipalId, this.createRolesExtra);
 
-      if (!this.isSelectionCompatible(this.createRolPrincipalId, idsRolApp)) {
-        this.warnMsg = '⚠️ Roles incompatibles: no puedes mezclar roles de distintos perfiles del sistema.';
-        this.cdr.detectChanges();
-        return;
-      }
-
-      // ✅ CAMBIO: passwordApp
       const body: UsuarioCreateRequest = {
-        cedula: this.formCreate.cedula.trim(),
-        correoInstitucional: this.formCreate.correoInstitucional.trim(),
-        username: this.formCreate.username.trim(),
-        passwordApp: this.formCreate.passwordApp,
-        nombres: this.formCreate.nombres.trim(),
-        apellidos: this.formCreate.apellidos.trim(),
-        activo: !!this.formCreate.activo,
+        cedula:                this.formCreate.cedula.trim(),
+        correoInstitucional:   this.formCreate.correoInstitucional.trim(),
+        username:              this.formCreate.username.trim(),
+        passwordApp:           this.formCreate.passwordApp,
+        nombres:               this.formCreate.nombres.trim(),
+        apellidos:             this.formCreate.apellidos.trim(),
+        activo:                !!this.formCreate.activo,
         idsRolApp
       };
 
@@ -362,9 +288,9 @@ export class AdminUsuariosComponent implements OnInit {
           this.cerrarModal();
           this.recargar();
         },
-        error: () => {
+        error: (err: any) => {
           this.cargando = false;
-          this.errorMsg = 'No se pudo crear el usuario.';
+          this.errorMsg = err?.error?.message || 'No se pudo crear el usuario.';
           this.cdr.detectChanges();
         }
       });
@@ -381,17 +307,11 @@ export class AdminUsuariosComponent implements OnInit {
 
     const idsRolApp = this.buildIdsRolApp(this.updateRolPrincipalId, this.updateRolesExtra);
 
-    if (!this.isSelectionCompatible(this.updateRolPrincipalId, idsRolApp)) {
-      this.warnMsg = '⚠️ Roles incompatibles: no puedes mezclar roles de distintos perfiles del sistema.';
-      this.cdr.detectChanges();
-      return;
-    }
-
     const bodyUp: UsuarioUpdateRequest = {
-      nombres: (this.formUpdate.nombres || '').trim(),
+      nombres:   (this.formUpdate.nombres  || '').trim(),
       apellidos: (this.formUpdate.apellidos || '').trim(),
-      activo: !!this.formUpdate.activo,
-      password: (this.formUpdate.password || '').trim() === '' ? '' : this.formUpdate.password,
+      activo:    !!this.formUpdate.activo,
+      password:  (this.formUpdate.password  || '').trim() === '' ? '' : this.formUpdate.password,
       idsRolApp
     };
 
@@ -404,9 +324,9 @@ export class AdminUsuariosComponent implements OnInit {
         this.cerrarModal();
         this.recargar();
       },
-      error: () => {
+      error: (err: any) => {
         this.cargando = false;
-        this.errorMsg = 'No se pudo editar el usuario.';
+        this.errorMsg = err?.error?.message || 'No se pudo editar el usuario.';
         this.cdr.detectChanges();
       }
     });

@@ -24,15 +24,55 @@ export class RevisionDetalle implements OnInit {
 
   idDocumento = 0;
   documento = signal<DocumentoTitulacionDto | null>(null);
-
   titulo = signal<string>('');
 
   loading = signal(false);
   error = signal<string | null>(null);
   observaciones = signal<ObservacionDto[]>([]);
   aiResult = signal<string | null>(null);
+
+  // ✅ NUEVO: Asistente IA con modos
+  showAiAssistant = signal(false);
+  selectedAiMode = signal('evaluacion-integral');
+  aiLastModeLabel = signal<string | null>(null);
+  aiPromptSugerido = signal<string | null>(null);
+  customAiPrompt = '';
+  private aiPromptFinal = '';
+
   seccion = 'METODOLOGIA';
   comentario = '';
+
+  // ✅ NUEVO: Modos de análisis IA disponibles
+  readonly aiModes = [
+    {
+      id: 'evaluacion-integral',
+      titulo: 'Evaluación integral',
+      descripcion: 'Revisión global con fortalezas, riesgos y recomendaciones accionables.',
+      prompt:
+        'Analiza el documento de forma integral como evaluador académico. Resume fortalezas, puntos críticos y recomienda mejoras priorizadas por impacto.'
+    },
+    {
+      id: 'estilo-academico',
+      titulo: 'Redacción y estilo académico',
+      descripcion: 'Enfocado en claridad, cohesión, tono formal y calidad del lenguaje.',
+      prompt:
+        'Evalúa redacción académica, coherencia, gramática y estilo. Sugiere cambios concretos para elevar la calidad del texto.'
+    },
+    {
+      id: 'metodologia-rigor',
+      titulo: 'Metodología y rigor',
+      descripcion: 'Detecta debilidades metodológicas y propone cómo robustecerlas.',
+      prompt:
+        'Revisa con enfoque metodológico: pertinencia del enfoque, variables, técnicas, validez y limitaciones. Propón mejoras medibles.'
+    },
+    {
+      id: 'innovacion-impacto',
+      titulo: 'Innovación e impacto',
+      descripcion: 'Valora originalidad, aporte y potencial de aplicación real.',
+      prompt:
+        'Examina nivel de innovación, factibilidad e impacto social/académico. Sugiere ideas creativas para diferenciar el proyecto.'
+    }
+  ] as const;
 
   constructor(
     private route: ActivatedRoute,
@@ -82,7 +122,6 @@ export class RevisionDetalle implements OnInit {
         this.documento.set(doc);
         this.loading.set(false);
         this.aiResult.set(doc?.feedbackIa?.trim() || null);
-
       },
       error: (err) => {
         this.loading.set(false);
@@ -143,15 +182,41 @@ export class RevisionDetalle implements OnInit {
     });
   }
 
-  revisarConIa(): void {
+  // ✅ NUEVO: Abrir/cerrar panel asistente IA
+  abrirAsistenteIa(): void {
+    this.showAiAssistant.set(true);
+  }
+
+  cerrarAsistenteIa(): void {
+    this.showAiAssistant.set(false);
+  }
+
+  // ✅ NUEVO: Lanzar análisis desde el formulario del asistente
+  analizarConIaDesdeFormulario(): void {
+    const modo = this.aiModes.find((item) => item.id === this.selectedAiMode()) ?? this.aiModes[0];
+    const promptFinal = (this.customAiPrompt || '').trim() || modo.prompt;
+
+    this.aiLastModeLabel.set(modo.titulo);
+    this.aiPromptSugerido.set(promptFinal);
+    this.aiPromptFinal = promptFinal;
+    this.revisarConIa(modo.id);
+  }
+
+  // ✅ ACTUALIZADO: revisarConIa ahora acepta modo y prompt personalizado
+  revisarConIa(modoSeleccionado?: string): void {
     if (!this.idDocumento) return;
     this.loading.set(true);
     this.error.set(null);
 
-    this.api.revisarConIa(this.idDocumento).subscribe({
+    this.api.revisarConIa(this.idDocumento, {
+      modo: modoSeleccionado || this.selectedAiMode(),
+      promptPersonalizado: this.aiPromptFinal || undefined
+    }).subscribe({
       next: (doc) => {
         this.documento.set(doc);
         this.aiResult.set(doc?.feedbackIa?.trim() || 'La IA no devolvió observaciones para este documento.');
+        this.customAiPrompt = '';
+        this.cerrarAsistenteIa();
         this.cargarObs();
       },
       error: (err) => {
@@ -271,7 +336,6 @@ export class RevisionDetalle implements OnInit {
             font-size: 12pt;
             text-align: center;
           }
-
           .doc-main {
             position: relative;
             padding-bottom: 2cm;
@@ -311,7 +375,6 @@ export class RevisionDetalle implements OnInit {
           .doc-body table { width: 100%; border-collapse: collapse; margin: 0.55rem 0; }
           .doc-body td, .doc-body th { border: 1px solid #8b8b8b; padding: 0.25rem; }
           .doc-body img { max-width: 100%; height: auto; }
-
           .pdf-footer {
             position: fixed;
             bottom: 0.6cm;
@@ -335,14 +398,10 @@ export class RevisionDetalle implements OnInit {
             <p class="cover-university">UNIVERSIDAD TÉCNICA ESTATAL DE QUEVEDO</p>
             <p class="cover-faculty">Facultad de Ciencias de la Computación y Diseño Digital</p>
             <p class="cover-career">Ingeniería en Software</p>
-
             <hr class="cover-divider" />
-
             <h1 class="cover-title">INFORME DE REVISIÓN</h1>
             <p class="cover-subtitle">Documento de titulación para evaluación académica</p>
-
             <hr class="cover-divider" />
-
             <div class="cover-box">
               <div><strong>Título del proyecto:</strong> ${this.escapeHtml(tituloDocumento)}</div>
               <div><strong>Documento:</strong> #${this.idDocumento}</div>
@@ -350,7 +409,6 @@ export class RevisionDetalle implements OnInit {
               <div><strong>Fecha de emisión:</strong> ${this.escapeHtml(fechaLarga)}</div>
             </div>
           </div>
-
           <div class="cover-footer">
             Quevedo - Ecuador<br/>
             ${anio}
@@ -362,7 +420,6 @@ export class RevisionDetalle implements OnInit {
             <h1>${this.escapeHtml(tituloDocumento)}</h1>
             <div class="doc-meta">Documento de revisión · ${this.escapeHtml(fechaLarga)}</div>
           </header>
-
           ${secciones || '<p>No hay contenido disponible para exportar.</p>'}
         </main>
 

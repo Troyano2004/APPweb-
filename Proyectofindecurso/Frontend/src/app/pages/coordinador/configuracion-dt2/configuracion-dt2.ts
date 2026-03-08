@@ -1,0 +1,319 @@
+import { Component, OnInit, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { finalize } from 'rxjs/operators';
+import {
+  Dt2Service,
+  ProyectoPendienteConfiguracionDto,
+  ConfiguracionProyectoDto,
+  PredefensaDto,
+  ProgramarPredefensaRequest
+} from '../../../services/dt2.service';
+import { CoordinadorService, DirectorCarga } from '../../../services/coordinador';
+import { CatalogosBasicosService, PeriodoTitulacion } from '../../../services/catalogos-basicos.service';
+import { getSessionUser, getSessionEntityId } from '../../../services/session';
+
+interface OpcionPeriodo {
+  etiqueta: string;
+  valor: string;
+}
+
+@Component({
+  selector: 'app-configuracion-dt2',
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule],
+  templateUrl: './configuracion-dt2.html',
+  styleUrl: './configuracion-dt2.scss'
+})
+export class ConfiguracionDt2Component implements OnInit {
+  loading = signal(false);
+  error = signal<string | null>(null);
+  ok = signal<string | null>(null);
+
+  proyectos = signal<ProyectoPendienteConfiguracionDto[]>([]);
+  docentes = signal<DirectorCarga[]>([]);
+
+  proyectoSeleccionado = signal<ProyectoPendienteConfiguracionDto | null>(null);
+  configuracion = signal<ConfiguracionProyectoDto | null>(null);
+
+  tab = signal<'docente' | 'director' | 'tribunal' | 'predefensa'>('docente');
+
+  // Periodos
+  periodosActivos: PeriodoTitulacion[] = [];
+  opcionesPeriodo: OpcionPeriodo[] = [];
+
+  predefensaActual = signal<PredefensaDto | null>(null);
+
+  formDocente: FormGroup;
+  formPredefensa: FormGroup;
+  formDirector: FormGroup;
+  formTribunal: FormGroup;
+
+  private idRealizadoPor = 0;
+
+  constructor(
+    private dt2: Dt2Service,
+    private coordinadorApi: CoordinadorService,
+    private catalogosBasicosService: CatalogosBasicosService,
+    private fb: FormBuilder
+  ) {
+    this.formDocente = this.fb.group({
+      idDocenteDt2: [null, [Validators.required, Validators.min(1)]],
+      periodo: ['', Validators.required],
+      observacion: ['']
+    });
+
+    this.formDirector = this.fb.group({
+      idDirector: [null, [Validators.required, Validators.min(1)]],
+      periodo: ['', Validators.required],
+      motivo: ['']
+    });
+
+    this.formPredefensa = this.fb.group({
+      fecha:         ['', Validators.required],
+      hora:          ['', Validators.required],
+      lugar:         ['', [Validators.required, Validators.minLength(3)]],
+      observaciones: ['']
+    });
+
+    this.formTribunal = this.fb.group({
+      periodo: ['', Validators.required],
+      miembros: this.fb.array([
+        this.crearMiembro(),
+        this.crearMiembro(),
+        this.crearMiembro()
+      ])
+    });
+  }
+
+  ngOnInit(): void {
+    const user = getSessionUser();
+    this.idRealizadoPor = getSessionEntityId(user, 'docente') ?? 0;
+    this.cargarPeriodosActivos();
+    this.cargarProyectos();
+    this.cargarDocentes();
+  }
+
+  get miembros(): FormArray {
+    return this.formTribunal.get('miembros') as FormArray;
+  }
+
+  addMiembro(): void {
+    const seleccionados = this.miembros.controls
+      .filter(c => c.get('idDocente')?.value != null).length;
+    if (this.docentes().length > 0 && seleccionados >= this.docentes().length) {
+      this.error.set('Ya no hay docentes disponibles para agregar.');
+      return;
+    }
+    this.miembros.push(this.crearMiembro());
+  }
+
+  removeMiembro(i: number): void {
+    if (this.miembros.length > 3) this.miembros.removeAt(i);
+  }
+
+  seleccionarProyecto(p: ProyectoPendienteConfiguracionDto): void {
+    this.proyectoSeleccionado.set(p);
+    this.error.set(null);
+    this.ok.set(null);
+    this.cargarConfiguracion(p.idProyecto);
+    this.cargarPredefensa(p.idProyecto);
+  }
+
+  setTab(t: 'docente' | 'director' | 'tribunal' | 'predefensa'): void {
+    this.tab.set(t);
+    this.error.set(null);
+    this.ok.set(null);
+  }
+
+  asignarDocente(): void {
+    const p = this.proyectoSeleccionado();
+    if (!p || this.formDocente.invalid) {
+      this.formDocente.markAllAsTouched();
+      return;
+    }
+    const v = this.formDocente.value;
+    this.ejecutar(() =>
+      this.dt2.asignarDocenteDt2(p.idProyecto, {
+        idDocenteDt2: v.idDocenteDt2,
+        idRealizadoPor: this.idRealizadoPor,
+        periodo: v.periodo,
+        observacion: v.observacion
+      }).pipe(finalize(() => {}))
+    );
+  }
+
+  asignarDirector(): void {
+    const p = this.proyectoSeleccionado();
+    if (!p || this.formDirector.invalid) {
+      this.formDirector.markAllAsTouched();
+      return;
+    }
+    const v = this.formDirector.value;
+    this.ejecutar(() =>
+      this.dt2.asignarDirector(p.idProyecto, {
+        idDirector: v.idDirector,
+        idRealizadoPor: this.idRealizadoPor,
+        periodo: v.periodo,
+        motivo: v.motivo
+      })
+    );
+  }
+
+  asignarTribunal(): void {
+    const p = this.proyectoSeleccionado();
+    if (!p || this.formTribunal.invalid) {
+      this.formTribunal.markAllAsTouched();
+      return;
+    }
+
+    // Validación extra de seguridad contra duplicados
+    const ids = this.miembros.controls
+      .map(c => c.get('idDocente')?.value)
+      .filter(id => id != null && id > 0);
+    if (new Set(ids).size !== ids.length) {
+      this.error.set('No se puede repetir el mismo docente en el tribunal.');
+      return;
+    }
+
+    const v = this.formTribunal.value;
+    this.ejecutar(() =>
+      this.dt2.asignarTribunal(p.idProyecto, {
+        idRealizadoPor: this.idRealizadoPor,
+        periodo: v.periodo,
+        miembros: v.miembros.map((m: any) => ({ idDocente: Number(m.idDocente), cargo: m.cargo }))
+      })
+    );
+  }
+
+  programarPredefensa(): void {
+    const p = this.proyectoSeleccionado();
+    if (!p || this.formPredefensa.invalid) {
+      this.formPredefensa.markAllAsTouched();
+      return;
+    }
+    const v = this.formPredefensa.value;
+    const req: ProgramarPredefensaRequest = {
+      idRealizadoPor: this.idRealizadoPor,
+      fecha: v.fecha,
+      hora: v.hora + ':00',
+      lugar: v.lugar,
+      observaciones: v.observaciones
+    };
+    this.ejecutar(() => this.dt2.programarPredefensa(p.idProyecto, req));
+  }
+
+  nombreDocente(idDocente: number): string {
+    return this.docentes().find(d => d.idDocente === idDocente)?.director ?? `Docente #${idDocente}`;
+  }
+
+  /**
+   * Docentes disponibles para la fila i del tribunal.
+   * Oculta los ya usados en otras filas pero mantiene visible
+   * el docente ya seleccionado en esta fila.
+   */
+  getDocentesParaFila(indexFila: number): DirectorCarga[] {
+    const seleccionActual = this.miembros.at(indexFila)?.get('idDocente')?.value ?? null;
+    const idsSeleccionados = new Set(
+      this.miembros.controls
+        .map(c => c.get('idDocente')?.value)
+        .filter((id): id is number => id !== null && id !== undefined && id > 0)
+    );
+
+    return this.docentes().filter(d => {
+      if (d?.idDocente == null) return false;
+      if (seleccionActual !== null && d.idDocente === seleccionActual) return true;
+      return !idsSeleccionados.has(d.idDocente);
+    });
+  }
+
+  // ─── Periodos ────────────────────────────────────────────────
+  private cargarPeriodosActivos(): void {
+    this.catalogosBasicosService.listarPeriodosActivos().subscribe({
+      next: (data) => {
+        this.periodosActivos = data;
+        this.opcionesPeriodo = data.map(p => ({
+          etiqueta: p.descripcion,
+          valor: this.construirPeriodo(p)
+        }));
+        const primerValor = this.opcionesPeriodo.length > 0 ? this.opcionesPeriodo[0].valor : '';
+        this.formDocente.patchValue({ periodo: primerValor });
+        this.formDirector.patchValue({ periodo: primerValor });
+        this.formTribunal.patchValue({ periodo: primerValor });
+      },
+      error: () => {
+        this.error.set('No se pudo cargar el listado de periodos activos.');
+      }
+    });
+  }
+
+  private construirPeriodo(periodo: PeriodoTitulacion): string {
+    const descripcionLimpia = (periodo.descripcion ?? '').trim().replace(/\s+/g, ' ');
+    if (descripcionLimpia.length <= 20) return descripcionLimpia;
+
+    const anioInicio = (periodo.fechaInicio ?? '').toString().slice(0, 4);
+    const anioFin = (periodo.fechaFin ?? '').toString().slice(0, 4);
+    const etiqueta = anioInicio && anioFin ? `${anioInicio}-${anioFin}` : '';
+
+    if (etiqueta && etiqueta.length <= 20) return etiqueta;
+    return descripcionLimpia.slice(0, 20);
+  }
+
+  // ─── Internos ────────────────────────────────────────────────
+  private cargarProyectos(): void {
+    this.loading.set(true);
+    this.dt2.listarPendientesConfiguracion()
+      .pipe(finalize(() => this.loading.set(false)))
+      .subscribe({
+        next: data => this.proyectos.set(data),
+        error: () => this.error.set('Error al cargar proyectos pendientes')
+      });
+  }
+
+  private cargarDocentes(): void {
+    this.coordinadorApi.getCargaDirectores().subscribe({
+      next: data => this.docentes.set(data),
+      error: () => {}
+    });
+  }
+
+  private cargarConfiguracion(idProyecto: number): void {
+    this.dt2.getConfiguracion(idProyecto).subscribe({
+      next: data => this.configuracion.set(data),
+      error: () => {}
+    });
+  }
+
+  private cargarPredefensa(idProyecto: number): void {
+    this.dt2.getPredefensa(idProyecto).subscribe({
+      next: data => this.predefensaActual.set(data),
+      error: () => this.predefensaActual.set(null)
+    });
+  }
+
+  private ejecutar(call: () => any): void {
+    this.loading.set(true);
+    this.error.set(null);
+    this.ok.set(null);
+    call().subscribe({
+      next: (res: any) => {
+        this.loading.set(false);
+        this.ok.set(res?.mensaje ?? 'Operación completada');
+        const p = this.proyectoSeleccionado();
+        if (p) this.cargarConfiguracion(p.idProyecto);
+        this.cargarProyectos();
+      },
+      error: (err: any) => {
+        this.loading.set(false);
+        this.error.set(err?.error?.mensaje ?? err?.error?.message ?? 'Error en la operación');
+      }
+    });
+  }
+
+  private crearMiembro(): FormGroup {
+    return this.fb.group({
+      idDocente: [null, [Validators.required, Validators.min(1)]],
+      cargo: ['VOCAL', Validators.required]
+    });
+  }
+}

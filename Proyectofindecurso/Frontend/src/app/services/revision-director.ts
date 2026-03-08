@@ -18,6 +18,11 @@ export interface CrearObservacionRequest {
   idAutor: number;          // idDocente
 }
 
+export interface RevisarIaRequest {
+  modo?: string;
+  promptPersonalizado?: string;
+}
+
 export interface DocumentoPendienteDto {
   // Identificación
   id: number;                    // id del documento
@@ -64,7 +69,7 @@ export class RevisionDirectorService {
   aprobar(idDocente: number, idDocumento: number) {
     return this.http.post(`${this.baseUrl}/director/${idDocente}/documento/${idDocumento}/aprobar`, {});
   }
-  revisarConIa(idDocumento: number): Observable<DocumentoTitulacionDto> {
-    return this.http.post<DocumentoTitulacionDto>(`${this.API_URL}/api/revision-ia/evaluar/${idDocumento}`, {});
+  revisarConIa(idDocumento: number, payload: RevisarIaRequest = {}): Observable<DocumentoTitulacionDto> {
+    return this.http.post<DocumentoTitulacionDto>(`${this.API_URL}/api/revision-ia/evaluar/${idDocumento}`, payload);
   }
 }

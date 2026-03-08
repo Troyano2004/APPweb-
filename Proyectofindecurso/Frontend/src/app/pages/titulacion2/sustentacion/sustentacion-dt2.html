@@ -1,0 +1,217 @@
+<div class="sustentacion-dt2">
+  <h2>Sustentación Final — Titulación II</h2>
+  <p class="subtitle">
+    Criterios: Calidad (20%) + Originalidad (20%) + Dominio (30%) + Preguntas (30%).
+    Nota de grado = 80% récord + 20% sustentación.
+  </p>
+
+  <div class="alert error" *ngIf="error()">{{ error() }}</div>
+  <div class="alert ok" *ngIf="ok()">{{ ok() }}</div>
+
+  <div class="layout">
+    <!-- Lista proyectos -->
+    <div class="panel-lista">
+      <h3>Proyectos</h3>
+      <div *ngIf="loading() && proyectos().length === 0" class="loading">Cargando...</div>
+      <div class="proyecto-card"
+           *ngFor="let p of proyectos()"
+           [class.activo]="proyectoSeleccionado()?.idProyecto === p.idProyecto"
+           (click)="seleccionarProyecto(p)">
+        <div class="proyecto-titulo">{{ p.titulo }}</div>
+        <div class="proyecto-meta">{{ p.estudiante }}</div>
+        <span class="badge {{ p.estadoProyecto }}">{{ p.estadoProyecto }}</span>
+      </div>
+      <div *ngIf="!loading() && proyectos().length === 0" class="empty">Sin proyectos disponibles.</div>
+    </div>
+
+    <!-- Detalle -->
+    <div class="panel-detalle" *ngIf="proyectoSeleccionado(); else sinSeleccion">
+      <h3>{{ proyectoSeleccionado()!.titulo }}</h3>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button [class.active]="tab() === 'docs'" (click)="setTab('docs')">Documentos</button>
+        <button [class.active]="tab() === 'programar'" (click)="setTab('programar')">Programar</button>
+        <button [class.active]="tab() === 'calificar'" (click)="setTab('calificar')">Calificar</button>
+        <button [class.active]="tab() === 'resultado'" (click)="setTab('resultado')">Resultado</button>
+      </div>
+
+      <!-- Tab: Documentos previos -->
+      <div *ngIf="tab() === 'docs'">
+        <div class="docs-estado" *ngIf="documentos()">
+          <span class="badge-docs" [class]="documentos()!.completo ? 'completo' : 'pendiente'">
+            {{ documentos()!.completo ? '✓ Documentos completos' : '○ Documentos incompletos' }}
+          </span>
+        </div>
+        <form [formGroup]="formDocs" (ngSubmit)="guardarDocumentos()">
+          <p class="info">Marcar los documentos entregados por el estudiante antes de la sustentación.</p>
+          <div class="check-list">
+            <label class="check-item">
+              <input type="checkbox" formControlName="ejemplarImpreso" />
+              Ejemplar impreso del trabajo
+            </label>
+            <label class="check-item">
+              <input type="checkbox" formControlName="copiaDigitalBiblioteca" />
+              Copia digital para biblioteca
+            </label>
+            <label class="check-item">
+              <input type="checkbox" formControlName="copiasDigitalesTribunal" />
+              Copias digitales para el tribunal
+            </label>
+            <label class="check-item">
+              <input type="checkbox" formControlName="informeCompilatioFirmado" />
+              Informe COMPILATIO firmado
+            </label>
+          </div>
+          <div class="form-row">
+            <label>Observaciones</label>
+            <textarea formControlName="observaciones" rows="2" placeholder="Notas adicionales..."></textarea>
+          </div>
+          <button type="submit" [disabled]="loading()">
+            {{ loading() ? 'Guardando...' : 'Guardar documentos' }}
+          </button>
+        </form>
+      </div>
+
+      <!-- Tab: Programar sustentación -->
+      <form *ngIf="tab() === 'programar'" [formGroup]="formProgramar" (ngSubmit)="programar()">
+        <p class="info">Requiere: documentos previos completos + predefensa aprobada.</p>
+        <div class="form-row-grid">
+          <div class="form-row">
+            <label>Fecha</label>
+            <input type="date" formControlName="fecha" />
+          </div>
+          <div class="form-row">
+            <label>Hora</label>
+            <input type="time" formControlName="hora" />
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Lugar</label>
+          <input formControlName="lugar" placeholder="Aula, sala, enlace..." />
+        </div>
+        <div class="form-row">
+          <label>Observaciones</label>
+          <textarea formControlName="observaciones" rows="2"></textarea>
+        </div>
+        <button type="submit" [disabled]="loading()">
+          {{ loading() ? 'Guardando...' : 'Programar sustentación' }}
+        </button>
+      </form>
+
+      <!-- Tab: Calificar -->
+      <div *ngIf="tab() === 'calificar'">
+        <form [formGroup]="formCalificar" (ngSubmit)="calificar()">
+          <p class="info">Cada criterio se ingresa sobre 10 y el sistema aplica el peso correspondiente.</p>
+          <div class="criterios-grid">
+            <div class="criterio">
+              <label>Calidad del trabajo <span class="peso">(20%)</span></label>
+              <input type="number" formControlName="calidadTrabajo" min="0" max="10" step="0.01" />
+            </div>
+            <div class="criterio">
+              <label>Originalidad <span class="peso">(20%)</span></label>
+              <input type="number" formControlName="originalidad" min="0" max="10" step="0.01" />
+            </div>
+            <div class="criterio">
+              <label>Dominio del tema <span class="peso">(30%)</span></label>
+              <input type="number" formControlName="dominioTema" min="0" max="10" step="0.01" />
+            </div>
+            <div class="criterio">
+              <label>Pertinencia respuestas <span class="peso">(30%)</span></label>
+              <input type="number" formControlName="preguntas" min="0" max="10" step="0.01" />
+            </div>
+          </div>
+          <div class="form-row">
+            <label>Observaciones</label>
+            <textarea formControlName="observaciones" rows="2"></textarea>
+          </div>
+          <button type="submit" [disabled]="loading()">
+            {{ loading() ? 'Calificando...' : 'Registrar calificación' }}
+          </button>
+        </form>
+
+        <div class="consolidar-section" *ngIf="esCoordinador">
+          <h4>Consolidar resultado final</h4>
+          <p>Una vez que todos los miembros del tribunal han calificado:</p>
+          <button class="btn-consolidar" (click)="consolidar()" [disabled]="loading()">
+            {{ loading() ? 'Consolidando...' : 'Consolidar resultado' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Tab: Resultado -->
+      <div *ngIf="tab() === 'resultado'">
+        <div *ngIf="resultado(); else sinResultado">
+          <!-- Nota de grado final -->
+          <div class="resultado-card" [class]="resultado()!.resultado">
+            <div class="resultado-titulo">{{ resultado()!.resultado ?? 'PENDIENTE' }}</div>
+            <div class="resultado-notas">
+              <div class="nota-item">
+                <span class="nv">{{ resultado()!.promedioTribunal }}</span>
+                <span class="nl">Promedio tribunal</span>
+              </div>
+              <div class="nota-item destacado" *ngIf="resultado()!.notaGradoFinal">
+                <span class="nv">{{ resultado()!.notaGradoFinal }}</span>
+                <span class="nl">Nota de grado final</span>
+              </div>
+              <div class="nota-item">
+                <span class="nv">{{ resultado()!.promedioRecordAcademico }}</span>
+                <span class="nl">Récord académico</span>
+              </div>
+            </div>
+            <p class="formula">Nota de grado = 80% récord + 20% sustentación</p>
+          </div>
+
+          <!-- Evaluaciones -->
+          <div class="evaluaciones" *ngIf="resultado()!.evaluaciones?.length">
+            <h4>Calificaciones por criterio</h4>
+            <div class="eval-row" *ngFor="let e of resultado()!.evaluaciones">
+              <span class="nombre">{{ e.nombreDocente }} ({{ e.cargo }})</span>
+              <span class="nota-ev">{{ e.nota }}</span>
+            </div>
+          </div>
+
+          <!-- Segunda oportunidad -->
+          <div class="segunda" *ngIf="resultado()!.resultado === 'REPROBADO' && esCoordinador">
+            <h4>Habilitar segunda oportunidad <small>(máx. 15 días)</small></h4>
+            <form [formGroup]="formSegunda" (ngSubmit)="habilitarSegunda()">
+              <div class="form-row-grid">
+                <div class="form-row">
+                  <label>Fecha</label>
+                  <input type="date" formControlName="fechaSustentacion" />
+                </div>
+                <div class="form-row">
+                  <label>Hora</label>
+                  <input type="time" formControlName="hora" />
+                </div>
+              </div>
+              <div class="form-row">
+                <label>Lugar</label>
+                <input formControlName="lugar" />
+              </div>
+              <div class="form-row">
+                <label>Observaciones</label>
+                <textarea formControlName="observaciones" rows="2"></textarea>
+              </div>
+              <button type="submit" class="btn-segunda" [disabled]="loading()">Habilitar segunda oportunidad</button>
+            </form>
+          </div>
+
+          <div class="segunda-info" *ngIf="resultado()!.habilitadoSegundaOportunidad">
+            <p>Segunda oportunidad habilitada hasta: <strong>{{ resultado()!.fechaLimiteSegundaOportunidad | date: 'dd/MM/yyyy' }}</strong></p>
+          </div>
+        </div>
+
+        <ng-template #sinResultado>
+          <div class="empty">No hay resultado registrado para este proyecto aún.</div>
+        </ng-template>
+      </div>
+    </div>
+
+    <ng-template #sinSeleccion>
+      <div class="panel-detalle empty-panel">
+        <p>Selecciona un proyecto para gestionar la sustentación.</p>
+      </div>
+    </ng-template>
+  </div>
+</div>

@@ -1,5 +1,6 @@
 export interface SessionUser {
-  rol?: string;
+  rol?:   string;
+  roles?: string[];   // ✅ todos los roles del usuario
   [key: string]: unknown;
 }
 
@@ -11,10 +12,7 @@ export const setSessionUser = (user: SessionUser): void => {
 
 export const getSessionUser = (): SessionUser | null => {
   const raw = localStorage.getItem(SESSION_KEY);
-  if (!raw) {
-    return null;
-  }
-
+  if (!raw) return null;
   try {
     return JSON.parse(raw) as SessionUser;
   } catch {
@@ -25,39 +23,71 @@ export const getSessionUser = (): SessionUser | null => {
 
 export const isAuthenticated = (): boolean => !!getSessionUser();
 
-export const normalizeRole = (rol: unknown): string => String(rol || '').trim().toUpperCase();
+export const normalizeRole = (rol: unknown): string =>
+  String(rol || '').trim().toUpperCase();
 
 export const hasRole = (rol: unknown, ...expectedRoles: string[]): boolean => {
   const normalizedRole = normalizeRole(rol);
-  return expectedRoles.map((item) => normalizeRole(item)).includes(normalizedRole);
+  return expectedRoles.map(item => normalizeRole(item)).includes(normalizedRole);
 };
 
-export const getSessionEntityId = (user: SessionUser | null, kind: 'estudiante' | 'docente'): number | null => {
-  if (!user) return null;
+// ✅ Devuelve todos los roles del usuario como array normalizado
+// Fix: solo usa el array "roles" si tiene elementos con contenido real
+export const getUserRoles = (): string[] => {
+  const user = getSessionUser();
+  if (!user) return [];
 
+  // Usa el array "roles" solo si tiene elementos no vacíos
+  if (Array.isArray(user.roles)) {
+    const fromArray = user.roles
+      .map(r => normalizeRole(r))
+      .filter(r => r.length > 0);
+
+    if (fromArray.length > 0) {
+      return fromArray;
+    }
+  }
+
+  // Fallback: usar el campo "rol" simple
+  const single = normalizeRole(user.rol);
+  return single ? [single] : [];
+};
+
+// ✅ Verifica si el usuario tiene AL MENOS UNO de los roles indicados
+export const hasAnyRole = (...expectedRoles: string[]): boolean => {
+  const userRoles = getUserRoles();
+  const normalized = expectedRoles.map(r => normalizeRole(r));
+  return userRoles.some(r => normalized.includes(r));
+};
+
+export const getSessionEntityId = (
+  user: SessionUser | null,
+  kind: 'estudiante' | 'docente'
+): number | null => {
+  if (!user) return null;
   const keys =
     kind === 'estudiante'
       ? ['idEstudiante', 'estudianteId', 'id_usuario', 'idUsuario']
       : ['idDocente', 'docenteId', 'id_usuario', 'idUsuario'];
 
   for (const key of keys) {
-    const raw = user[key];
+    const raw    = user[key];
     const parsed = Number(raw);
-    if (Number.isFinite(parsed) && parsed > 0) {
-      return parsed;
-    }
+    if (Number.isFinite(parsed) && parsed > 0) return parsed;
   }
-
   return null;
 };
 
 export const getRoleHomeRoute = (rol: unknown): string | null => {
-  const normalizedRole = normalizeRole(rol);
+  const userRoles = getUserRoles();
 
-  if (normalizedRole === 'ROLE_ADMIN') return '/app/admin/usuarios';
-  if (normalizedRole === 'ROLE_COORDINADOR') return '/app/dashboard';
-  if (normalizedRole === 'ROLE_DOCENTE') return '/app/dashboard';
-  if (normalizedRole === 'ROLE_ESTUDIANTE') return '/app/dashboard';
+  // Usa el primer rol disponible para determinar la ruta inicial
+  const primaryRole = userRoles.length > 0 ? userRoles[0] : normalizeRole(rol);
+
+  if (primaryRole === 'ROLE_ADMIN')        return '/app/admin/usuarios';
+  if (primaryRole === 'ROLE_COORDINADOR')  return '/app/dashboard';
+  if (primaryRole === 'ROLE_DOCENTE')      return '/app/dashboard';
+  if (primaryRole === 'ROLE_ESTUDIANTE')   return '/app/dashboard';
 
   return null;
 };

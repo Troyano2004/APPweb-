@@ -1,4 +1,5 @@
 
+
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -6,53 +7,42 @@ import { Observable } from 'rxjs';
 /* ========= DTOs ========= */
 
 export interface RolAppDTO {
-  idRolApp: number;
-  nombre: string;
+  idRolApp:     number;
+  nombre:       string;
   descripcion?: string | null;
-  activo?: boolean | null;
-
-  idRolBase?: number | null;
+  activo?:      boolean | null;
+  idRolBase?:   number | null;   // ✅ NUEVO: necesario para mostrar la base del rol
 }
 
 export interface UsuarioDTO {
-  idUsuario: number;
-  username: string;
-  nombres: string;
-  apellidos: string;
-
-  rolApp?: string | null;
-  idRolApp?: number | null;
-
-  rolesApp?: string | null;
+  idUsuario:  number;
+  username:   string;
+  nombres:    string;
+  apellidos:  string;
+  rolApp?:    string | null;
+  idRolApp?:  number | null;
+  rolesApp?:  string | null;
   idsRolApp?: number[];
-
-  activo: boolean;
+  activo:     boolean;
 }
 
 export interface UsuarioCreateRequest {
-  cedula: string;
-  correoInstitucional: string;
-  username: string;
-
-  // ✅ backend espera esto
-  passwordApp: string;
-
-  nombres: string;
-  apellidos: string;
-
-  idsRolApp: number[];
-  activo: boolean;
+  cedula:               string;
+  correoInstitucional:  string;
+  username:             string;
+  passwordApp:          string;
+  nombres:              string;
+  apellidos:            string;
+  idsRolApp:            number[];
+  activo:               boolean;
 }
 
 export interface UsuarioUpdateRequest {
-  nombres?: string;
+  nombres?:   string;
   apellidos?: string;
-
   idsRolApp?: number[] | null;
-
-  activo?: boolean;
-
-  password?: string; // "" => no cambiar
+  activo?:    boolean;
+  password?:  string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -61,7 +51,6 @@ export class AdminUsuariosService {
 
   constructor(private http: HttpClient) {}
 
-  // ===== USUARIOS =====
   listar(): Observable<UsuarioDTO[]> {
     return this.http.get<UsuarioDTO[]>(`${this.baseUrl}/admin/usuarios`);
   }
@@ -78,7 +67,6 @@ export class AdminUsuariosService {
     return this.http.patch<void>(`${this.baseUrl}/admin/usuarios/${idUsuario}/estado`, { activo });
   }
 
-  // ===== ROLES APP =====
   listarRolesApp(): Observable<RolAppDTO[]> {
     return this.http.get<RolAppDTO[]>(`${this.baseUrl}/rol-app`);
   }

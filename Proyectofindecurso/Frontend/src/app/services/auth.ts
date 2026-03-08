@@ -8,6 +8,21 @@ export class AuthService {
   constructor(private http: HttpClient) {}
 
   login(usuarioLogin: string, password: string) {
-    return this.http.post(`${this.baseUrl}/login`, { usuarioLogin, password });
+    // ✅ FIX: withCredentials envia la cookie JSESSIONID en cada request
+    // Sin esto, Angular no adjunta la cookie y el backend ve una sesión
+    // nueva vacía en cada request → siempre usa auth_reader (DEFAULT)
+    return this.http.post(
+      `${this.baseUrl}/login`,
+      { usuarioLogin, password },
+      { withCredentials: true }
+    );
+  }
+
+  logout() {
+    return this.http.post(
+      `${this.baseUrl}/logout`,
+      {},
+      { withCredentials: true }
+    );
   }
 }
