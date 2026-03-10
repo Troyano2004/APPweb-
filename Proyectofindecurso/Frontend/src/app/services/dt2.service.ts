@@ -293,6 +293,11 @@ export class Dt2Service {
     return this.http.get<ProyectoPendienteConfiguracionDto[]>(`${this.base}/docente-dt2/${idDocenteDt2}/proyectos`);
   }
 
+  // ✅ NUEVO: proyectos en PREDEFENSA donde el docente es tribunal
+  listarProyectosTribunal(idDocente: number): Observable<ProyectoPendienteConfiguracionDto[]> {
+    return this.http.get<ProyectoPendienteConfiguracionDto[]>(`${this.base}/tribunal/${idDocente}/proyectos`);
+  }
+
   registrarAsesoria(idProyecto: number, req: RegistrarAsesoriaRequest): Observable<AsesoriaDto> {
     return this.http.post<AsesoriaDto>(`${this.base}/proyectos/${idProyecto}/asesorias`, req);
   }

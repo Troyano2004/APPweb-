@@ -2,6 +2,7 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs/operators';
+import { forkJoin } from 'rxjs';
 import {
   Dt2Service,
   ProyectoPendienteConfiguracionDto,
@@ -29,10 +30,9 @@ export class PredefensaDt2Component implements OnInit {
 
   tab = signal<'estado' | 'programar' | 'calificar-dt2' | 'calificar-tribunal'>('estado');
 
-  // ── Rol del usuario en este proyecto ──────────────────────
   esCoordinador = false;
-  esDocenteDt2  = false;  // es el DT2 asignado a este proyecto
-  esTribunal    = false;  // es miembro del tribunal de este proyecto
+  esDocenteDt2  = false;
+  esTribunal    = false;
 
   private idDocente = 0;
   private idProyectoActual = 0;
@@ -134,17 +134,13 @@ export class PredefensaDt2Component implements OnInit {
     }));
   }
 
-  // ── Detecta si el docente logueado es DT2 o Tribunal en este proyecto ──
+  // ── Detecta si el docente es DT2 o Tribunal en este proyecto ──
   private detectarRolEnProyecto(idProyecto: number): void {
     this.dt2.getConfiguracion(idProyecto).subscribe({
       next: (config: ConfiguracionProyectoDto) => {
-        // ¿Es el DT2 asignado?
         this.esDocenteDt2 = config.idDocenteDt2 === this.idDocente;
+        this.esTribunal   = config.tribunal?.some(m => m.idDocente === this.idDocente) ?? false;
 
-        // ¿Es miembro del tribunal?
-        this.esTribunal = config.tribunal?.some(m => m.idDocente === this.idDocente) ?? false;
-
-        // Pre-seleccionar tab según rol
         if (this.esDocenteDt2) {
           this.tab.set('calificar-dt2');
         } else if (this.esTribunal) {
@@ -153,32 +149,43 @@ export class PredefensaDt2Component implements OnInit {
           this.tab.set('estado');
         }
       },
-      error: () => {
-        // Si no puede cargar configuración, mostrar solo estado
-        this.tab.set('estado');
-      }
+      error: () => this.tab.set('estado')
     });
   }
 
   private cargarProyectos(): void {
     this.loading.set(true);
+
     if (this.esCoordinador) {
-      // ✅ Coordinador usa endpoint dedicado para proyectos en PREDEFENSA
       this.dt2.listarProyectosEnPredefensa()
         .pipe(finalize(() => this.loading.set(false)))
         .subscribe({
           next: data => this.proyectos.set(data),
           error: () => this.error.set('Error al cargar proyectos')
         });
-    } else {
-      // Docente ve proyectos donde es director/DT2 en PREDEFENSA
-      this.dt2.listarProyectosDirector(this.idDocente)
-        .pipe(finalize(() => this.loading.set(false)))
-        .subscribe({
-          next: data => this.proyectos.set(data.filter(p => p.estadoProyecto === 'PREDEFENSA')),
-          error: () => this.error.set('Error al cargar proyectos')
-        });
+      return;
     }
+
+    // ✅ Para docentes: combinar proyectos como Director + como DT2
+    // Cubre el caso donde el docente es DT2 pero no director
+    forkJoin({
+      comoDirector: this.dt2.listarProyectosDirector(this.idDocente),
+      comoDt2:      this.dt2.listarProyectosDocenteDt2(this.idDocente),
+      comoTribunal: this.dt2.listarProyectosTribunal(this.idDocente)
+    })
+      .pipe(finalize(() => this.loading.set(false)))
+      .subscribe({
+        next: ({ comoDirector, comoDt2, comoTribunal }) => {
+          // Unir las 3 listas eliminando duplicados por idProyecto
+          const todos = [...comoDirector, ...comoDt2, ...comoTribunal];
+          const unicos = todos.filter(
+            (p, i, arr) => arr.findIndex(x => x.idProyecto === p.idProyecto) === i
+          );
+          // Solo proyectos en PREDEFENSA
+          this.proyectos.set(unicos.filter(p => p.estadoProyecto === 'PREDEFENSA'));
+        },
+        error: () => this.error.set('Error al cargar proyectos')
+      });
   }
 
   private cargarPredefensa(idProyecto: number): void {

@@ -24,19 +24,22 @@ public class DocumentoTitulacionService {
     private final DocenteRepository docenteRepo;
     private final TribunalProyectoRepository tribunalRepo;
     private final SustentacionRepository sustentacionRepo;
+    private final EmailService emailService; // ✅ NUEVO
 
     public DocumentoTitulacionService(DocumentoTitulacionRepository docRepo,
                                       ObservacionDocumentoRepository obsRepo,
                                       EstudianteRepository estudianteRepo,
                                       DocenteRepository docenteRepo,
                                       TribunalProyectoRepository tribunalRepo,
-                                      SustentacionRepository sustentacionRepo) {
+                                      SustentacionRepository sustentacionRepo,
+                                      EmailService emailService) { // ✅ NUEVO
         this.docRepo = docRepo;
         this.obsRepo = obsRepo;
         this.estudianteRepo = estudianteRepo;
         this.docenteRepo = docenteRepo;
         this.tribunalRepo = tribunalRepo;
         this.sustentacionRepo = sustentacionRepo;
+        this.emailService = emailService; // ✅ NUEVO
     }
 
     // ====== ESTUDIANTE ======
@@ -51,7 +54,6 @@ public class DocumentoTitulacionService {
         DocumentoTitulacion doc = docRepo.findByEstudiante_IdEstudiante(idEstudiante)
                 .orElseThrow(() -> new RuntimeException("Documento no existe"));
 
-        // Bloqueo por estado
         if (!(doc.getEstado() == EstadoDocumento.BORRADOR || doc.getEstado() == EstadoDocumento.CORRECCION_REQUERIDA)) {
             throw new RuntimeException("No puedes editar en estado: " + doc.getEstado());
         }
@@ -110,7 +112,6 @@ public class DocumentoTitulacionService {
             throw new RuntimeException("Documento no está EN_REVISION");
         }
 
-        // (Opcional) validar que existan observaciones antes de devolver
         doc.setEstado(EstadoDocumento.CORRECCION_REQUERIDA);
         docRepo.save(doc);
     }
@@ -126,6 +127,32 @@ public class DocumentoTitulacionService {
 
         doc.setEstado(EstadoDocumento.APROBADO_POR_DIRECTOR);
         docRepo.save(doc);
+
+        // ✅ Notificar al estudiante que su documento fue aprobado
+        try {
+            Estudiante est = doc.getEstudiante();
+            String emailEst = est != null && est.getUsuario() != null
+                    ? est.getUsuario().getCorreoInstitucional() : null;
+            if (emailEst != null && !emailEst.isBlank()) {
+                String nombreEst = (est.getUsuario().getNombres() + " " +
+                        est.getUsuario().getApellidos()).trim();
+                String nombreDirector = doc.getDirector() != null && doc.getDirector().getUsuario() != null
+                        ? (doc.getDirector().getUsuario().getNombres() + " " +
+                        doc.getDirector().getUsuario().getApellidos()).trim()
+                        : "Tu Director TIC";
+                String periodo = doc.getProyecto() != null && doc.getProyecto().getPeriodo() != null
+                        ? doc.getProyecto().getPeriodo().getDescripcion() : "";
+                emailService.notificarDocumentoAprobado(
+                        emailEst,
+                        nombreEst,
+                        doc.getTitulo(),
+                        nombreDirector,
+                        periodo
+                );
+            }
+        } catch (Exception e) {
+            System.err.println("Error al notificar documento aprobado: " + e.getMessage());
+        }
     }
 
     @Transactional
@@ -156,7 +183,7 @@ public class DocumentoTitulacionService {
         DocumentoTitulacion doc = new DocumentoTitulacion();
         doc.setEstudiante(est);
         doc.setEstado(EstadoDocumento.BORRADOR);
-        doc.setTitulo("");// para que no falle nullable=false si lo pusiste así
+        doc.setTitulo("");
         return docRepo.save(doc);
     }
 
@@ -164,7 +191,6 @@ public class DocumentoTitulacionService {
         doc.setTitulo(req.getTitulo());
         doc.setCiudad(req.getCiudad());
         doc.setAnio(req.getAnio());
-
         doc.setResumen(req.getResumen());
         doc.setAbstractText(req.getAbstractText());
         doc.setIntroduccion(req.getIntroduccion());
@@ -188,14 +214,13 @@ public class DocumentoTitulacionService {
         dto.setIdEstudiante(d.getEstudiante() != null ? d.getEstudiante().getIdEstudiante() : null);
         dto.setIdDirector(d.getDirector() != null ? d.getDirector().getIdDocente() : null);
         dto.setEstado(d.getEstado());
-
         dto.setTitulo(d.getTitulo());
         dto.setCiudad(d.getCiudad());
         dto.setAnio(d.getAnio());
-
         dto.setResumen(d.getResumen());
         dto.setAbstractText(d.getAbstractText());
         dto.setIntroduccion(d.getIntroduccion());
+
         PropuestaTitulacion propuesta = d.getProyecto() != null ? d.getProyecto().getPropuesta() : null;
 
         dto.setPlanteamientoProblema(firstNonBlank(
@@ -246,7 +271,8 @@ public class DocumentoTitulacionService {
                 dto.setTribunal(tribunal);
             }
 
-            List<Sustentacion> sustentaciones = sustentacionRepo.findByProyecto_IdProyectoOrderByFechaDescHoraDesc(idProyecto);
+            List<Sustentacion> sustentaciones = sustentacionRepo
+                    .findByProyecto_IdProyectoOrderByFechaDescHoraDesc(idProyecto);
             if (!sustentaciones.isEmpty()) {
                 Sustentacion ultima = sustentaciones.get(0);
                 dto.setFechaSustentacion(ultima.getFecha());
@@ -261,25 +287,19 @@ public class DocumentoTitulacionService {
         if (miembro == null || miembro.getDocente() == null || miembro.getDocente().getUsuario() == null) {
             return null;
         }
-        String nombres = firstNonBlank(miembro.getDocente().getUsuario().getNombres(), "");
+        String nombres   = firstNonBlank(miembro.getDocente().getUsuario().getNombres(), "");
         String apellidos = firstNonBlank(miembro.getDocente().getUsuario().getApellidos(), "");
         String nombreCompleto = (nombres + " " + apellidos).trim();
         String cargo = miembro.getCargo() != null ? miembro.getCargo().trim() : "";
 
-        if (cargo.isEmpty()) {
-            return nombreCompleto.isEmpty() ? null : nombreCompleto;
-        }
-        if (nombreCompleto.isEmpty()) {
-            return cargo;
-        }
+        if (cargo.isEmpty())         return nombreCompleto.isEmpty() ? null : nombreCompleto;
+        if (nombreCompleto.isEmpty()) return cargo;
         return cargo + ": " + nombreCompleto;
     }
 
     private String firstNonBlank(String... values) {
         for (String value : values) {
-            if (value != null && !value.trim().isEmpty()) {
-                return value;
-            }
+            if (value != null && !value.trim().isEmpty()) return value;
         }
         return null;
     }
@@ -295,7 +315,8 @@ public class DocumentoTitulacionService {
 
         if (o.getAutor() != null && o.getAutor().getUsuario() != null) {
             dto.setIdAutor(o.getAutor().getIdDocente());
-            dto.setAutorNombre(o.getAutor().getUsuario().getNombres() + " " + o.getAutor().getUsuario().getApellidos());
+            dto.setAutorNombre(o.getAutor().getUsuario().getNombres() + " " +
+                    o.getAutor().getUsuario().getApellidos());
         }
         return dto;
     }

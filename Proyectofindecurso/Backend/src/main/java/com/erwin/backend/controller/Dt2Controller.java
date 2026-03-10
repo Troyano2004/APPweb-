@@ -89,6 +89,15 @@ public class Dt2Controller {
         return service.listarProyectosDocenteDt2(idDocenteDt2);
     }
 
+    /**
+     * GET /api/dt2/tribunal/{idDocente}/proyectos
+     * ✅ NUEVO: proyectos en PREDEFENSA donde el docente es miembro del tribunal
+     */
+    @GetMapping("/tribunal/{idDocente}/proyectos")
+    public List<Dt2Dtos.ProyectoPendienteConfiguracionDto> proyectosTribunal(@PathVariable Integer idDocente) {
+        return service.listarProyectosTribunal(idDocente);
+    }
+
     @PostMapping("/proyectos/{idProyecto}/asesorias")
     public Dt2Dtos.AsesoriaDto registrarAsesoria(
             @PathVariable Integer idProyecto,

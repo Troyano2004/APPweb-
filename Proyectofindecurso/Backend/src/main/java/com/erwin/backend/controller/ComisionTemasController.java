@@ -4,6 +4,7 @@ import com.erwin.backend.entities.*;
 import com.erwin.backend.repository.AnteproyectoTitulacionRepository;
 import com.erwin.backend.enums.EstadoDocumento;
 import com.erwin.backend.repository.*;
+import com.erwin.backend.service.EmailService;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -27,9 +28,9 @@ public class ComisionTemasController {
     private final PeriodoTitulacionRepository periodoRepository;
     private final ProyectoTitulacionRepository proyectoTitulacionRepository;
     private final TipoTrabajoTitulacionRepository tipoTrabajoTitulacionRepository;
-    // ✅ NUEVO
     private final DocumentoTitulacionRepository documentoTitulacionRepository;
     private final AnteproyectoTitulacionRepository anteproyectoTitulacionRepository;
+    private final EmailService emailService;
 
     public ComisionTemasController(BancoTemasRepository bancoTemasRepository,
                                    PropuestaTitulacionRepository propuestaRepository,
@@ -43,9 +44,9 @@ public class ComisionTemasController {
                                    PeriodoTitulacionRepository periodoRepository,
                                    ProyectoTitulacionRepository proyectoTitulacionRepository,
                                    TipoTrabajoTitulacionRepository tipoTrabajoTitulacionRepository,
-                                   // ✅ NUEVO
                                    DocumentoTitulacionRepository documentoTitulacionRepository,
-                                   AnteproyectoTitulacionRepository anteproyectoTitulacionRepository) {
+                                   AnteproyectoTitulacionRepository anteproyectoTitulacionRepository,
+                                   EmailService emailService) {
         this.bancoTemasRepository = bancoTemasRepository;
         this.propuestaRepository = propuestaRepository;
         this.comisionMiembroRepository = comisionMiembroRepository;
@@ -58,9 +59,9 @@ public class ComisionTemasController {
         this.periodoRepository = periodoRepository;
         this.proyectoTitulacionRepository = proyectoTitulacionRepository;
         this.tipoTrabajoTitulacionRepository = tipoTrabajoTitulacionRepository;
-        // ✅ NUEVO
         this.documentoTitulacionRepository = documentoTitulacionRepository;
         this.anteproyectoTitulacionRepository = anteproyectoTitulacionRepository;
+        this.emailService = emailService;
     }
 
     @GetMapping("/estudiante/{idEstudiante}/estado-modalidad")
@@ -225,10 +226,26 @@ public class ComisionTemasController {
 
         if ("APROBADA".equals(propuestaActualizada.getEstado())) {
             ProyectoTitulacion proyecto = crearProyectoTitulacionDesdePropuesta(propuestaActualizada);
-            // ✅ NUEVO: crear documento de titulación vacío junto con el proyecto
             if (proyecto != null) {
                 crearAnteproyectoAprobadoDesdePropuesta(propuestaActualizada, proyecto);
                 crearDocumentoTitulacionDesdeProyecto(proyecto, propuestaActualizada);
+            }
+            // ✅ Notificar al estudiante
+            try {
+                Estudiante est = propuestaActualizada.getEstudiante();
+                String emailEst = est != null && est.getUsuario() != null
+                        ? est.getUsuario().getCorreoInstitucional() : null;
+                if (emailEst != null && !emailEst.isBlank()) {
+                    String nombreEst = (est.getUsuario().getNombres() + " " + est.getUsuario().getApellidos()).trim();
+                    String periodoDesc = propuestaActualizada.getEleccion() != null
+                            && propuestaActualizada.getEleccion().getPeriodo() != null
+                            ? propuestaActualizada.getEleccion().getPeriodo().getDescripcion() : "";
+                    emailService.notificarPropuestaAprobada(
+                            emailEst, nombreEst, propuestaActualizada.getTitulo(), periodoDesc
+                    );
+                }
+            } catch (Exception e) {
+                System.err.println("Error al notificar propuesta aprobada: " + e.getMessage());
             }
         }
 
