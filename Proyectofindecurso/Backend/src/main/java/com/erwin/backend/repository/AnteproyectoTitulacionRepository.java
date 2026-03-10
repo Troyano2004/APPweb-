@@ -24,11 +24,16 @@ public interface AnteproyectoTitulacionRepository extends JpaRepository<Anteproy
             Integer idEstudiante, Integer idPeriodo, String estado);
 
 
-
+    List<AnteproyectoTitulacion> findByCarrera_IdCarreraAndEleccion_Periodo_IdPeriodoAndEstadoInIgnoreCase(
+            Integer idCarrera,
+            Integer idPeriodo,
+            List<String> estados
+    );
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select a from AnteproyectoTitulacion a where a.idAnteproyecto = :id")
     Optional<AnteproyectoTitulacion> findByIdForUpdate(@Param("id") Integer idAnteproyecto);
+
 
 
 

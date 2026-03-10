@@ -182,6 +182,7 @@ export class ShellComponent implements OnInit, OnDestroy {
         { label: 'Roles y permisos', path: '/app/admin/roles' },
         { label: 'Parámetros', path: '/app/admin/parametros' },
         { label: 'Gestión de solicitudes', path: '/app/admin/gestion-solicitudes' },
+        { label: 'Configuración de correo', path: '/app/admin/configuracion-correo' },
       ],
     },
   ];

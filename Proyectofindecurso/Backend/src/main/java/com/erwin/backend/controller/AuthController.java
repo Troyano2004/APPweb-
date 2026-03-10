@@ -18,14 +18,12 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public LoginResponse login(@RequestBody LoginRequest req) {
-        return authService.login(req);
+    public LoginResponse login(@RequestBody LoginRequest req, HttpSession session) {
+        return authService.login(req, session);
     }
-    // ✅ LOGOUT
+
     @PostMapping("/logout")
     public void logout(HttpSession session) {
-        session.invalidate(); // destruye la sesión activa
+        session.invalidate();
     }
-
-
 }

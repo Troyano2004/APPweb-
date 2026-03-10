@@ -6,13 +6,16 @@ import com.erwin.backend.dtos.SolicitudRegistroResponse;
 import com.erwin.backend.dtos.VerificarCodigoRequest;
 import com.erwin.backend.entities.*;
 import com.erwin.backend.repository.*;
+import com.erwin.backend.security.CryptoUtil;
 import jakarta.transaction.Transactional;
 import org.springframework.http.HttpStatus;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.security.SecureRandom;
+import java.sql.Array;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Random;
@@ -26,7 +29,7 @@ public class SolicitudRegistroService {
     private final EstudianteRepository estudianteRepo;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
-    private final RolesSistemaRepository rolesSistemaRepo;
+    private final JdbcTemplate jdbc;
 
     public SolicitudRegistroService(
             SolicitudRegistroRepository solicitudRepo,
@@ -35,7 +38,7 @@ public class SolicitudRegistroService {
             EstudianteRepository estudianteRepo,
             PasswordEncoder passwordEncoder,
             EmailService emailService,
-            RolesSistemaRepository rolesSistemaRepo
+            JdbcTemplate jdbc
     ) {
         this.solicitudRepo = solicitudRepo;
         this.carreraRepo = carreraRepo;
@@ -43,7 +46,7 @@ public class SolicitudRegistroService {
         this.estudianteRepo = estudianteRepo;
         this.passwordEncoder = passwordEncoder;
         this.emailService = emailService;
-        this.rolesSistemaRepo = rolesSistemaRepo;
+        this.jdbc = jdbc;
     }
 
     // =========================================================
@@ -186,7 +189,7 @@ public class SolicitudRegistroService {
     }
 
     // =========================================================
-    // ADMIN: aprobar
+    // ADMIN: aprobar -> usa sp_crear_usuario_v3 (SECURITY DEFINER)
     // =========================================================
     @Transactional
     public SolicitudRegistroResponse aprobar(Integer idSolicitud) {
@@ -197,8 +200,6 @@ public class SolicitudRegistroService {
         SolicitudRegistro s = solicitudRepo.findByIdSolicitudAndEstado(idSolicitud, "PENDIENTE_APROBACION")
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "NO_EXISTE_O_NO_ESTA_PENDIENTE"));
 
-        String username = construirUsername(s.getCorreo(), s.getCedula());
-
         if (usuarioRepo.existsByCedula(s.getCedula())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "YA_EXISTE_USUARIO_CON_ESTA_CEDULA");
         }
@@ -206,24 +207,43 @@ public class SolicitudRegistroService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "YA_EXISTE_USUARIO_CON_ESE_CORREO");
         }
 
-        String rawPass = generarPassword10();
-        String hash = passwordEncoder.encode(rawPass);
+        String username    = construirUsername(s.getCorreo(), s.getCedula());
+        String rawPass     = generarPassword10();
+        String passwordHash = passwordEncoder.encode(rawPass);
+        String passwordDbPlain = generarPassword10();
+        String passwordDbEncrypted = CryptoUtil.encrypt(passwordDbPlain);
 
-        RolSistema rolEstudiante = rolesSistemaRepo.findByNombreRol("ROLE_ESTUDIANTE")
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "ROL_ESTUDIANTE_NO_ENCONTRADO"));
+        // id_rol_app = 24 = ROLE_ESTUDIANTE
+        Integer[] idsRolApp = new Integer[]{24};
 
-        Usuario u = new Usuario();
-        u.setUsername(username);
-        u.setCorreoInstitucional(s.getCorreo());
-        u.setCedula(s.getCedula());
-        u.setNombres(s.getNombres());
-        u.setApellidos(s.getApellidos());
-        u.setRol("ESTUDIANTE");
-        u.setRolAsignado("ESTUDIANTE");
-        u.setRolSistema(rolEstudiante);
-        u.setPasswordHash(hash);
-        u.setActivo(true);
-        u = usuarioRepo.save(u);
+        // Llamar al stored procedure sp_crear_usuario_v3 (SECURITY DEFINER)
+        // que tiene GRANT a auth_reader y crea el usuario + rol de BD
+        Integer idUsuario = jdbc.execute((java.sql.Connection con) -> {
+            Array sqlArray = con.createArrayOf("integer", idsRolApp);
+            return jdbc.queryForObject(
+                    "SELECT public.sp_crear_usuario_v3(?,?,?,?,?,?,?,?,?,?,?)",
+                    Integer.class,
+                    s.getCedula(),
+                    s.getCorreo(),
+                    username,
+                    passwordHash,
+                    s.getNombres(),
+                    s.getApellidos(),
+                    true,
+                    sqlArray,
+                    username,           // username_db
+                    passwordDbEncrypted,
+                    passwordDbPlain
+            );
+        });
+
+        if (idUsuario == null) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "ERROR_CREAR_USUARIO");
+        }
+
+        // Insertar en tabla estudiante (necesita GRANT INSERT a auth_reader)
+        Usuario u = usuarioRepo.findById(idUsuario)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "USUARIO_NO_ENCONTRADO_TRAS_CREAR"));
 
         Estudiante e = new Estudiante();
         e.setUsuario(u);
