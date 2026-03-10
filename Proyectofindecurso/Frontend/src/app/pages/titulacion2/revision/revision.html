@@ -34,7 +34,11 @@
       <div class="card-header">
         <div class="card-badge-row">
           <span class="document-id">Doc. #{{ d.id }}</span>
-          <span class="badge badge-pending">{{ d.estado }}</span>
+          <span class="badge" [ngClass]="{
+            'badge-revision': d.estado === 'EN_REVISION',
+            'badge-correccion': d.estado === 'CORRECCION_REQUERIDA',
+            'badge-aprobado': d.estado === 'APROBADO_POR_DIRECTOR'
+          }">{{ d.estado | titlecase }}</span>
         </div>
       </div>
 
@@ -42,21 +46,26 @@
         <h3 class="document-title">{{ d.titulo || 'Sin título' }}</h3>
 
         <div class="document-meta">
+
+          <!-- Estudiante -->
           <div class="meta-item">
             <span class="meta-icon">👤</span>
             <div class="meta-content">
               <span class="meta-label">Estudiante</span>
               <span class="meta-value">{{ d.nombreEstudiante || 'ID ' + d.idEstudiante }}</span>
+              <span class="meta-sub" *ngIf="d.carrera">{{ d.carrera }}</span>
             </div>
           </div>
 
+          <!-- Fecha de envío -->
           <div class="meta-item" *ngIf="d.fechaEnvio">
             <span class="meta-icon">📅</span>
             <div class="meta-content">
               <span class="meta-label">Fecha de envío</span>
-              <span class="meta-value">{{ d.fechaEnvio }}</span>
+              <span class="meta-value">{{ d.fechaEnvio | date: 'dd/MM/yyyy HH:mm' }}</span>
             </div>
           </div>
+
         </div>
       </div>
 

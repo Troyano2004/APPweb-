@@ -13,6 +13,10 @@ public class DocumentoTitulacionDto {
     private Integer idDirector;
     private EstadoDocumento estado;
 
+    // ✅ NUEVO: Datos del estudiante
+    private String nombreEstudiante;
+    private String carreraEstudiante;
+
     private String titulo;
     private String ciudad;
     private Integer anio;
@@ -37,4 +41,7 @@ public class DocumentoTitulacionDto {
     private LocalDate fechaSustentacion;
     private LocalTime horaSustentacion;
     private String lugarSustentacion;
+
+    private String feedbackIa;
+    private String estadoRevisionIa;
 }
