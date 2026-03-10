@@ -58,6 +58,7 @@ public class Dt2Service {
     private final DocumentoPrevioSustentacionRepository docPrevioRepo;
     private final ActaGradoRepository actaGradoRepo;
     private final DocumentStorageService storageService;
+    private final EmailService emailService;
 
     public Dt2Service(ProyectoTitulacionRepository proyectoRepo,
                       AnteproyectoTitulacionRepository anteproyectoRepo,
@@ -74,7 +75,8 @@ public class Dt2Service {
                       EvaluacionSustentacionRepository evaluacionRepo,
                       DocumentoPrevioSustentacionRepository docPrevioRepo,
                       ActaGradoRepository actaGradoRepo,
-                      DocumentStorageService storageService) {
+                      DocumentStorageService storageService,
+                      EmailService emailService) {
         this.proyectoRepo = proyectoRepo;
         this.anteproyectoRepo = anteproyectoRepo;
         this.documentoRepo = documentoRepo;
@@ -91,6 +93,7 @@ public class Dt2Service {
         this.docPrevioRepo = docPrevioRepo;
         this.actaGradoRepo = actaGradoRepo;
         this.storageService = storageService;
+        this.emailService = emailService;
     }
 
     // =========================================================
@@ -171,6 +174,21 @@ public class Dt2Service {
                 req.getPeriodo(), req.getObservacion());
 
         intentarTransicionDesarrollo(proyecto);
+
+        // ✅ Notificación por correo al docente DT2
+        String emailDocente = docente.getUsuario() != null ? docente.getUsuario().getCorreoInstitucional() : null;
+        if (emailDocente != null && !emailDocente.isBlank()) {
+            String estudiante = fullName(proyecto.getPropuesta().getEstudiante().getUsuario());
+            String periodo    = proyecto.getPeriodo() != null ? proyecto.getPeriodo().getDescripcion() : req.getPeriodo();
+            emailService.notificarAsignacionDocenteDt2(
+                    emailDocente,
+                    fullName(docente.getUsuario()),
+                    proyecto.getTitulo(),
+                    estudiante,
+                    periodo
+            );
+        }
+
         return new Dt2Dtos.MensajeDto("Docente DT2 asignado correctamente", proyecto.getEstado(), true);
     }
 
@@ -204,6 +222,21 @@ public class Dt2Service {
                 req.getPeriodo(), req.getMotivo());
 
         intentarTransicionDesarrollo(proyecto);
+
+        // ✅ Notificación por correo al director
+        String emailDirector = director.getUsuario() != null ? director.getUsuario().getCorreoInstitucional() : null;
+        if (emailDirector != null && !emailDirector.isBlank()) {
+            String estudiante = fullName(proyecto.getPropuesta().getEstudiante().getUsuario());
+            String periodo    = proyecto.getPeriodo() != null ? proyecto.getPeriodo().getDescripcion() : req.getPeriodo();
+            emailService.notificarAsignacionDirector(
+                    emailDirector,
+                    fullName(director.getUsuario()),
+                    proyecto.getTitulo(),
+                    estudiante,
+                    periodo
+            );
+        }
+
         return new Dt2Dtos.MensajeDto("Director asignado correctamente", proyecto.getEstado(), true);
     }
 
@@ -232,6 +265,21 @@ public class Dt2Service {
             registrarBitacora(proyecto, "TRIBUNAL", docente.getIdDocente(),
                     fullName(docente.getUsuario()), tp.getCargo(), realizadoPor,
                     req.getPeriodo(), null);
+
+            // ✅ Notificación por correo a cada miembro del tribunal
+            String emailTribunal = docente.getUsuario() != null ? docente.getUsuario().getCorreoInstitucional() : null;
+            if (emailTribunal != null && !emailTribunal.isBlank()) {
+                String estudiante = fullName(proyecto.getPropuesta().getEstudiante().getUsuario());
+                String periodo    = proyecto.getPeriodo() != null ? proyecto.getPeriodo().getDescripcion() : req.getPeriodo();
+                emailService.notificarAsignacionTribunal(
+                        emailTribunal,
+                        fullName(docente.getUsuario()),
+                        tp.getCargo(),
+                        proyecto.getTitulo(),
+                        estudiante,
+                        periodo
+                );
+            }
         }
 
         intentarTransicionDesarrollo(proyecto);
@@ -342,6 +390,33 @@ public class Dt2Service {
      * ✅ NUEVO: proyectos donde el docente está asignado como DT2
      * y el documento está en APROBADO_POR_DIRECTOR (listos para subir antiplagio).
      */
+    /**
+     * ✅ NUEVO: Lista proyectos en PREDEFENSA donde el docente es miembro del tribunal.
+     */
+    @Transactional
+    public List<Dt2Dtos.ProyectoPendienteConfiguracionDto> listarProyectosTribunal(Integer idDocente) {
+        return tribunalRepo.findByDocente_IdDocente(idDocente).stream()
+                .map(tp -> tp.getProyecto())
+                .filter(p -> "PREDEFENSA".equalsIgnoreCase(p.getEstado()))
+                .distinct()
+                .map(p -> {
+                    Dt2Dtos.ProyectoPendienteConfiguracionDto dto = new Dt2Dtos.ProyectoPendienteConfiguracionDto();
+                    dto.setIdProyecto(p.getIdProyecto());
+                    dto.setTitulo(p.getTitulo());
+                    dto.setEstadoProyecto(p.getEstado());
+                    if (p.getPropuesta() != null) {
+                        if (p.getPropuesta().getEstudiante() != null)
+                            dto.setEstudiante(fullName(p.getPropuesta().getEstudiante().getUsuario()));
+                        if (p.getPropuesta().getCarrera() != null)
+                            dto.setCarrera(p.getPropuesta().getCarrera().getNombre());
+                    }
+                    if (p.getPeriodo() != null)
+                        dto.setPeriodo(p.getPeriodo().getDescripcion());
+                    return dto;
+                })
+                .collect(Collectors.toList());
+    }
+
     @Transactional
     public List<Dt2Dtos.ProyectoPendienteConfiguracionDto> listarProyectosDocenteDt2(Integer idDocenteDt2) {
         List<Dt2Asignacion> asignaciones = dt2AsignacionRepo.findByDocenteDt2_IdDocenteAndActivoTrue(idDocenteDt2);
@@ -351,9 +426,12 @@ public class Dt2Service {
             ProyectoTitulacion proyecto = asignacion.getProyecto();
             if (proyecto == null) continue;
 
-            // Solo proyectos con documento en APROBADO_POR_DIRECTOR
+            // Proyectos con documento en APROBADO_POR_DIRECTOR o estados posteriores
             boolean listo = documentoRepo.findByProyecto_IdProyecto(proyecto.getIdProyecto())
-                    .map(doc -> doc.getEstado() == EstadoDocumento.APROBADO_POR_DIRECTOR)
+                    .map(doc -> doc.getEstado() == EstadoDocumento.APROBADO_POR_DIRECTOR
+                            || doc.getEstado() == EstadoDocumento.ANTIPLAGIO_APROBADO
+                            || doc.getEstado() == EstadoDocumento.EN_PREDEFENSA
+                            || doc.getEstado() == EstadoDocumento.LISTO_SUSTENTACION)
                     .orElse(false);
             if (!listo) continue;
 
@@ -1011,6 +1089,30 @@ public class Dt2Service {
                 doc.setTitulo(proyecto.getTitulo());
                 return documentoRepo.save(doc);
             });
+
+            // ✅ Notificar al estudiante que su equipo quedó completo
+            try {
+                Estudiante est = proyecto.getPropuesta().getEstudiante();
+                String emailEst = est != null && est.getUsuario() != null
+                        ? est.getUsuario().getCorreoInstitucional() : null;
+                if (emailEst != null && !emailEst.isBlank()) {
+                    String nombreEst = fullName(est.getUsuario());
+                    String periodo = proyecto.getPeriodo() != null
+                            ? proyecto.getPeriodo().getDescripcion() : "";
+                    String nombreDirector = proyecto.getDirector() != null
+                            ? fullName(proyecto.getDirector().getUsuario()) : null;
+                    String nombreDt2 = dt2AsignacionRepo
+                            .findByProyecto_IdProyectoAndActivoTrue(proyecto.getIdProyecto())
+                            .map(a -> fullName(a.getDocenteDt2().getUsuario()))
+                            .orElse(null);
+                    emailService.notificarAsignacionEquipo(
+                            emailEst, nombreEst, proyecto.getTitulo(),
+                            nombreDirector, nombreDt2, periodo
+                    );
+                }
+            } catch (Exception e) {
+                System.err.println("Error al notificar asignacion equipo: " + e.getMessage());
+            }
         }
     }
 
