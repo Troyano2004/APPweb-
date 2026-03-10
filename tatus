@@ -1,0 +1,82 @@
+[33mcommit 56a109e43f70e5d4d1e53f07772543c8d423618b[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mAnteproyecto[m[33m, [m[1;31morigin/Anteproyecto[m[33m)[m
+Author: emendozav3 <emendozav3@uteq.edu.ec>
+Date:   Mon Mar 2 21:14:35 2026 -0500
+
+    Ajuste estilos asignacion-dt1
+
+Proyectofindecurso/Frontend/src/app/pages/coordinador/asignacion-dt1/asignacion-dt1.scss
+
+[33mcommit cdc85fb5f2512f54c0d54e435f026816f5bc6a79[m
+Merge: 0154ae3 78b4e7f
+Author: emendozav3 <emendozav3@uteq.edu.ec>
+Date:   Mon Mar 2 21:14:15 2026 -0500
+
+    Merge branch 'Anteproyecto' of https://github.com/Troyano2004/APPweb- into Anteproyecto
+
+[33mcommit 78b4e7f581ecb8530e07f2762a790c63f770b223[m
+Author: Troyano2004 <erwinbueno05@gmail.com>
+Date:   Mon Mar 2 01:53:06 2026 -0500
+
+    aja
+
+Proyectofindecurso/Backend/pom.xml
+Proyectofindecurso/Backend/src/main/java/com/erwin/backend/config/DataSourceConfig.java
+Proyectofindecurso/Backend/src/main/java/com/erwin/backend/config/DbContextHolder.java
+Proyectofindecurso/Backend/src/main/java/com/erwin/backend/config/DbSessionFilter.java
+Proyectofindecurso/Backend/src/main/java/com/erwin/backend/config/DbStartupLogger.java
+Proyectofindecurso/Backend/src/main/java/com/erwin/backend/config/DynamicRoutingDataSource.java
+Proyectofindecurso/Backend/src/main/java/com/erwin/backend/config/SecurityBeans.java
+Proyectofindecurso/Backend/src/main/java/com/erwin/backend/config/SessionConfig.java
+Proyectofindecurso/Backend/src/main/java/com/erwin/backend/config/SessionLogListener.java
+Proyectofindecurso/Backend/src/main/java/com/erwin/backend/controller/AdminUsuarioController.java
+Proyectofindecurso/Backend/src/main/java/com/erwin/backend/controller/AuthController.java
+Proyectofindecurso/Backend/src/main/java/com/erwin/backend/controller/DebugDbController.java
+Proyectofindecurso/Backend/src/main/java/com/erwin/backend/dtos/LoginRequest.java
+Proyectofindecurso/Backend/src/main/java/com/erwin/backend/dtos/UsuarioAdminDto.java
+Proyectofindecurso/Backend/src/main/java/com/erwin/backend/dtos/UsuarioCreateRequest.java
+Proyectofindecurso/Backend/src/main/java/com/erwin/backend/dtos/UsuarioEstadoRequest.java
+Proyectofindecurso/Backend/src/main/java/com/erwin/backend/dtos/UsuarioUpdateRequest.java
+Proyectofindecurso/Backend/src/main/java/com/erwin/backend/entities/Usuario.java
+Proyectofindecurso/Backend/src/main/java/com/erwin/backend/repository/UsuarioSpRepository.java
+Proyectofindecurso/Backend/src/main/java/com/erwin/backend/security/CryptoUtil.java
+Proyectofindecurso/Backend/src/main/java/com/erwin/backend/security/SecurityConfig.java
+Proyectofindecurso/Backend/src/main/java/com/erwin/backend/service/AdminUsuarioService.java
+Proyectofindecurso/Backend/src/main/java/com/erwin/backend/service/AuthService.java
+Proyectofindecurso/Backend/src/main/resources/application.properties
+Proyectofindecurso/Frontend/src/app/pages/admin-usuario/admin-usuarios.html
+Proyectofindecurso/Frontend/src/app/pages/admin-usuario/admin-usuarios.scss
+Proyectofindecurso/Frontend/src/app/pages/admin-usuario/admin-usuarios.ts
+Proyectofindecurso/Frontend/src/app/pages/roles/roles.html
+Proyectofindecurso/Frontend/src/app/pages/roles/roles.scss
+Proyectofindecurso/Frontend/src/app/services/admin-usuarios.service.ts
+
+[33mcommit 0154ae33ee88376e2cf202dc2faf689a95fed515[m
+Author: emendozav3 <emendozav3@uteq.edu.ec>
+Date:   Sun Mar 1 23:41:50 2026 -0500
+
+    mmmmmmmm
+
+Proyectofindecurso/Backend/src/main/java/com/erwin/backend/repository/AnteproyectoTitulacionRepository.java
+Proyectofindecurso/Backend/src/main/java/com/erwin/backend/repository/AnteproyectoVersionRepository.java
+Proyectofindecurso/Backend/src/main/java/com/erwin/backend/repository/Dt1AsignacionRepository.java
+Proyectofindecurso/Backend/src/main/java/com/erwin/backend/repository/Dt1RevisionRepository.java
+Proyectofindecurso/Backend/src/main/java/com/erwin/backend/repository/Dt1TutorEstudianteRepository.java
+Proyectofindecurso/Backend/src/main/java/com/erwin/backend/repository/PropuestaRepository.java
+Proyectofindecurso/Backend/src/main/java/com/erwin/backend/service/AnteproyectoService.java
+Proyectofindecurso/Backend/src/main/java/com/erwin/backend/service/Dt1Service.java
+Proyectofindecurso/Frontend/src/app/pages/coordinador/asignacion-dt1/asignacion-dt1.ts
+
+[33mcommit 700f8f5bd193b868501381bebc298bf037966ad3[m
+Author: Troyano2004 <erwinbueno05@gmail.com>
+Date:   Sun Mar 1 22:12:49 2026 -0500
+
+    aja
+
+Proyectofindecurso/Backend/src/main/java/com/erwin/backend/controller/ComisionTemasController.java
+Proyectofindecurso/Backend/src/main/java/com/erwin/backend/controller/UploadController.java
+Proyectofindecurso/Backend/src/main/java/com/erwin/backend/service/AuthService.java
+Proyectofindecurso/Backend/src/main/java/com/erwin/backend/service/ImageStorageService.java
+Proyectofindecurso/Backend/src/main/resources/application.properties
+Proyectofindecurso/Frontend/src/app/app.routes.ts
+Proyectofindecurso/Frontend/src/app/pages/coordinador/asignacion-dt1/asignacion-dt1.ts
+Proyectofindecurso/Frontend/src/app/pages/coordinador/comision-formativa/comision-formativa.component.ts

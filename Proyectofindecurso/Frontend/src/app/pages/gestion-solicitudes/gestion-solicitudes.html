@@ -1,0 +1,168 @@
+<div class="gs-wrap">
+
+  <!-- HEADER -->
+  <div class="gs-header">
+    <div class="gs-header-left">
+      <div class="gs-header-icon">📋</div>
+      <div>
+        <h1>Gestión de Solicitudes</h1>
+        <p>Solicitudes de registro pendientes de aprobación</p>
+      </div>
+    </div>
+    <button class="btn-actualizar" (click)="cargarSolicitudes()" [disabled]="cargando">
+      <span>🔄</span> {{ cargando ? 'Cargando...' : 'Actualizar' }}
+    </button>
+  </div>
+
+
+  <!-- ALERTAS -->
+  <div class="alerta exito" *ngIf="exito">
+    <span>✅</span> {{ exito }}
+  </div>
+  <div class="alerta error" *ngIf="error">
+    <span>⚠️</span> {{ error }}
+  </div>
+
+  <!-- TABLA -->
+  <div class="gs-tabla-wrap">
+
+    <div class="sin-datos" *ngIf="!cargando && solicitudes.length === 0">
+      <div class="sin-datos-icon">📭</div>
+      <p>No hay solicitudes pendientes</p>
+    </div>
+
+    <div class="cargando-wrap" *ngIf="cargando">
+      <div class="spinner"></div>
+      <p>Cargando solicitudes...</p>
+    </div>
+
+    <table *ngIf="!cargando && solicitudes.length > 0">
+      <thead>
+      <tr>
+        <th>#</th>
+        <th>Estudiante</th>
+        <th>Cédula</th>
+        <th>Correo</th>
+        <th>Carrera</th>
+        <th>Fecha</th>
+        <th>Estado</th>
+        <th>Acciones</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr *ngFor="let s of solicitudes; let i = index">
+        <td class="td-num">{{ i + 1 }}</td>
+        <td class="td-nombre">
+          <div class="avatar">{{ s.nombres.charAt(0) }}{{ s.apellidos.charAt(0) }}</div>
+          <div>
+            <div class="nombre-completo">{{ s.nombres }} {{ s.apellidos }}</div>
+          </div>
+        </td>
+        <td>{{ s.cedula }}</td>
+        <td class="td-correo">{{ s.correo }}</td>
+        <td>
+          <span class="badge-carrera">{{ s.carrera }}</span>
+        </td>
+        <td class="td-fecha">{{ s.fechaSolicitud }}</td>
+        <td>
+          <span class="badge-estado pendiente">{{ s.estado }}</span>
+        </td>
+        <td class="td-acciones">
+          <button class="btn-accion ver" (click)="verDetalle(s)" title="Ver detalle">👁</button>
+          <button class="btn-accion aprobar" (click)="aprobar(s)" title="Aprobar">✓</button>
+          <button class="btn-accion rechazar" (click)="abrirRechazo(s)" title="Rechazar">✕</button>
+        </td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- MODAL DETALLE -->
+<div class="modal-overlay" *ngIf="mostrarDetalle" (click)="cerrarDetalle()">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-header-left">
+        <div class="modal-avatar" *ngIf="solicitudSeleccionada">
+          {{ solicitudSeleccionada.nombres.charAt(0) }}{{ solicitudSeleccionada.apellidos.charAt(0) }}
+        </div>
+        <div>
+          <h3>Detalle de solicitud</h3>
+          <p *ngIf="solicitudSeleccionada">{{ solicitudSeleccionada.nombres }} {{ solicitudSeleccionada.apellidos }}</p>
+        </div>
+      </div>
+      <button class="btn-cerrar" (click)="cerrarDetalle()">✕</button>
+    </div>
+    <div class="modal-body" *ngIf="solicitudSeleccionada">
+      <div class="detalle-grid">
+        <div class="detalle-item">
+          <span class="detalle-label">Cédula</span>
+          <span class="detalle-valor">{{ solicitudSeleccionada.cedula }}</span>
+        </div>
+        <div class="detalle-item">
+          <span class="detalle-label">Correo electrónico</span>
+          <span class="detalle-valor">{{ solicitudSeleccionada.correo }}</span>
+        </div>
+        <div class="detalle-item">
+          <span class="detalle-label">Carrera</span>
+          <span class="detalle-valor">{{ solicitudSeleccionada.carrera }}</span>
+        </div>
+        <div class="detalle-item">
+          <span class="detalle-label">Estado</span>
+          <span class="badge-estado pendiente">{{ solicitudSeleccionada.estado }}</span>
+        </div>
+        <div class="detalle-item full">
+          <span class="detalle-label">Fecha de solicitud</span>
+          <span class="detalle-valor">{{ solicitudSeleccionada.fechaSolicitud }}</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancelar" (click)="cerrarDetalle()">Cerrar</button>
+      <button class="btn-rechazar-modal" (click)="abrirRechazo(solicitudSeleccionada!)">✕ Rechazar</button>
+      <button class="btn-aprobar-modal" (click)="aprobar(solicitudSeleccionada!)">✓ Aprobar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL RECHAZO -->
+<div class="modal-overlay" *ngIf="mostrarModalRechazo" (click)="cerrarRechazo()">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+    <div class="modal-header rechazo">
+      <div class="modal-header-left">
+        <div class="modal-icon-rechazo">⚠️</div>
+        <div>
+          <h3>Rechazar solicitud</h3>
+          <p *ngIf="solicitudARechazar">{{ solicitudARechazar.nombres }} {{ solicitudARechazar.apellidos }}</p>
+        </div>
+      </div>
+      <button class="btn-cerrar" (click)="cerrarRechazo()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="rechazo-aviso">
+        Esta acción notificará al estudiante por correo electrónico con el motivo indicado.
+      </p>
+      <form [formGroup]="formRechazo">
+        <div class="form-group">
+          <label>Motivo del rechazo <span class="requerido">*</span></label>
+          <textarea
+            formControlName="motivo"
+            rows="4"
+            placeholder="Describe el motivo del rechazo (mínimo 10 caracteres)..."
+            [class.input-error]="invalido('motivo')">
+          </textarea>
+          <span class="campo-error" *ngIf="invalido('motivo') && formRechazo.get('motivo')?.errors?.['required']">
+            El motivo es obligatorio.
+          </span>
+          <span class="campo-error" *ngIf="invalido('motivo') && formRechazo.get('motivo')?.errors?.['minlength']">
+            El motivo debe tener al menos 10 caracteres.
+          </span>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancelar" (click)="cerrarRechazo()">Cancelar</button>
+      <button class="btn-rechazar-modal" (click)="confirmarRechazo()">✕ Confirmar rechazo</button>
+    </div>
+  </div>
+</div>
