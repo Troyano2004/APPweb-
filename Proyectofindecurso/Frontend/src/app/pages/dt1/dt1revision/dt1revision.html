@@ -2,53 +2,96 @@
 
   <div class="head">
     <div>
-      <div class="title">Revisión DT1</div>
-      <div class="sub">Abre el PDF y guarda tu decisión.</div>
+      <div class="title">Revisión de Anteproyecto DT1</div>
+      <div class="sub">Revise el documento PDF y registre su decisión académica.</div>
     </div>
-
     <div class="actions">
-      <button class="btn ghost" (click)="volver()" [disabled]="cargando">Volver</button>
-      <button class="btn ghost" (click)="verPdf()" [disabled]="cargando">Ver PDF</button>
+      <button class="btn ghost" (click)="volver()" [disabled]="cargando">
+        ← Volver
+      </button>
+      <button class="btn primary-outline" (click)="verPdf()" [disabled]="cargando">
+        📄 Ver PDF
+      </button>
     </div>
   </div>
 
-  <div class="alert" *ngIf="cargando">Cargando...</div>
+  <div class="alert info" *ngIf="cargando">
+    Cargando información...
+  </div>
 
   <div class="alert warn" *ngIf="!cargando && mensaje">
     {{ mensaje }}
   </div>
 
-  <div class="card" *ngIf="!cargando && detalle">
-    <div class="grid">
-      <div><b>Estudiante:</b> {{ detalle.estudiante }}</div>
-      <div><b>Período:</b> {{ detalle.periodo }}</div>
-      <div><b>Anteproyecto:</b> #{{ detalle.idAnteproyecto }}</div>
-      <div><b>Versión:</b> v{{ detalle.numeroVersion }}</div>
-      <div><b>Estado:</b> {{ detalle.estadoAnteproyecto }}</div>
+  <div class="body" *ngIf="!cargando && detalle">
 
-      <!-- ✅ CORREGIDO: si fechaEnvio viene null, no rompe -->
-      <div><b>Fecha envío:</b> {{ detalle.fechaEnvio ? (detalle.fechaEnvio | date:'mediumDate') : 'Sin fecha' }}</div>
-    </div>
+    <!-- Datos del anteproyecto -->
+    <section class="section-card">
+      <div class="section-header">
+        <span class="section-title">Datos del Anteproyecto</span>
+        <span class="estado-tag">{{ detalle.estadoAnteproyecto }}</span>
+      </div>
+      <div class="data-grid">
+        <div class="data-item">
+          <span class="data-label">Estudiante</span>
+          <span class="data-value">{{ detalle.estudiante }}</span>
+        </div>
+        <div class="data-item">
+          <span class="data-label">Período Académico</span>
+          <span class="data-value">{{ detalle.periodo }}</span>
+        </div>
+        <div class="data-item">
+          <span class="data-label">N° Anteproyecto</span>
+          <span class="data-value">#{{ detalle.idAnteproyecto }}</span>
+        </div>
+        <div class="data-item">
+          <span class="data-label">Versión</span>
+          <span class="data-value">Versión {{ detalle.numeroVersion }}</span>
+        </div>
+        <div class="data-item">
+          <span class="data-label">Fecha de Envío</span>
+          <span class="data-value">
+            {{ detalle.fechaEnvio ? (detalle.fechaEnvio | date:'dd/MM/yyyy') : '—' }}
+          </span>
+        </div>
+      </div>
+    </section>
 
-    <hr />
+    <!-- Formulario decisión -->
+    <section class="section-card">
+      <div class="section-header">
+        <span class="section-title">Registro de Decisión</span>
+      </div>
 
-    <label class="lbl">Decisión</label>
-    <select class="control" [(ngModel)]="decision">
-      <option value="APROBADO">APROBADO</option>
-      <option value="RECHAZADO">RECHAZADO</option>
-    </select>
+      <div class="form-body">
+        <div class="form-field">
+          <label class="field-label">Decisión <span class="required">*</span></label>
+          <select class="control" [(ngModel)]="decision">
+            <option value="APROBADO">APROBADO</option>
+            <option value="RECHAZADO">RECHAZADO</option>
+          </select>
+        </div>
 
-    <label class="lbl">Observación</label>
-    <textarea class="control"
-              rows="5"
-              [(ngModel)]="observacion"
-              placeholder="Obligatorio si rechazas"></textarea>
+        <div class="form-field">
+          <label class="field-label">
+            Observaciones
+            <span class="required" *ngIf="decision === 'RECHAZADO'"> * (obligatorio al rechazar)</span>
+          </label>
+          <textarea
+            class="control"
+            rows="6"
+            [(ngModel)]="observacion"
+            placeholder="Ingrese sus observaciones académicas sobre el anteproyecto revisado...">
+          </textarea>
+        </div>
 
-    <div class="buttons">
-      <button class="btn primary" (click)="guardar()" [disabled]="cargando">
-        Guardar decisión
-      </button>
-    </div>
+        <div class="form-actions">
+          <button class="btn primary" (click)="guardar()" [disabled]="cargando">
+            Guardar Decisión
+          </button>
+        </div>
+      </div>
+    </section>
+
   </div>
-
 </div>

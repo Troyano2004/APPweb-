@@ -20,5 +20,8 @@ public interface TutoriaAnteproyectoRepository extends JpaRepository<TutoriaAnte
     List<TutoriaAnteproyecto> findByDocente_IdDocenteOrderByFechaDesc(Integer idDocente);
 
     Optional<TutoriaAnteproyecto> findByIdTutoria(Integer idTutoria);
+    List<TutoriaAnteproyecto> findByAnteproyecto_Estudiante_IdEstudianteAndEstado(
+            Integer idEstudiante, String estado
+    );
 
 }

@@ -45,4 +45,10 @@ public class TutoriaAnteproyecto {
 
     @Column(name="created_at", insertable=false, updatable=false)
     private LocalDateTime createdAt;
+
+    @Column(name="link_reunion", length=500)
+    private String linkReunion;
+
+    @Column(name="zoom_meeting_id", length=100)
+    private String zoomMeetingId;
 }

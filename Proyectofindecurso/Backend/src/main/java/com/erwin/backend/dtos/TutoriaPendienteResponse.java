@@ -1,6 +1,5 @@
 package com.erwin.backend.dtos;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -9,12 +8,12 @@ import java.time.LocalTime;
 
 @Getter
 @Setter
-public class TutoriaResponse {
+public class TutoriaPendienteResponse {
     private Integer idTutoria;
     private LocalDate fecha;
     private LocalTime hora;
     private String modalidad;
     private String estado;
-    @JsonProperty("linkReunion")
-    private String linkReunion;
+    private String tutor;
+
 }

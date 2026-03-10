@@ -30,8 +30,6 @@ export class Historialtutorias {
     if (!idUsuario) { this.mensaje = 'No hay idUsuario en sesión'; return; }
     this.idEstudiante = idUsuario;
 
-    // ✅ necesitas guardar este id cuando el estudiante carga su anteproyecto
-    // localStorage.setItem('est_idAnteproyecto', String(idAnteproyecto))
     const raw = localStorage.getItem('est_idAnteproyecto');
     this.idAnteproyecto = Number(raw || 0);
 
@@ -61,5 +59,9 @@ export class Historialtutorias {
 
   toggle(t: TutoriaHistorialResponse) {
     this.openId = (this.openId === t.idTutoria) ? null : t.idTutoria;
+  }
+
+  get pendientes(): TutoriaHistorialResponse[] {
+    return this.items.filter(t => t.estado === 'PROGRAMADA');
   }
 }
