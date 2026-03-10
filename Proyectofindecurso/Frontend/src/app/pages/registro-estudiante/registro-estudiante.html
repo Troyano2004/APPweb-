@@ -1,0 +1,116 @@
+<div class="registro-page">
+  <div class="registro-card">
+
+    <div class="logo-box">🎓</div>
+    <h1>Titulación UTEQ</h1>
+    <p class="subtitle">Sistema de Gestión de Sustentación de Grado</p>
+
+    <!-- Indicador de pasos -->
+    <div class="pasos-indicador">
+      <div class="paso-dot" [class.activo]="paso >= 1" [class.completo]="paso > 1">1</div>
+      <div class="paso-linea" [class.completo]="paso > 1"></div>
+      <div class="paso-dot" [class.activo]="paso >= 2" [class.completo]="paso > 2">2</div>
+      <div class="paso-linea" [class.completo]="paso > 2"></div>
+      <div class="paso-dot" [class.activo]="paso >= 3" [class.completo]="paso > 3">3</div>
+    </div>
+
+    <div class="alert-error" *ngIf="error">{{ error }}</div>
+
+    <!-- PASO 1: Correo -->
+    <ng-container *ngIf="paso === 1">
+      <div class="paso-titulo">Ingresa tu correo</div>
+      <p class="paso-desc">Te enviaremos un código de verificación.</p>
+
+      <form [formGroup]="formCorreo">
+        <div class="form-group">
+          <label>Correo electrónico</label>
+          <input type="email" formControlName="correo" placeholder="juan@gmail.com"
+                 (keydown.enter)="enviarCorreo()" />
+          <span class="campo-error" *ngIf="invalido(formCorreo, 'correo')">
+            Ingresa un correo válido.
+          </span>
+        </div>
+      </form>
+
+      <button class="btn-primary" (click)="enviarCorreo()" [disabled]="cargando">
+        {{ cargando ? 'Enviando...' : 'Enviar código' }}
+      </button>
+      <button class="btn-link" (click)="irLogin()">← Volver al login</button>
+    </ng-container>
+
+    <!-- PASO 2: Código -->
+    <ng-container *ngIf="paso === 2">
+      <div class="paso-titulo">Verifica tu correo</div>
+      <div class="alert-info">
+        Enviamos un código de 6 dígitos a <strong>{{ formCorreo.value.correo }}</strong>.
+      </div>
+
+      <form [formGroup]="formCodigo">
+        <div class="form-group">
+          <label>Código de verificación</label>
+          <input type="text" formControlName="codigo" placeholder="123456" maxlength="6"
+                 (keydown.enter)="verificarCodigo()" />
+          <span class="campo-error" *ngIf="invalido(formCodigo, 'codigo')">
+            El código debe tener 6 dígitos.
+          </span>
+        </div>
+      </form>
+
+      <button class="btn-primary" (click)="verificarCodigo()" [disabled]="cargando">
+        {{ cargando ? 'Verificando...' : 'Confirmar código' }}
+      </button>
+      <button class="btn-link" (click)="paso = 1">← Cambiar correo</button>
+    </ng-container>
+
+    <!-- PASO 3: Datos personales -->
+    <ng-container *ngIf="paso === 3">
+      <div class="paso-titulo">Completa tus datos</div>
+
+      <form [formGroup]="formDatos">
+        <div class="form-group">
+          <label>Cédula</label>
+          <input type="text" formControlName="cedula" placeholder="0912345678" />
+          <span class="campo-error" *ngIf="invalido(formDatos, 'cedula')">La cédula es obligatoria.</span>
+        </div>
+        <div class="form-group">
+          <label>Nombres</label>
+          <input type="text" formControlName="nombres" placeholder="Juan Carlos" />
+          <span class="campo-error" *ngIf="invalido(formDatos, 'nombres')">Los nombres son obligatorios.</span>
+        </div>
+        <div class="form-group">
+          <label>Apellidos</label>
+          <input type="text" formControlName="apellidos" placeholder="Pérez López" />
+          <span class="campo-error" *ngIf="invalido(formDatos, 'apellidos')">Los apellidos son obligatorios.</span>
+        </div>
+        <div class="form-group">
+          <label>Carrera</label>
+          <select formControlName="idCarrera">
+            <option [ngValue]="null" disabled>-- Selecciona tu carrera --</option>
+            <option *ngFor="let c of carreras" [value]="c.idCarrera">{{ c.nombre }}</option>
+          </select>
+          <span class="campo-error" *ngIf="invalido(formDatos, 'idCarrera')">Selecciona una carrera.</span>
+        </div>
+      </form>
+
+      <button class="btn-primary" (click)="enviarDatos()" [disabled]="cargando">
+        {{ cargando ? 'Enviando...' : 'Enviar solicitud' }}
+      </button>
+    </ng-container>
+
+    <!-- PASO 4: Éxito -->
+    <ng-container *ngIf="paso === 4">
+      <div class="exito">
+        <div class="icono">✅</div>
+        <h3>¡Solicitud enviada!</h3>
+        <p>Tu solicitud está en revisión. Cuando sea aprobada recibirás tus credenciales en tu correo.</p>
+        <button class="btn-primary" (click)="irLogin()">Volver al login</button>
+      </div>
+    </ng-container>
+
+  </div>
+
+  <footer>
+    Universidad Técnica Estatal de Quevedo<br>
+    Sistema de Titulación 2026
+  </footer>
+</div>
