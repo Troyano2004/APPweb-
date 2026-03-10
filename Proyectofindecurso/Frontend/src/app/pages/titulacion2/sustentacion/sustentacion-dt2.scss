@@ -33,11 +33,12 @@
   }
   .proyecto-titulo { font-weight: 600; font-size: .85rem; }
   .proyecto-meta { font-size: .8rem; color: #666; margin: 2px 0 4px; }
-  .badge { font-size: .7rem; padding: 2px 6px; border-radius: 4px; color: #fff; background: #718096;
+  .badge {
+    font-size: .7rem; padding: 2px 6px; border-radius: 4px; color: #fff; background: #718096;
     &.SUSTENTACION { background: #9c4221; }
-    &.PREDEFENSA { background: #d69e2e; }
-    &.FINALIZADO { background: #38a169; }
-    &.REPROBADO { background: #c53030; }
+    &.PREDEFENSA    { background: #d69e2e; }
+    &.FINALIZADO    { background: #38a169; }
+    &.REPROBADO     { background: #c53030; }
   }
   .empty { color: #999; font-size: .9rem; text-align: center; padding: 16px 0; }
 
@@ -61,7 +62,7 @@
   .docs-estado { margin-bottom: 12px; }
   .badge-docs {
     display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: .85rem; font-weight: 600;
-    &.completo { background: #c6f6d5; color: #276749; }
+    &.completo  { background: #c6f6d5; color: #276749; }
     &.pendiente { background: #fed7d7; color: #c53030; }
   }
 
@@ -81,25 +82,29 @@
     .criterio {
       label { display: block; font-size: .85rem; font-weight: 600; color: #4a5568; margin-bottom: 4px; }
       .peso { color: #718096; font-weight: normal; }
-      input { width: 100%; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: .9rem; box-sizing: border-box; &:focus { outline: none; border-color: #3182ce; } }
+      input {
+        width: 100%; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px;
+        font-size: .9rem; box-sizing: border-box;
+        &:focus { outline: none; border-color: #3182ce; }
+      }
     }
   }
 
   .consolidar-section {
     background: #ebf8ff; border-radius: 8px; padding: 16px; margin-top: 16px; border: 1px solid #bee3f8;
     h4 { margin: 0 0 6px; font-size: .95rem; color: #2b6cb0; }
-    p { margin: 0 0 10px; font-size: .85rem; color: #2a69ac; }
+    p  { margin: 0 0 10px; font-size: .85rem; color: #2a69ac; }
   }
 
   .resultado-card {
     border-radius: 8px; padding: 20px; margin-bottom: 16px; text-align: center;
-    &.APROBADO { background: #c6f6d5; border: 2px solid #38a169; }
-    &.REPROBADO { background: #fed7d7; border: 2px solid #c53030; }
-    &.SEGUNDA_OPORTUNIDAD { background: #feebc8; border: 2px solid #d69e2e; }
-    &.PENDIENTE { background: #f7fafc; border: 2px solid #e2e8f0; }
+    &.APROBADO           { background: #c6f6d5; border: 2px solid #38a169; }
+    &.REPROBADO          { background: #fed7d7; border: 2px solid #c53030; }
+    &.SEGUNDA_OPORTUNIDAD{ background: #feebc8; border: 2px solid #d69e2e; }
+    &.PENDIENTE          { background: #f7fafc; border: 2px solid #e2e8f0; }
   }
   .resultado-titulo { font-size: 1.3rem; font-weight: 700; margin-bottom: 12px; }
-  .resultado-notas { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-bottom: 8px; }
+  .resultado-notas  { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-bottom: 8px; }
   .nota-item {
     text-align: center;
     .nv { display: block; font-size: 1.4rem; font-weight: 700; }
@@ -114,8 +119,8 @@
     .eval-row {
       display: flex; gap: 12px; align-items: center; padding: 6px 10px; font-size: .85rem;
       border-bottom: 1px solid #f0f0f0;
-      .nombre { flex: 1; }
-      .nota-ev { font-weight: 700; min-width: 40px; }
+      .nombre   { flex: 1; }
+      .nota-ev  { font-weight: 700; min-width: 40px; }
     }
   }
 
@@ -142,6 +147,142 @@
       &:disabled { opacity: .6; cursor: not-allowed; }
     }
     .btn-consolidar { background: #2b6cb0; }
-    .btn-segunda { background: #d69e2e; color: #744210; }
+    .btn-segunda    { background: #d69e2e; color: #744210; }
+  }
+}
+
+
+// ===============================================
+// MODO OSCURO
+// ===============================================
+
+:host-context(body.dark-mode) .sustentacion-dt2 {
+
+  // Textos generales
+  h2, h3, h4 { color: #f1f5f9; }
+  .subtitle, .loading { color: #94a3b8; }
+
+  // Alertas
+  .alert {
+    &.error { background: #2d1b1b; border-left-color: #e53e3e; color: #fca5a5; }
+    &.ok    { background: #052e16; border-left-color: #38a169; color: #86efac; }
+  }
+
+  // Panel lista (columna izquierda)
+  .panel-lista {
+    background: #1e293b;
+    border-color: #334155;
+    h3 { color: #f1f5f9; }
+  }
+
+  // Tarjetas de proyecto
+  .proyecto-card {
+    border-color: #334155;
+    &:hover { background: #263448; }
+    &.activo { background: #0f2a3d; border-color: #3182ce; }
+  }
+  .proyecto-titulo { color: #e2e8f0; }
+  .proyecto-meta   { color: #94a3b8; }
+
+  .empty { color: #64748b; }
+
+  // Panel detalle (columna derecha)
+  .panel-detalle {
+    background: #1e293b;
+    border-color: #334155;
+    h3 { color: #f1f5f9; }
+    &.empty-panel { color: #64748b; }
+  }
+
+  // Tabs
+  .tabs button {
+    background: #0f172a;
+    border-color: #334155;
+    color: #94a3b8;
+    &.active {
+      background: #1e293b;
+      border-bottom-color: #1e293b;
+      color: #60a5fa;
+    }
+  }
+
+  // Info box amarilla
+  .info { background: #2a1f0a; border-left-color: #d69e2e; color: #fcd34d; }
+
+  // Badges docs
+  .badge-docs {
+    &.completo  { background: #052e16; color: #86efac; }
+    &.pendiente { background: #2d1b1b; color: #fca5a5; }
+  }
+
+  // Checklist
+  .check-list .check-item {
+    border-color: #334155;
+    color: #e2e8f0;
+    &:hover { background: #263448; }
+  }
+
+  // Criterios
+  .criterios-grid .criterio {
+    label { color: #94a3b8; }
+    input {
+      background: #0f172a;
+      border-color: #334155;
+      color: #e2e8f0;
+      &:focus { border-color: #3182ce; }
+    }
+  }
+
+  // Sección consolidar (azul claro → azul oscuro)
+  .consolidar-section {
+    background: #0f1e2e;
+    border-color: #1e3a5f;
+    h4 { color: #93c5fd; }
+    p  { color: #7dd3fc; }
+  }
+
+  // Tarjeta resultado
+  .resultado-card {
+    &.APROBADO            { background: #052e16; border-color: #38a169; }
+    &.REPROBADO           { background: #2d1b1b; border-color: #c53030; }
+    &.SEGUNDA_OPORTUNIDAD { background: #2a1f0a; border-color: #d69e2e; }
+    &.PENDIENTE           { background: #1e293b; border-color: #334155; }
+  }
+  .resultado-titulo { color: #f1f5f9; }
+  .nota-item {
+    .nv { color: #e2e8f0; }
+    .nl { color: #64748b; }
+    &.destacado .nv { color: #f1f5f9; }
+  }
+  .formula { color: #64748b; }
+
+  // Evaluaciones
+  .evaluaciones .eval-row {
+    border-bottom-color: #334155;
+    color: #e2e8f0;
+    .nota-ev { color: #f1f5f9; }
+  }
+
+  // Segunda oportunidad
+  .segunda {
+    border-color: #334155;
+    h4 { color: #f1f5f9; small { color: #64748b; } }
+  }
+  .segunda-info { background: #2a1f0a; border-left-color: #d69e2e; color: #fcd34d; }
+
+  // Formularios
+  form {
+    .form-row {
+      label { color: #94a3b8; }
+      input, textarea {
+        background: #0f172a;
+        border-color: #334155;
+        color: #e2e8f0;
+        &:focus { border-color: #3182ce; }
+      }
+    }
+    button[type=submit] { background: #2563eb; }
+    .btn-consolidar     { background: #1d4ed8; }
+    .btn-segunda        { background: #854d0e; color: #fef08a; }
   }
 }

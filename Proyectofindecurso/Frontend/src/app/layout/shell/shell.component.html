@@ -44,13 +44,63 @@
         <div class="breadcrumb">{{ breadcrumb }}</div>
         <div class="module-title">{{ currentTitle }}</div>
       </div>
+
+      <!-- ✅ BUSCADOR MEJORADO -->
       <div class="topbar-center">
-        <label class="search">
-          <span>Buscar</span>
-          <input type="text" placeholder="Buscar..." />
-        </label>
+        <div class="search-box" [class.active]="searchFocused">
+          <span class="search-icon">🔍</span>
+          <input
+            type="text"
+            class="search-input"
+            placeholder="Buscar módulo..."
+            [(ngModel)]="searchQuery"
+            (focus)="searchFocused = true; updateSearchResults()"
+            (blur)="onSearchBlur()"
+            (input)="updateSearchResults()"
+            (keydown.enter)="navigateToFirst()"
+            (keydown.escape)="clearSearch()"
+            autocomplete="off"
+          />
+          <button
+            *ngIf="searchQuery"
+            class="search-clear"
+            type="button"
+            (mousedown)="$event.preventDefault()"
+            (click)="clearSearch()"
+          >✕</button>
+
+          <!-- Dropdown resultados -->
+          <div class="search-dropdown" *ngIf="searchFocused && searchResults.length > 0">
+            <a
+              *ngFor="let r of searchResults"
+              class="search-result"
+              [routerLink]="r.path"
+              (mousedown)="$event.preventDefault()"
+              (click)="onResultClick()"
+            >
+              <span class="result-icon">{{ r.icon }}</span>
+              <div class="result-info">
+                <span class="result-label">{{ r.label }}</span>
+                <span class="result-section">{{ r.section }}</span>
+              </div>
+            </a>
+          </div>
+
+          <!-- Sin resultados -->
+          <div class="search-dropdown search-empty"
+               *ngIf="searchFocused && searchQuery && searchResults.length === 0">
+            <span>Sin resultados para "{{ searchQuery }}"</span>
+          </div>
+        </div>
       </div>
+
       <div class="topbar-right">
+        <button
+          class="icon-button"
+          type="button"
+          (click)="toggleTheme()"
+          [title]="isDarkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
+        >{{ isDarkMode ? '☀️' : '🌙' }}</button>
         <button class="icon-button" type="button">🔔</button>
         <div class="avatar">
           <span class="avatar-circle">AG</span>

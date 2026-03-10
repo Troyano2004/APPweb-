@@ -1,7 +1,5 @@
-
 /* ================================================================
    Documentos Habilitantes — habilitantes.scss
-   Diseño profesional con layout de 2 columnas
    ================================================================ */
 
 // ── Variables ────────────────────────────────────────────────────
@@ -37,723 +35,274 @@ $shadow-lg:     0 12px 32px rgba(0,0,0,.12);
 
 // ── Header ────────────────────────────────────────────────────────
 .hab-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 28px;
-  flex-wrap: wrap;
-  gap: 12px;
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 28px; flex-wrap: wrap; gap: 12px;
 
-  &__left {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-  }
-
+  &__left  { display: flex; align-items: center; gap: 14px; }
   &__icon-wrap {
-    width: 48px;
-    height: 48px;
-    background: $primary;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 12px rgba($primary, .35);
-    font-size: 1.4rem;
-    flex-shrink: 0;
+    width: 48px; height: 48px; background: $primary; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 12px rgba($primary, .35); font-size: 1.4rem; flex-shrink: 0;
   }
-
-  &__title {
-    font-size: 1.45rem;
-    font-weight: 800;
-    margin: 0;
-    color: $text;
-    letter-spacing: -.02em;
-  }
-
-  &__sub {
-    font-size: .82rem;
-    color: $text-muted;
-    margin: 2px 0 0;
-  }
-
+  &__title { font-size: 1.45rem; font-weight: 800; margin: 0; color: $text; letter-spacing: -.02em; }
+  &__sub   { font-size: .82rem; color: $text-muted; margin: 2px 0 0; }
   &__right { display: flex; align-items: center; }
 }
 
 .hab-role-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 16px;
-  border-radius: 999px;
-  font-size: .81rem;
-  font-weight: 700;
-  background: #dbeafe;
-  color: #1d4ed8;
-  border: 1px solid #bfdbfe;
-  letter-spacing: .01em;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 16px; border-radius: 999px; font-size: .81rem; font-weight: 700;
+  background: #dbeafe; color: #1d4ed8; border: 1px solid #bfdbfe; letter-spacing: .01em;
 
-  &.role-director {
-    background: $primary-light;
-    color: $primary;
-    border-color: #a7d7b8;
-  }
+  &.role-director { background: $primary-light; color: $primary; border-color: #a7d7b8; }
 }
 
 // ── Alertas ───────────────────────────────────────────────────────
 .hab-alert {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 16px;
-  border-radius: $radius;
-  font-size: .88rem;
-  font-weight: 500;
-  margin-bottom: 18px;
-
-  &--error {
-    background: #fef2f2;
-    border: 1px solid #fca5a5;
-    color: $danger;
-  }
-  &--ok {
-    background: #f0fdf4;
-    border: 1px solid #86efac;
-    color: $success;
-  }
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px; border-radius: $radius; font-size: .88rem; font-weight: 500; margin-bottom: 18px;
+  &--error { background: #fef2f2; border: 1px solid #fca5a5; color: $danger; }
+  &--ok    { background: #f0fdf4; border: 1px solid #86efac; color: $success; }
 }
 
 // ── Loading ───────────────────────────────────────────────────────
 .hab-loading {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 48px;
-  justify-content: center;
-  color: $text-muted;
-  font-size: .9rem;
+  display: flex; align-items: center; gap: 10px;
+  padding: 48px; justify-content: center; color: $text-muted; font-size: .9rem;
 }
 .hab-spinner {
-  width: 22px;
-  height: 22px;
-  border: 3px solid $border;
-  border-top-color: $primary;
-  border-radius: 50%;
-  animation: spin .7s linear infinite;
+  width: 22px; height: 22px;
+  border: 3px solid $border; border-top-color: $primary;
+  border-radius: 50%; animation: spin .7s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-// ── LAYOUT 2 COLUMNAS ────────────────────────────────────────────
+// ── Layout 2 columnas ─────────────────────────────────────────────
 .hab-layout {
-  display: grid;
-  grid-template-columns: 1fr 300px;
-  gap: 24px;
-  align-items: start;
+  display: grid; grid-template-columns: 1fr 300px; gap: 24px; align-items: start;
 }
+.hab-main { min-width: 0; }
 
-.hab-main {
-  min-width: 0; // evita overflow en grid
-}
-
-// ── SIDEBAR ──────────────────────────────────────────────────────
-.hab-sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  position: sticky;
-  top: 24px;
-}
+// ── Sidebar ───────────────────────────────────────────────────────
+.hab-sidebar { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 24px; }
 
 .hab-sidebar-card {
-  background: $bg-card;
-  border: 1px solid $border;
-  border-radius: $radius;
-  padding: 18px;
-  box-shadow: $shadow-sm;
+  background: $bg-card; border: 1px solid $border; border-radius: $radius; padding: 18px; box-shadow: $shadow-sm;
 
   &__title {
-    font-size: .82rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: .06em;
-    color: $text-muted;
-    margin: 0 0 14px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid $border-light;
+    font-size: .82rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+    color: $text-muted; margin: 0 0 14px; padding-bottom: 10px; border-bottom: 1px solid $border-light;
   }
-
-  &--reglamento {
-    background: linear-gradient(135deg, #f0fdf4, #f8fafc);
-    border-color: #bbf7d0;
-  }
-
+  &--reglamento { background: linear-gradient(135deg, #f0fdf4, #f8fafc); border-color: #bbf7d0; }
   &--tip {
-    background: linear-gradient(135deg, #fffbeb, #fef3c7);
-    border-color: #fde68a;
-    display: flex;
-    gap: 12px;
-    align-items: flex-start;
-    padding: 16px;
-
-    p {
-      font-size: .82rem;
-      color: #92400e;
-      margin: 0;
-      line-height: 1.5;
-    }
+    background: linear-gradient(135deg, #fffbeb, #fef3c7); border-color: #fde68a;
+    display: flex; gap: 12px; align-items: flex-start; padding: 16px;
+    p { font-size: .82rem; color: #92400e; margin: 0; line-height: 1.5; }
   }
-
   &--director-stat {
-    background: linear-gradient(135deg, $primary-light, #f0fdf4);
-    border-color: #a7d7b8;
-    text-align: center;
+    background: linear-gradient(135deg, $primary-light, #f0fdf4); border-color: #a7d7b8; text-align: center;
   }
 }
 
-.hab-tip-icon {
-  font-size: 1.3rem;
-  flex-shrink: 0;
-  margin-top: 1px;
-}
+.hab-tip-icon { font-size: 1.3rem; flex-shrink: 0; margin-top: 1px; }
 
-// ── Stats grid (sidebar estudiante) ──────────────────────────────
-.hab-stats-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-}
+// ── Stats grid ────────────────────────────────────────────────────
+.hab-stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 
 .hab-stat {
-  text-align: center;
-  padding: 12px 8px;
-  border-radius: 10px;
-  border: 1px solid transparent;
+  text-align: center; padding: 12px 8px; border-radius: 10px; border: 1px solid transparent;
+  &__num   { display: block; font-size: 1.6rem; font-weight: 800; line-height: 1; margin-bottom: 4px; }
+  &__label { font-size: .7rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
 
-  &__num {
-    display: block;
-    font-size: 1.6rem;
-    font-weight: 800;
-    line-height: 1;
-    margin-bottom: 4px;
-  }
-  &__label {
-    font-size: .7rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: .04em;
-  }
-
-  &--aprobado {
-    background: #f0fdf4;
-    border-color: #bbf7d0;
-    .hab-stat__num { color: $success; }
-    .hab-stat__label { color: darken($success, 5%); }
-  }
-  &--pendiente {
-    background: #f8fafc;
-    border-color: $border;
-    .hab-stat__num { color: $neutral; }
-    .hab-stat__label { color: $text-muted; }
-  }
-  &--rechazado {
-    background: #fef2f2;
-    border-color: #fecaca;
-    .hab-stat__num { color: $danger; }
-    .hab-stat__label { color: darken($danger, 5%); }
-  }
+  &--aprobado  { background: #f0fdf4; border-color: #bbf7d0; .hab-stat__num { color: $success; } .hab-stat__label { color: darken($success, 5%); } }
+  &--pendiente { background: #f8fafc; border-color: $border;  .hab-stat__num { color: $neutral; } .hab-stat__label { color: $text-muted; } }
+  &--rechazado { background: #fef2f2; border-color: #fecaca; .hab-stat__num { color: $danger;  } .hab-stat__label { color: darken($danger, 5%); } }
 }
 
-// ── Director count (sidebar director) ────────────────────────────
+// ── Director count ────────────────────────────────────────────────
 .hab-director-count {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 8px 0 4px;
-
-  &__num {
-    font-size: 3rem;
-    font-weight: 900;
-    color: $primary;
-    line-height: 1;
-  }
-  &__label {
-    font-size: .82rem;
-    color: $text-muted;
-    line-height: 1.4;
-  }
+  display: flex; align-items: center; justify-content: center; gap: 12px; padding: 8px 0 4px;
+  &__num   { font-size: 3rem; font-weight: 900; color: $primary; line-height: 1; }
+  &__label { font-size: .82rem; color: $text-muted; line-height: 1.4; }
 }
 
-// ── Guide/steps lists ────────────────────────────────────────────
+// ── Guide/steps/reglamento lists ──────────────────────────────────
 .hab-guide-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  font-size: .82rem;
-  color: $text-muted;
-
-  li {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
+  list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; font-size: .82rem; color: $text-muted;
+  li { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 }
 
 .hab-steps-list {
-  padding-left: 0;
-  margin: 0;
-  counter-reset: steps;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  list-style: none;
-
+  padding-left: 0; margin: 0; counter-reset: steps; display: flex; flex-direction: column; gap: 10px; list-style: none;
   li {
-    counter-increment: steps;
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    font-size: .82rem;
-    color: $text-muted;
-    line-height: 1.4;
-
+    counter-increment: steps; display: flex; align-items: flex-start; gap: 10px;
+    font-size: .82rem; color: $text-muted; line-height: 1.4;
     &::before {
-      content: counter(steps);
-      min-width: 22px;
-      height: 22px;
-      background: $primary;
-      color: #fff;
-      border-radius: 50%;
-      font-size: .72rem;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      margin-top: 1px;
+      content: counter(steps); min-width: 22px; height: 22px;
+      background: $primary; color: #fff; border-radius: 50%; font-size: .72rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px;
     }
   }
 }
 
 .hab-reglamento-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-
-  li {
-    font-size: .81rem;
-    color: $text-muted;
-    padding-left: 10px;
-    border-left: 2px solid #86efac;
-    line-height: 1.4;
-
-    strong { color: $primary; }
-  }
+  list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px;
+  li { font-size: .81rem; color: $text-muted; padding-left: 10px; border-left: 2px solid #86efac; line-height: 1.4; strong { color: $primary; } }
 }
 
-// ── Tarjeta de progreso ───────────────────────────────────────────
+// ── Progreso ──────────────────────────────────────────────────────
 .hab-progress-card {
-  background: $bg-card;
-  border: 1px solid $border;
-  border-radius: $radius-lg;
-  padding: 22px 24px;
-  margin-bottom: 16px;
-  box-shadow: $shadow-sm;
-  transition: border-color .3s, background .3s;
-
-  &--ok {
-    border-color: #86efac;
-    background: linear-gradient(135deg, #f0fdf4, #f9fff9);
-  }
+  background: $bg-card; border: 1px solid $border; border-radius: $radius-lg;
+  padding: 22px 24px; margin-bottom: 16px; box-shadow: $shadow-sm; transition: border-color .3s, background .3s;
+  &--ok { border-color: #86efac; background: linear-gradient(135deg, #f0fdf4, #f9fff9); }
 }
 
 .hab-progress-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 14px;
-  flex-wrap: wrap;
-  gap: 10px;
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;
 }
-
-.hab-progress-counts {
-  display: flex;
-  align-items: baseline;
-  gap: 5px;
-}
-
+.hab-progress-counts { display: flex; align-items: baseline; gap: 5px; }
 .count-ok    { font-size: 2.2rem; font-weight: 900; color: $success; line-height: 1; }
 .count-sep   { font-size: 1.5rem; color: $neutral; }
 .count-total { font-size: 1.5rem; color: $text-muted; font-weight: 600; }
 .count-label { font-size: .82rem; color: $text-muted; margin-left: 8px; align-self: center; }
 
 .hab-badge-habilitado {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  background: #dcfce7;
-  color: $success;
-  border: 1px solid #86efac;
-  border-radius: 999px;
-  padding: 4px 14px;
-  font-size: .8rem;
-  font-weight: 700;
+  display: inline-flex; align-items: center; gap: 5px;
+  background: #dcfce7; color: $success; border: 1px solid #86efac;
+  border-radius: 999px; padding: 4px 14px; font-size: .8rem; font-weight: 700;
 }
 .hab-badge-falta {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  background: #fef9c3;
-  color: $warning;
-  border: 1px solid #fde68a;
-  border-radius: 999px;
-  padding: 4px 14px;
-  font-size: .8rem;
-  font-weight: 700;
+  display: inline-flex; align-items: center; gap: 5px;
+  background: #fef9c3; color: $warning; border: 1px solid #fde68a;
+  border-radius: 999px; padding: 4px 14px; font-size: .8rem; font-weight: 700;
 }
 
-.hab-progress-bar-wrap {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
+.hab-progress-bar-wrap { display: flex; align-items: center; gap: 12px; }
 .hab-progress-bar {
-  flex: 1;
-  height: 10px;
-  background: #e2e8f0;
-  border-radius: 999px;
-  overflow: hidden;
-
-  &__fill {
-    height: 100%;
-    background: linear-gradient(90deg, $primary-mid, $success);
-    border-radius: 999px;
-    transition: width .5s cubic-bezier(.4, 0, .2, 1);
-  }
+  flex: 1; height: 10px; background: #e2e8f0; border-radius: 999px; overflow: hidden;
+  &__fill { height: 100%; background: linear-gradient(90deg, $primary-mid, $success); border-radius: 999px; transition: width .5s cubic-bezier(.4,0,.2,1); }
 }
-.hab-progress-pct {
-  font-size: .85rem;
-  font-weight: 800;
-  color: $primary;
-  min-width: 38px;
-  text-align: right;
-}
+.hab-progress-pct { font-size: .85rem; font-weight: 800; color: $primary; min-width: 38px; text-align: right; }
 
-// ── Título del proyecto ───────────────────────────────────────────
+// ── Título proyecto ───────────────────────────────────────────────
 .hab-project-title {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: $bg-card;
-  border: 1px solid $border;
-  border-radius: $radius;
-  padding: 12px 16px;
-  margin-bottom: 20px;
-  box-shadow: $shadow-sm;
-  font-size: .86rem;
-
-  &__icon { font-size: 1.1rem; flex-shrink: 0; }
+  display: flex; align-items: center; gap: 10px;
+  background: $bg-card; border: 1px solid $border; border-radius: $radius;
+  padding: 12px 16px; margin-bottom: 20px; box-shadow: $shadow-sm; font-size: .86rem;
+  &__icon  { font-size: 1.1rem; flex-shrink: 0; }
   &__label { color: $text-muted; margin-right: 4px; font-weight: 500; }
-  &__name { color: $text; font-weight: 700; }
+  &__name  { color: $text; font-weight: 700; }
 }
 
-// ── Section title (director) ───────────────────────────────────────
+// ── Section title ─────────────────────────────────────────────────
 .hab-section-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 1rem;
-  font-weight: 700;
-  margin-bottom: 16px;
-  color: $text;
-  padding: 12px 16px;
-  background: $bg-card;
-  border: 1px solid $border;
-  border-radius: $radius;
-  box-shadow: $shadow-sm;
+  display: flex; align-items: center; gap: 8px; font-size: 1rem; font-weight: 700;
+  margin-bottom: 16px; color: $text; padding: 12px 16px;
+  background: $bg-card; border: 1px solid $border; border-radius: $radius; box-shadow: $shadow-sm;
 }
 
 .hab-empty {
-  text-align: center;
-  padding: 56px 32px;
-  color: $text-muted;
-  font-size: .9rem;
-  background: $bg-card;
-  border: 1px solid $border;
-  border-radius: $radius-lg;
-  box-shadow: $shadow-sm;
-
+  text-align: center; padding: 56px 32px; color: $text-muted; font-size: .9rem;
+  background: $bg-card; border: 1px solid $border; border-radius: $radius-lg; box-shadow: $shadow-sm;
   span { font-size: 2.5rem; display: block; margin-bottom: 12px; }
   p { margin: 0; }
 }
 
-// ── Lista de tarjetas ──────────────────────────────────────────────
-.hab-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
+// ── Lista de tarjetas ─────────────────────────────────────────────
+.hab-list { display: flex; flex-direction: column; gap: 12px; }
 
-// ── Tarjeta habilitante ────────────────────────────────────────────
+// ── Tarjeta habilitante ───────────────────────────────────────────
 .hab-card {
-  background: $bg-card;
-  border: 1px solid $border;
-  border-radius: $radius;
-  padding: 18px 20px;
-  box-shadow: $shadow-sm;
-  transition: box-shadow .2s, transform .15s;
-  position: relative;
-  overflow: hidden;
+  background: $bg-card; border: 1px solid $border; border-radius: $radius;
+  padding: 18px 20px; box-shadow: $shadow-sm; transition: box-shadow .2s, transform .15s;
+  position: relative; overflow: hidden;
 
   &::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 4px;
-    background: $neutral;
-    border-radius: 4px 0 0 4px;
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+    width: 4px; background: $neutral; border-radius: 4px 0 0 4px;
   }
+  &:hover { box-shadow: $shadow; transform: translateY(-1px); }
 
-  &:hover {
-    box-shadow: $shadow;
-    transform: translateY(-1px);
-  }
+  &--aprobado  { background: #fcfffe; &::before { background: $success; } }
+  &--rechazado { background: #fffcfc; &::before { background: $danger; } }
+  &--enviado   { background: #fffdf5; &::before { background: $warning; } }
+  &--pendiente { &::before { background: $neutral; } }
 
-  &--aprobado  {
-    background: #fcfffe;
-    &::before { background: $success; }
-  }
-  &--rechazado {
-    background: #fffcfc;
-    &::before { background: $danger; }
-  }
-  &--enviado   {
-    background: #fffdf5;
-    &::before { background: $warning; }
-  }
-  &--pendiente {
-    &::before { background: $neutral; }
-  }
-
-  &__header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 6px;
-  }
-
+  &__header    { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
   &__icon-wrap {
-    width: 36px;
-    height: 36px;
-    background: $bg-page;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.2rem;
-    flex-shrink: 0;
-    border: 1px solid $border;
+    width: 36px; height: 36px; background: $bg-page; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem; flex-shrink: 0; border: 1px solid $border;
   }
-
-  &__meta {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-    flex: 1;
+  &__meta      { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; flex: 1; }
+  &__tipo      { font-weight: 700; font-size: .92rem; color: $text; }
+  &__student   { font-size: .82rem; color: $text-muted; background: $bg-page; padding: 2px 8px; border-radius: 999px; border: 1px solid $border; }
+  &__desc      { font-size: .81rem; color: $text-muted; margin: 4px 0 10px; line-height: 1.55; padding-left: 48px; }
+  &__file      { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; flex-wrap: wrap; padding-left: 48px; }
+  &__date      { font-size: .75rem; color: $text-light; background: $border-light; padding: 2px 8px; border-radius: 4px; }
+  &__comment   {
+    background: linear-gradient(135deg, #fef9c3, #fef3c7); border-left: 3px solid $warning;
+    padding: 10px 14px; border-radius: 0 8px 8px 0; font-size: .82rem; color: #92400e; margin: 10px 0;
   }
-  &__tipo {
-    font-weight: 700;
-    font-size: .92rem;
-    color: $text;
-  }
-  &__student {
-    font-size: .82rem;
-    color: $text-muted;
-    background: $bg-page;
-    padding: 2px 8px;
-    border-radius: 999px;
-    border: 1px solid $border;
-  }
-  &__desc {
-    font-size: .81rem;
-    color: $text-muted;
-    margin: 4px 0 10px;
-    line-height: 1.55;
-    padding-left: 48px;
-  }
-  &__file {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 8px;
-    flex-wrap: wrap;
-    padding-left: 48px;
-  }
-  &__date {
-    font-size: .75rem;
-    color: $text-light;
-    background: $border-light;
-    padding: 2px 8px;
-    border-radius: 4px;
-  }
-  &__comment {
-    background: linear-gradient(135deg, #fef9c3, #fef3c7);
-    border-left: 3px solid $warning;
-    padding: 10px 14px;
-    border-radius: 0 8px 8px 0;
-    font-size: .82rem;
-    color: #92400e;
-    margin: 10px 0;
-  }
-  &__comment-label {
-    font-weight: 700;
-    display: block;
-    margin-bottom: 3px;
-    font-size: .78rem;
-    text-transform: uppercase;
-    letter-spacing: .04em;
-  }
-  &__actions {
-    margin-top: 12px;
-    display: flex;
-    gap: 10px;
-    padding-left: 48px;
-  }
+  &__comment-label { font-weight: 700; display: block; margin-bottom: 3px; font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; }
+  &__actions   { margin-top: 12px; display: flex; gap: 10px; padding-left: 48px; }
 }
 
 // ── Badges de estado ──────────────────────────────────────────────
-.hab-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 10px;
-  border-radius: 999px;
-  font-size: .74rem;
-  font-weight: 700;
-  white-space: nowrap;
-  border: 1px solid transparent;
-}
+.hab-badge   { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 999px; font-size: .74rem; font-weight: 700; white-space: nowrap; border: 1px solid transparent; }
 .badge-aprobado  { background: #dcfce7; color: $success;  border-color: #86efac; }
 .badge-rechazado { background: #fee2e2; color: $danger;   border-color: #fca5a5; }
 .badge-enviado   { background: #fef9c3; color: $warning;  border-color: #fde68a; }
 .badge-pendiente { background: #f1f5f9; color: $neutral;  border-color: $border; }
 
-// ── Bloque antiplagio ─────────────────────────────────────────────
+// ── Antiplagio ────────────────────────────────────────────────────
 .hab-antiplagio {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  padding: 10px 14px;
-  background: linear-gradient(135deg, #eff6ff, #f0f9ff);
-  border-radius: 8px;
-  font-size: .82rem;
-  margin: 8px 0 10px 48px;
-  border: 1px solid #bfdbfe;
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 10px 14px; background: linear-gradient(135deg, #eff6ff, #f0f9ff);
+  border-radius: 8px; font-size: .82rem; margin: 8px 0 10px 48px; border: 1px solid #bfdbfe;
 
-  &--rechazado {
-    background: linear-gradient(135deg, #fef2f2, #fff5f5);
-    border-color: #fca5a5;
-  }
-
-  &__label { color: $text-muted; }
-  &__pct   { font-weight: 900; font-size: 1rem; color: $text; }
+  &--rechazado { background: linear-gradient(135deg, #fef2f2, #fff5f5); border-color: #fca5a5; }
+  &__label  { color: $text-muted; }
+  &__pct    { font-weight: 900; font-size: 1rem; color: $text; }
   &__umbral { color: $text-light; font-size: .78rem; }
-  &__result {
-    font-weight: 700;
-    margin-left: auto;
-    &.ok  { color: $success; }
-    &.err { color: $danger; }
-  }
+  &__result { font-weight: 700; margin-left: auto; &.ok { color: $success; } &.err { color: $danger; } }
 }
 
 // ── Link archivo ──────────────────────────────────────────────────
 .hab-link-file {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  color: $primary;
-  font-size: .82rem;
-  font-weight: 600;
-  text-decoration: none;
-  background: $primary-light;
-  border: 1px solid #a7d7b8;
-  padding: 3px 10px;
-  border-radius: 6px;
-  transition: background .15s;
-
-  &:hover {
-    background: darken($primary-light, 4%);
-    text-decoration: none;
-  }
+  display: inline-flex; align-items: center; gap: 5px;
+  color: $primary; font-size: .82rem; font-weight: 600; text-decoration: none;
+  background: $primary-light; border: 1px solid #a7d7b8; padding: 3px 10px; border-radius: 6px; transition: background .15s;
+  &:hover { background: darken($primary-light, 4%); }
 }
 
 // ── Botones ───────────────────────────────────────────────────────
 .hab-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 18px;
-  border-radius: 8px;
-  font-size: .85rem;
-  font-weight: 700;
-  cursor: pointer;
-  border: none;
-  transition: all .18s;
-  letter-spacing: .01em;
-
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 18px; border-radius: 8px; font-size: .85rem; font-weight: 700;
+  cursor: pointer; border: none; transition: all .18s; letter-spacing: .01em;
   &:disabled { opacity: .5; cursor: not-allowed; }
 
   &--primary {
-    background: $primary;
-    color: #fff;
-    box-shadow: 0 2px 8px rgba($primary, .3);
-    &:not(:disabled):hover {
-      background: $primary-dark;
-      box-shadow: 0 4px 12px rgba($primary, .4);
-      transform: translateY(-1px);
-    }
+    background: $primary; color: #fff; box-shadow: 0 2px 8px rgba($primary, .3);
+    &:not(:disabled):hover { background: $primary-dark; box-shadow: 0 4px 12px rgba($primary, .4); transform: translateY(-1px); }
     &:not(:disabled):active { transform: translateY(0); }
   }
   &--ghost {
-    background: transparent;
-    color: $text-muted;
-    border: 1px solid $border;
+    background: transparent; color: $text-muted; border: 1px solid $border;
     &:not(:disabled):hover { background: $border-light; }
   }
 }
 
-// ── Modal overlay ─────────────────────────────────────────────────
+// ── Modal ─────────────────────────────────────────────────────────
 .hab-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, .5);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 16px;
+  position: fixed; inset: 0; background: rgba(15,23,42,.5); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 16px;
 }
 
 .hab-modal {
-  background: $bg-card;
-  border-radius: $radius-lg;
-  box-shadow: $shadow-lg;
-  width: 100%;
-  max-width: 520px;
-  max-height: 90vh;
-  overflow-y: auto;
-  padding: 28px;
+  background: $bg-card; border-radius: $radius-lg; box-shadow: $shadow-lg;
+  width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; padding: 28px;
   animation: modal-in .2s cubic-bezier(.34, 1.56, .64, 1);
 
   @keyframes modal-in {
@@ -762,176 +311,254 @@ $shadow-lg:     0 12px 32px rgba(0,0,0,.12);
   }
 
   &__header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 20px;
-    h2 {
-      font-size: 1.1rem;
-      font-weight: 800;
-      margin: 0;
-      color: $text;
-      letter-spacing: -.01em;
-    }
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;
+    h2 { font-size: 1.1rem; font-weight: 800; margin: 0; color: $text; letter-spacing: -.01em; }
   }
   &__close {
-    background: $bg-page;
-    border: 1px solid $border;
-    font-size: 1rem;
-    cursor: pointer;
-    color: $text-muted;
-    padding: 5px 9px;
-    border-radius: 8px;
-    line-height: 1;
-    transition: background .15s;
+    background: $bg-page; border: 1px solid $border; font-size: 1rem; cursor: pointer;
+    color: $text-muted; padding: 5px 9px; border-radius: 8px; line-height: 1; transition: background .15s;
     &:hover { background: #fee2e2; color: $danger; border-color: #fca5a5; }
   }
   &__tipo-info {
-    background: $bg-page;
-    border: 1px solid $border;
-    border-radius: $radius;
-    padding: 14px 16px;
-    margin-bottom: 20px;
-    font-size: .86rem;
+    background: $bg-page; border: 1px solid $border; border-radius: $radius;
+    padding: 14px 16px; margin-bottom: 20px; font-size: .86rem;
     strong { display: block; font-size: .95rem; margin-bottom: 4px; color: $text; }
     p { margin: 4px 0; color: $text-muted; }
   }
   &__footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-top: 24px;
-    padding-top: 16px;
-    border-top: 1px solid $border;
+    display: flex; justify-content: flex-end; gap: 10px;
+    margin-top: 24px; padding-top: 16px; border-top: 1px solid $border;
   }
 }
 
-// ── Upload área ───────────────────────────────────────────────────
+// ── Upload ────────────────────────────────────────────────────────
 .hab-upload-area { margin-bottom: 20px; }
 .hab-upload-label {
-  display: block;
-  border: 2px dashed #a7d7b8;
-  border-radius: $radius;
-  padding: 32px 20px;
-  text-align: center;
-  cursor: pointer;
-  background: $primary-light;
-  transition: all .2s;
+  display: block; border: 2px dashed #a7d7b8; border-radius: $radius;
+  padding: 32px 20px; text-align: center; cursor: pointer; background: $primary-light; transition: all .2s;
   &:hover { background: darken($primary-light, 3%); border-color: $primary; }
 }
-.hab-upload-prompt {
-  color: $primary;
-  font-weight: 700;
-  font-size: .9rem;
-  line-height: 1.6;
-  small { color: $text-muted; font-weight: 400; font-size: .78rem; }
-}
+.hab-upload-prompt { color: $primary; font-weight: 700; font-size: .9rem; line-height: 1.6; small { color: $text-muted; font-weight: 400; font-size: .78rem; } }
 .hab-upload-loading { color: $warning; font-weight: 600; }
-.hab-upload-done { color: $success; font-weight: 700; }
+.hab-upload-done    { color: $success; font-weight: 700; }
 
-// ── Formulario antiplagio ─────────────────────────────────────────
+// ── Form antiplagio ───────────────────────────────────────────────
 .hab-antiplagio-form {
-  border: 1px solid #bfdbfe;
-  border-radius: $radius;
-  padding: 16px;
-  background: linear-gradient(135deg, #eff6ff, #f0f9ff);
-  margin-bottom: 16px;
+  border: 1px solid #bfdbfe; border-radius: $radius;
+  padding: 16px; background: linear-gradient(135deg, #eff6ff, #f0f9ff); margin-bottom: 16px;
 }
 
 .hab-form-group {
   margin-bottom: 14px;
-  label {
-    display: block;
-    font-size: .82rem;
-    font-weight: 700;
-    color: $text;
-    margin-bottom: 6px;
-    letter-spacing: .01em;
-  }
-  small {
-    display: block;
-    font-size: .74rem;
-    color: $text-muted;
-    margin-top: 4px;
-    line-height: 1.4;
-  }
+  label { display: block; font-size: .82rem; font-weight: 700; color: $text; margin-bottom: 6px; letter-spacing: .01em; }
+  small { display: block; font-size: .74rem; color: $text-muted; margin-top: 4px; line-height: 1.4; }
 }
 .req { color: $danger; }
 
 .hab-input,
 .hab-textarea {
-  width: 100%;
-  padding: 9px 13px;
-  border: 1.5px solid $border;
-  border-radius: 8px;
-  font-size: .88rem;
-  color: $text;
-  background: $bg-card;
-  box-sizing: border-box;
-  transition: border-color .2s, box-shadow .2s;
-  font-family: inherit;
-
-  &:focus {
-    outline: none;
-    border-color: $primary;
-    box-shadow: 0 0 0 3px rgba($primary, .1);
-  }
-
+  width: 100%; padding: 9px 13px; border: 1.5px solid $border; border-radius: 8px;
+  font-size: .88rem; color: $text; background: $bg-card; box-sizing: border-box;
+  transition: border-color .2s, box-shadow .2s; font-family: inherit;
+  &:focus { outline: none; border-color: $primary; box-shadow: 0 0 0 3px rgba($primary, .1); }
   &::placeholder { color: $text-light; }
 }
 .hab-textarea { resize: vertical; }
 
-// ── Toggle decisión ──────────────────────────────────────────────
-.hab-decision-toggle {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 4px;
-}
+// ── Toggle decisión ───────────────────────────────────────────────
+.hab-decision-toggle { display: flex; gap: 10px; margin-bottom: 4px; }
 .hab-toggle-btn {
-  flex: 1;
-  padding: 11px;
-  border: 2px solid $border;
-  border-radius: 10px;
-  font-size: .88rem;
-  font-weight: 700;
-  cursor: pointer;
-  background: $bg-page;
-  color: $text-muted;
-  transition: all .18s;
-  font-family: inherit;
-
-  &.active-ok  {
-    border-color: $success;
-    background: #dcfce7;
-    color: $success;
-    box-shadow: 0 2px 8px rgba($success, .2);
-  }
-  &.active-err {
-    border-color: $danger;
-    background: #fee2e2;
-    color: $danger;
-    box-shadow: 0 2px 8px rgba($danger, .2);
-  }
+  flex: 1; padding: 11px; border: 2px solid $border; border-radius: 10px;
+  font-size: .88rem; font-weight: 700; cursor: pointer; background: $bg-page; color: $text-muted;
+  transition: all .18s; font-family: inherit;
+  &.active-ok  { border-color: $success; background: #dcfce7; color: $success; box-shadow: 0 2px 8px rgba($success, .2); }
+  &.active-err { border-color: $danger;  background: #fee2e2; color: $danger;  box-shadow: 0 2px 8px rgba($danger, .2); }
   &:not(.active-ok):not(.active-err):hover { background: $border-light; }
 }
 
-// ── Responsive ───────────────────────────────────────────────────
+// ── Responsive ────────────────────────────────────────────────────
 @media (max-width: 900px) {
-  .hab-layout {
-    grid-template-columns: 1fr;
-  }
-  .hab-sidebar {
-    position: static;
-  }
+  .hab-layout  { grid-template-columns: 1fr; }
+  .hab-sidebar { position: static; }
 }
 
 @media (max-width: 640px) {
   .hab-wrapper { padding: 14px 16px; }
-  .hab-modal { padding: 18px; }
-  .hab-header { flex-direction: column; align-items: flex-start; }
-  .hab-card__desc,
-  .hab-card__file,
-  .hab-card__actions,
-  .hab-antiplagio { padding-left: 0; margin-left: 0; }
+  .hab-modal   { padding: 18px; }
+  .hab-header  { flex-direction: column; align-items: flex-start; }
+  .hab-card__desc, .hab-card__file, .hab-card__actions, .hab-antiplagio { padding-left: 0; margin-left: 0; }
   .hab-progress-top { flex-direction: column; align-items: flex-start; }
+}
+
+
+// ================================================================
+// MODO OSCURO
+// ================================================================
+
+:host-context(body.dark-mode) {
+
+  // Wrapper
+  .hab-wrapper { background: #111827; color: #e2e8f0; }
+
+  // Header
+  .hab-header {
+    &__title { color: #f1f5f9; }
+    &__sub   { color: #64748b; }
+  }
+  .hab-role-badge {
+    background: #1e3a5f; color: #93c5fd; border-color: #1e40af;
+    &.role-director { background: #052e16; color: #86efac; border-color: #166534; }
+  }
+
+  // Alertas
+  .hab-alert {
+    &--error { background: #2d1b1b; border-color: #7f1d1d; color: #fca5a5; }
+    &--ok    { background: #052e16; border-color: #166534; color: #86efac; }
+  }
+
+  // Spinner
+  .hab-spinner { border-color: #334155; border-top-color: #0f7a3a; }
+  .hab-loading { color: #64748b; }
+
+  // Sidebar cards
+  .hab-sidebar-card {
+    background: #1e293b; border-color: #334155;
+    &__title { color: #64748b; border-bottom-color: #334155; }
+    &--reglamento { background: linear-gradient(135deg, #0f2a1a, #1e293b); border-color: #166534; }
+    &--tip        { background: linear-gradient(135deg, #2a1f0a, #1a1500); border-color: #854d0e; p { color: #fcd34d; } }
+    &--director-stat { background: linear-gradient(135deg, #052e16, #0f2a1a); border-color: #166534; }
+  }
+
+  // Stats
+  .hab-stat {
+    &--aprobado  { background: #052e16; border-color: #166534; .hab-stat__label { color: #86efac; } }
+    &--pendiente { background: #0f172a; border-color: #334155; .hab-stat__num { color: #94a3b8; } .hab-stat__label { color: #64748b; } }
+    &--rechazado { background: #2d1b1b; border-color: #7f1d1d; .hab-stat__label { color: #fca5a5; } }
+  }
+
+  // Director count
+  .hab-director-count {
+    &__num   { color: #86efac; }
+    &__label { color: #64748b; }
+  }
+
+  // Lists
+  .hab-guide-list li, .hab-steps-list li { color: #94a3b8; }
+  .hab-reglamento-list li { color: #94a3b8; strong { color: #86efac; } }
+
+  // Progress card
+  .hab-progress-card {
+    background: #1e293b; border-color: #334155;
+    &--ok { background: linear-gradient(135deg, #052e16, #0f2a1a); border-color: #166534; }
+  }
+  .count-total { color: #94a3b8; }
+  .count-sep   { color: #475569; }
+  .count-label { color: #64748b; }
+  .hab-progress-bar { background: #334155; }
+  .hab-progress-pct { color: #86efac; }
+
+  .hab-badge-habilitado { background: #052e16; color: #86efac; border-color: #166534; }
+  .hab-badge-falta      { background: #2a1f0a; color: #fcd34d; border-color: #854d0e; }
+
+  // Project title & section title
+  .hab-project-title {
+    background: #1e293b; border-color: #334155;
+    &__label { color: #64748b; }
+    &__name  { color: #e2e8f0; }
+  }
+  .hab-section-title { background: #1e293b; border-color: #334155; color: #f1f5f9; }
+
+  // Empty
+  .hab-empty { background: #1e293b; border-color: #334155; color: #64748b; }
+
+  // Cards habilitantes
+  .hab-card {
+    background: #1e293b; border-color: #334155;
+    &--aprobado  { background: #0d1f12; }
+    &--rechazado { background: #1c0f0f; }
+    &--enviado   { background: #1c1a0d; }
+
+    &__icon-wrap { background: #0f172a; border-color: #334155; }
+    &__tipo      { color: #e2e8f0; }
+    &__student   { background: #0f172a; border-color: #334155; color: #94a3b8; }
+    &__desc      { color: #94a3b8; }
+    &__date      { background: #0f172a; color: #64748b; }
+    &__comment   { background: linear-gradient(135deg, #2a1f0a, #1a1500); color: #fcd34d; }
+  }
+
+  // Badges estado
+  .badge-aprobado  { background: #052e16; color: #86efac; border-color: #166534; }
+  .badge-rechazado { background: #2d1b1b; color: #fca5a5; border-color: #7f1d1d; }
+  .badge-enviado   { background: #2a1f0a; color: #fcd34d; border-color: #854d0e; }
+  .badge-pendiente { background: #1e293b; color: #94a3b8; border-color: #334155; }
+
+  // Antiplagio
+  .hab-antiplagio {
+    background: linear-gradient(135deg, #1e3a5f, #0f2040); border-color: #1e40af;
+    &--rechazado { background: linear-gradient(135deg, #2d1b1b, #1c0f0f); border-color: #7f1d1d; }
+    &__label  { color: #94a3b8; }
+    &__pct    { color: #e2e8f0; }
+    &__umbral { color: #64748b; }
+  }
+
+  // Link archivo
+  .hab-link-file {
+    background: #052e16; border-color: #166534; color: #86efac;
+    &:hover { background: #0a3d1f; }
+  }
+
+  // Botones
+  .hab-btn {
+    &--primary {
+      background: #0f7a3a !important; color: #fff !important;
+      &:not(:disabled):hover { background: #0a5c25 !important; }
+      &:disabled { background: #0f7a3a !important; color: rgba(255,255,255,0.6) !important; opacity: 1; }
+    }
+    &--ghost {
+      color: #94a3b8; border-color: #334155;
+      &:not(:disabled):hover { background: #1e293b; }
+    }
+  }
+
+  // Modal
+  .hab-overlay { background: rgba(0,0,0,.7); }
+  .hab-modal {
+    background: #1e293b;
+    &__header h2 { color: #f1f5f9; }
+    &__close {
+      background: #0f172a; border-color: #334155; color: #94a3b8;
+      &:hover { background: #2d1b1b; color: #fca5a5; border-color: #7f1d1d; }
+    }
+    &__tipo-info { background: #0f172a; border-color: #334155; strong { color: #f1f5f9; } p { color: #94a3b8; } }
+    &__footer { border-top-color: #334155; }
+  }
+
+  // Upload
+  .hab-upload-label {
+    background: #052e16; border-color: #166534;
+    &:hover { background: #0a3d1f; border-color: #0f7a3a; }
+  }
+  .hab-upload-prompt { color: #86efac; small { color: #64748b; } }
+
+  // Form antiplagio
+  .hab-antiplagio-form { background: linear-gradient(135deg, #1e3a5f, #0f2040); border-color: #1e40af; }
+
+  .hab-form-group {
+    label { color: #94a3b8; }
+    small { color: #64748b; }
+  }
+
+  .hab-input, .hab-textarea {
+    background: #0f172a; border-color: #334155; color: #e2e8f0;
+    &:focus { border-color: #0f7a3a; box-shadow: 0 0 0 3px rgba(15,122,58,.2); }
+    &::placeholder { color: #475569; }
+  }
+
+  // Toggle decisión
+  .hab-toggle-btn {
+    background: #0f172a; border-color: #334155; color: #94a3b8;
+    &.active-ok  { background: #052e16; border-color: #166534; color: #86efac; }
+    &.active-err { background: #2d1b1b; border-color: #7f1d1d; color: #fca5a5; }
+    &:not(.active-ok):not(.active-err):hover { background: #1e293b; }
+  }
 }

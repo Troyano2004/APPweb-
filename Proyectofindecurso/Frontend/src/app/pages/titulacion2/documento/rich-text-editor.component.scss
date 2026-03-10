@@ -21,6 +21,7 @@
   padding: 0.3rem 0.55rem;
   font-size: 0.8rem;
   cursor: pointer;
+  color: #374151;
 }
 
 .editor-content {
@@ -28,6 +29,8 @@
   padding: 0.9rem;
   line-height: 1.6;
   outline: none;
+  color: #111827;
+  background: #fff;
 }
 
 .editor-content:empty::before {
@@ -88,4 +91,65 @@
 :host ::ng-deep .editor-content th {
   border: 1px solid #9ca3af;
   padding: 0.35rem;
+}
+
+
+// ===============================================
+// MODO OSCURO
+// ===============================================
+
+// Wrapper general
+:host-context(body.dark-mode) .editor-wrapper {
+  background: #0f172a;
+  border-color: #334155;
+}
+
+// Toolbar
+:host-context(body.dark-mode) .editor-toolbar {
+  background: #1e293b;
+  border-bottom-color: #334155;
+}
+
+// Botones de herramienta
+:host-context(body.dark-mode) .tool-btn {
+  background: #0f172a;
+  border-color: #334155;
+  color: #e2e8f0;
+
+  &:hover:not(:disabled) {
+    background: #263448;
+    border-color: #475569;
+  }
+}
+
+// Área de escritura
+:host-context(body.dark-mode) .editor-content {
+  background: #0f172a;
+  color: #e2e8f0;
+
+  &:empty::before {
+    color: #475569;
+  }
+}
+
+// Tablas dentro del editor
+:host-context(body.dark-mode) .editor-content td,
+:host-context(body.dark-mode) .editor-content th {
+  border-color: #334155;
+  color: #e2e8f0;
+}
+
+:host-context(body.dark-mode) .editor-content table:hover {
+  outline: 1px dashed #475569;
+}
+
+// ng-deep para contenido dinámico
+:host-context(body.dark-mode) ::ng-deep .editor-content td,
+:host-context(body.dark-mode) ::ng-deep .editor-content th {
+  border-color: #334155;
+  color: #e2e8f0;
+}
+
+:host-context(body.dark-mode) ::ng-deep .editor-content table:hover {
+  outline: 1px dashed #475569;
 }
