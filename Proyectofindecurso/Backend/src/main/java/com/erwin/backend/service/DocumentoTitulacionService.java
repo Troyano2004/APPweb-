@@ -212,6 +212,18 @@ public class DocumentoTitulacionService {
         DocumentoTitulacionDto dto = new DocumentoTitulacionDto();
         dto.setId(d.getId());
         dto.setIdEstudiante(d.getEstudiante() != null ? d.getEstudiante().getIdEstudiante() : null);
+        // ✅ NUEVO: Nombre completo del estudiante
+        if (d.getEstudiante() != null && d.getEstudiante().getUsuario() != null) {
+            String nombres = firstNonBlank(d.getEstudiante().getUsuario().getNombres(), "");
+            String apellidos = firstNonBlank(d.getEstudiante().getUsuario().getApellidos(), "");
+            dto.setNombreEstudiante((nombres + " " + apellidos).trim());
+        }
+
+        // ✅ NUEVO: Carrera del estudiante
+        if (d.getEstudiante() != null && d.getEstudiante().getCarrera() != null) {
+            dto.setCarreraEstudiante(d.getEstudiante().getCarrera().getNombre());
+        }
+
         dto.setIdDirector(d.getDirector() != null ? d.getDirector().getIdDocente() : null);
         dto.setEstado(d.getEstado());
         dto.setTitulo(d.getTitulo());

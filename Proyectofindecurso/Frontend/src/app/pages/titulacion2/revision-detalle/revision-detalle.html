@@ -7,11 +7,8 @@
           <span class="back-icon">←</span>
           Volver a lista
         </a>
-
         <h1 class="header-title">Documento #{{ idDocumento }}</h1>
         <p class="header-subtitle">Revisión y observaciones del documento</p>
-
-        <!-- Opcional: si mandas titulo por queryParam -->
         <p class="header-subtitle" *ngIf="documento()?.titulo || titulo()">
           <strong>Título del proyecto:</strong> {{ documento()?.titulo || titulo() }}
         </p>
@@ -23,24 +20,19 @@
   <div class="action-bar">
     <div class="action-buttons">
       <button class="btn btn-secondary" type="button" (click)="cargarDocumento(); cargarObs()" [disabled]="loading()">
-        <span class="btn-icon">↻</span>
-        Recargar
+        <span class="btn-icon">↻</span> Recargar
       </button>
       <button class="btn btn-warning" type="button" (click)="devolver()" [disabled]="loading()">
-        <span class="btn-icon">↩</span>
-        Devolver
+        <span class="btn-icon">↩</span> Devolver
       </button>
       <button class="btn btn-success" type="button" (click)="aprobar()" [disabled]="loading()">
-        <span class="btn-icon">✓</span>
-        Aprobar
+        <span class="btn-icon">✓</span> Aprobar
       </button>
       <button class="btn btn-ai" type="button" (click)="abrirAsistenteIa()" [disabled]="loading() || !documento()">
-        <span class="btn-icon">🤖</span>
-        Revisar con IA
+        <span class="btn-icon">🤖</span> Revisar con IA
       </button>
       <button class="btn btn-secondary" type="button" (click)="exportarPdf()" [disabled]="loading() || !documento()">
-        <span class="btn-icon">📄</span>
-        Exportar PDF
+        <span class="btn-icon">📄</span> Exportar PDF
       </button>
     </div>
   </div>
@@ -51,14 +43,14 @@
     <span class="error-text">{{ msg }}</span>
   </div>
 
+  <!-- Modal Asistente IA -->
   <div class="ai-assistant-overlay" *ngIf="showAiAssistant()" (click)="cerrarAsistenteIa()">
     <div class="ai-assistant-modal" (click)="$event.stopPropagation()">
       <div class="ai-modal-header">
         <h2 class="ai-modal-title">Asistente IA para revisión académica</h2>
         <button class="ai-close" type="button" (click)="cerrarAsistenteIa()">✕</button>
       </div>
-
-      <p class="ai-modal-subtitle">Selecciona un enfoque de análisis o personaliza tu prompt para una revisión más precisa e innovadora.</p>
+      <p class="ai-modal-subtitle">Selecciona un enfoque de análisis o personaliza tu prompt para una revisión más precisa.</p>
 
       <div class="ai-modes-grid">
         <label class="ai-mode-card" *ngFor="let mode of aiModes" [class.selected]="selectedAiMode() === mode.id">
@@ -88,32 +80,82 @@
       <div class="ai-modal-actions">
         <button class="btn btn-secondary" type="button" (click)="cerrarAsistenteIa()">Cancelar</button>
         <button class="btn btn-ai" type="button" (click)="analizarConIaDesdeFormulario()" [disabled]="loading() || !documento()">
-          <span class="btn-icon">✨</span>
-          Analizar con IA
+          <span class="btn-icon">✨</span> Analizar con IA
         </button>
       </div>
     </div>
   </div>
 
+  <!-- ✅ RESULTADO IA - Tarjeta visual mejorada -->
   <div class="content-card ai-result-card" *ngIf="aiResult()">
     <div class="card-header-section">
-      <h2 class="section-title">Resultado de revisión con IA</h2>
-      <p class="section-subtitle" *ngIf="aiLastModeLabel() as modeLabel">Enfoque aplicado: <strong>{{ modeLabel }}</strong></p>
-      <p class="section-subtitle" *ngIf="aiPromptSugerido() as prompt">Prompt sugerido: {{ prompt }}</p>
-    </div>
-
-    <div class="form-grid">
-      <div class="form-group form-group-full">
-        <label class="form-label">Respuesta de la IA</label>
-        <textarea
-          class="form-textarea ai-result-textarea"
-          rows="6"
-          name="resultadoIa"
-          [value]="aiResult() || ''"
-          readonly></textarea>
+      <div class="ai-result-header-row">
+        <div class="ai-result-title-group">
+          <span class="ai-robot-icon">🤖</span>
+          <div>
+            <h2 class="section-title">Resultado de revisión con IA</h2>
+            <p class="section-subtitle" *ngIf="aiLastModeLabel() as modeLabel">
+              Enfoque: <strong>{{ modeLabel }}</strong>
+            </p>
+          </div>
+        </div>
       </div>
     </div>
+
+    <!-- Si el JSON parsea correctamente -->
+    <ng-container *ngIf="parsedAiResult() as result; else rawResult">
+
+      <!-- Badge de estado -->
+      <div class="ai-estado-wrapper">
+        <span class="ai-estado-badge estado-alineado" *ngIf="result.estado === 'ALINEADO'">
+          <span class="estado-icon">✅</span> Documento Alineado
+        </span>
+        <span class="ai-estado-badge estado-modificar" *ngIf="result.estado === 'REQUIERE_MODIFICACION'">
+          <span class="estado-icon">⚠️</span> Requiere Modificación
+        </span>
+        <span class="ai-estado-badge estado-error" *ngIf="result.estado === 'ERROR'">
+          <span class="estado-icon">❌</span> Error en evaluación
+        </span>
+      </div>
+
+      <!-- Feedback -->
+      <div class="ai-feedback-box" *ngIf="result.feedback">
+        <div class="ai-box-header">
+          <span class="ai-box-icon">📋</span>
+          <h3 class="ai-box-title">Feedback de la IA</h3>
+        </div>
+        <p class="ai-feedback-text">{{ result.feedback }}</p>
+      </div>
+
+      <!-- Sugerencias -->
+      <div class="ai-sugerencias-box" *ngIf="result.sugerencias?.length">
+        <div class="ai-box-header">
+          <span class="ai-box-icon">💡</span>
+          <h3 class="ai-box-title">Sugerencias de mejora</h3>
+          <span class="ai-sugerencias-count">{{ result.sugerencias.length }}</span>
+        </div>
+        <ul class="ai-sugerencias-list">
+          <li class="ai-sugerencia-item" *ngFor="let s of result.sugerencias; let i = index">
+            <span class="sugerencia-num">{{ i + 1 }}</span>
+            <span class="sugerencia-text">{{ s }}</span>
+          </li>
+        </ul>
+      </div>
+
+    </ng-container>
+
+    <!-- Fallback si el JSON no parsea -->
+    <ng-template #rawResult>
+      <div class="ai-raw-fallback">
+        <div class="ai-box-header">
+          <span class="ai-box-icon">📄</span>
+          <h3 class="ai-box-title">Respuesta de la IA</h3>
+        </div>
+        <textarea class="form-textarea ai-result-textarea" rows="8" [value]="aiResult() || ''" readonly></textarea>
+      </div>
+    </ng-template>
   </div>
+
   <!-- Contenido del documento para revisar -->
   <div class="document-content-section">
     <div class="section-header">
@@ -292,6 +334,7 @@
     </div>
   </div>
 
+  <!-- Historial de observaciones -->
   <div class="observations-section">
     <h2 class="section-title-main">Historial de Observaciones</h2>
 
@@ -303,15 +346,11 @@
             'badge-pending': o.estado === 'PENDIENTE',
             'badge-resolved': o.estado === 'RESUELTA',
             'badge-rejected': o.estado === 'RECHAZADA'
-          }">
-            {{ o.estado }}
-          </span>
+          }">{{ o.estado }}</span>
         </div>
-
         <div class="observation-body">
           <p class="observation-text">{{ o.comentario }}</p>
         </div>
-
         <div class="observation-footer">
           <span class="observation-date">{{ o.creadoEn || 'Fecha no disponible' }}</span>
         </div>
