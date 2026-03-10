@@ -1,211 +1,189 @@
-<div class="page">
+<div class="ap-page">
 
-  <div class="content">
+  <!-- HEADER VERDE -->
+  <div class="ap-header">
+    <div class="ap-header-left">
+      <div class="ap-header-title">Registrar / Editar Anteproyecto</div>
+      <div class="ap-header-sub">Gestión y revisión del anteproyecto de titulación</div>
+    </div>
+    <div class="ap-header-right">
+
+    </div>
+  </div>
+
+  <!-- CUERPO -->
+  <div class="ap-body">
 
     <!-- LOADING -->
-    <div *ngIf="cargando" class="alert alert-warning">
-      Cargando información del anteproyecto...
+    <div *ngIf="cargando" class="ap-alert warning">
+      ⏳ Cargando información del anteproyecto...
     </div>
 
     <!-- MENSAJE -->
-    <div class="alert info" *ngIf="!cargando && mensaje">
+    <div class="ap-alert" [class.danger]="mensaje.startsWith('Error') || mensaje.startsWith('No puedes') || mensaje.startsWith('Completa')"
+         [class.success]="mensaje.startsWith('Borrador') || mensaje.startsWith('Enviado') || mensaje.startsWith('Recargada') || mensaje.startsWith('Se copiaron')"
+         [class.info]="!mensaje.startsWith('Error') && !mensaje.startsWith('No puedes') && !mensaje.startsWith('Completa') && !mensaje.startsWith('Borrador') && !mensaje.startsWith('Enviado') && !mensaje.startsWith('Recargada') && !mensaje.startsWith('Se copiaron')"
+         *ngIf="!cargando && mensaje">
       {{ mensaje }}
     </div>
 
-    <!-- PANEL -->
-    <div class="panel" *ngIf="!cargando">
+    <!-- CARD PRINCIPAL -->
+    <div class="ap-card" *ngIf="!cargando">
 
-      <!-- CABECERA -->
-      <div class="panel-head">
-        <div>
-          <div class="title">Registrar / Editar Anteproyecto</div>
-          <div class="sub">
-            Estudiante: <b>{{ nombreEstudiante || '---' }}</b>
+      <!-- META DEL ESTUDIANTE -->
+      <div class="ap-meta">
+        <div class="ap-meta-info">
+          <span class="ap-meta-label">Estudiante:</span>
+          <span class="ap-meta-value">{{ nombreEstudiante || '---' }}</span>
+          <span class="ap-pill"
+                [class.green]="puedeEditar"
+                [class.gray]="bloqueado"
+                [class.yellow]="(anteproyecto?.estado || '').toUpperCase() === 'BORRADOR'">
+            {{ anteproyecto?.estado || '---' }}
+          </span>
+        </div>
 
-            <span class="pill"
-                  [class.gray]="bloqueado"
-                  [class.green]="puedeEditar"
-                  [class.yellow]="(anteproyecto?.estado || '').toUpperCase() === 'BORRADOR'">
-              {{ anteproyecto?.estado || '---' }}
-            </span>
-          </div>
+        <!-- BOTONES ACCIÓN -->
+        <div class="ap-actions">
+          <button class="ap-btn ghost" type="button" (click)="cargarMiAnteproyecto()" [disabled]="cargando">
+            ↺ Recargar
+          </button>
+          <button class="ap-btn ghost" type="button" (click)="recargarUltimaVersion()" [disabled]="!puedeEditar || cargando">
+            ⟳ Última versión
+          </button>
+          <button class="ap-btn ghost" type="button" (click)="copiarDesdePropuesta()" [disabled]="!puedeEditar || cargando">
+            ⎘ Copiar propuesta
+          </button>
+          <button class="ap-btn save" type="button" (click)="guardarBorrador()" [disabled]="!puedeEditar || form.invalid || cargando">
+            ✓ Guardar
+          </button>
+          <button class="ap-btn primary" type="button" (click)="enviarARevision()" [disabled]="!puedeEditar || form.invalid || cargando">
+            → Enviar a revisión
+          </button>
         </div>
       </div>
 
-      <!-- FILA: TABS + BOTONES (mismo renglón) -->
-      <div class="tabs-row">
-
-        <!-- TABS -->
-        <div class="tabs">
-          <button class="tab" [class.active]="tab==='portada'" (click)="tab='portada'">Portada</button>
-          <button class="tab" [class.active]="tab==='introduccion'" (click)="tab='introduccion'">Introducción</button>
-          <button class="tab" [class.active]="tab==='marco'" (click)="tab='marco'">Marco Teórico</button>
-          <button class="tab" [class.active]="tab==='resultados'" (click)="tab='resultados'">Metodología / Resultados</button>
-          <button class="tab" [class.active]="tab==='biblio'" (click)="tab='biblio'">Bibliografía</button>
-        </div>
-
-        <!-- BOTONES -->
-        <div class="tab-actions">
-          <button class="btn ghost"
-                  type="button"
-                  (click)="cargarMiAnteproyecto()"
-                  [disabled]="cargando">
-            Refrescar
-          </button>
-
-          <button class="btn ghost"
-                  type="button"
-                  (click)="recargarUltimaVersion()"
-                  [disabled]="!puedeEditar || cargando">
-            Recargar última versión
-          </button>
-
-          <!-- Si tú ya tienes el método copiarDesdePropuesta(), déjalo así.
-               Si no lo tienes aún, comenta este botón por ahora -->
-          <button class="btn ghost"
-                  type="button"
-                  (click)="copiarDesdePropuesta()"
-                  [disabled]="!puedeEditar || cargando">
-            Copiar desde propuesta
-          </button>
-
-          <button class="btn success"
-                  type="button"
-                  (click)="guardarBorrador()"
-                  [disabled]="!puedeEditar || form.invalid || cargando">
-            Guardar borrador
-          </button>
-
-          <button class="btn primary"
-                  type="button"
-                  (click)="enviarARevision()"
-                  [disabled]="!puedeEditar || form.invalid || cargando">
-            Enviar a revisión
-          </button>
-        </div>
-
+      <!-- TABS -->
+      <div class="ap-tabs">
+        <button class="ap-tab" [class.active]="tab==='portada'" (click)="tab='portada'">Portada</button>
+        <button class="ap-tab" [class.active]="tab==='introduccion'" (click)="tab='introduccion'">Introducción</button>
+        <button class="ap-tab" [class.active]="tab==='marco'" (click)="tab='marco'">Marco Teórico</button>
+        <button class="ap-tab" [class.active]="tab==='resultados'" (click)="tab='resultados'">Metodología / Resultados</button>
+        <button class="ap-tab" [class.active]="tab==='biblio'" (click)="tab='biblio'">Bibliografía</button>
       </div>
 
       <!-- FORM -->
-      <form class="form" [formGroup]="form">
+      <form class="ap-form" [formGroup]="form">
 
         <!-- PORTADA -->
-        <div class="grid" *ngIf="tab==='portada'">
-          <div class="field full">
+        <div class="ap-section" *ngIf="tab==='portada'">
+          <div class="ap-section-title">Portada</div>
+          <div class="ap-field">
             <label>Título</label>
-            <input formControlName="titulo" />
-            <small class="hint" *ngIf="form.get('titulo')?.touched && form.get('titulo')?.invalid">
-              Campo obligatorio.
-            </small>
+            <input formControlName="titulo" placeholder="Ingrese el título del anteproyecto" />
+            <small *ngIf="form.get('titulo')?.touched && form.get('titulo')?.invalid">Campo obligatorio.</small>
           </div>
-
-          <div class="field full">
+          <div class="ap-field">
             <label>Tema de investigación</label>
-            <textarea rows="6" formControlName="temaInvestigacion"></textarea>
-            <small class="hint" *ngIf="form.get('temaInvestigacion')?.touched && form.get('temaInvestigacion')?.invalid">
-              Campo obligatorio.
-            </small>
+            <textarea rows="6" formControlName="temaInvestigacion" placeholder="Describe el tema de investigación..."></textarea>
+            <small *ngIf="form.get('temaInvestigacion')?.touched && form.get('temaInvestigacion')?.invalid">Campo obligatorio.</small>
           </div>
         </div>
 
         <!-- INTRODUCCIÓN -->
-        <div class="grid" *ngIf="tab==='introduccion'">
-          <div class="field full">
+        <div class="ap-section" *ngIf="tab==='introduccion'">
+          <div class="ap-section-title">Introducción</div>
+          <div class="ap-field">
             <label>Planteamiento del problema</label>
-            <textarea rows="8" formControlName="planteamientoProblema"></textarea>
+            <textarea rows="8" formControlName="planteamientoProblema" placeholder="Describe el planteamiento del problema..."></textarea>
+            <small *ngIf="form.get('planteamientoProblema')?.touched && form.get('planteamientoProblema')?.invalid">Campo obligatorio.</small>
           </div>
-
-          <div class="field full">
+          <div class="ap-field">
             <label>Objetivo general</label>
-            <textarea rows="4" formControlName="objetivosGenerales"></textarea>
+            <textarea rows="4" formControlName="objetivosGenerales" placeholder="Describe el objetivo general..."></textarea>
+            <small *ngIf="form.get('objetivosGenerales')?.touched && form.get('objetivosGenerales')?.invalid">Campo obligatorio.</small>
           </div>
-
-          <div class="field full">
+          <div class="ap-field">
             <label>Objetivos específicos</label>
-            <textarea rows="6" formControlName="objetivosEspecificos"></textarea>
+            <textarea rows="6" formControlName="objetivosEspecificos" placeholder="Lista los objetivos específicos..."></textarea>
+            <small *ngIf="form.get('objetivosEspecificos')?.touched && form.get('objetivosEspecificos')?.invalid">Campo obligatorio.</small>
           </div>
         </div>
 
         <!-- MARCO TEÓRICO -->
-        <div class="grid" *ngIf="tab==='marco'">
-          <div class="field full">
+        <div class="ap-section" *ngIf="tab==='marco'">
+          <div class="ap-section-title">Marco Teórico</div>
+          <div class="ap-field">
             <label>Marco teórico</label>
-            <textarea rows="12" formControlName="marcoTeorico"></textarea>
+            <textarea rows="14" formControlName="marcoTeorico" placeholder="Desarrolle el marco teórico de su investigación..."></textarea>
+            <small *ngIf="form.get('marcoTeorico')?.touched && form.get('marcoTeorico')?.invalid">Campo obligatorio.</small>
           </div>
         </div>
 
-        <!-- RESULTADOS -->
-        <div class="grid" *ngIf="tab==='resultados'">
-          <div class="field full">
+        <!-- METODOLOGÍA / RESULTADOS -->
+        <div class="ap-section" *ngIf="tab==='resultados'">
+          <div class="ap-section-title">Metodología / Resultados</div>
+          <div class="ap-field">
             <label>Metodología</label>
-            <textarea rows="8" formControlName="metodologia"></textarea>
+            <textarea rows="8" formControlName="metodologia" placeholder="Describe la metodología utilizada..."></textarea>
+            <small *ngIf="form.get('metodologia')?.touched && form.get('metodologia')?.invalid">Campo obligatorio.</small>
           </div>
-
-          <div class="field full">
+          <div class="ap-field">
             <label>Resultados esperados</label>
-            <textarea rows="8" formControlName="resultadosEsperados"></textarea>
+            <textarea rows="8" formControlName="resultadosEsperados" placeholder="Describe los resultados esperados..."></textarea>
+            <small *ngIf="form.get('resultadosEsperados')?.touched && form.get('resultadosEsperados')?.invalid">Campo obligatorio.</small>
           </div>
         </div>
 
-        <!-- BIBLIO -->
-        <div class="grid" *ngIf="tab==='biblio'">
-          <div class="field full">
+        <!-- BIBLIOGRAFÍA -->
+        <div class="ap-section" *ngIf="tab==='biblio'">
+          <div class="ap-section-title">Bibliografía</div>
+          <div class="ap-field">
             <label>Bibliografía</label>
-            <textarea rows="8" formControlName="bibliografia"></textarea>
+            <textarea rows="10" formControlName="bibliografia" placeholder="Lista las referencias bibliográficas..."></textarea>
+            <small *ngIf="form.get('bibliografia')?.touched && form.get('bibliografia')?.invalid">Campo obligatorio.</small>
           </div>
-
-          <div class="field full">
-            <label>Comentario del cambio (opcional)</label>
-            <textarea rows="3" formControlName="comentarioCambio"></textarea>
+          <div class="ap-field">
+            <label>Comentario del cambio <span class="optional">(opcional)</span></label>
+            <textarea rows="3" formControlName="comentarioCambio" placeholder="Describe los cambios realizados en esta versión..."></textarea>
           </div>
         </div>
 
       </form>
 
-      <!-- CUADRO BONITO: BASE (Propuesta) -->
-      <div class="base-card" *ngIf="anteproyecto?.propuesta">
-        <div class="base-head">
-          <div class="base-title">
-            <span class="badge">Base</span>
-            <span>Datos de la propuesta aprobada</span>
-          </div>
-
-          <!-- puedes volverlo colapsable luego si quieres -->
+      <!-- BASE CARD - PROPUESTA APROBADA -->
+      <div class="ap-base-card" *ngIf="anteproyecto?.propuesta">
+        <div class="ap-base-header">
+          <span class="ap-base-badge">Base</span>
+          <span class="ap-base-title">Datos de la propuesta aprobada</span>
         </div>
-
-        <div class="base-grid">
-          <div class="base-item">
-            <div class="k">Tema</div>
-            <div class="v">{{ anteproyecto?.propuesta?.tituloTema || '-' }}</div>
+        <div class="ap-base-grid">
+          <div class="ap-base-item">
+            <div class="ap-base-key">Tema</div>
+            <div class="ap-base-val">{{ anteproyecto?.propuesta?.tituloTema || '-' }}</div>
           </div>
-
-          <div class="base-item">
-            <div class="k">Título (Propuesta)</div>
-            <div class="v">{{ anteproyecto?.propuesta?.titulo || '-' }}</div>
+          <div class="ap-base-item">
+            <div class="ap-base-key">Título (Propuesta)</div>
+            <div class="ap-base-val">{{ anteproyecto?.propuesta?.titulo || '-' }}</div>
           </div>
-
-          <div class="base-item full">
-            <div class="k">Planteamiento (Propuesta)</div>
-            <div class="v pre">{{ anteproyecto?.propuesta?.planteamientoProblema || '-' }}</div>
+          <div class="ap-base-item full">
+            <div class="ap-base-key">Planteamiento (Propuesta)</div>
+            <div class="ap-base-val pre">{{ anteproyecto?.propuesta?.planteamientoProblema || '-' }}</div>
           </div>
-
-          <div class="base-item full">
-            <div class="k">Metodología (Propuesta)</div>
-            <div class="v pre">{{ anteproyecto?.propuesta?.metodologia || '-' }}</div>
+          <div class="ap-base-item full">
+            <div class="ap-base-key">Metodología (Propuesta)</div>
+            <div class="ap-base-val pre">{{ anteproyecto?.propuesta?.metodologia || '-' }}</div>
           </div>
-
-          <div class="base-item full">
-            <div class="k">Bibliografía (Propuesta)</div>
-            <div class="v pre">{{ anteproyecto?.propuesta?.bibliografia || '-' }}</div>
+          <div class="ap-base-item full">
+            <div class="ap-base-key">Bibliografía (Propuesta)</div>
+            <div class="ap-base-val pre">{{ anteproyecto?.propuesta?.bibliografia || '-' }}</div>
           </div>
         </div>
-
-        <div class="base-tip">
-          💡 Tip: usa <b>“Copiar desde propuesta”</b> para iniciar el anteproyecto con esta base y luego mejorarlo.
+        <div class="ap-base-tip">
+          💡 Usa <b>"Copiar propuesta"</b> para iniciar el anteproyecto con esta base y luego mejorarlo.
         </div>
       </div>
 
     </div>
   </div>
 </div>
-<p>anteproyecto works!</p>

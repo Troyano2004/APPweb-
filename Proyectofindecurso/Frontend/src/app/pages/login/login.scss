@@ -175,3 +175,13 @@ footer {
     object-fit: contain; // ✅ agregar esto
   }
 }
+.btn-link {
+  margin-top: 12px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: #0d6efd;
+  cursor: pointer;
+  font-weight: 600;
+  text-decoration: underline;
+}

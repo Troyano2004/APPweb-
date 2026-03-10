@@ -4,7 +4,7 @@ export interface TutoriaHistorialResponse {
   hora?: string;
   modalidad: string;
   estado: string;
-
+  linkReunion?: string;
   directorNombre?: string;
 
   idActa?: number;

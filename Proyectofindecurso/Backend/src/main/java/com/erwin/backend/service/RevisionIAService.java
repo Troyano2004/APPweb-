@@ -23,6 +23,7 @@ public class RevisionIAService {
     @Autowired
     private DocumentoTitulacionRepository documentoRepository;
 
+    // URL usando "latest" para que nunca caduque el modelo
     private final String geminiApiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent";
     private final String geminiApiKey = "";
 
@@ -36,6 +37,7 @@ public class RevisionIAService {
 
         String respuestaIA = llamarApiDeGemini(titulo, objetivoGeneral, objetivosEspecificos, request);
 
+        // 3. Guardar el resultado en la base de datos
         doc.setEstadoRevisionIa("EVALUADO");
         doc.setFeedbackIa(respuestaIA);
         doc.setFechaRevisionIa(LocalDateTime.now());
@@ -50,6 +52,7 @@ public class RevisionIAService {
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
 
+        // Configuramos las cabeceras (pasando la API Key de forma segura)
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("X-goog-api-key", geminiApiKey);
 
@@ -75,12 +78,14 @@ public class RevisionIAService {
         try {
             String responseBody = restTemplate.postForObject(geminiApiUrl, requestEntity, String.class);
 
+            // Parseamos la respuesta para extraer solo el texto generado
             ObjectMapper mapper = new ObjectMapper();
             JsonNode rootNode = mapper.readTree(responseBody);
 
             JsonNode textNode = rootNode.path("candidates").get(0)
                     .path("content").path("parts").get(0).path("text");
 
+            // Limpiamos la respuesta en caso de que la IA le agregue formato markdown (```json)
             return textNode.asText().replaceAll("```json", "").replaceAll("```", "").trim();
 
         } catch (Exception e) {

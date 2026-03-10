@@ -129,7 +129,6 @@ export class ShellComponent implements OnInit, OnDestroy {
       ],
     },
     {
-      // ✅ Rutas actualizadas desde doc2 (más completo que doc1)
       title: 'Titulación II',
       icon: '🧐',
       roles: ['DOCENTE', 'DOCENTE_TITULADO', 'ESTUDIANTE', 'ADMIN'],
@@ -174,7 +173,6 @@ export class ShellComponent implements OnInit, OnDestroy {
       ],
     },
     {
-      // ✅ Rutas actualizadas desde doc2 (más items que doc1)
       title: 'Coordinación',
       icon: '🧭',
       roles: ['COORDINADOR', 'ADMIN'],
@@ -228,6 +226,9 @@ export class ShellComponent implements OnInit, OnDestroy {
         { label: 'Usuarios',         path: '/app/admin/usuarios' },
         { label: 'Roles y permisos', path: '/app/admin/roles' },
         { label: 'Parámetros',       path: '/app/admin/parametros' },
+        { label: 'Parámetros', path: '/app/admin/parametros' },
+        { label: 'Gestión de solicitudes', path: '/app/admin/gestion-solicitudes' },
+        { label: 'Configuración de correo', path: '/app/admin/configuracion-correo' },
       ],
     },
   ];

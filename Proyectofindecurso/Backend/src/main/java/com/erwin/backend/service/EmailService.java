@@ -1,9 +1,13 @@
 package com.erwin.backend.service;
 
 import jakarta.mail.MessagingException;
+import com.erwin.backend.entities.ConfiguracionCorreo;
+import com.erwin.backend.repository.ConfiguracionCorreoRepository;
+import com.erwin.backend.security.CryptoUtil;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -13,15 +17,20 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
 
-/**
- * Servicio de notificaciones por correo electronico.
- * Todos los metodos son @Async para no bloquear el flujo principal.
- */
 @Service
 public class EmailService {
 
     private final JavaMailSender mailSender;
+    private final ConfiguracionCorreoRepository configRepo;
+
+    private static final Map<String, String> HOSTS = Map.of(
+            "GMAIL",   "smtp.gmail.com",
+            "YAHOO",   "smtp.mail.yahoo.com",
+            "OUTLOOK", "smtp.office365.com"
+    );
 
     @Value("${app.mail.from}")
     private String fromEmail;
@@ -29,14 +38,35 @@ public class EmailService {
     @Value("${app.mail.from-name}")
     private String fromName;
 
-    public EmailService(JavaMailSender mailSender) {
+    public EmailService(JavaMailSender mailSender, ConfiguracionCorreoRepository configRepo) {
         this.mailSender = mailSender;
+        this.configRepo = configRepo;
     }
 
     // =========================================================
-    // API PUBLICA
+    // Construye JavaMailSender dinámicamente desde BD
     // =========================================================
+    private JavaMailSender buildMailSender() {
+        ConfiguracionCorreo config = configRepo.findFirstByActivoTrue()
+                .orElseThrow(() -> new RuntimeException("NO_HAY_CONFIGURACION_CORREO_ACTIVA"));
 
+        JavaMailSenderImpl sender = new JavaMailSenderImpl();
+        sender.setHost(HOSTS.getOrDefault(config.getProveedor().toUpperCase(), "smtp.gmail.com"));
+        sender.setPort(587);
+        sender.setUsername(config.getUsuario());
+        sender.setPassword(CryptoUtil.decrypt(config.getPassword()));
+
+        Properties props = sender.getJavaMailProperties();
+        props.put("mail.smtp.auth", "true");
+        props.put("mail.smtp.starttls.enable", "true");
+        props.put("mail.smtp.starttls.required", "true");
+
+        return sender;
+    }
+
+    // =========================================================
+    // NOTIFICACIONES A DOCENTES
+    // =========================================================
     @Async
     public void notificarAsignacionDocenteDt2(String toEmail,
                                               String nombreDocente,
@@ -74,7 +104,6 @@ public class EmailService {
     // =========================================================
     // NOTIFICACIONES AL ESTUDIANTE
     // =========================================================
-
     @Async
     public void notificarPropuestaAprobada(String toEmail,
                                            String nombreEstudiante,
@@ -109,9 +138,139 @@ public class EmailService {
     }
 
     // =========================================================
-    // BUILDERS DE CONTENIDO
+    // ENVÍO DE CREDENCIALES Y CÓDIGO DE VERIFICACIÓN
     // =========================================================
+    public void enviarCodigo(String correo, String codigo) {
+        try {
+            JavaMailSender sender = buildMailSender();
+            MimeMessage msg = sender.createMimeMessage();
+            MimeMessageHelper h = new MimeMessageHelper(msg, true, "UTF-8");
+            h.setTo(correo);
+            h.setSubject("Código de verificación - Sistema de Titulación UTEQ");
+            h.setText(
+                    "<div style='font-family:Arial,sans-serif;max-width:500px;margin:0 auto'>" +
+                            "<h2 style='color:#27ae60'>Verificación de correo</h2>" +
+                            "<p>Tu código de verificación es:</p>" +
+                            "<div style='font-size:2rem;font-weight:bold;color:#2c3e50;letter-spacing:8px;" +
+                            "padding:1rem;background:#f4f6f9;border-radius:8px;text-align:center'>" +
+                            codigo + "</div>" +
+                            "<p style='color:#7f8c8d;font-size:0.85rem'>Este código expira en 10 minutos.</p>" +
+                            "</div>", true
+            );
+            sender.send(msg);
+        } catch (Exception e) {
+            throw new RuntimeException("ERROR_ENVIANDO_CODIGO: " + e.getMessage());
+        }
+    }
 
+    public void enviarCredenciales(String correo, String username, String password) {
+        try {
+            JavaMailSender sender = buildMailSender();
+            MimeMessage msg = sender.createMimeMessage();
+            MimeMessageHelper h = new MimeMessageHelper(msg, true, "UTF-8");
+            h.setTo(correo);
+            h.setSubject("Credenciales de ingreso al sistema - UTEQ");
+            h.setText(
+                    "<div style='font-family:Arial,sans-serif;max-width:500px;margin:0 auto'>" +
+                            "<h2 style='color:#27ae60'>Bienvenido al Sistema de Titulación UTEQ</h2>" +
+                            "<p>Tus credenciales de acceso:</p>" +
+                            "<table style='width:100%;border-collapse:collapse'>" +
+                            "<tr><td style='padding:8px;font-weight:bold'>Usuario:</td>" +
+                            "<td style='padding:8px'>" + username + "</td></tr>" +
+                            "<tr><td style='padding:8px;font-weight:bold'>Contraseña:</td>" +
+                            "<td style='padding:8px'>" + password + "</td></tr>" +
+                            "</table>" +
+                            "<p style='color:#e74c3c;font-weight:bold'>Por seguridad, cambia la contraseña al ingresar.</p>" +
+                            "</div>", true
+            );
+            sender.send(msg);
+        } catch (Exception e) {
+            throw new RuntimeException("ERROR_ENVIANDO_CREDENCIALES: " + e.getMessage());
+        }
+    }
+
+    public void enviarRechazo(String correo, String motivo) {
+        try {
+            JavaMailSender sender = buildMailSender();
+            MimeMessage msg = sender.createMimeMessage();
+            MimeMessageHelper h = new MimeMessageHelper(msg, true, "UTF-8");
+            h.setTo(correo);
+            h.setSubject("Solicitud de registro rechazada - UTEQ");
+            h.setText(
+                    "<div style='font-family:Arial,sans-serif;max-width:500px;margin:0 auto'>" +
+                            "<h2 style='color:#e74c3c'>Solicitud rechazada</h2>" +
+                            "<p>Tu solicitud de registro fue rechazada por el siguiente motivo:</p>" +
+                            "<div style='padding:1rem;background:#fdf3f2;border-left:4px solid #e74c3c;border-radius:4px'>" +
+                            motivo + "</div>" +
+                            "<p>Si tienes dudas, contacta a la coordinación.</p>" +
+                            "</div>", true
+            );
+            sender.send(msg);
+        } catch (Exception e) {
+            throw new RuntimeException("ERROR_ENVIANDO_RECHAZO: " + e.getMessage());
+        }
+    }
+
+    // =========================================================
+    // NOTIFICACIÓN DE REUNIÓN / TUTORÍA
+    // =========================================================
+    public void noticarReunion(String correo, String motivo, String linkReunion,
+                               String idreunion, String fecha, String hora) {
+        try {
+            JavaMailSender sender = buildMailSender();
+            MimeMessage msg = sender.createMimeMessage();
+            MimeMessageHelper h = new MimeMessageHelper(msg, true, "UTF-8");
+            h.setTo(correo);
+            h.setSubject("Tutoría programada - Sistema de Titulación UTEQ");
+
+            String linkHtml = (linkReunion != null && !linkReunion.isBlank())
+                    ? "<tr><td style='padding:8px;font-weight:bold'>Link reunión:</td>" +
+                    "<td style='padding:8px'><a href='" + linkReunion + "' style='color:#2980b9'>" + linkReunion + "</a></td></tr>"
+                    : "";
+
+            h.setText(
+                    "<div style='font-family:Arial,sans-serif;max-width:500px;margin:0 auto'>" +
+                            "<h2 style='color:#2980b9'>Tutoría Programada</h2>" +
+                            "<p>" + (motivo != null ? motivo : "Se ha programado una tutoría para tu anteproyecto.") + "</p>" +
+                            "<table style='width:100%;border-collapse:collapse;background:#f4f6f9;border-radius:8px'>" +
+                            "<tr><td style='padding:8px;font-weight:bold'>N° Tutoría:</td>" +
+                            "<td style='padding:8px'>#" + idreunion + "</td></tr>" +
+                            "<tr><td style='padding:8px;font-weight:bold'>Fecha:</td>" +
+                            "<td style='padding:8px'>" + fecha + "</td></tr>" +
+                            "<tr><td style='padding:8px;font-weight:bold'>Hora:</td>" +
+                            "<td style='padding:8px'>" + (hora != null ? hora : "Por confirmar") + "</td></tr>" +
+                            linkHtml +
+                            "</table>" +
+                            "<p style='color:#7f8c8d;font-size:0.85rem'>Por favor confirma tu asistencia con tu director.</p>" +
+                            "</div>", true
+            );
+            sender.send(msg);
+        } catch (Exception e) {
+            throw new RuntimeException("ERROR_ENVIANDO_NOTIFICACION_TUTORIA: " + e.getMessage());
+        }
+    }
+
+    // =========================================================
+    // MÉTODO INTERNO DE ENVÍO
+    // =========================================================
+    private void enviar(String to, String asunto, String htmlBody) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom(fromEmail, fromName);
+            helper.setTo(to);
+            helper.setSubject(asunto);
+            helper.setText(htmlBody, true);
+            mailSender.send(message);
+            System.out.println("Correo enviado a: " + to + " | " + asunto);
+        } catch (MessagingException | UnsupportedEncodingException e) {
+            System.err.println("Error al enviar correo a " + to + ": " + e.getMessage());
+        }
+    }
+
+    // =========================================================
+    // BUILDERS DE EMAIL (HTML)
+    // =========================================================
     private String buildEmailPropuestaAprobada(String nombre, String titulo, String periodo) {
         return baseTemplate(
                 "Tu propuesta ha sido aprobada",
@@ -255,9 +414,8 @@ public class EmailService {
     }
 
     // =========================================================
-    // BASE TEMPLATE HTML PROFESIONAL
+    // TEMPLATE BASE HTML
     // =========================================================
-
     private String baseTemplate(String titulo,
                                 String nombreDestinatario,
                                 String descripcionHtml,
@@ -303,7 +461,6 @@ public class EmailService {
                         "<table width='580' cellpadding='0' cellspacing='0' border='0'" +
                         " style='max-width:580px;width:100%'>" +
 
-                        // HEADER
                         "<tr><td style='background:linear-gradient(135deg,#1a365d 0%,#2d6a4f 100%);" +
                         "border-radius:14px 14px 0 0;padding:40px 44px;text-align:center'>" +
                         "<div style='display:inline-block;background:rgba(255,255,255,0.18);" +
@@ -316,7 +473,6 @@ public class EmailService {
                         "</p>" +
                         "</td></tr>" +
 
-                        // BADGE ROL
                         "<tr><td style='background:" + badgeBg + ";text-align:center;padding:12px 0'>" +
                         "<span style='display:inline-block;color:" + badgeColor + ";" +
                         "font-size:11px;font-weight:800;letter-spacing:1.5px;" +
@@ -326,7 +482,6 @@ public class EmailService {
                         "</span>" +
                         "</td></tr>" +
 
-                        // CUERPO
                         "<tr><td style='background:#ffffff;padding:38px 44px;" +
                         "border-left:1px solid #e2e8f0;border-right:1px solid #e2e8f0'>" +
 
@@ -339,7 +494,6 @@ public class EmailService {
 
                         descripcionHtml +
 
-                        // Tabla de datos del proyecto
                         "<table width='100%' cellpadding='0' cellspacing='0' border='0'" +
                         " style='border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;" +
                         "margin:8px 0 4px'>" +
@@ -350,7 +504,6 @@ public class EmailService {
 
                         "<hr style='border:none;border-top:1px solid #edf2f7;margin:28px 0'/>" +
 
-                        // Boton CTA
                         "<div style='text-align:center'>" +
                         "<a href='http://localhost:4200/login'" +
                         " style='display:inline-block;" +
@@ -364,7 +517,6 @@ public class EmailService {
 
                         "</td></tr>" +
 
-                        // FOOTER
                         "<tr><td style='background:#2d3748;border-radius:0 0 14px 14px;" +
                         "padding:22px 44px;text-align:center'>" +
                         "<p style='margin:0 0 4px;color:rgba(255,255,255,0.55);font-size:12px'>" +
@@ -383,22 +535,6 @@ public class EmailService {
     // =========================================================
     // UTILIDADES
     // =========================================================
-
-    private void enviar(String to, String asunto, String htmlBody) {
-        try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom(fromEmail, fromName);
-            helper.setTo(to);
-            helper.setSubject(asunto);
-            helper.setText(htmlBody, true);
-            mailSender.send(message);
-            System.out.println("Correo enviado a: " + to + " | " + asunto);
-        } catch (MessagingException | UnsupportedEncodingException e) {
-            System.err.println("Error al enviar correo a " + to + ": " + e.getMessage());
-        }
-    }
-
     private String abreviar(String texto, int max) {
         if (texto == null) return "";
         return texto.length() > max ? texto.substring(0, max) + "..." : texto;

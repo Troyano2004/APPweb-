@@ -19,6 +19,8 @@ public class Dt1TutoriasService {
     private final ActaRevisionDirectorRepository actaRepo; // (en tu código devuelve ActaRevisionTutor, mantengo tal cual tu repo)
     private final DocenteRepository docenteRepo;
     private final Dt1TutorEstudianteRepository dt1TutorRepo;
+    private final ZoomService zoomService;
+    private final EmailService emailService;
 
     public Dt1TutoriasService(
             Dt1AsignacionRepository asigRepo,
@@ -26,7 +28,9 @@ public class Dt1TutoriasService {
             TutoriaAnteproyectoRepository tutRepo,
             ActaRevisionDirectorRepository actaRepo,
             DocenteRepository docenteRepo,
-            Dt1TutorEstudianteRepository dt1TutorRepo
+            Dt1TutorEstudianteRepository dt1TutorRepo,
+            ZoomService zoomService,
+            EmailService emailService
     ) {
         this.asigRepo = asigRepo;
         this.anteRepo = anteRepo;
@@ -34,6 +38,8 @@ public class Dt1TutoriasService {
         this.actaRepo = actaRepo;
         this.docenteRepo = docenteRepo;
         this.dt1TutorRepo = dt1TutorRepo;
+        this.zoomService = zoomService;
+        this.emailService = emailService;
     }
 
     // ==========================
@@ -88,7 +94,7 @@ public class Dt1TutoriasService {
         AnteproyectoTitulacion ante = validarAnteproyectoExiste(idAnteproyecto);
 
         validarAnteproyectoEnBorrador(ante);
-        validarPermisoTutor(ante, idDocente); // ✅ DT1 asignado + tutor del estudiante
+        validarPermisoTutor(ante, idDocente);
 
         TutoriaAnteproyecto t = new TutoriaAnteproyecto();
         t.setAnteproyecto(ante);
@@ -96,12 +102,37 @@ public class Dt1TutoriasService {
         t.setFecha(req.getFecha());
         t.setHora(req.getHora());
         t.setModalidad(modalidad);
+
         t.setEstado("PROGRAMADA");
+        if (modalidad.equals("VIRTUAL")) {
+            try {
+                String tema = "Tutoria Programada - " + ante.getEstudiante().getUsuario().getNombres();
+                ZoomMeetingResult zoom = zoomService.crearReunion(tema, req.getFecha(), req.getHora());
+                t.setLinkReunion(zoom.joinUrl);
+                t.setZoomMeetingId(zoom.meetingId);
+            } catch (Exception e) {
+                System.out.println("ERROR ZOOM: " + e.getMessage()); // ← agregar
+                t.setLinkReunion(null);
+                t.setZoomMeetingId(null);
+            }
+        }
 
         t = tutRepo.save(t);
+
+        try {
+            String correoestudiante = ante.getEstudiante().getUsuario().getCorreoInstitucional();
+            emailService.noticarReunion(
+                    correoestudiante,
+                    "Se ha programado una tutoria con tu tutor",
+                    t.getLinkReunion(),
+                    t.getZoomMeetingId() != null ? t.getZoomMeetingId() : "Sin ID",
+                    t.getFecha().toString(),
+                    t.getHora() != null ? t.getHora().toString() : null
+            );
+        } catch (Exception ignored) {}
+
         return mapTutoria(t);
     }
-
     // ==========================
     // 3) Listar tutorías del anteproyecto
     // ==========================
@@ -348,6 +379,7 @@ public class Dt1TutoriasService {
         r.setHora(t.getHora());
         r.setModalidad(t.getModalidad());
         r.setEstado(t.getEstado());
+        r.setLinkReunion(t.getLinkReunion());  // ← ¿tienes esta línea?
         return r;
     }
 

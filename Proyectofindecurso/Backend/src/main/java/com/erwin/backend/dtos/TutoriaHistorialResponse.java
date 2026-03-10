@@ -17,6 +17,7 @@ public class TutoriaHistorialResponse {
     private String estado;
 
     private String directorNombre;
+    private String linkReunion;
 
     // Datos del acta (si existe)
     private Integer idActa;

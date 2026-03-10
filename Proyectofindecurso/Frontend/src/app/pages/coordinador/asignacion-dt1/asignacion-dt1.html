@@ -1,95 +1,205 @@
 <section class="page">
-  <header class="page-header">
-    <h1>Coordinación · DT1</h1>
-    <p>Habilitar docentes DT1 y asignar tutores a estudiantes.</p>
 
-    <div class="info">
-      <div><b>Carrera:</b> {{ carreraNombre }}</div>
-      <div><b>Periodo activo:</b> {{ periodoNombre }}</div>
+  <!-- HEADER -->
+  <div class="page-top">
+    <div class="page-top__left">
+      <div class="page-top__icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="page-top__title">Asignación DT1</h1>
+        <p class="page-top__sub">Habilitar docentes DT1 y asignar tutores a estudiantes</p>
+      </div>
     </div>
-  </header>
+    <div class="page-top__badges">
+      <div class="badge badge--carrera">
+        <span class="badge__label">Carrera</span>
+        <span class="badge__value">{{ carreraNombre }}</span>
+      </div>
+      <div class="badge badge--periodo">
+        <span class="badge__label">Período activo</span>
+        <span class="badge__value">{{ periodoNombre }}</span>
+      </div>
+    </div>
+  </div>
 
+  <!-- TABS -->
   <div class="tabs">
-    <button type="button" (click)="cambiarTab('docentes')" [class.active]="tab === 'docentes'">
-      Docentes (Habilitar DT1)
+    <button type="button" class="tab-btn" (click)="cambiarTab('docentes')" [class.active]="tab === 'docentes'">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="7" width="20" height="14" rx="2"/>
+        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+      </svg>
+      Habilitar DT1
     </button>
-
-    <button type="button" (click)="cambiarTab('tutores')" [class.active]="tab === 'tutores'">
-      Tutores (Asignar a estudiante)
+    <button type="button" class="tab-btn" (click)="cambiarTab('tutores')" [class.active]="tab === 'tutores'">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+        <line x1="19" y1="8" x2="19" y2="14"/>
+        <line x1="22" y1="11" x2="16" y2="11"/>
+      </svg>
+      Asignar Tutor
     </button>
   </div>
 
+  <!-- MENSAJE -->
   <div *ngIf="mensaje" class="msg" [class.ok]="msgType==='ok'" [class.err]="msgType==='error'">
-    {{ mensaje }}
+    <span class="msg__icon">{{ msgType === 'ok' ? '✅' : '❌' }}</span>
+    <span class="msg__text">{{ mensaje }}</span>
   </div>
 
-  <!-- ================= TAB 1: DOCENTES ================= -->
-  <div *ngIf="tab === 'docentes'" class="card">
-    <h3>Habilitar docente como DT1</h3>
+  <!-- TAB 1: HABILITAR DOCENTE DT1 -->
+  <div *ngIf="tab === 'docentes'" class="content-grid">
 
-    <form [formGroup]="formDocente" class="form">
-      <label>Docente de la carrera</label>
+    <!-- Formulario -->
+    <div class="card">
+      <div class="card__header">
+        <div class="card__header-icon card__header-icon--green">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+            <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+          </svg>
+        </div>
+        <div>
+          <h3 class="card__title">Habilitar docente como DT1</h3>
+          <p class="card__subtitle">Selecciona un docente de la carrera para habilitarlo</p>
+        </div>
+      </div>
 
-      <select formControlName="idDocente">
-        <option [ngValue]="null">-- Selecciona --</option>
-        <option *ngFor="let d of docentesCarrera" [ngValue]="d.id">
-          {{ d.nombre }}
-        </option>
-      </select>
+      <form [formGroup]="formDocente" class="form">
+        <div class="field">
+          <label class="field__label">Docente de la carrera</label>
+          <div class="select-wrap">
+            <select class="field__select" formControlName="idDocente">
+              <option [ngValue]="null">— Selecciona un docente —</option>
+              <option *ngFor="let d of docentesCarrera" [ngValue]="d.id">{{ d.nombre }}</option>
+            </select>
+            <svg class="select-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </div>
+          <small class="field__error" *ngIf="formDocente.get('idDocente')?.touched && formDocente.get('idDocente')?.invalid">
+            Selecciona un docente.
+          </small>
+        </div>
 
-      <small class="error" *ngIf="formDocente.get('idDocente')?.touched && formDocente.get('idDocente')?.invalid">
-        Selecciona un docente.
-      </small>
+        <button type="button" class="btn btn--primary" (click)="habilitarDocenteDt1()" [disabled]="cargando">
+          <svg *ngIf="!cargando" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          <span class="spinner" *ngIf="cargando"></span>
+          {{ cargando ? 'Guardando...' : 'Habilitar como DT1' }}
+        </button>
+      </form>
+    </div>
 
-      <button type="button" (click)="habilitarDocenteDt1()" [disabled]="cargando">
-        {{ cargando ? 'Guardando...' : 'Habilitar como DT1' }}
-      </button>
-    </form>
+    <!-- Lista DT1 habilitados -->
+    <div class="card">
+      <div class="card__header">
+        <div class="card__header-icon card__header-icon--slate">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="8" y1="6" x2="21" y2="6"/>
+            <line x1="8" y1="12" x2="21" y2="12"/>
+            <line x1="8" y1="18" x2="21" y2="18"/>
+            <line x1="3" y1="6" x2="3.01" y2="6"/>
+            <line x1="3" y1="12" x2="3.01" y2="12"/>
+            <line x1="3" y1="18" x2="3.01" y2="18"/>
+          </svg>
+        </div>
+        <div>
+          <h3 class="card__title">DT1 habilitados</h3>
+          <p class="card__subtitle">Docentes activos en el período actual</p>
+        </div>
+      </div>
 
-    <hr />
+      <div *ngIf="docentesDt1.length === 0" class="empty-state">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.5">
+          <circle cx="12" cy="8" r="4"/>
+          <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+        </svg>
+        <p>Aún no hay docentes DT1 habilitados.</p>
+      </div>
 
-    <h4>DT1 habilitados en este periodo</h4>
-    <div *ngIf="docentesDt1.length === 0" class="hint">Aún no hay docentes DT1 habilitados.</div>
+      <ul class="docente-list" *ngIf="docentesDt1.length > 0">
+        <li class="docente-item" *ngFor="let d of docentesDt1; let i = index">
+          <span class="docente-item__avatar">{{ d.nombre.charAt(0) }}</span>
+          <span class="docente-item__name">{{ d.nombre }}</span>
+          <span class="docente-item__badge">DT1</span>
+        </li>
+      </ul>
+    </div>
 
-    <ul *ngIf="docentesDt1.length > 0">
-      <li *ngFor="let d of docentesDt1">{{ d.nombre }}</li>
-    </ul>
   </div>
 
-  <!-- ================= TAB 2: TUTORES ================= -->
+  <!-- TAB 2: ASIGNAR TUTOR -->
   <div *ngIf="tab === 'tutores'" class="card">
-    <h3>Asignar tutor a estudiante</h3>
+    <div class="card__header">
+      <div class="card__header-icon card__header-icon--green">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <line x1="19" y1="8" x2="19" y2="14"/>
+          <line x1="22" y1="11" x2="16" y2="11"/>
+        </svg>
+      </div>
+      <div>
+        <h3 class="card__title">Asignar tutor a estudiante</h3>
+        <p class="card__subtitle">Asocia un docente DT1 a un estudiante sin tutor</p>
+      </div>
+    </div>
 
-    <form [formGroup]="formTutor" class="form">
-      <label>Estudiante (sin tutor)</label>
-      <select formControlName="idEstudiante">
-        <option [ngValue]="null">-- Selecciona --</option>
-        <option *ngFor="let e of estudiantes" [ngValue]="e.id">
-          {{ e.nombre }}
-        </option>
-      </select>
+    <form [formGroup]="formTutor" class="form form--two-col">
 
-      <small class="error" *ngIf="formTutor.get('idEstudiante')?.touched && formTutor.get('idEstudiante')?.invalid">
-        Selecciona un estudiante.
-      </small>
+      <div class="field">
+        <label class="field__label">Estudiante sin tutor</label>
+        <div class="select-wrap">
+          <select class="field__select" formControlName="idEstudiante">
+            <option [ngValue]="null">— Selecciona un estudiante —</option>
+            <option *ngFor="let e of estudiantes" [ngValue]="e.id">{{ e.nombre }}</option>
+          </select>
+          <svg class="select-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </div>
+        <small class="field__error" *ngIf="formTutor.get('idEstudiante')?.touched && formTutor.get('idEstudiante')?.invalid">
+          Selecciona un estudiante.
+        </small>
+      </div>
 
-      <label>Docente DT1</label>
-      <select formControlName="idDocente">
-        <option [ngValue]="null">-- Selecciona --</option>
-        <option *ngFor="let d of docentesDt1" [ngValue]="d.id">
-          {{ d.nombre }}
-        </option>
-      </select>
+      <div class="field">
+        <label class="field__label">Docente DT1</label>
+        <div class="select-wrap">
+          <select class="field__select" formControlName="idDocente">
+            <option [ngValue]="null">— Selecciona un docente DT1 —</option>
+            <option *ngFor="let d of docentesDt1" [ngValue]="d.id">{{ d.nombre }}</option>
+          </select>
+          <svg class="select-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </div>
+        <small class="field__error" *ngIf="formTutor.get('idDocente')?.touched && formTutor.get('idDocente')?.invalid">
+          Selecciona un docente DT1.
+        </small>
+      </div>
 
-      <small class="error" *ngIf="formTutor.get('idDocente')?.touched && formTutor.get('idDocente')?.invalid">
-        Selecciona un docente DT1.
-      </small>
+      <div class="form__actions">
+        <button type="button" class="btn btn--primary" (click)="asignarTutor()" [disabled]="cargando">
+          <svg *ngIf="!cargando" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          <span class="spinner" *ngIf="cargando"></span>
+          {{ cargando ? 'Asignando...' : 'Asignar tutor' }}
+        </button>
+        <p class="hint">El sistema valida que no se repita tutor en el mismo periodo.</p>
+      </div>
 
-      <button type="button" (click)="asignarTutor()" [disabled]="cargando">
-        {{ cargando ? 'Asignando...' : 'Asignar tutor' }}
-      </button>
-
-      <p class="hint">* El backend valida que no se repita tutor en el mismo periodo.</p>
     </form>
   </div>
+
 </section>
