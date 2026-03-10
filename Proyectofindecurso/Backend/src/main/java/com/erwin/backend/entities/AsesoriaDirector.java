@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Setter
@@ -35,6 +36,18 @@ public class AsesoriaDirector {
     @Column(name = "observaciones", nullable = false, columnDefinition = "TEXT")
     private String observaciones;
 
-    @Column(name = "evidencia_url", length = 300)
+    @Column(name = "evidencia_url", length = 500)
     private String evidenciaUrl;
+
+    /** Porcentaje de avance del proyecto en esta asesoría (0-100). */
+    @Column(name = "porcentaje_avance", precision = 5, scale = 2)
+    private BigDecimal porcentajeAvance;
+
+    /** Corte evaluativo al que pertenece: 1 o 2. */
+    @Column(name = "numero_corte")
+    private Integer numeroCorte;
+
+    /** Calificación asignada por el director en esta asesoría (sobre 10, opcional). */
+    @Column(name = "calificacion", precision = 4, scale = 2)
+    private BigDecimal calificacion;
 }

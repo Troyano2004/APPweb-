@@ -1,0 +1,93 @@
+<div class="antiplagio-dt2">
+  <h2>Certificación Antiplagio — Titulación II</h2>
+  <p class="subtitle">Sube el informe COMPILATIO (PDF). Umbral: &lt;10% = Favorable / ≥10% = Bloqueado.</p>
+
+  <div class="alert error" *ngIf="error()">{{ error() }}</div>
+  <div class="alert ok" *ngIf="ok()">{{ ok() }}</div>
+
+  <div class="layout">
+    <!-- Lista proyectos -->
+    <div class="panel-lista">
+      <h3>Mis proyectos</h3>
+      <div *ngIf="loading() && proyectos().length === 0" class="loading">Cargando...</div>
+      <div class="proyecto-card"
+           *ngFor="let p of proyectos()"
+           [class.activo]="proyectoSeleccionado()?.idProyecto === p.idProyecto"
+           (click)="seleccionarProyecto(p)">
+        <div class="proyecto-titulo">{{ p.titulo }}</div>
+        <div class="proyecto-meta">{{ p.estudiante }}</div>
+        <span class="badge {{ p.estadoProyecto }}">{{ p.estadoProyecto }}</span>
+      </div>
+      <div *ngIf="!loading() && proyectos().length === 0" class="empty">Sin proyectos en desarrollo.</div>
+    </div>
+
+    <!-- Detalle -->
+    <div class="panel-detalle" *ngIf="proyectoSeleccionado(); else sinSeleccion">
+      <h3>{{ proyectoSeleccionado()!.titulo }}</h3>
+
+      <!-- Estado actual del certificado -->
+      <div class="cert-estado" *ngIf="certificado()">
+        <div class="estado-badge" [class]="certificado()!.certificadoFavorable ? 'favorable' : 'rechazado'">
+          {{ certificado()!.certificadoFavorable ? '✓ FAVORABLE' : '✗ RECHAZADO' }}
+        </div>
+        <div class="cert-info">
+          <span>Intentos: <strong>{{ certificado()!.totalIntentos }}</strong></span>
+          <span *ngIf="certificado()!.ultimoPorcentaje !== null">
+            Último: <strong>{{ certificado()!.ultimoPorcentaje }}%</strong>
+          </span>
+          <a *ngIf="certificado()!.urlUltimoInforme" [href]="certificado()!.urlUltimoInforme" target="_blank" class="link">
+            Ver último informe
+          </a>
+        </div>
+
+        <!-- Historial intentos -->
+        <div class="historial" *ngIf="certificado()!.historial?.length">
+          <h4>Historial de intentos</h4>
+          <div class="intento-row" *ngFor="let i of certificado()!.historial">
+            <span class="fecha">{{ i.fechaIntento | date: 'dd/MM/yyyy HH:mm' }}</span>
+            <span class="pct" [class]="i.favorable ? 'ok' : 'fail'">{{ i.porcentajeCoincidencia }}%</span>
+            <span class="resultado">{{ i.resultado }}</span>
+            <a *ngIf="i.urlInforme" [href]="i.urlInforme" target="_blank" class="link-small">PDF</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="no-cert" *ngIf="!certificado()">
+        <p>No se ha registrado ningún informe antiplagio para este proyecto.</p>
+      </div>
+
+      <!-- Formulario subida -->
+      <div class="form-subida">
+        <h4>Registrar nuevo informe COMPILATIO</h4>
+        <form [formGroup]="formAntiplagio" (ngSubmit)="subirAntiplagio()">
+          <div class="form-row">
+            <label>Informe COMPILATIO (PDF, máx. 50MB)</label>
+            <input type="file" accept="application/pdf" (change)="onArchivoChange($event)" />
+            <small *ngIf="archivoSeleccionado" class="archivo-ok">✓ {{ archivoSeleccionado.name }}</small>
+          </div>
+          <div class="form-row">
+            <label>Porcentaje de coincidencia (%)</label>
+            <input type="number" formControlName="porcentajeCoincidencia" min="0" max="100" step="0.01"
+                   placeholder="Ej: 7.5" />
+            <small class="umbral-hint">
+              &lt;10% → Favorable (habilita Predefensa) · ≥10% → Bloqueado
+            </small>
+          </div>
+          <div class="form-row">
+            <label>Observaciones <small>(opcional)</small></label>
+            <textarea formControlName="observaciones" rows="2" placeholder="Comentarios del director..."></textarea>
+          </div>
+          <button type="submit" [disabled]="loading()">
+            {{ loading() ? 'Subiendo...' : 'Registrar informe antiplagio' }}
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <ng-template #sinSeleccion>
+      <div class="panel-detalle empty-panel">
+        <p>Selecciona un proyecto para gestionar el antiplagio.</p>
+      </div>
+    </ng-template>
+  </div>
+</div>

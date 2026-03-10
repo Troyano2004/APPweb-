@@ -320,12 +320,12 @@ $radius-xl: 16px;
 }
 
 // ===============================================
-// TABLE (✅ FIX para que se vean las acciones)
+// TABLE
 // ===============================================
 .table-card {
   border: 1px solid $gray-200;
   border-radius: $radius-xl;
-  overflow-x: auto;   // ✅ antes era hidden (eso cortaba botones)
+  overflow-x: auto;
   overflow-y: hidden;
   background: $white;
 }
@@ -335,7 +335,7 @@ $radius-xl: 16px;
   border-collapse: separate;
   border-spacing: 0;
   table-layout: auto;
-  min-width: 980px;   // ✅ espacio real para acciones
+  min-width: 980px;
 }
 
 .table thead th {
@@ -343,7 +343,6 @@ $radius-xl: 16px;
   padding: 0.95rem 1rem;
   background: $gray-50;
   border-bottom: 1px solid $gray-200;
-
   color: $gray-700;
   font-weight: 900;
   font-size: 0.82rem;
@@ -374,7 +373,6 @@ $radius-xl: 16px;
   color: $gray-800;
 }
 
-// ✅ ACCIONES (FIX)
 td.actions {
   display: flex;
   gap: 0.65rem;
@@ -383,7 +381,7 @@ td.actions {
   flex-wrap: nowrap;
   white-space: nowrap;
   overflow: visible;
-  min-width: 260px; // ✅ caben 2 botones
+  min-width: 260px;
 }
 
 td.actions .btn {
@@ -398,7 +396,6 @@ td.actions .btn {
   }
 }
 
-// ✅ permisos: que no se desborde la celda
 .perms-cell {
   max-width: 520px;
 }
@@ -458,9 +455,13 @@ td.actions .btn {
   padding: 1rem;
 }
 
+// ✅ FIX: modal no se sale de la pantalla
 .modal-card {
   width: 100%;
   max-width: 820px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
   background: #fff;
   border-radius: 16px;
   border: 1px solid #e5e7eb;
@@ -475,6 +476,7 @@ td.actions .btn {
   gap: 0.75rem;
   padding: 1rem 1.25rem;
   border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
 }
 
 .modal-footer {
@@ -489,8 +491,11 @@ td.actions .btn {
   color: #0f7a3a;
 }
 
+// ✅ FIX: scroll interno en el body del modal
 .modal-body {
   padding: 1rem 1.25rem;
+  overflow-y: auto;
+  flex: 1;
 }
 
 .grid {

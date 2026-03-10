@@ -1,5 +1,4 @@
 
-
 package com.erwin.backend.security;
 
 import org.springframework.context.annotation.Bean;
@@ -31,15 +30,15 @@ public class SecurityConfig {
 
                 .logout(logout -> logout
                         .logoutUrl("/api/auth/logout")
-                        .invalidateHttpSession(true)   // ✅ destruye sesión
-                        .deleteCookies("JSESSIONID")   // ✅ borra cookie de sesión
+                        .invalidateHttpSession(true)
+                        .deleteCookies("JSESSIONID")
                         .logoutSuccessHandler((req, res, auth) -> {
                             System.out.println("🔴 LOGOUT realizado -> sesión invalidada");
                             res.setStatus(200);
                         })
                 )
 
-                .httpBasic(Customizer.withDefaults()); // opcional
+                .httpBasic(Customizer.withDefaults());
 
         return http.build();
     }
@@ -48,9 +47,9 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(List.of("http://localhost:4200"));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")); // ✅ FIX: se agregó PATCH
         config.setAllowedHeaders(List.of("*"));
-        config.setAllowCredentials(true);   // MUY IMPORTANTE
+        config.setAllowCredentials(true);
         config.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

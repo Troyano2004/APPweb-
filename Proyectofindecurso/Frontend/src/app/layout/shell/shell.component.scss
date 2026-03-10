@@ -127,10 +127,11 @@ $sga-hover: #e9f6ef;
   padding: 0.35rem 0.85rem 0.8rem 2.5rem;
   max-height: 0;
   overflow: hidden;
-  transition: max-height 0.25s ease;
+  transition: max-height 0.3s ease;
 
+  // ✅ Aumentado para soportar secciones con muchos items (ej: Coordinación tiene 12)
   &.open {
-    max-height: 500px;
+    max-height: 900px;
   }
 
   &.collapsed {

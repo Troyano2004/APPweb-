@@ -183,7 +183,6 @@
                       [checked]="isExtraSelectedCreate(r.idRolApp)"
                       [disabled]="createRolPrincipalId === r.idRolApp"
                       (click)="$event.stopPropagation()"
-                      (change)="toggleExtraRoleCreate(r.idRolApp)"
                     />
                     <span class="role-name">{{ r.nombre }}</span>
                   </div>
@@ -258,7 +257,6 @@
                       [checked]="isExtraSelectedUpdate(r.idRolApp)"
                       [disabled]="updateRolPrincipalId === r.idRolApp"
                       (click)="$event.stopPropagation()"
-                      (change)="toggleExtraRoleUpdate(r.idRolApp)"
                     />
                     <span class="role-name">{{ r.nombre }}</span>
                   </div>

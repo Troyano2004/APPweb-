@@ -34,7 +34,7 @@
         <span class="btn-icon">✓</span>
         Aprobar
       </button>
-      <button class="btn btn-ai" type="button" (click)="revisarConIa()" [disabled]="loading() || !documento()">
+      <button class="btn btn-ai" type="button" (click)="abrirAsistenteIa()" [disabled]="loading() || !documento()">
         <span class="btn-icon">🤖</span>
         Revisar con IA
       </button>
@@ -51,10 +51,55 @@
     <span class="error-text">{{ msg }}</span>
   </div>
 
-  <div class="content-card ai-result-card">
+  <div class="ai-assistant-overlay" *ngIf="showAiAssistant()" (click)="cerrarAsistenteIa()">
+    <div class="ai-assistant-modal" (click)="$event.stopPropagation()">
+      <div class="ai-modal-header">
+        <h2 class="ai-modal-title">Asistente IA para revisión académica</h2>
+        <button class="ai-close" type="button" (click)="cerrarAsistenteIa()">✕</button>
+      </div>
+
+      <p class="ai-modal-subtitle">Selecciona un enfoque de análisis o personaliza tu prompt para una revisión más precisa e innovadora.</p>
+
+      <div class="ai-modes-grid">
+        <label class="ai-mode-card" *ngFor="let mode of aiModes" [class.selected]="selectedAiMode() === mode.id">
+          <input
+            type="radio"
+            name="aiMode"
+            [value]="mode.id"
+            [ngModel]="selectedAiMode()"
+            (ngModelChange)="selectedAiMode.set($event)" />
+          <div class="ai-mode-content">
+            <h3>{{ mode.titulo }}</h3>
+            <p>{{ mode.descripcion }}</p>
+          </div>
+        </label>
+      </div>
+
+      <div class="form-group form-group-full ai-prompt-group">
+        <label class="form-label">Prompt personalizado (opcional)</label>
+        <textarea
+          class="form-textarea"
+          rows="4"
+          [(ngModel)]="customAiPrompt"
+          name="customAiPrompt"
+          placeholder="Ejemplo: Prioriza observaciones críticas y entrega un plan de mejoras en 5 pasos..."></textarea>
+      </div>
+
+      <div class="ai-modal-actions">
+        <button class="btn btn-secondary" type="button" (click)="cerrarAsistenteIa()">Cancelar</button>
+        <button class="btn btn-ai" type="button" (click)="analizarConIaDesdeFormulario()" [disabled]="loading() || !documento()">
+          <span class="btn-icon">✨</span>
+          Analizar con IA
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="content-card ai-result-card" *ngIf="aiResult()">
     <div class="card-header-section">
       <h2 class="section-title">Resultado de revisión con IA</h2>
-      <p class="section-subtitle">Aquí se mostrará el análisis generado al presionar "Revisar con IA".</p>
+      <p class="section-subtitle" *ngIf="aiLastModeLabel() as modeLabel">Enfoque aplicado: <strong>{{ modeLabel }}</strong></p>
+      <p class="section-subtitle" *ngIf="aiPromptSugerido() as prompt">Prompt sugerido: {{ prompt }}</p>
     </div>
 
     <div class="form-grid">
@@ -65,8 +110,7 @@
           rows="6"
           name="resultadoIa"
           [value]="aiResult() || ''"
-          readonly
-          placeholder="Aún no hay respuesta de IA para este documento."></textarea>
+          readonly></textarea>
       </div>
     </div>
   </div>
