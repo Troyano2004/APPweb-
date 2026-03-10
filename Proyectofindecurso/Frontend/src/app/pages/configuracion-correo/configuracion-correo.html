@@ -1,0 +1,326 @@
+<div class="cc-page">
+
+  <!-- ALERTAS -->
+  <div class="alerta exito" *ngIf="exito">
+    <span class="alerta-icon">✓</span>
+    <span>{{ exito }}</span>
+    <button class="alerta-close" (click)="exito = ''">×</button>
+  </div>
+  <div class="alerta error" *ngIf="error">
+    <span class="alerta-icon">!</span>
+    <span>{{ error }}</span>
+    <button class="alerta-close" (click)="error = ''">×</button>
+  </div>
+
+  <!-- HEADER -->
+  <div class="cc-header">
+    <div class="cc-header-left">
+      <div class="cc-header-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+          <polyline points="22,6 12,13 2,6"/>
+        </svg>
+      </div>
+      <div class="cc-header-text">
+        <h1 class="cc-title">Configuración de Correo</h1>
+        <p class="cc-subtitle">Gestiona las cuentas SMTP para envíos automáticos del sistema</p>
+      </div>
+    </div>
+    <button class="btn-nueva" (click)="abrirFormulario()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      Nueva configuración
+    </button>
+  </div>
+
+  <!-- SKELETON -->
+  <div class="skeleton-wrap" *ngIf="cargando">
+    <div class="sk-row" *ngFor="let i of [1,2]">
+      <div class="sk-circle"></div>
+      <div class="sk-lines">
+        <div class="sk-line sk-short"></div>
+        <div class="sk-line sk-long"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ESTADO VACÍO -->
+  <div class="empty-state" *ngIf="!cargando && configuraciones.length === 0">
+    <div class="empty-icon">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+        <polyline points="22,6 12,13 2,6"/>
+      </svg>
+    </div>
+    <h3>Sin configuraciones de correo</h3>
+    <p>Crea una configuración para activar los envíos automáticos.</p>
+    <button class="btn-nueva" (click)="abrirFormulario()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      Crear primera configuración
+    </button>
+  </div>
+
+  <!-- LISTA -->
+  <div class="config-list" *ngIf="!cargando && configuraciones.length > 0">
+    <div
+      class="config-item"
+      *ngFor="let cfg of configuraciones"
+      [class.config-activa]="cfg.activo">
+
+      <!-- BADGE ACTIVO -->
+      <div class="badge-activo" *ngIf="cfg.activo">
+        <span class="dot-activo"></span>
+        Activa
+      </div>
+
+      <!-- CUERPO -->
+      <div class="config-body">
+        <div class="prov-logo-wrap">
+          <img
+            [src]="getProveedorLogo(cfg.proveedor)"
+            [alt]="cfg.proveedor"
+            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+          <span class="prov-fallback" style="display:none">{{ getProveedorIcon(cfg.proveedor) }}</span>
+        </div>
+        <div class="config-info">
+          <div class="config-info-top">
+            <span class="config-proveedor">{{ getProveedorLabel(cfg.proveedor) }}</span>
+            <span class="config-smtp-tag">{{ getProveedorSmtp(cfg.proveedor) }}</span>
+          </div>
+          <div class="config-usuario">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+              <polyline points="22,6 12,13 2,6"/>
+            </svg>
+            {{ cfg.usuario }}
+          </div>
+        </div>
+      </div>
+
+      <!-- ACCIONES -->
+      <div class="config-actions">
+        <button
+          class="btn-accion btn-activar"
+          *ngIf="!cfg.activo"
+          [disabled]="procesando === cfg.id"
+          (click)="activar(cfg)">
+          <span class="btn-spinner-sm" *ngIf="procesando === cfg.id"></span>
+          <svg *ngIf="procesando !== cfg.id" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="20,6 9,17 4,12"/>
+          </svg>
+          Activar
+        </button>
+        <button
+          class="btn-accion btn-editar"
+          [disabled]="procesando === cfg.id"
+          (click)="abrirEdicion(cfg)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+          Editar
+        </button>
+        <button
+          class="btn-accion btn-eliminar"
+          [disabled]="procesando === cfg.id"
+          (click)="eliminar(cfg)"
+          title="Eliminar">
+          <span class="btn-spinner-sm btn-spinner-red" *ngIf="procesando === cfg.id"></span>
+          <svg *ngIf="procesando !== cfg.id" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3,6 5,6 21,6"/>
+            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+            <path d="M10 11v6"/><path d="M14 11v6"/>
+            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- INFO CARDS -->
+  <div class="info-cards" *ngIf="!cargando">
+    <div class="info-card">
+      <div class="info-card-icon ic-blue">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+          <polyline points="22,6 12,13 2,6"/>
+        </svg>
+      </div>
+      <div><h4>Verificación</h4><p>Código al registrarse</p></div>
+    </div>
+    <div class="info-card">
+      <div class="info-card-icon ic-green">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+        </svg>
+      </div>
+      <div><h4>Credenciales</h4><p>Acceso al aprobar</p></div>
+    </div>
+    <div class="info-card">
+      <div class="info-card-icon ic-orange">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/>
+          <line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+      </div>
+      <div><h4>Tutorías</h4><p>Reunión + link Zoom</p></div>
+    </div>
+    <div class="info-card">
+      <div class="info-card-icon ic-red">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+        </svg>
+      </div>
+      <div><h4>Rechazos</h4><p>Motivo de no aprobación</p></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ================================================
+     MODAL
+     ================================================ -->
+<div class="modal-overlay" *ngIf="mostrarFormulario" (click)="cerrarFormulario()">
+  <div class="modal-box" (click)="$event.stopPropagation()">
+
+    <div class="modal-header">
+      <div class="modal-header-left">
+        <div class="modal-header-icon">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+            <polyline points="22,6 12,13 2,6"/>
+          </svg>
+        </div>
+        <div>
+          <h2 class="modal-title">{{ editandoId ? 'Editar configuración' : 'Nueva configuración' }}</h2>
+          <p class="modal-subtitle">Cuenta SMTP para envíos automáticos</p>
+        </div>
+      </div>
+      <button class="modal-close" (click)="cerrarFormulario()">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <form [formGroup]="form" autocomplete="off">
+
+        <div class="form-section-label">
+          <span class="section-num">01</span> Proveedor SMTP
+        </div>
+        <div class="proveedores-grid">
+          <label
+            class="proveedor-card"
+            *ngFor="let p of proveedores"
+            [class.selected]="form.get('proveedor')?.value === p.value"
+            (click)="form.get('proveedor')?.setValue(p.value)">
+            <div class="prov-radio">
+              <div class="prov-radio-inner" *ngIf="form.get('proveedor')?.value === p.value"></div>
+            </div>
+            <div class="prov-logo-sm">
+              <img [src]="p.logo" [alt]="p.label" onerror="this.style.display='none'">
+              <span>{{ p.icon }}</span>
+            </div>
+            <div class="prov-info">
+              <span class="prov-name">{{ p.label }}</span>
+              <span class="prov-smtp-small">{{ p.smtp }}</span>
+            </div>
+            <div class="prov-check" *ngIf="form.get('proveedor')?.value === p.value">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                <polyline points="20,6 9,17 4,12"/>
+              </svg>
+            </div>
+          </label>
+        </div>
+        <span class="campo-error" *ngIf="invalido('proveedor')">Selecciona un proveedor.</span>
+
+        <div class="form-section-label" style="margin-top:1.5rem">
+          <span class="section-num">02</span> Credenciales
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Correo de envío <span class="req">*</span></label>
+          <div class="input-wrap">
+            <span class="input-prefix">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                <polyline points="22,6 12,13 2,6"/>
+              </svg>
+            </span>
+            <input type="email" formControlName="usuario" placeholder="sistema@gmail.com"
+                   class="form-input" [class.input-error]="invalido('usuario')">
+          </div>
+          <span class="campo-error" *ngIf="invalido('usuario') && form.get('usuario')?.errors?.['required']">El correo es obligatorio.</span>
+          <span class="campo-error" *ngIf="invalido('usuario') && form.get('usuario')?.errors?.['email']">Ingresa un correo válido.</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">
+            Contraseña / App Password
+            <span class="req" *ngIf="!editandoId">*</span>
+            <span class="tag-opcional" *ngIf="editandoId">opcional</span>
+          </label>
+          <div class="input-wrap">
+            <span class="input-prefix">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+            </span>
+            <input
+              [type]="mostrarPassword ? 'text' : 'password'"
+              formControlName="password"
+              placeholder="{{ editandoId ? 'Dejar vacío para no cambiar' : 'xxxx xxxx xxxx xxxx' }}"
+              class="form-input" [class.input-error]="invalido('password')">
+            <button type="button" class="btn-toggle-pass" (click)="togglePassword()">
+              <svg *ngIf="!mostrarPassword" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+              </svg>
+              <svg *ngIf="mostrarPassword" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                <line x1="1" y1="1" x2="23" y2="23"/>
+              </svg>
+            </button>
+          </div>
+          <span class="campo-error" *ngIf="invalido('password')">La contraseña es obligatoria.</span>
+        </div>
+
+        <div class="hint-box hint-gmail" *ngIf="form.get('proveedor')?.value === 'GMAIL'">
+          <span>💡</span>
+          <div>
+            <strong>Gmail requiere App Password</strong>
+            <p>Ve a <em>Cuenta Google → Seguridad → Verificación en 2 pasos → Contraseñas de aplicación</em>.</p>
+          </div>
+        </div>
+        <div class="hint-box hint-outlook" *ngIf="form.get('proveedor')?.value === 'OUTLOOK'">
+          <span>💡</span>
+          <div>
+            <strong>Outlook requiere configuración adicional</strong>
+            <p>Habilita SMTP en tu cuenta Microsoft. Usa contraseña de aplicación si tienes MFA.</p>
+          </div>
+        </div>
+
+      </form>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-cancelar" (click)="cerrarFormulario()" [disabled]="guardando">Cancelar</button>
+      <button class="btn-guardar" (click)="guardar()" [disabled]="guardando">
+        <span class="btn-spinner" *ngIf="guardando"></span>
+        <svg *ngIf="!guardando" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+          <polyline points="17,21 17,13 7,13 7,21"/>
+          <polyline points="7,3 7,8 15,8"/>
+        </svg>
+        {{ guardando ? 'Guardando...' : (editandoId ? 'Actualizar' : 'Guardar configuración') }}
+      </button>
+    </div>
+
+  </div>
+</div>
+

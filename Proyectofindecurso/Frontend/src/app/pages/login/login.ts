@@ -30,6 +30,9 @@ export class LoginComponent {
   togglePassword() {
     this.showPassword = !this.showPassword;
   }
+  irRegistroEstudiante() {
+    this.router.navigate(['/registro-estudiante']);
+  }
 
   login() {
 

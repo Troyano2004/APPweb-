@@ -57,6 +57,7 @@
           <th>Hora</th>
           <th>Modalidad</th>
           <th>Estado</th>
+          <th>Link</th>
           <th class="right">Acciones</th>
         </tr>
         </thead>
@@ -70,6 +71,12 @@
                 {{ t.estado }}
               </span>
           </td>
+          <td>
+            <a *ngIf="t.linkReunion" [href]="t.linkReunion" target="_blank" class="btn ghost">
+              Unirse
+            </a>
+            <span *ngIf="!t.linkReunion">-</span>
+          </td>
           <td class="right">
             <button class="btn ghost" (click)="abrirActa(t)">Acta</button>
             <button class="btn danger" (click)="cancelar(t)">Cancelar</button>
@@ -80,4 +87,3 @@
     </div>
   </div>
 </div>
-

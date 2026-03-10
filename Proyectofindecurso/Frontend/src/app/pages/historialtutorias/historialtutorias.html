@@ -1,56 +1,178 @@
 <div class="page">
-  <div class="head">
-    <div>
-      <div class="title">Historial de tutorías</div>
-      <div class="sub">Revisa las observaciones que dejó el director en cada tutoría (si hay acta).</div>
-    </div>
-    <button class="btn ghost" (click)="cargar()" [disabled]="cargando">Refrescar</button>
-  </div>
 
-  <div class="alert warn" *ngIf="cargando">Cargando...</div>
-  <div class="alert" *ngIf="!cargando && mensaje">{{ mensaje }}</div>
+  <div class="layout">
 
-  <div class="list" *ngIf="!cargando && items.length">
-    <div class="card" *ngFor="let t of items">
+    <!-- PRÓXIMAS TUTORÍAS -->
+    <section class="panel">
 
-      <div class="row">
-        <div class="left">
-          <div class="t1">Tutoría #{{ t.idTutoria }}</div>
-          <div class="meta">
-            <span><b>Fecha:</b> {{ t.fecha }}</span>
-            <span><b>Hora:</b> {{ t.hora || '-' }}</span>
-            <span><b>Modalidad:</b> {{ t.modalidad }}</span>
-            <span><b>Estado:</b> {{ t.estado }}</span>
-            <span><b>Director:</b> {{ t.directorNombre || '-' }}</span>
+      <div class="panel-header">
+        <div>
+          <div class="title">Próximas tutorías</div>
+          <div class="subtitle">
+            Aquí puedes revisar las reuniones programadas.
+          </div>
+        </div>
+      </div>
+
+      <div class="cards">
+
+        <div class="card pending" *ngFor="let t of pendientes">
+
+          <div class="card-top">
+
+            <div class="card-title">
+              Tutoría #{{ t.idTutoria }}
+              <span class="badge programada">PROGRAMADA</span>
+            </div>
+
+            <a
+              *ngIf="t.linkReunion"
+              [href]="t.linkReunion"
+              target="_blank"
+              class="btn primary"
+            >
+              Unirse a reunión
+            </a>
+
+          </div>
+
+          <div class="meta-grid">
+
+            <div>
+              <span>Director</span>
+              <strong>{{ t.directorNombre || '-' }}</strong>
+            </div>
+
+            <div>
+              <span>Fecha</span>
+              <strong>{{ t.fecha }}</strong>
+            </div>
+
+            <div>
+              <span>Hora</span>
+              <strong>{{ t.hora || '-' }}</strong>
+            </div>
+
+            <div>
+              <span>Modalidad</span>
+              <strong>{{ t.modalidad || '-' }}</strong>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- HISTORIAL -->
+    <section class="panel">
+
+      <div class="panel-header">
+
+        <div>
+          <div class="title">Historial de tutorías</div>
+          <div class="subtitle">
+            Consulta observaciones registradas en las actas.
           </div>
         </div>
 
-        <div class="right">
-          <button class="btn small" (click)="toggle(t)">
-            {{ openId === t.idTutoria ? 'Ocultar' : 'Ver observaciones' }}
-          </button>
-        </div>
+        <button class="btn ghost" (click)="cargar()" [disabled]="cargando">
+          Refrescar
+        </button>
+
       </div>
 
-      <div class="detail" *ngIf="openId === t.idTutoria">
-        <div class="empty" *ngIf="!t.idActa">
-          Esta tutoría aún no tiene acta (sin observaciones).
-        </div>
-
-        <div class="box" *ngIf="t.idActa">
-          <div class="k">Cumplimiento</div>
-          <div class="v">{{ t.cumplimiento || '-' }}</div>
-
-          <div class="k mt">Observaciones</div>
-          <div class="v pre">{{ t.observaciones || 'Sin observaciones.' }}</div>
-
-          <div class="k mt">Conclusión</div>
-          <div class="v pre">{{ t.conclusion || '-' }}</div>
-        </div>
+      <div class="alert warn" *ngIf="cargando">
+        Cargando...
       </div>
 
-    </div>
+      <div class="alert" *ngIf="!cargando && mensaje">
+        {{ mensaje }}
+      </div>
+
+      <div class="cards" *ngIf="!cargando && items.length">
+
+        <div class="card" *ngFor="let t of items">
+
+          <div class="card-top">
+
+            <div class="card-title">
+              Tutoría #{{ t.idTutoria }}
+
+              <span
+                class="badge"
+                [ngClass]="(t.estado || '').toLowerCase()"
+              >
+                {{ t.estado }}
+              </span>
+
+            </div>
+
+            <button class="btn dark small" (click)="toggle(t)">
+              {{ openId === t.idTutoria ? 'Ocultar' : 'Ver observaciones' }}
+            </button>
+
+          </div>
+
+          <div class="meta-grid">
+
+            <div>
+              <span>Fecha</span>
+              <strong>{{ t.fecha }}</strong>
+            </div>
+
+            <div>
+              <span>Hora</span>
+              <strong>{{ t.hora || '-' }}</strong>
+            </div>
+
+            <div>
+              <span>Director</span>
+              <strong>{{ t.directorNombre || '-' }}</strong>
+            </div>
+
+            <div>
+              <span>Modalidad</span>
+              <strong>{{ t.modalidad || '-' }}</strong>
+            </div>
+
+          </div>
+
+          <!-- DETALLE ACTA -->
+
+          <div class="detail" *ngIf="openId === t.idTutoria">
+
+            <div class="empty" *ngIf="!t.idActa">
+              Esta tutoría aún no tiene acta.
+            </div>
+
+            <div class="box" *ngIf="t.idActa">
+
+              <div class="k">Cumplimiento</div>
+              <div class="v">{{ t.cumplimiento || '-' }}</div>
+
+              <div class="k mt">Observaciones</div>
+              <div class="v pre">
+                {{ t.observaciones || 'Sin observaciones.' }}
+              </div>
+
+              <div class="k mt">Conclusión</div>
+              <div class="v pre">
+                {{ t.conclusion || '-' }}
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
   </div>
+
 </div>
-
-
