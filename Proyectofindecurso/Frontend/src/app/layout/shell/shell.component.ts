@@ -8,10 +8,10 @@ import {
   RouterOutlet,
 } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { filter, Subscription } from 'rxjs';
 import { getSessionUser, getUserRoles } from '../../services/session';
 
-// ✅ TODOS los roles del sistema (roles_sistema + rol_app)
 type AppRole =
   | 'ADMIN'
   | 'DOCENTE'
@@ -37,10 +37,17 @@ interface MenuSection {
   items: MenuItem[];
 }
 
+interface SearchResult {
+  label: string;
+  section: string;
+  icon: string;
+  path: string;
+}
+
 @Component({
   selector: 'app-shell',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [CommonModule, FormsModule, RouterOutlet, RouterLink, RouterLinkActive],
   templateUrl: './shell.component.html',
   styleUrls: ['./shell.component.scss'],
 })
@@ -52,6 +59,12 @@ export class ShellComponent implements OnInit, OnDestroy {
   breadcrumb       = 'Inicio / Dashboard';
   userName         = 'Usuario';
   userRole         = 'Sistema';
+  isDarkMode       = false;
+
+  // ── Búsqueda ──────────────────────────────────────────
+  searchQuery   = '';
+  searchFocused = false;
+  searchResults: SearchResult[] = [];
 
   private readonly subscriptions = new Subscription();
 
@@ -133,13 +146,13 @@ export class ShellComponent implements OnInit, OnDestroy {
       icon: '🧐',
       roles: ['DOCENTE', 'DOCENTE_TITULADO', 'ESTUDIANTE', 'ADMIN'],
       items: [
-        { label: 'Documento de titulación', path: '/app/titulacion2/documento',      roles: ['ESTUDIANTE'] },
-        { label: 'Documentos pendientes',   path: '/app/titulacion2/revisar',         roles: ['DOCENTE','DOCENTE_TITULADO'] },
-        { label: 'Workflow Proceso',        path: '/app/titulacion2/workflow',        roles: ['ADMIN','DOCENTE','DOCENTE_TITULADO'] },
-        { label: 'Seguimiento DT2',         path: '/app/director/seguimiento-dt2',   roles: ['DOCENTE','DOCENTE_TITULADO','ADMIN'] },
-        { label: 'Antiplagio COMPILATIO',   path: '/app/director/antiplagio-dt2',    roles: ['DOCENTE','DOCENTE_TITULADO','ADMIN'] },
-        { label: 'Predefensa',              path: '/app/titulacion2/predefensa',     roles: ['DOCENTE','DOCENTE_TITULADO','ADMIN'] },
-        { label: 'Sustentación Final',      path: '/app/titulacion2/sustentacion',   roles: ['DOCENTE','DOCENTE_TITULADO','ADMIN'] },
+        { label: 'Documento de titulación', path: '/app/titulacion2/documento',    roles: ['ESTUDIANTE'] },
+        { label: 'Documentos pendientes',   path: '/app/titulacion2/revisar',      roles: ['DOCENTE','DOCENTE_TITULADO'] },
+        { label: 'Workflow Proceso',        path: '/app/titulacion2/workflow',     roles: ['ADMIN','DOCENTE','DOCENTE_TITULADO'] },
+        { label: 'Seguimiento DT2',         path: '/app/director/seguimiento-dt2', roles: ['DOCENTE','DOCENTE_TITULADO','ADMIN'] },
+        { label: 'Antiplagio COMPILATIO',   path: '/app/director/antiplagio-dt2',  roles: ['DOCENTE','DOCENTE_TITULADO','ADMIN'] },
+        { label: 'Predefensa',              path: '/app/titulacion2/predefensa',   roles: ['DOCENTE','DOCENTE_TITULADO','ADMIN'] },
+        { label: 'Sustentación Final',      path: '/app/titulacion2/sustentacion', roles: ['DOCENTE','DOCENTE_TITULADO','ADMIN'] },
       ],
     },
     {
@@ -223,11 +236,10 @@ export class ShellComponent implements OnInit, OnDestroy {
       icon: '🛠️',
       roles: ['ADMIN', 'GESTOR_USUARIOS'],
       items: [
-        { label: 'Usuarios',         path: '/app/admin/usuarios' },
-        { label: 'Roles y permisos', path: '/app/admin/roles' },
-        { label: 'Parámetros',       path: '/app/admin/parametros' },
-        { label: 'Parámetros', path: '/app/admin/parametros' },
-        { label: 'Gestión de solicitudes', path: '/app/admin/gestion-solicitudes' },
+        { label: 'Usuarios',                path: '/app/admin/usuarios' },
+        { label: 'Roles y permisos',        path: '/app/admin/roles' },
+        { label: 'Parámetros',              path: '/app/admin/parametros' },
+        { label: 'Gestión de solicitudes',  path: '/app/admin/gestion-solicitudes' },
         { label: 'Configuración de correo', path: '/app/admin/configuracion-correo' },
       ],
     },
@@ -242,6 +254,7 @@ export class ShellComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadUserData();
+    this.loadTheme();
     this.menuSections = this.buildMenuByRoles();
     this.openSectionIndex = this.menuSections.length ? 0 : -1;
     this.updateTitles();
@@ -256,17 +269,79 @@ export class ShellComponent implements OnInit, OnDestroy {
     this.subscriptions.unsubscribe();
   }
 
+  // ── Sidebar ───────────────────────────────────────────
   toggleCollapse(): void { this.isCollapsed = !this.isCollapsed; }
   toggleMobile():   void { this.isMobileOpen = !this.isMobileOpen; }
   closeMobile():    void { this.isMobileOpen = false; }
+
   toggleSection(index: number): void {
     this.openSectionIndex = this.openSectionIndex === index ? -1 : index;
   }
 
+  // ── Tema ──────────────────────────────────────────────
+  toggleTheme(): void {
+    this.isDarkMode = !this.isDarkMode;
+    document.body.classList.toggle('dark-mode', this.isDarkMode);
+    localStorage.setItem('theme', this.isDarkMode ? 'dark' : 'light');
+  }
+
+  // ── Sesión ────────────────────────────────────────────
   logout(): void {
     localStorage.removeItem('usuario');
     localStorage.removeItem('token');
     this.router.navigate(['/login']);
+  }
+
+  // ── Búsqueda ──────────────────────────────────────────
+
+  updateSearchResults(): void {
+    const q = this.searchQuery.trim().toLowerCase();
+    if (!q) { this.searchResults = []; return; }
+
+    const seen    = new Set<string>();
+    const results: SearchResult[] = [];
+
+    for (const section of this.ALL_SECTIONS) {
+      for (const item of section.items) {
+        if (seen.has(item.path)) continue;
+        if (item.label.toLowerCase().includes(q) || section.title.toLowerCase().includes(q)) {
+          seen.add(item.path);
+          results.push({ label: item.label, section: section.title, icon: section.icon, path: item.path });
+        }
+        if (results.length >= 7) break;
+      }
+      if (results.length >= 7) break;
+    }
+    this.searchResults = results;
+  }
+
+  navigateToFirst(): void {
+    if (this.searchResults.length > 0) {
+      this.router.navigate([this.searchResults[0].path]);
+      this.clearSearch();
+    }
+  }
+
+  onResultClick(): void { this.clearSearch(); }
+
+  clearSearch(): void {
+    this.searchQuery   = '';
+    this.searchResults = [];
+    this.searchFocused = false;
+  }
+
+  onSearchBlur(): void {
+    setTimeout(() => { this.searchFocused = false; this.searchResults = []; }, 160);
+  }
+
+  // ── Privados ──────────────────────────────────────────
+
+  private loadTheme(): void {
+    const saved = localStorage.getItem('theme');
+    if (saved === 'dark') {
+      this.isDarkMode = true;
+      document.body.classList.add('dark-mode');
+    }
   }
 
   private loadUserData(): void {
@@ -281,7 +356,6 @@ export class ShellComponent implements OnInit, OnDestroy {
     const backupName = String(user['username'] || user['usuarioLogin'] || 'Usuario');
     this.userName = fullName || backupName;
 
-    // ✅ Muestra todos los roles en la barra lateral separados por |
     const roles = getUserRoles();
     if (roles.length > 0) {
       this.userRole = roles.map(r => r.replace('ROLE_', '')).join(' | ');
@@ -290,7 +364,6 @@ export class ShellComponent implements OnInit, OnDestroy {
     }
   }
 
-  // ✅ Construye el menú con TODOS los roles del usuario
   private buildMenuByRoles(): MenuSection[] {
     const userRoles = this.getNormalizedRoles();
     if (userRoles.length === 0) return [];
@@ -304,7 +377,6 @@ export class ShellComponent implements OnInit, OnDestroy {
       .filter(sec => sec.items.length > 0);
   }
 
-  // ✅ Devuelve array de todos los roles sin prefijo ROLE_
   private getNormalizedRoles(): AppRole[] {
     const validRoles: AppRole[] = [
       'ADMIN', 'DOCENTE', 'DOCENTE_TITULADO', 'ESTUDIANTE',

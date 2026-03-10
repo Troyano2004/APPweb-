@@ -1,4 +1,174 @@
+/* ─── Estilos globales ─────────────────────────────────────────── */
 body {
   font-family: 'Roboto', sans-serif;
+  margin: 0;
+  padding: 0;
 }
-/* You can add global styles to this file, and also import other style files */
+
+/* ═══════════════════════════════════════════════════════════════════
+   MODO OSCURO GLOBAL
+   Regla principal: NO tocar elementos que ya tienen color propio.
+   Solo oscurecer fondos blancos/grises y textos negros genéricos.
+═══════════════════════════════════════════════════════════════════ */
+body.dark-mode {
+
+  /* ─── Fondo general ────────────────────────────────────────────── */
+  background-color: #111827;
+
+  /* ─── Texto base del body ──────────────────────────────────────── */
+  color: #e2e8f0;
+
+  /* ─── Fondos blancos y grises claros → oscuros ─────────────────
+     Solo afecta elementos SIN color de fondo inline ya definido   */
+  .card,
+  .mat-card,
+  .panel,
+  .box {
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+    color: #e2e8f0;
+  }
+
+  /* ─── Tablas ───────────────────────────────────────────────────── */
+  table {
+    background-color: #1e293b !important;
+    color: #e2e8f0 !important;
+  }
+
+  thead tr,
+  thead th {
+    background-color: #0f172a !important;
+    color: #94a3b8 !important;
+    border-color: #334155 !important;
+  }
+
+  tbody tr {
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+    &:hover {
+      background-color: #263448 !important;
+    }
+  }
+
+  td, th {
+    border-color: #334155 !important;
+  }
+
+  /* ─── Formularios ──────────────────────────────────────────────── */
+  input:not([type="checkbox"]):not([type="radio"]),
+  textarea,
+  select {
+    background-color: #0f172a !important;
+    color: #e2e8f0 !important;
+    border-color: #334155 !important;
+
+    &::placeholder {
+      color: #64748b !important;
+    }
+
+    &:focus {
+      border-color: #0f7a3a !important;
+      outline: none;
+    }
+  }
+
+  /* ─── Labels y textos de formulario ───────────────────────────── */
+  label {
+    color: #94a3b8;
+  }
+
+  /* ─── Modales ──────────────────────────────────────────────────── */
+  .modal-content,
+  .mat-dialog-container {
+    background-color: #1e293b !important;
+    color: #e2e8f0 !important;
+    border-color: #334155 !important;
+  }
+
+  /* ─── Dropdowns ────────────────────────────────────────────────── */
+  .dropdown-menu,
+  .mat-menu-panel {
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+
+    a, li, span {
+      color: #e2e8f0 !important;
+    }
+
+    a:hover, li:hover {
+      background-color: #263448 !important;
+    }
+  }
+
+  /* ─── Alertas — solo las genéricas sin color propio ───────────── */
+  .alert:not([class*="success"]):not([class*="danger"]):not([class*="warning"]):not([class*="info"]) {
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+    color: #e2e8f0 !important;
+  }
+
+  .alert-danger {
+    background-color: #2d1b1b !important;
+    border-color: #7f1d1d !important;
+    color: #fca5a5 !important;
+  }
+
+  .alert-success {
+    background-color: #0f2a1a !important;
+    border-color: #14532d !important;
+    color: #86efac !important;
+  }
+
+  .alert-warning {
+    background-color: #2a1f0a !important;
+    border-color: #78350f !important;
+    color: #fcd34d !important;
+  }
+
+  /* ─── Líneas divisoras ─────────────────────────────────────────── */
+  hr {
+    border-color: #334155 !important;
+  }
+
+  /* ─── Scrollbar ────────────────────────────────────────────────── */
+  * {
+    scrollbar-color: #334155 #0f172a;
+
+    &::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+
+      &:hover {
+        background: #475569;
+      }
+    }
+  }
+
+  /* ─── Textos negros hardcodeados → blancos ─────────────────────
+     Solo h1-h6 y párrafos sin clase específica de color           */
+  h1, h2, h3, h4, h5, h6 {
+    color: #e2e8f0;
+  }
+
+  p {
+    color: #cbd5e1;
+  }
+
+  /* ─── Bordes genéricos ─────────────────────────────────────────── */
+  .border,
+  .border-top,
+  .border-bottom,
+  .border-left,
+  .border-right {
+    border-color: #334155 !important;
+  }
+}

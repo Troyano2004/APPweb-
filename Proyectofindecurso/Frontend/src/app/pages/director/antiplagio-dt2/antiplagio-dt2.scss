@@ -32,9 +32,13 @@
     &.activo { background: #ebf8ff; border-color: #3182ce; }
   }
   .proyecto-titulo { font-weight: 600; font-size: .85rem; }
-  .proyecto-meta { font-size: .8rem; color: #666; margin: 2px 0 4px; }
-  .badge { font-size: .7rem; padding: 2px 6px; border-radius: 4px; color: #fff; background: #718096;
-    &.DESARROLLO { background: #3182ce; } &.PREDEFENSA { background: #d69e2e; } }
+  .proyecto-meta   { font-size: .8rem; color: #666; margin: 2px 0 4px; }
+
+  .badge {
+    font-size: .7rem; padding: 2px 6px; border-radius: 4px; color: #fff; background: #718096;
+    &.DESARROLLO { background: #3182ce; }
+    &.PREDEFENSA { background: #d69e2e; }
+  }
   .empty { color: #999; font-size: .9rem; text-align: center; padding: 16px 0; }
 
   .panel-detalle {
@@ -59,16 +63,20 @@
   }
 
   .historial { h4 { margin: 0 0 8px; font-size: .9rem; } }
+
   .intento-row {
-    display: flex; gap: 12px; align-items: center; padding: 6px 10px; background: #fff;
-    border: 1px solid #e2e8f0; border-radius: 4px; margin-bottom: 4px; font-size: .85rem;
-    .fecha { color: #666; min-width: 120px; }
-    .pct { font-weight: 700; min-width: 50px; &.ok { color: #276749; } &.fail { color: #c53030; } }
-    .resultado { flex: 1; color: #4a5568; }
+    display: flex; gap: 12px; align-items: center; padding: 6px 10px;
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 4px; margin-bottom: 4px; font-size: .85rem;
+    .fecha    { color: #666; min-width: 120px; }
+    .pct      { font-weight: 700; min-width: 50px; &.ok { color: #276749; } &.fail { color: #c53030; } }
+    .resultado{ flex: 1; color: #4a5568; }
     .link-small { color: #3182ce; text-decoration: none; font-size: .8rem; &:hover { text-decoration: underline; } }
   }
 
-  .no-cert { background: #fffbeb; border-left: 4px solid #d69e2e; padding: 10px 14px; border-radius: 4px; margin-bottom: 16px; font-size: .9rem; color: #744210; }
+  .no-cert {
+    background: #fffbeb; border-left: 4px solid #d69e2e; padding: 10px 14px;
+    border-radius: 4px; margin-bottom: 16px; font-size: .9rem; color: #744210;
+  }
 
   .form-subida {
     border-top: 1px solid #e2e8f0; padding-top: 16px;
@@ -86,13 +94,107 @@
       }
       input[type=file] { font-size: .85rem; }
       .umbral-hint { color: #718096; font-size: .8rem; }
-      .archivo-ok { color: #276749; font-size: .8rem; }
-      small { color: #999; }
+      .archivo-ok  { color: #276749; font-size: .8rem; }
+      small        { color: #999; }
     }
     button[type=submit] {
       background: #3182ce; color: #fff; border: none; padding: 10px 24px;
       border-radius: 6px; cursor: pointer; font-size: .9rem;
       &:disabled { opacity: .6; cursor: not-allowed; }
+    }
+  }
+}
+
+
+// ===============================================
+// MODO OSCURO
+// ===============================================
+
+:host-context(body.dark-mode) .antiplagio-dt2 {
+
+  h2, h3, h4 { color: #f1f5f9; }
+  .subtitle, .loading { color: #94a3b8; }
+
+  // Alertas
+  .alert {
+    &.error { background: #2d1b1b; border-left-color: #e53e3e; color: #fca5a5; }
+    &.ok    { background: #052e16; border-left-color: #38a169; color: #86efac; }
+  }
+
+  // Panel lista
+  .panel-lista {
+    background: #1e293b;
+    border-color: #334155;
+    h3 { color: #f1f5f9; }
+  }
+
+  // Tarjetas de proyecto
+  .proyecto-card {
+    border-color: #334155;
+    &:hover  { background: #263448; }
+    &.activo { background: #0f2a3d; border-color: #3182ce; }
+  }
+  .proyecto-titulo { color: #e2e8f0; }
+  .proyecto-meta   { color: #94a3b8; }
+  .empty           { color: #64748b; }
+
+  // Panel detalle
+  .panel-detalle {
+    background: #1e293b;
+    border-color: #334155;
+    h3 { color: #f1f5f9; }
+    &.empty-panel { color: #64748b; }
+  }
+
+  // Cert estado
+  .cert-estado {
+    background: #0f172a;
+    border-radius: 8px;
+  }
+
+  // Estado badges
+  .estado-badge {
+    &.favorable { background: #052e16; color: #86efac; }
+    &.rechazado { background: #2d1b1b; color: #fca5a5; }
+  }
+
+  // Cert info
+  .cert-info {
+    color: #cbd5e1;
+    .link { color: #60a5fa; }
+  }
+
+  // Historial intentos
+  .intento-row {
+    background: #0f172a;
+    border-color: #334155;
+    .fecha     { color: #94a3b8; }
+    .resultado { color: #cbd5e1; }
+    .link-small{ color: #60a5fa; }
+  }
+
+  // Aviso sin certificado
+  .no-cert { background: #2a1f0a; border-left-color: #d69e2e; color: #fcd34d; }
+
+  // Form subida
+  .form-subida { border-top-color: #334155; }
+
+  form {
+    .form-row {
+      label        { color: #94a3b8; }
+      .umbral-hint { color: #64748b; }
+      .archivo-ok  { color: #86efac; }
+      small        { color: #64748b; }
+
+      input[type=number], textarea {
+        background: #0f172a;
+        color: #e2e8f0;
+        border-color: #334155;
+        &:focus { border-color: #3182ce; }
+        &::placeholder { color: #475569; }
+      }
+
+      input[type=file] { color: #94a3b8; }
     }
   }
 }

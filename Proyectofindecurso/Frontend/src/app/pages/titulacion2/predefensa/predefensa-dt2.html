@@ -121,7 +121,8 @@
               <label>Observaciones</label>
               <textarea formControlName="observaciones" rows="2"></textarea>
             </div>
-            <button type="submit" [disabled]="loading()">
+            <!-- ✅ CORREGIDO: agregada clase btn-tribunal -->
+            <button type="submit" class="btn-tribunal" [disabled]="loading()">
               {{ loading() ? 'Guardando...' : 'Programar Predefensa' }}
             </button>
           </form>
