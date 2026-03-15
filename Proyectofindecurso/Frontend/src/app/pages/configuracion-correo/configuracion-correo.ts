@@ -8,7 +8,7 @@ import { ConfiguracionCorreoDto } from './model';
 @Component({
   selector: 'app-configuracion-correo',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, DatePipe],
+  imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './configuracion-correo.html',
   styleUrls: ['./configuracion-correo.scss']
 })

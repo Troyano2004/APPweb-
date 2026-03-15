@@ -14,11 +14,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collector;
 
 @Service
 public class CoordinadorService {
 
     private final ProyectoTitulacionRepository proyectoRepo;
+    private final UsuarioRepository usuarioRepo;
     private final DocumentoTitulacionRepository documentoRepo;
     private final DocenteRepository docenteRepo;
     private final ObservacionAdministrativaRepository observacionRepo;
@@ -53,7 +55,7 @@ public class CoordinadorService {
             PeriodoTitulacionRepository periodoRepo,
             CoordinadorRepository coordinadorRepo,
             DocenteCarreraRepository docenteCarreraRepo,
-            JdbcTemplate jdbcTemplate
+            JdbcTemplate jdbcTemplate, UsuarioRepository usuarioRepo
     ) {
         this.proyectoRepo          = proyectoRepo;
         this.documentoRepo         = documentoRepo;
@@ -70,6 +72,7 @@ public class CoordinadorService {
         this.coordinadorRepo       = coordinadorRepo;
         this.docenteCarreraRepo    = docenteCarreraRepo;
         this.jdbcTemplate          = jdbcTemplate;
+        this.usuarioRepo = usuarioRepo;
     }
 
     // ==========================================================
@@ -507,10 +510,79 @@ public class CoordinadorService {
 
         return dto;
     }
+    public List<CoordinadorAdminResponse>listarCoordinadores()
+    {
+        return coordinadorRepo.findAll().stream().map(this::toDto).collect(java.util.stream.Collectors.toList());
+    }
+    @Transactional
+    public CoordinadorAdminResponse asignarCoordinador(AsignarCoordinadorRequest req)
+    {
+        if (coordinadorRepo.existsByCarrera_IdCarreraAndActivoTrue(req.getIdCarrera()))
+        {
+            throw new RuntimeException("El coordinador existe en el sistema");
+        }
+        Usuario u = usuarioRepo.findById(req.getIdUsuario()).orElseThrow(()-> new RuntimeException("Usuario no encontrado"));
+        if(! u.getRolAsignado().equalsIgnoreCase("Coordinador"))
+        {
+            throw new RuntimeException("EL_USUARIO_NO_TIENE_ROL_COORDINADOR");
+        }
+        Carrera carrera = carreraRepo.findById(req.getIdCarrera()).orElseThrow(()-> new RuntimeException
+                ("Carrera no encontrada"));
 
+        Coordinador coordinador = new Coordinador();
+        coordinador.setUsuario(u);
+        coordinador.setCarrera(carrera);
+        coordinador.setActivo(true);
+        coordinadorRepo.save(coordinador);
+        return toDto(coordinador);
+    }
+    public CoordinadorAdminResponse cambiarEstado(Integer idCoordinador, boolean activo)
+    {
+        Coordinador coordinador = coordinadorRepo.findById(idCoordinador).orElseThrow(()->new RuntimeException("COORDINADOR_NO_ENCONTRADO"));
+        if(activo && coordinadorRepo.existsByCarrera_IdCarreraAndActivoTrue(coordinador.getCarrera().getIdCarrera()))
+        {
+            throw new RuntimeException("YA_EXISTE_COORDINADOR_ACTIVO_EN_ESTA_CARRERA");
+        }
+        coordinador.setActivo(activo);
+        coordinadorRepo.save(coordinador);
+        return toDto(coordinador);
+    }
+    public List<CoordinadorAdminResponse> listarUsuariosCoordinador() {
+        List<Integer>hayCoordinador = coordinadorRepo.findByActivoTrue().stream().map(c->
+          c.getUsuario().getIdUsuario()).toList();
+
+        return usuarioRepo.findByRolAsignado("COORDINADOR")
+                .stream().filter(u -> !hayCoordinador.contains(u.getIdUsuario()))
+                .map(u -> {
+                    CoordinadorAdminResponse dto = new CoordinadorAdminResponse();
+                    dto.setIdUsuario(u.getIdUsuario());
+                    dto.setNombres(u.getNombres());
+                    dto.setApellidos(u.getApellidos());
+                    dto.setUsername(u.getUsername());
+                    return dto;
+                })
+                .collect(java.util.stream.Collectors.toList());
+    }
     // ==========================================================
     // Helpers privados
     // ==========================================================
+    private CoordinadorAdminResponse toDto(Coordinador c)
+    {
+        CoordinadorAdminResponse dto = new CoordinadorAdminResponse();
+        dto.setIdCoordinador(c.getIdCoordinador());
+        dto.setActivo(c.getActivo());
+        if (c.getUsuario() != null) {
+            dto.setApellidos(c.getUsuario().getApellidos());
+            dto.setNombres(c.getUsuario().getNombres());
+            dto.setUsername(c.getUsuario().getUsername());
+            dto.setIdUsuario(c.getUsuario().getIdUsuario());
+        }
+        if (c.getCarrera() != null) {
+            dto.setIdCarrera(c.getCarrera().getIdCarrera());
+            dto.setCarrera(c.getCarrera().getNombre());
+        }
+        return dto;
+    }
     private String nombreCompleto(Usuario u) {
         if (u == null) return "";
         String n = u.getNombres()   == null ? "" : u.getNombres().trim();

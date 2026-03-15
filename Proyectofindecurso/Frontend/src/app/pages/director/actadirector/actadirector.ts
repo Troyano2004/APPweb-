@@ -6,6 +6,15 @@ import { DirectorApiService } from '../service';
 import { ActaRevisionDirectorRequest } from '../model';
 import { getSessionUser } from '../../../services/session';
 import { Router } from '@angular/router';
+import { ViewChild, ElementRef } from '@angular/core';
+import pdfMake from 'pdfmake/build/pdfmake';
+import * as pdfFonts from 'pdfmake/build/vfs_fonts';
+(pdfMake as any).vfs = (pdfFonts as any).default?.pdfMake?.vfs ?? (pdfFonts as any).pdfMake?.vfs
+
+
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas'
+import {content} from 'html2canvas/dist/types/css/property-descriptors/content';
 
 @Component({
   selector: 'app-actadirector',
@@ -19,7 +28,7 @@ export class Actadirector {
 
   idDocente!: number;
   idTutoria!: number;
-
+  @ViewChild('paper') paperRef!: ElementRef;
   form: FormGroup;
 
   constructor(
@@ -90,9 +99,194 @@ export class Actadirector {
         error: (e) => this.mensaje = this.err(e),
       });
   }
+  imprimir() {
+    const f = this.form.getRawValue();
 
-  imprimir() { window.print(); }
+    const verde = '#0f7a3a';
+    const grisSeccion = '#f7f7f7';
+    const grisSub = '#f2f2f2';
+    const borde = '#444';
 
+    const docDefinition: any = {
+      pageSize: 'A4',
+      pageMargins: [40, 50, 40, 50],
+      defaultStyle: {
+        fontSize: 11,
+        lineHeight: 1.2
+      },
+
+      content: [
+
+        // TÍTULO
+        {
+          text: 'Universidad Técnica Estatal de Quevedo', fontSize: 27, alignment: 'center', color: '#6b7280', margin: [0, 0, 0, 10]
+        },
+        {
+          text: 'ACTA DE REVISIÓN - DIRECTOR', fontSize: 20, bold: true, alignment: 'center', color: verde, margin: [0, 0, 0, 8]
+        },
+
+
+        // TABLA PRINCIPAL
+        {
+          table: {
+            widths: ['36%', '34%', '30%'],
+            body: [
+
+              // ENCABEZADO PARTICIPANTES
+              [
+                {
+                  text: 'Participantes', bold: true, alignment: 'center', fillColor: verde, color: '#fff', fontSize: 11
+                },
+                {
+                  text: 'Cargo', bold: true, alignment: 'center', fillColor: verde, color: '#fff', fontSize: 11
+                },
+                {
+                  text: 'Firmas', bold: true, alignment: 'center', fillColor: verde, color: '#fff', fontSize: 11
+                }
+              ],
+
+              // DIRECTOR
+              [
+                {
+                  text: f.directorNombre || 'Director', fontSize: 11, margin: [0, 6, 0, 6]
+                },
+                {
+                  text: f.directorCargo || '—', fontSize: 11, margin: [0, 6, 0, 6]
+                },
+                {
+                  text: f.directorFirma || '—', alignment: 'center', fontSize: 11, margin: [0, 6, 0, 6]
+                }
+              ],
+
+              // ESTUDIANTE
+              [
+                {
+                  text: f.estudianteNombre || 'Estudiante', fontSize: 11, margin: [0, 6, 0, 6]
+                },
+                {
+                  text: f.estudianteCargo || '—', fontSize: 11, margin: [0, 6, 0, 6]
+                },
+                {
+                  text: f.estudianteFirma || '—', alignment: 'center', fontSize: 11, margin: [0, 6, 0, 6]
+                }
+              ],
+
+              // TÍTULO PROYECTO
+              [
+                {
+                  text: 'Proyecto de Integración Curricular:', colSpan: 3, bold: true, fontSize: 11, fillColor: grisSeccion, margin: [0, 2, 0, 2]
+                },
+                {},
+                {}
+              ],
+
+              // VALOR PROYECTO
+              [
+                {
+                  text: f.tituloProyecto || '—', colSpan: 3, fontSize: 11, margin: [0, 2, 0, 2]
+                },
+                {},
+                {}
+              ],
+
+              // PROCESO DE REVISIÓN
+              [
+                {
+                  text: 'Proceso de revisión:', colSpan: 3, bold: true, fontSize: 11, fillColor: grisSeccion, margin: [0, 2, 0, 2]
+                },
+                {},
+                {}
+              ],
+
+              // ENCABEZADO REVISIÓN
+              [
+                {
+                  text: 'Objetivo', bold: true, fontSize: 11, fillColor: grisSub, margin: [0, 2, 0, 2]
+                },
+                {
+                  text: 'Detalle de la revisión', bold: true, fontSize: 11, fillColor: grisSub, margin: [0, 2, 0, 2]
+                },
+                {
+                  text: 'Nivel de Cumplimiento', bold: true, fontSize: 11, fillColor: grisSub, margin: [0, 2, 0, 2]
+                }
+              ],
+
+              // DATOS REVISIÓN
+              [
+                {
+                  text: f.objetivo || '—', alignment: 'justify', fontSize: 11, margin: [0, 6, 0, 6]
+                },
+                {
+                  text: f.detalleRevision || '—', alignment: 'justify', fontSize: 11, margin: [0, 6, 0, 6]
+                },
+                {
+                  text: f.cumplimiento || '—',
+                  fontSize: 11,
+                  margin: [0, 6, 0, 6]
+                }
+              ],
+
+              // OBSERVACIONES
+              [
+                {
+                  text: 'Observaciones:',
+                  colSpan: 3,
+                  bold: true,
+                  fontSize: 11,
+                  fillColor: grisSeccion,
+                  margin: [0, 2, 0, 2]
+                },
+                {},
+                {}
+              ],
+              [
+                {
+                  text: f.observaciones || 'Sin observaciones.', colSpan: 3, fontSize: 11, alignment: 'justify', margin: [0, 6, 0, 6]
+                },
+                {},
+                {}
+              ],
+
+              // CONCLUSIÓN
+              [
+                {
+                  text: [
+                    { text: 'Conclusión: ', bold: true },
+                    { text: f.conclusion || '—' }
+                  ],
+                  colSpan: 3, fontSize: 11, alignment: 'justify', margin: [0, 6, 0, 6]
+                },
+                {},
+                {}
+              ]
+            ]
+          },
+
+          layout: {
+
+            vLineWidth: () => 0.8,
+            hLineColor: () => borde,
+            vLineColor: () => borde,
+            paddingLeft: () => 12,
+            paddingRight: () => 12,
+            paddingTop: () => 10,
+            paddingBottom: () => 10
+          }
+        },
+
+        // FOOTER
+        {
+          text: 'Documento generado desde el Sistema de Titulación UTEQ',
+          fontSize: 8,
+          color: '#9ca3af',
+          alignment: 'center',
+          margin: [0, 16, 0, 0]
+        }
+      ]
+    };
+
+    pdfMake.createPdf(docDefinition).download('acta-revision.pdf');
+  }
   volver() { this.router.navigate(['/app/director/tutorias']); }
 
   private err(e:any){

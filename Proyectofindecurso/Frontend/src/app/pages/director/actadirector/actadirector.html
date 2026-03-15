@@ -10,7 +10,7 @@
   <div class="alert warn" *ngIf="cargando">Cargando...</div>
   <div class="alert" *ngIf="!cargando && mensaje">{{ mensaje }}</div>
 
-  <div class="paper" [formGroup]="form">
+  <div class="paper" #paper [formGroup]="form">
 
     <div class="title">ACTA DE REVISIÓN (DIRECTOR)</div>
 

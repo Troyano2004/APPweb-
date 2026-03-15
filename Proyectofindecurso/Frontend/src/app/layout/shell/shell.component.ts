@@ -10,7 +10,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { filter, Subscription } from 'rxjs';
 import { getSessionUser } from '../../services/session';
-
+import { HttpClient } from '@angular/common/http';
 type AppRole = 'ADMIN' | 'DOCENTE' | 'ESTUDIANTE' | 'COORDINADOR';
 
 interface MenuItem {
@@ -104,6 +104,7 @@ export class ShellComponent implements OnInit, OnDestroy {
         { label: 'Registrar tutoría', path: '/app/tutorias/nueva' },
         { label: 'Actas de tutoría', path: '/app/tutorias/actas' },
         { label: 'Historial', path: '/app/tutorias/historial', roles: ['ADMIN'] },
+        { label: 'Configuración Zoom', path: '/app/docente/zoom-config', roles: ['DOCENTE'] },
       ],
     },
     {
@@ -183,13 +184,14 @@ export class ShellComponent implements OnInit, OnDestroy {
         { label: 'Parámetros', path: '/app/admin/parametros' },
         { label: 'Gestión de solicitudes', path: '/app/admin/gestion-solicitudes' },
         { label: 'Configuración de correo', path: '/app/admin/configuracion-correo' },
+        { label: 'Gestión de coordinadores', path: '/app/admin/gestion-coordinadores' },
       ],
     },
   ];
 
   menuSections: MenuSection[] = [];
 
-  constructor(private readonly router: Router, private readonly route: ActivatedRoute) {}
+  constructor(private readonly router: Router, private readonly route: ActivatedRoute,   private readonly http: HttpClient ) {}
 
   ngOnInit(): void {
     this.loadUserData();
@@ -215,9 +217,20 @@ export class ShellComponent implements OnInit, OnDestroy {
   }
 
   logout(): void {
-    localStorage.removeItem('usuario');
-    localStorage.removeItem('token');
-    this.router.navigate(['/login']);
+    // primero avisa al backend
+    this.http.post('http://localhost:8080/api/auth/logout', {}, { withCredentials: true })
+      .subscribe({
+        next: () => {
+          // backend respondió ok → limpia y redirige
+          localStorage.removeItem('usuario');
+          this.router.navigate(['/login']);
+        },
+        error: () => {
+          // aunque falle → limpia y redirige igual
+          localStorage.removeItem('usuario');
+          this.router.navigate(['/login']);
+        }
+      });
   }
 
   private loadUserData(): void {

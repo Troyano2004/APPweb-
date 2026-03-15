@@ -20,7 +20,7 @@ public class EmailService {
     private static final Map<String, String> HOSTS = Map.of(
             "GMAIL",   "smtp.gmail.com",
             "YAHOO",   "smtp.mail.yahoo.com",
-            "OUTLOOK", "smtp.office365.com"
+            "OUTLOOK", "smtp-mail.outlook.com"
     );
 
     public EmailService(ConfiguracionCorreoRepository configRepo) {
@@ -34,11 +34,21 @@ public class EmailService {
         ConfiguracionCorreo config = configRepo.findFirstByActivoTrue()
                 .orElseThrow(() -> new RuntimeException("NO_HAY_CONFIGURACION_CORREO_ACTIVA"));
 
+        String proveedor = config.getProveedor().toUpperCase();
+        String host = HOSTS.get(proveedor);
+        String password = CryptoUtil.decrypt(config.getPassword());
+
+        System.out.println("=== CONFIG CORREO ACTIVA ===");
+        System.out.println("Usuario: " + config.getUsuario());
+        System.out.println("Proveedor: " + proveedor);
+        System.out.println("Host: " + host);
+        System.out.println("Password desencriptado: [" + password + "]");
+
         JavaMailSenderImpl sender = new JavaMailSenderImpl();
-        sender.setHost(HOSTS.getOrDefault(config.getProveedor().toUpperCase(), "smtp.gmail.com"));
+        sender.setHost(host);
         sender.setPort(587);
         sender.setUsername(config.getUsuario());
-        sender.setPassword(CryptoUtil.decrypt(config.getPassword())); // desencriptar al usar
+        sender.setPassword(password);
 
         Properties props = sender.getJavaMailProperties();
         props.put("mail.smtp.auth", "true");

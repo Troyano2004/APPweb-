@@ -1,6 +1,9 @@
 package com.erwin.backend.service;
 
 import com.erwin.backend.dtos.ZoomMeetingResult;
+import com.erwin.backend.entities.ZoomConfigDocente;
+import com.erwin.backend.repository.ZoomConfigDocenteRepository;
+import com.erwin.backend.security.CryptoUtil;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,20 +21,15 @@ import java.util.Map;
 @Service
 public class ZoomService {
 
-    @Value("${zoom.account-id}")
-    private String accountId;
-
-    @Value("${zoom.client-id}")
-    private String clientId;
-
-    @Value("${zoom.client-secret}")
-    private String clientSecret;
-
+    private final ZoomConfigDocenteRepository zoomConfigRepo;
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper mapper = new ObjectMapper();
+    public ZoomService(ZoomConfigDocenteRepository zoomConfigRepo) {
+        this.zoomConfigRepo = zoomConfigRepo;
+    }
 
     // ── Obtener token OAuth ───────────────────────────────────
-    private String obtenerToken() {
+    private String obtenerToken(String accountId, String clientId, String clientSecret) {
         try {
             String credentials = clientId + ":" + clientSecret;
             String encoded = Base64.getEncoder().encodeToString(credentials.getBytes());
@@ -58,9 +56,16 @@ public class ZoomService {
         }
     }
     // ── Crear reunión Zoom ────────────────────────────────────
-    public ZoomMeetingResult crearReunion(String tema, LocalDate fecha, LocalTime hora) {
+    public ZoomMeetingResult crearReunion(Integer idDocente, String tema, LocalDate fecha, LocalTime hora) {
+        ZoomConfigDocente config = zoomConfigRepo.findByDocente_IdDocente(idDocente)
+                .orElseThrow(() -> new RuntimeException("EL_DOCENTE_NO_TIENE_CONFIGURACION_ZOOM"));
+
+        String accountId    = config.getAccountId();
+        String clientId     = config.getClientId();
+        String clientSecret = CryptoUtil.decrypt(config.getClientSecret());
+
         try {
-            String token = obtenerToken();
+            String token = obtenerToken(accountId, clientId, clientSecret);
 
             HttpHeaders headers = new HttpHeaders();
             headers.set("Authorization", "Bearer " + token);
@@ -81,20 +86,17 @@ public class ZoomService {
             settings.put("waiting_room", false);
             body.put("settings", settings);
 
-            String bodyJson = mapper.writeValueAsString(body);
-            HttpEntity<String> entity = new HttpEntity<>(bodyJson, headers);
+            HttpEntity<String> entity = new HttpEntity<>(mapper.writeValueAsString(body), headers);
 
             ResponseEntity<String> response = restTemplate.exchange(
                     "https://api.zoom.us/v2/users/me/meetings",
-                    HttpMethod.POST,
-                    entity,
-                    String.class  // ← cambiar a String
+                    HttpMethod.POST, entity, String.class
             );
 
             JsonNode result = mapper.readTree(response.getBody());
 
             ZoomMeetingResult zoom = new ZoomMeetingResult();
-            zoom.joinUrl = result.get("join_url").asText();
+            zoom.joinUrl   = result.get("join_url").asText();
             zoom.meetingId = result.get("id").asText();
             return zoom;
 

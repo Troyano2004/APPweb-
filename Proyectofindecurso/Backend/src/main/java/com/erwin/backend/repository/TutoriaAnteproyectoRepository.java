@@ -13,6 +13,7 @@ public interface TutoriaAnteproyectoRepository extends JpaRepository<TutoriaAnte
             Integer idAnteproyecto,
             Integer idDocente
     );
+    List<TutoriaAnteproyecto> findByEstado(String estado);
     List<TutoriaAnteproyecto> findByAnteproyecto_IdAnteproyectoAndDocente_IdDocenteOrderByFechaAsc(
             Integer idAnteproyecto,
             Integer idDocente

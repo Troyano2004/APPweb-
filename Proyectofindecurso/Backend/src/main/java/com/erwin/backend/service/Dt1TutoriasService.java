@@ -4,10 +4,13 @@ import com.erwin.backend.dtos.*;
 import com.erwin.backend.entities.*;
 import com.erwin.backend.repository.*;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 
 @Service
@@ -107,7 +110,7 @@ public class Dt1TutoriasService {
         if (modalidad.equals("VIRTUAL")) {
             try {
                 String tema = "Tutoria Programada - " + ante.getEstudiante().getUsuario().getNombres();
-                ZoomMeetingResult zoom = zoomService.crearReunion(tema, req.getFecha(), req.getHora());
+                ZoomMeetingResult zoom = zoomService.crearReunion(idDocente,tema, req.getFecha(), req.getHora());
                 t.setLinkReunion(zoom.joinUrl);
                 t.setZoomMeetingId(zoom.meetingId);
             } catch (Exception e) {
@@ -229,6 +232,22 @@ public class Dt1TutoriasService {
         tutRepo.save(t);
 
         return mapActa(acta, t);
+    }
+    @Scheduled(fixedRate = 60000) // corre cada 1 minuto
+    @Transactional
+    public void cancelarTutoriasVencidas() {
+        LocalDateTime ahora = LocalDateTime.now();
+        List<TutoriaAnteproyecto> tutorias = tutRepo.findByEstado("PROGRAMADA");
+        for (TutoriaAnteproyecto t : tutorias) {
+            LocalTime hora = t.getHora();
+            LocalDateTime fechaHoraTutoria = LocalDateTime.of(t.getFecha(), hora);
+
+            if(fechaHoraTutoria.isBefore(ahora)) {
+                t.setEstado("CANCELADA");
+                tutRepo.save(t);
+            }
+        }
+
     }
 
     // ==========================================================

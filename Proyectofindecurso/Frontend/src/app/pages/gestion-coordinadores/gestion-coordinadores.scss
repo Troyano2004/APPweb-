@@ -1,0 +1,206 @@
+$primary: #0b6a2b;
+$primary-dark: #085220;
+$success-bg: #e9f6ef;
+$success-border: #b8e6cc;
+
+:host {
+  display: block;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.gc-page {
+  min-height: 100vh;
+  background: #f3f4f6;
+  padding: 2rem 1rem;
+}
+
+.gc-header {
+  background: linear-gradient(135deg, $primary 0%, #0d7a32 100%);
+  border-radius: 16px;
+  padding: 2.25rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+}
+
+.gc-header-title { font-size: 2rem; font-weight: 900; color: #fff; }
+.gc-header-sub { font-size: 13px; color: rgba(255,255,255,0.85); margin-top: 4px; }
+.gc-header-actions { display: flex; gap: 8px; }
+
+.gc-alert {
+  margin: 0 0 1rem 0;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  border-left: 4px solid;
+  &.success { background: $success-bg; border-color: #22c55e; color: #166534; }
+  &.danger  { background: #fef2f2; border-color: #ef4444; color: #991b1b; }
+  &.warning { background: #fffbeb; border-color: #f59e0b; color: #92400e; }
+}
+
+.gc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.1rem;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 900;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  font-family: inherit;
+  white-space: nowrap;
+  &:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+  &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+
+  &.primary      { background: #fff; color: $primary; border-color: #fff; }
+  &.primary-dark { background: $primary; color: #fff; border-color: $primary; &:hover:not(:disabled) { background: $primary-dark; } }
+  &.ghost        { background: rgba(255,255,255,0.15); color: #fff; border-color: rgba(255,255,255,0.3); &:hover:not(:disabled) { background: rgba(255,255,255,0.25); } }
+  &.ghost-dark   { background: #fff; color: #374151; border-color: #d1d5db; }
+  &.danger       { background: #fee2e2; color: #dc2626; border-color: #fecaca; }
+  &.success      { background: linear-gradient(180deg, #34c759 0%, $primary 100%); color: #fff; border-color: transparent; }
+}
+
+.gc-empty {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 10px; padding: 4rem;
+  text-align: center; color: #6b7280; font-size: 14px;
+  background: #fff; border-radius: 16px; border: 1px solid #e5e7eb;
+  .gc-empty-icon { font-size: 3rem; }
+}
+
+.gc-tabla-wrap {
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+table { width: 100%; border-collapse: separate; border-spacing: 0; }
+
+thead tr { background: #f9fafb; border-bottom: 1px solid #e5e7eb; }
+th {
+  padding: 0.95rem 1rem; font-size: 0.82rem; font-weight: 900;
+  color: #374151; text-align: left; text-transform: uppercase;
+  letter-spacing: 0.07em; border-bottom: 1px solid #e5e7eb;
+}
+
+tbody tr {
+  border-bottom: 1px solid #f3f4f6;
+  transition: background 0.1s;
+  &:hover td { background: rgba(15,122,58,0.03); }
+  &:last-child td { border-bottom: none; }
+}
+td { padding: 0.95rem 1rem; font-size: 13px; color: #374151; border-bottom: 1px solid #f3f4f6; }
+
+.td-num { color: #9ca3af; font-weight: 700; width: 50px; }
+.td-usuario { display: flex; align-items: center; gap: 10px; }
+.td-username { font-family: ui-monospace, monospace; font-size: 12px; font-weight: 800; color: #1f2937; }
+
+.avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: linear-gradient(135deg, $primary, #0d7a32);
+  color: #fff; display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 900; flex-shrink: 0; text-transform: uppercase;
+}
+
+.nombre { font-weight: 900; color: #1f2937; }
+
+.badge {
+  display: inline-flex; align-items: center;
+  padding: 0.35rem 0.75rem; border-radius: 999px;
+  font-size: 0.75rem; font-weight: 900;
+  letter-spacing: 0.04em; text-transform: uppercase; border: 1px solid;
+  &.activo   { background: $success-bg; color: $primary-dark; border-color: $success-border; }
+  &.inactivo { background: #fff7ed; color: #d97706; border-color: rgba(245,158,11,0.25); }
+}
+
+/* CARD WRAP */
+.gc-tabla-wrap {
+  padding: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.gc-section-title {
+  h2 { margin: 0; color: $primary; font-size: 1.3rem; font-weight: 900; }
+  p  { margin: 0.35rem 0 0; color: #6b7280; }
+}
+
+/* MODAL */
+.gc-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.35);
+  z-index: 50; backdrop-filter: blur(2px);
+}
+
+.gc-modal {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  background: #fff; border-radius: 16px; width: 480px; max-width: 95vw;
+  z-index: 60; box-shadow: 0 20px 40px rgba(0,0,0,0.18);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+
+.gc-modal-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 1.25rem 1.5rem;
+  background: linear-gradient(135deg, $primary 0%, #0d7a32 100%);
+  font-size: 1rem; font-weight: 900; color: #fff;
+  button {
+    background: rgba(255,255,255,0.15); border: none; border-radius: 8px;
+    width: 32px; height: 32px; font-size: 16px; cursor: pointer;
+    color: #fff; display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+    &:hover { background: rgba(255,255,255,0.25); }
+  }
+}
+
+.gc-modal-body {
+  padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem;
+}
+
+.gc-field {
+  display: flex; flex-direction: column; gap: 6px;
+  label { font-size: 0.78rem; font-weight: 800; color: #374151; }
+  select {
+    padding: 0.7rem 0.8rem; border-radius: 10px;
+    border: 1px solid #d1d5db; font-size: 14px;
+    font-family: inherit; outline: none; background: #fafafa;
+    transition: all 0.15s;
+    &:focus { border-color: $primary; box-shadow: 0 0 0 4px rgba(15,122,58,0.12); background: #fff; }
+  }
+}
+
+.gc-error { font-size: 11px; color: #b91c1c; font-weight: 700; }
+
+.gc-modal-footer {
+  display: flex; justify-content: flex-end; gap: 8px;
+  padding: 1rem 1.5rem; border-top: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+.gc-page {
+  padding: 2rem 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.gc-tabla-wrap {
+  padding: 0;
+  table {
+    min-width: 700px;
+  }
+}
+
+// Quita el padding doble que causa el problema
+.gc-tabla-wrap.gc-tabla-wrap {
+  padding: 0;
+}

@@ -1,0 +1,109 @@
+<div class="gc-page">
+
+  <!-- HEADER -->
+  <div class="gc-header">
+    <div>
+      <div class="gc-header-title">👥 Gestión de Coordinadores</div>
+      <div class="gc-header-sub">Asignación de coordinadores por carrera</div>
+    </div>
+    <div class="gc-header-actions">
+      <button class="gc-btn ghost" (click)="cargarCoordinadores()" [disabled]="cargando">🔄 Refrescar</button>
+      <button class="gc-btn primary" (click)="abrirModal()">+ Asignar coordinador</button>
+    </div>
+  </div>
+
+  <!-- ALERTAS -->
+  <div class="gc-alert success" *ngIf="exito">✅ {{ exito }}</div>
+  <div class="gc-alert danger"  *ngIf="error">⚠️ {{ error }}</div>
+  <div class="gc-alert warning" *ngIf="cargando">⏳ Cargando...</div>
+
+  <!-- VACIO -->
+  <div class="gc-empty" *ngIf="!cargando && !coordinadores.length">
+    <div class="gc-empty-icon">👥</div>
+    <p>No hay coordinadores asignados.</p>
+  </div>
+
+  <!-- TABLA -->
+  <div class="gc-tabla-wrap" *ngIf="!cargando && coordinadores.length">
+    <table>
+      <thead>
+      <tr>
+        <th>#</th>
+        <th>Coordinador</th>
+        <th>Username</th>
+        <th>Carrera</th>
+        <th>Estado</th>
+        <th>Acción</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr *ngFor="let c of coordinadores; let i = index">
+        <td class="td-num">{{ i + 1 }}</td>
+        <td class="td-usuario">
+          <div class="avatar">{{ c.nombres?.charAt(0) }}{{ c.apellidos?.charAt(0) }}</div>
+          <div class="nombre">{{ c.nombres }} {{ c.apellidos }}</div>
+        </td>
+        <td class="td-username">{{ c.username }}</td>
+        <td>{{ c.carrera }}</td>
+        <td>
+            <span class="badge" [ngClass]="c.activo ? 'activo' : 'inactivo'">
+              {{ c.activo ? 'Activo' : 'Inactivo' }}
+            </span>
+        </td>
+        <td>
+          <button class="gc-btn" [ngClass]="c.activo ? 'danger' : 'success'" (click)="cambiarEstado(c)">
+            {{ c.activo ? 'Desactivar' : 'Activar' }}
+          </button>
+        </td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- OVERLAY -->
+  <div class="gc-overlay" *ngIf="mostrarModal" (click)="cerrarModal()"></div>
+
+  <!-- MODAL -->
+  <div class="gc-modal" *ngIf="mostrarModal">
+    <div class="gc-modal-header">
+      <span>Asignar Coordinador</span>
+      <button (click)="cerrarModal()">✕</button>
+    </div>
+    <div class="gc-modal-body" [formGroup]="form">
+
+      <div class="gc-field">
+        <label>Usuario coordinador</label>
+        <select formControlName="idUsuario">
+          <option [value]="null">-- Seleccione --</option>
+          <option *ngFor="let u of usuariosCoordinador" [value]="u.idUsuario">
+            {{ u.nombres }} {{ u.apellidos }}
+          </option>
+        </select>
+        <span class="gc-error" *ngIf="form.get('idUsuario')?.invalid && form.get('idUsuario')?.touched">
+          Requerido
+        </span>
+      </div>
+
+      <div class="gc-field">
+        <label>Carrera</label>
+        <select formControlName="idCarrera">
+          <option [value]="null">-- Seleccione --</option>
+          <option *ngFor="let c of carreras" [value]="c.idCarrera">
+            {{ c.nombre }}
+          </option>
+        </select>
+        <span class="gc-error" *ngIf="form.get('idCarrera')?.invalid && form.get('idCarrera')?.touched">
+          Requerido
+        </span>
+      </div>
+
+    </div>
+    <div class="gc-modal-footer">
+      <button class="gc-btn ghost-dark" (click)="cerrarModal()">Cancelar</button>
+      <button class="gc-btn primary-dark" (click)="asignar()" [disabled]="cargando">
+        {{ cargando ? 'Guardando...' : 'Asignar' }}
+      </button>
+    </div>
+  </div>
+
+</div>

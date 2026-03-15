@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.0",
+    "pdfmake": "^0.3.6"
+  },
+  "devDependencies": {
+    "@types/pdfmake": "^0.3.2"
+  }
+}

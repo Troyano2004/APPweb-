@@ -1,0 +1,110 @@
+<div class="page">
+  <div class="wrap">
+
+    <!-- HERO -->
+    <div class="hero">
+      <div class="hero-left">
+        <h1>🎥 Configuración de Zoom</h1>
+        <p>Conecta tu cuenta Zoom para programar reuniones automáticamente</p>
+      </div>
+    </div>
+
+    <!-- ALERTAS -->
+    <div class="msg-error" *ngIf="error">⚠️ {{ error }}</div>
+    <div class="msg-success" *ngIf="exito">✅ {{ exito }}</div>
+    <div class="msg-loading" *ngIf="cargando">Cargando...</div>
+
+    <!-- YA CONFIGURADO -->
+    <div class="card" *ngIf="!cargando && config?.configurado && !editando">
+      <div class="section-title">
+        <h2>Tu configuración Zoom</h2>
+        <p>Credenciales activas para crear reuniones automáticas</p>
+      </div>
+
+      <div class="config-info-card">
+        <div class="config-badge">
+          <span class="badge badge-success">✔ Configurado</span>
+        </div>
+        <div class="grid">
+          <div class="info-field">
+            <span class="info-label">Account ID</span>
+            <span class="info-value mono">{{ config?.accountId }}</span>
+          </div>
+          <div class="info-field">
+            <span class="info-label">Client ID</span>
+            <span class="info-value mono">{{ config?.clientId }}</span>
+          </div>
+          <div class="info-field">
+            <span class="info-label">Client Secret</span>
+            <span class="info-value mono">••••••••••••••••</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <button class="btn btn-outline" (click)="activarEdicion()">✏️ Editar</button>
+          <button class="btn btn-warning" (click)="eliminar()" [disabled]="eliminando">
+            {{ eliminando ? 'Eliminando...' : '🗑 Eliminar' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- FORMULARIO -->
+    <div class="card" *ngIf="!cargando && (!config?.configurado || editando)">
+      <div class="section-title">
+        <h2>{{ config?.configurado ? 'Editar configuración' : 'Nueva configuración' }}</h2>
+        <p>Ingresa tus credenciales de la app Server-to-Server OAuth de Zoom</p>
+      </div>
+
+      <div class="hint-box">
+        <span>💡</span>
+        <div>
+          Ve a <strong>marketplace.zoom.us</strong> → Develop → Build App →
+          <strong>Server-to-Server OAuth</strong> y copia el Account ID, Client ID y Client Secret.
+        </div>
+      </div>
+
+      <div [formGroup]="form" class="grid form-grid">
+
+        <label>
+          Account ID *
+          <input type="text" formControlName="accountId" placeholder="Ej: aBcDeFgHiJ">
+          <span class="field-error" *ngIf="invalido('accountId')">Requerido</span>
+        </label>
+
+        <label>
+          Client ID *
+          <input type="text" formControlName="clientId" placeholder="Ej: xYz123...">
+          <span class="field-error" *ngIf="invalido('clientId')">Requerido</span>
+        </label>
+
+        <label style="grid-column: 1 / -1">
+          Client Secret *
+          <div class="input-wrap">
+            <input [type]="mostrarSecret ? 'text' : 'password'"
+                   formControlName="clientSecret"
+                   placeholder="{{ editando ? 'Dejar vacío para no cambiar' : 'Ej: aBcDeFgH...' }}">
+            <button type="button" class="toggle-secret" (click)="toggleSecret()">
+              {{ mostrarSecret ? '🙈' : '👁' }}
+            </button>
+          </div>
+          <span class="field-error" *ngIf="invalido('clientSecret')">Requerido</span>
+        </label>
+
+      </div>
+
+      <div class="toolbar" style="margin-top: 1.5rem">
+        <div class="toolbar-left">
+          <button class="btn btn-secondary" *ngIf="editando" (click)="cancelarEdicion()">Cancelar</button>
+          <button class="btn btn-success" (click)="guardar()" [disabled]="guardando">
+            {{ guardando ? 'Guardando...' : '💾 Guardar configuración' }}
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>

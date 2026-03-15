@@ -25,7 +25,9 @@ import { AdminUsuariosComponent } from './pages/admin-usuario/admin-usuarios';
 import { RolesComponent } from './pages/roles/roles';
 import { AsignacionDt1 } from './pages/coordinador/asignacion-dt1/asignacion-dt1';
 import { authGuard, loginGuard } from './guards/auth.guard';
-
+import { SesionesActivas } from './pages/sesiones-activas/sesiones-activas';
+import { GestionCoordinadores } from './pages/gestion-coordinadores/gestion-coordinadores';
+import { ZoomConfigComponent } from './pages/zoom-config/zoom-config';
 // Catálogos
 import { UniversidadComponent } from './pages/catalogos/universidad/universidad.component';
 import { FacultadComponent } from './pages/catalogos/facultad/facultad.component';
@@ -104,6 +106,7 @@ export const routes: Routes = [
       // Tutorías
       { path: 'tutorias/nueva', component: PlaceholderPageComponent, data: { title: 'Registrar tutoría' } },
       { path: 'tutorias/actas', component: PlaceholderPageComponent, data: { title: 'Actas de tutoría' } },
+      { path: 'docente/zoom-config', component: ZoomConfigComponent, data: { title: 'Configuración Zoom' } },
 
       // Proyecto
       { path: 'proyecto/documento', component: DocumentoSeccionesComponent, data: { title: 'Documento por secciones' } },
@@ -132,6 +135,8 @@ export const routes: Routes = [
       { path: 'admin/parametros', component: PlaceholderPageComponent, data: { title: 'Parámetros' } },
       { path: 'admin/gestion-solicitudes', component: GestionSolicitudesComponent, data: { title: 'Gestión de Solicitudes' } },
       { path: 'admin/configuracion-correo', component: ConfiguracionCorreoComponent, data: { title: 'Configuración de Correo' } },
+      { path: 'admin/sesiones-activas', component: SesionesActivas, data: { title: 'Sesiones Activas' } },
+      { path: 'admin/gestion-coordinadores', component: GestionCoordinadores, data: { title: 'Gestión de Coordinadores' } },
 
       // Coordinación
       { path: 'coordinador/seguimiento', component: SeguimientoProyectosComponent, data: { title: 'Seguimiento de proyectos' } },

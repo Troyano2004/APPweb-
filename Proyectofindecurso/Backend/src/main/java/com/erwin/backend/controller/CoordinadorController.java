@@ -109,6 +109,27 @@ public class CoordinadorController {
 
         return service.infoDt1(idUsuario);
     }
+    @GetMapping("/coordinadores")
+    public List<CoordinadorAdminResponse> listarCoordinadores() {
+        return service.listarCoordinadores();
+    }
+
+    @PostMapping("/coordinadores")
+    public CoordinadorAdminResponse asignarCoordinador(@RequestBody AsignarCoordinadorRequest req) {
+        return service.asignarCoordinador(req);
+    }
+
+    @PatchMapping("/coordinadores/{id}/estado")
+    public CoordinadorAdminResponse cambiarEstado(
+            @PathVariable Integer id,
+            @RequestParam Boolean activo) {
+        return service.cambiarEstado(id, activo);
+    }
+    @GetMapping("/usuarios-disponibles")
+    public List<CoordinadorAdminResponse> usuariosCoordinador() {
+        return service.listarUsuariosCoordinador();
+    }
+
 
 
 }

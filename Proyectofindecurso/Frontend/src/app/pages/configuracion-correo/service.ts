@@ -11,7 +11,7 @@ export class ConfiguracionCorreoService {
   constructor(private http: HttpClient) {}
 
   listarTodas(): Observable<ConfiguracionCorreoDto[]> {
-    return this.http.get<ConfiguracionCorreoDto[]>(this.base); // ← GET /api/configuracion-correo ✅
+    return this.http.get<ConfiguracionCorreoDto[]>(this.base);
   }
 
   obtenerActiva(): Observable<ConfiguracionCorreoDto> {

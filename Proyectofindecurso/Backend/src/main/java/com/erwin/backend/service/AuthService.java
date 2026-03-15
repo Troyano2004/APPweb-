@@ -1,27 +1,37 @@
 package com.erwin.backend.service;
 
 import com.erwin.backend.config.DbSessionFilter;
+import com.erwin.backend.config.SessionStore;
 import com.erwin.backend.dtos.LoginRequest;
 import com.erwin.backend.dtos.LoginResponse;
+import com.erwin.backend.entities.SesionActiva;
 import com.erwin.backend.entities.Usuario;
+import com.erwin.backend.repository.SesionActivaRepository;
 import com.erwin.backend.repository.UsuarioRepository;
 import com.erwin.backend.security.CryptoUtil;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
 
 @Service
 public class AuthService {
 
     private final UsuarioRepository usuarioRepo;
     private final PasswordEncoder passwordEncoder;
+    private final SesionActivaRepository sesionActivaRepo;
 
-    public AuthService(UsuarioRepository usuarioRepo, PasswordEncoder passwordEncoder) {
+    public AuthService(UsuarioRepository usuarioRepo, PasswordEncoder passwordEncoder,     SesionActivaRepository sesionActivaRepo) {
         this.usuarioRepo = usuarioRepo;
         this.passwordEncoder = passwordEncoder;
+        this.sesionActivaRepo = sesionActivaRepo;
+
     }
 
-    public LoginResponse login(LoginRequest req, HttpSession session) {
+    public LoginResponse login(LoginRequest req, HttpSession session,  HttpServletRequest request) {
 
         if (req == null || req.getUsuarioLogin() == null || req.getPassword() == null) {
             throw new RuntimeException("Faltan datos de login");
@@ -58,6 +68,26 @@ public class AuthService {
 
         // ✅ 4) Rol para frontend
         String rolFrontend = convertirRol(usuario.getRolAsignado());
+        // Cerrar sesiones anteriores del mismo usuario
+        sesionActivaRepo.findByIdUsuarioAndActivoTrue(usuario.getIdUsuario()).forEach(s -> {
+            s.setActivo(false);
+            sesionActivaRepo.save(s);
+        });
+
+
+        SesionActiva sesionActiva = new SesionActiva();
+        sesionActiva.setRol(usuario.getRolAsignado());
+        sesionActiva.setActivo(true);
+        sesionActiva.setIp(obtenerIp(request));
+        sesionActiva.setSessionId(session.getId());
+        sesionActiva.setApellidos(usuario.getApellidos());
+        sesionActiva.setNombres(usuario.getNombres());
+        sesionActiva.setFechaInicio(LocalDateTime.now());
+        sesionActiva.setUltimaActividad(LocalDateTime.now());
+        sesionActiva.setIdUsuario(usuario.getIdUsuario());
+        sesionActivaRepo.save(sesionActiva);
+
+        SessionStore.register(session.getId(), session);
 
         return new LoginResponse(
                 usuario.getIdUsuario(),
@@ -106,5 +136,15 @@ public class AuthService {
         if (rol.equals("ESTUDIANTE")) return "ROLE_ESTUDIANTE";
 
         return rol;
+    }
+    private String obtenerIp(HttpServletRequest request) {
+        String ip = request.getHeader("X-Forwarded-For");
+        if (ip == null || ip.isBlank()) {
+            ip = request.getRemoteAddr();
+        }
+        if (ip != null && ip.contains(",")) {
+            ip = ip.split(",")[0].trim();
+        }
+        return ip;
     }
 }
