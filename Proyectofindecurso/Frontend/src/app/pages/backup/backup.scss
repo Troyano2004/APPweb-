@@ -1,0 +1,582 @@
+// ── Variables del sistema (mismo tema que shell.component.scss) ───────────
+$sga-green:       #0f7a3a;
+$sga-green-dark:  #0c6a32;
+$sga-green-light: #e9f6ef;
+$sga-bg:          #f9fafb;
+$sga-border:      #e5e7eb;
+$sga-text:        #1f2937;
+$sga-text-light:  #6b7280;
+$sga-red:         #dc2626;
+$sga-red-light:   #fef2f2;
+$sga-yellow:      #d97706;
+$radius:          0.75rem;
+$radius-sm:       0.5rem;
+$shadow:          0 4px 16px rgba(15, 122, 58, 0.08);
+$shadow-md:       0 8px 24px rgba(15, 122, 58, 0.12);
+
+// ── Wrapper principal ─────────────────────────────────────────────────────
+.backup-wrapper {
+  padding: 1.75rem 2rem;
+  max-width: 1100px;
+  margin: 0 auto;
+  background: $sga-bg;
+  min-height: 100%;
+}
+
+// ── Encabezado ────────────────────────────────────────────────────────────
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+
+  .header-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .page-title {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: $sga-text;
+    margin: 0;
+
+    .header-icon { font-size: 1.6rem; }
+  }
+
+  .page-subtitle {
+    color: $sga-text-light;
+    font-size: 0.9rem;
+    margin: 0;
+  }
+}
+
+// Botón "Respaldar Ahora"
+.btn-backup-now {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, $sga-green, $sga-green-dark);
+  color: #fff;
+  border: none;
+  border-radius: $radius-sm;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: $shadow-md;
+  transition: opacity 0.2s, transform 0.1s;
+  white-space: nowrap;
+
+  &:hover:not(:disabled) {
+    opacity: 0.92;
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+  }
+}
+
+// Spinner inline
+.spinner-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.spinner-dot {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+// ── Alertas ───────────────────────────────────────────────────────────────
+.alert {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.85rem 1.25rem;
+  border-radius: $radius-sm;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  font-weight: 500;
+
+  &.alert-success {
+    background: $sga-green-light;
+    color: $sga-green-dark;
+    border: 1px solid darken($sga-green-light, 8%);
+  }
+
+  &.alert-error {
+    background: $sga-red-light;
+    color: $sga-red;
+    border: 1px solid #fecaca;
+  }
+}
+
+// ── Resultado del último backup ───────────────────────────────────────────
+.resultado-card {
+  border-radius: $radius;
+  padding: 1.1rem 1.4rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid;
+
+  &.exitoso {
+    background: $sga-green-light;
+    border-color: #a7f3d0;
+    color: $sga-green-dark;
+  }
+
+  &.fallido {
+    background: $sga-red-light;
+    border-color: #fecaca;
+    color: $sga-red;
+  }
+
+  .resultado-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 700;
+    font-size: 0.95rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .resultado-detalle {
+    display: flex;
+    gap: 1.25rem;
+    font-size: 0.85rem;
+    flex-wrap: wrap;
+  }
+
+  .resultado-error {
+    font-size: 0.85rem;
+    margin: 0.4rem 0 0;
+  }
+}
+
+// ── Tabs ──────────────────────────────────────────────────────────────────
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 2px solid $sga-border;
+  margin-bottom: 1.5rem;
+
+  .tab-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.65rem 1.25rem;
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: $sga-text-light;
+    cursor: pointer;
+    border-radius: $radius-sm $radius-sm 0 0;
+    transition: color 0.2s, border-color 0.2s;
+
+    &:hover { color: $sga-green; }
+
+    &.active {
+      color: $sga-green;
+      border-bottom-color: $sga-green;
+      background: $sga-green-light;
+    }
+
+    .badge {
+      background: $sga-green;
+      color: #fff;
+      border-radius: 999px;
+      padding: 0.1rem 0.5rem;
+      font-size: 0.75rem;
+    }
+  }
+}
+
+// ── Contenido del tab ─────────────────────────────────────────────────────
+.tab-content {
+  background: #fff;
+  border-radius: $radius;
+  border: 1px solid $sga-border;
+  padding: 1.75rem;
+  box-shadow: $shadow;
+}
+
+// ── Formulario de configuración ───────────────────────────────────────────
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+
+  .full-width { grid-column: 1 / -1; }
+
+  @media (max-width: 680px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.form-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: $sga-text;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+
+  .label-hint {
+    font-weight: 400;
+    font-size: 0.78rem;
+    color: $sga-text-light;
+  }
+}
+
+.form-input,
+.form-select {
+  padding: 0.6rem 0.9rem;
+  border: 1px solid $sga-border;
+  border-radius: $radius-sm;
+  font-size: 0.9rem;
+  color: $sga-text;
+  background: #fff;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  outline: none;
+
+  &:focus {
+    border-color: $sga-green;
+    box-shadow: 0 0 0 3px rgba(15, 122, 58, 0.1);
+  }
+}
+
+.hora-input { max-width: 180px; }
+
+.field-hint {
+  font-size: 0.78rem;
+  color: $sga-text-light;
+  margin: 0.2rem 0 0;
+}
+
+// ── Toggles ───────────────────────────────────────────────────────────────
+.toggle-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.toggle-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+}
+
+.toggle-checkbox { display: none; }
+
+.toggle-slider {
+  position: relative;
+  width: 42px;
+  height: 22px;
+  background: #d1d5db;
+  border-radius: 999px;
+  flex-shrink: 0;
+  transition: background 0.2s;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 16px;
+    height: 16px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+}
+
+.toggle-checkbox:checked + .toggle-slider {
+  background: $sga-green;
+
+  &::after { transform: translateX(20px); }
+}
+
+.toggle-text {
+  font-size: 0.875rem;
+  color: $sga-text;
+  font-weight: 500;
+}
+
+// Drive info box
+.drive-info-box {
+  margin-top: 0.75rem;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: $radius-sm;
+  padding: 1rem 1.25rem;
+  font-size: 0.82rem;
+  color: #166534;
+  line-height: 1.7;
+
+  a { color: $sga-green; font-weight: 600; }
+  code {
+    background: #dcfce7;
+    padding: 0.1rem 0.3rem;
+    border-radius: 3px;
+    font-size: 0.8rem;
+  }
+}
+
+// Hora picker
+.hora-picker { margin-top: 0.5rem; }
+
+// ── Botón guardar ─────────────────────────────────────────────────────────
+.form-actions {
+  margin-top: 2rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-guardar {
+  padding: 0.7rem 2rem;
+  background: linear-gradient(135deg, $sga-green, $sga-green-dark);
+  color: #fff;
+  border: none;
+  border-radius: $radius-sm;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: $shadow;
+  transition: opacity 0.2s;
+
+  &:hover:not(:disabled) { opacity: 0.9; }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+// ── Estados loading / empty ───────────────────────────────────────────────
+.loading-state,
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  color: $sga-text-light;
+  gap: 0.75rem;
+  text-align: center;
+}
+
+.empty-icon { font-size: 3rem; }
+.empty-hint  { font-size: 0.85rem; }
+
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid $sga-border;
+  border-top-color: $sga-green;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+// ── Tabla historial ───────────────────────────────────────────────────────
+.table-wrapper {
+  overflow-x: auto;
+  border-radius: $radius-sm;
+  border: 1px solid $sga-border;
+}
+
+.backup-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+
+  thead tr {
+    background: linear-gradient(135deg, $sga-green, $sga-green-dark);
+    color: #fff;
+  }
+
+  th {
+    padding: 0.85rem 1rem;
+    text-align: left;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  tbody tr {
+    border-bottom: 1px solid $sga-border;
+    transition: background 0.15s;
+
+    &:hover { background: $sga-green-light; }
+    &:last-child { border-bottom: none; }
+  }
+
+  td {
+    padding: 0.75rem 1rem;
+    color: $sga-text;
+    vertical-align: middle;
+  }
+
+  .td-id      { color: $sga-text-light; width: 40px; }
+  .td-nombre  { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: monospace; font-size: 0.8rem; }
+  .td-size    { white-space: nowrap; }
+  .td-fecha   { white-space: nowrap; font-size: 0.82rem; }
+  .td-drive   { text-align: center; }
+  .td-acciones{ display: flex; gap: 0.4rem; align-items: center; }
+}
+
+// ── Badges ────────────────────────────────────────────────────────────────
+.badge-tipo {
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+
+  &.tipo-completo      { background: #dcfce7; color: #166534; }
+  &.tipo-diferencial   { background: #dbeafe; color: #1d4ed8; }
+  &.tipo-incremental   { background: #fef3c7; color: #92400e; }
+}
+
+.badge-estado {
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+
+  &.exitoso { background: #dcfce7; color: #166534; }
+  &.fallido { background: #fee2e2; color: #991b1b; }
+}
+
+.drive-badge {
+  background: #e0f2fe;
+  color: #0369a1;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.no-drive { color: $sga-text-light; }
+
+.error-hint {
+  font-size: 0.75rem;
+  color: $sga-yellow;
+  cursor: help;
+  margin-top: 0.2rem;
+}
+
+// ── Botones de acción en tabla ────────────────────────────────────────────
+.btn-accion {
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: $radius-sm;
+  cursor: pointer;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s, opacity 0.15s;
+
+  &:hover:not(:disabled) { transform: scale(1.12); }
+  &:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  &.btn-descargar { background: #dbeafe; }
+  &.btn-eliminar  { background: #fee2e2; }
+}
+
+// ── Modal confirmar eliminar ──────────────────────────────────────────────
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal-box {
+  background: #fff;
+  border-radius: $radius;
+  padding: 2rem;
+  max-width: 420px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+
+  .modal-icon { font-size: 2.5rem; }
+
+  h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: $sga-text;
+    margin: 0;
+  }
+
+  p {
+    font-size: 0.9rem;
+    color: $sga-text-light;
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  .modal-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+    margin-top: 0.5rem;
+  }
+}
+
+.btn-cancelar {
+  padding: 0.6rem 1.5rem;
+  border: 1px solid $sga-border;
+  background: #fff;
+  color: $sga-text;
+  border-radius: $radius-sm;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.15s;
+
+  &:hover { background: $sga-bg; }
+}
+
+.btn-confirmar-eliminar {
+  padding: 0.6rem 1.5rem;
+  background: $sga-red;
+  color: #fff;
+  border: none;
+  border-radius: $radius-sm;
+  cursor: pointer;
+  font-weight: 600;
+  transition: opacity 0.15s;
+
+  &:hover { opacity: 0.88; }
+}

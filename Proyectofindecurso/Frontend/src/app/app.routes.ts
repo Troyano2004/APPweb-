@@ -55,6 +55,10 @@ import { AntiplagioDt2Component } from './pages/director/antiplagio-dt2/antiplag
 import { PredefensaDt2Component } from './pages/titulacion2/predefensa/predefensa-dt2';
 import { SustentacionDt2Component } from './pages/titulacion2/sustentacion/sustentacion-dt2';
 
+import { BackupComponent } from './pages/backup/backup';
+
+
+
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'login' },
   { path: 'login', component: LoginComponent, canActivate: [loginGuard], data: { title: 'Login' } },
@@ -66,6 +70,7 @@ export const routes: Routes = [
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
       { path: 'dashboard', component: DashboardComponent, data: { title: 'Dashboard' } },
+      { path: 'admin/backup', component: BackupComponent, data: { title: 'Respaldos' } },
 
       // Estudiante / Anteproyecto
       { path: 'anteproyecto/nuevo', component: AnteproyectoComponent, data: { title: 'Registrar anteproyecto' } },
