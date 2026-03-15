@@ -22,6 +22,7 @@ export interface Tutoria {
   hora?: string;
   modalidad: Modalidad;
   estado: EstadoTutoria;
+  linkReunion?: string;  // ← agregar
 }
 
 export interface ActaRevisionDirectorRequest {

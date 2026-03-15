@@ -1,149 +1,366 @@
-/* --- Estilos Globales de la Página --- */
+// ── Variables ─────────────────────────
+$green:       #0b6a2b;
+$green-light: #f0fdf4;
+$green-mid:   #dcfce7;
+$red-bg:      #fef2f2;
+$red:         #ef4444;
+$red-dark:    #991b1b;
+$slate-50:    #f8fafc;
+$slate-100:   #f1f5f9;
+$slate-200:   #e2e8f0;
+$slate-400:   #94a3b8;
+$slate-600:   #475569;
+$slate-700:   #334155;
+$slate-900:   #0f172a;
+
 .page {
-  padding: 24px;
-  font-family: 'Inter', sans-serif; /* O la que uses en el SGA */
-}
-
-.page-header h1 {
-  font-size: 24px;
-  color: #2c3e50;
-  margin-bottom: 8px;
-}
-
-.info {
-  margin-bottom: 24px;
-  font-size: 14px;
-  color: #666;
-}
-
-/* --- TABS (Estilo minimalista) --- */
-.tabs {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-
-.tabs button {
-  padding: 8px 16px;
-  border-radius: 6px;
-  border: 1px solid #ddd;
-  background: white;
-  cursor: pointer;
-  font-weight: 500;
-  transition: all 0.2s;
-}
-
-.tabs button.active {
-  background: #f0fdf4; /* Verde muy clarito */
-  border-color: #15803d; /* Verde institucional */
-  color: #15803d;
-}
-
-/* --- CARD (Contenedor blanco) --- */
-.card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 24px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
-
-.card h3 {
-  margin-top: 0;
-  font-size: 18px;
-  margin-bottom: 20px;
-  color: #1e293b;
-}
-
-/* --- FORMULARIO Y SELECTS --- */
-.form {
+  padding: 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 1.25rem;
+  max-width: 1100px;
 }
 
-.form label {
-  font-weight: 600;
-  font-size: 13.5px;
-  color: #475569;
+// ── Top header ────────────────────────
+.page-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+
+  &__left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  &__icon {
+    width: 46px; height: 46px; border-radius: 12px;
+    background: $green; color: #fff;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+
+  &__title {
+    margin: 0; font-size: 20px; font-weight: 900;
+    color: $slate-900; letter-spacing: -0.3px;
+  }
+
+  &__sub { margin: 2px 0 0; font-size: 13px; color: $slate-400; }
+
+  &__badges { display: flex; gap: 10px; flex-wrap: wrap; }
 }
 
-/* El "botón de seleccionar" ahora es un input elegante */
-select {
-  width: 100%;
-  max-width: 100%; /* Ocupa el ancho como en tu imagen de referencia */
-  padding: 10px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  background-color: #ffffff;
-  font-size: 14px;
-  color: #1f2937;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  outline: none;
+.badge {
+  display: flex; flex-direction: column;
+  padding: 8px 14px; border-radius: 10px;
+  border: 1px solid $slate-200; background: #fff; min-width: 140px;
+
+  &__label {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.6px; color: $slate-400; margin-bottom: 2px;
+  }
+
+  &__value { font-size: 13px; font-weight: 800; color: $slate-700; }
+  &--periodo &__value { color: $green; }
 }
 
-select:focus {
-  border-color: #15803d;
-  box-shadow: 0 0 0 3px rgba(21, 128, 61, 0.1);
+// ── Tabs ──────────────────────────────
+.tabs {
+  display: flex; gap: 4px;
+  background: $slate-100; border-radius: 10px; padding: 4px; width: fit-content;
 }
 
-/* --- BOTÓN DE GUARDAR (Verde Institucional) --- */
-button[type="button"]:not(.tabs button) {
-  background-color: #15803d; /* El verde de tu header */
-  color: white;
-  padding: 12px 24px;
-  border: none;
-  border-radius: 6px;
-  font-weight: 600;
-  font-size: 14px;
-  cursor: pointer;
-  transition: background 0.2s;
-  width: fit-content; /* Para que no ocupe todo el ancho si no quieres */
-  margin-top: 10px;
+.tab-btn {
+  display: flex; align-items: center; gap: 7px;
+  padding: 9px 18px; border: none; background: none;
+  border-radius: 8px; font-size: 13px; font-weight: 700;
+  color: $slate-600; cursor: pointer; transition: all 0.15s ease;
+
+  svg { opacity: 0.6; }
+
+  &:hover:not(.active) { background: #fff; color: $slate-900; }
+
+  &.active {
+    background: #fff; color: $green;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    svg { opacity: 1; }
+  }
 }
 
-button[type="button"]:not(.tabs button):hover:enabled {
-  background-color: #166534;
-}
-
-button[type="button"]:disabled {
-  background-color: #94a3b8;
-  cursor: not-allowed;
-}
-
-/* --- MENSAJES --- */
+// ── Mensaje ───────────────────────────
 .msg {
-  padding: 12px;
-  border-radius: 6px;
-  margin-bottom: 20px;
-  font-size: 14px;
+  display: flex; align-items: center; gap: 10px;
+  padding: 13px 16px; border-radius: 10px;
+  font-size: 13px; font-weight: 700; border-left: 4px solid;
+  animation: slideIn 0.2s ease;
+
+  &__icon { font-size: 16px; line-height: 1; }
+  &__text { flex: 1; }
+
+  &.ok  { background: $green-light; border-color: #22c55e; color: #166534; }
+  &.err { background: $red-bg;      border-color: $red;    color: $red-dark; }
 }
 
-.msg.ok {
-  background-color: #dcfce7;
-  color: #166534;
-  border: 1px solid #bbf7d0;
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-.msg.error {
-  background-color: #fee2e2;
-  color: #991b1b;
-  border: 1px solid #fecaca;
+// ── Content grid ──────────────────────
+.content-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+
+  @media (max-width: 768px) { grid-template-columns: 1fr; }
 }
 
-/* --- LISTAS --- */
-ul {
-  padding-left: 20px;
-  margin-top: 15px;
+// ── Card ──────────────────────────────
+.card {
+  background: #fff; border-radius: 14px;
+  border: 1px solid $slate-200; padding: 22px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+
+  &__header {
+    display: flex; align-items: flex-start; gap: 12px;
+    margin-bottom: 20px; padding-bottom: 16px;
+    border-bottom: 1px solid $slate-100;
+  }
+
+  &__header-icon {
+    width: 38px; height: 38px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    &--green { background: $green-mid; color: $green; }
+    &--slate { background: $slate-100; color: $slate-600; }
+  }
+
+  &__title   { margin: 0 0 3px; font-size: 15px; font-weight: 900; color: $slate-900; }
+  &__subtitle{ margin: 0; font-size: 12px; color: $slate-400; }
 }
 
-li {
-  margin-bottom: 8px;
-  color: #334155;
+// ── Form ──────────────────────────────
+.form {
+  display: flex; flex-direction: column; gap: 14px;
+
+  &--two-col {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px 20px;
+
+    @media (max-width: 640px) { grid-template-columns: 1fr; }
+
+    .form__actions {
+      grid-column: 1 / -1;
+      display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding-top: 4px;
+    }
+  }
 }
 
-.hint {
-  font-size: 12px;
-  color: #64748b;
-  font-style: italic;
+.field {
+  display: flex; flex-direction: column; gap: 6px;
+
+  &__label {
+    font-size: 12px; font-weight: 800; color: $slate-700;
+    text-transform: uppercase; letter-spacing: 0.4px;
+  }
+
+  &__error { font-size: 11px; color: $red; font-weight: 700; }
+}
+
+.select-wrap {
+  position: relative;
+
+  .field__select {
+    width: 100%; padding: 10px 36px 10px 12px;
+    border: 1.5px solid $slate-200; border-radius: 8px;
+    font-size: 13px; color: $slate-900; background: $slate-50;
+    appearance: none; -webkit-appearance: none;
+    transition: border-color 0.15s, box-shadow 0.15s; cursor: pointer;
+
+    &:focus {
+      outline: none; border-color: $green;
+      box-shadow: 0 0 0 3px rgba(11,106,43,0.08); background: #fff;
+    }
+  }
+
+  .select-arrow {
+    position: absolute; right: 12px; top: 50%;
+    transform: translateY(-50%); pointer-events: none; color: $slate-400;
+  }
+}
+
+// ── Botón ─────────────────────────────
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 20px; border: none; border-radius: 9px;
+  font-size: 13px; font-weight: 800; cursor: pointer; transition: all 0.15s ease;
+
+  &--primary {
+    background: $green; color: #fff;
+
+    &:hover:not(:disabled) {
+      background: #0a5c25;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(11,106,43,0.25);
+    }
+
+    &:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+  }
+}
+
+.spinner {
+  width: 14px; height: 14px;
+  border: 2px solid rgba(255,255,255,0.35);
+  border-top-color: #fff; border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+// ── Lista ─────────────────────────────
+.docente-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+
+.docente-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: 8px;
+  background: $slate-50; border: 1px solid $slate-100;
+  animation: fadeUp 0.2s ease both;
+
+  &__avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: $green-mid; color: $green;
+    font-size: 13px; font-weight: 900;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+
+  &__name  { flex: 1; font-size: 13px; font-weight: 700; color: $slate-700; }
+
+  &__badge {
+    font-size: 10px; font-weight: 900; text-transform: uppercase;
+    letter-spacing: 0.5px; padding: 3px 8px; border-radius: 20px;
+    background: $green-mid; color: $green; border: 1px solid #bbf7d0;
+  }
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+// ── Empty state ───────────────────────
+.empty-state {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 8px; padding: 24px 0 8px;
+  color: $slate-400; font-size: 13px; text-align: center;
+  p { margin: 0; }
+}
+
+.hint { font-size: 12px; color: $slate-400; font-style: italic; margin: 0; }
+
+
+// ===============================================
+// MODO OSCURO
+// ===============================================
+
+:host-context(body.dark-mode) {
+
+  // Títulos y subtítulos
+  .page-top__title { color: #f1f5f9; }
+  .page-top__sub   { color: #64748b; }
+
+  // Badges superiores (info del periodo)
+  .badge {
+    background: #1e293b;
+    border-color: #334155;
+    &__label { color: #64748b; }
+    &__value { color: #e2e8f0; }
+    &--periodo .badge__value { color: #86efac; }
+  }
+
+  // Tabs
+  .tabs { background: #0f172a; }
+  .tab-btn {
+    color: #94a3b8;
+    &:hover:not(.active) { background: #1e293b; color: #e2e8f0; }
+    &.active { background: #1e293b; color: #86efac; box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+  }
+
+  // Mensajes ok/error
+  .msg {
+    &.ok  { background: #052e16; border-color: #22c55e; color: #86efac; }
+    &.err { background: #2d1b1b; border-color: #ef4444; color: #fca5a5; }
+  }
+
+  // Cards
+  .card {
+    background: #1e293b;
+    border-color: #334155;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+
+    &__header {
+      border-bottom-color: #334155;
+    }
+
+    &__header-icon {
+      &--green { background: #052e16; color: #86efac; }
+      &--slate { background: #0f172a; color: #94a3b8; }
+    }
+
+    &__title    { color: #f1f5f9; }
+    &__subtitle { color: #64748b; }
+  }
+
+  // Fields / labels
+  .field {
+    &__label { color: #94a3b8; }
+    &__error { color: #fca5a5; }
+  }
+
+  // Select
+  .select-wrap {
+    .field__select {
+      background: #0f172a;
+      border-color: #334155;
+      color: #e2e8f0;
+
+      &:focus {
+        border-color: #0b6a2b;
+        box-shadow: 0 0 0 3px rgba(11,106,43,0.2);
+        background: #0f172a;
+      }
+    }
+    .select-arrow { color: #475569; }
+  }
+
+  // Botón primario — siempre verde
+  .btn--primary {
+    background: #0b6a2b !important;
+    color: #fff !important;
+
+    &:hover:not(:disabled) {
+      background: #0a5c25 !important;
+      box-shadow: 0 6px 16px rgba(11,106,43,0.35);
+    }
+
+    &:disabled {
+      background: #0b6a2b !important;
+      color: rgba(255,255,255,0.6) !important;
+      opacity: 1;
+    }
+  }
+
+  // Lista de docentes
+  .docente-item {
+    background: #0f172a;
+    border-color: #334155;
+
+    &__avatar { background: #052e16; color: #86efac; }
+    &__name   { color: #e2e8f0; }
+    &__badge  { background: #052e16; color: #86efac; border-color: #166534; }
+  }
+
+  // Empty state
+  .empty-state { color: #475569; }
+
+  // Hint
+  .hint { color: #475569; }
 }
