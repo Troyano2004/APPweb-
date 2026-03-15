@@ -23,9 +23,8 @@ public class RevisionIAService {
     @Autowired
     private DocumentoTitulacionRepository documentoRepository;
 
-    // URL usando "latest" para que nunca caduque el modelo
-    private final String geminiApiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent";
-    private final String geminiApiKey = "";
+    private final String groqApiUrl = "https://api.groq.com/openai/v1/chat/completions";
+    private final String groqApiKey = ""; // <-- pega tu key aquí
 
     public DocumentoTitulacion evaluarTituloYObjetivos(Integer documentoId, RevisionIARequest request) {
         DocumentoTitulacion doc = documentoRepository.findById(documentoId)
@@ -35,9 +34,8 @@ public class RevisionIAService {
         String objetivoGeneral = doc.getObjetivoGeneral() != null ? doc.getObjetivoGeneral() : "";
         String objetivosEspecificos = doc.getObjetivosEspecificos() != null ? doc.getObjetivosEspecificos() : "";
 
-        String respuestaIA = llamarApiDeGemini(titulo, objetivoGeneral, objetivosEspecificos, request);
+        String respuestaIA = llamarApiDeGroq(titulo, objetivoGeneral, objetivosEspecificos, request);
 
-        // 3. Guardar el resultado en la base de datos
         doc.setEstadoRevisionIa("EVALUADO");
         doc.setFeedbackIa(respuestaIA);
         doc.setFechaRevisionIa(LocalDateTime.now());
@@ -45,16 +43,15 @@ public class RevisionIAService {
         return documentoRepository.save(doc);
     }
 
-    private String llamarApiDeGemini(String titulo,
-                                     String objGeneral,
-                                     String objEspecificos,
-                                     RevisionIARequest request) {
+    private String llamarApiDeGroq(String titulo,
+                                   String objGeneral,
+                                   String objEspecificos,
+                                   RevisionIARequest request) {
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
 
-        // Configuramos las cabeceras (pasando la API Key de forma segura)
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("X-goog-api-key", geminiApiKey);
+        headers.set("Authorization", "Bearer " + groqApiKey); // <-- así funciona Groq
 
         String modo = request != null && request.getModo() != null ? request.getModo().trim() : "";
         String promptPersonalizado = request != null && request.getPromptPersonalizado() != null
@@ -64,33 +61,37 @@ public class RevisionIAService {
         String promptBase = construirPromptBasePorModo(modo);
         String promptFinal = construirPromptFinal(promptBase, promptPersonalizado, titulo, objGeneral, objEspecificos);
 
+        // Formato OpenAI: messages con role system + user
+        Map<String, Object> systemMessage = new HashMap<>();
+        systemMessage.put("role", "system");
+        systemMessage.put("content", promptBase);
+
+        Map<String, Object> userMessage = new HashMap<>();
+        userMessage.put("role", "user");
+        userMessage.put("content", promptFinal);
+
         Map<String, Object> requestBody = new HashMap<>();
-        Map<String, Object> parts = new HashMap<>();
-        parts.put("text", promptFinal);
-
-        Map<String, Object> contents = new HashMap<>();
-        contents.put("parts", List.of(parts));
-
-        requestBody.put("contents", List.of(contents));
+        requestBody.put("model", "llama-3.3-70b-versatile"); // modelo gratuito de Groq
+        requestBody.put("messages", List.of(systemMessage, userMessage));
+        requestBody.put("temperature", 0.3);
 
         HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(requestBody, headers);
 
         try {
-            String responseBody = restTemplate.postForObject(geminiApiUrl, requestEntity, String.class);
+            String responseBody = restTemplate.postForObject(groqApiUrl, requestEntity, String.class);
 
-            // Parseamos la respuesta para extraer solo el texto generado
             ObjectMapper mapper = new ObjectMapper();
             JsonNode rootNode = mapper.readTree(responseBody);
 
-            JsonNode textNode = rootNode.path("candidates").get(0)
-                    .path("content").path("parts").get(0).path("text");
+            // Formato OpenAI: choices[0].message.content
+            JsonNode textNode = rootNode.path("choices").get(0)
+                    .path("message").path("content");
 
-            // Limpiamos la respuesta en caso de que la IA le agregue formato markdown (```json)
             return textNode.asText().replaceAll("```json", "").replaceAll("```", "").trim();
 
         } catch (Exception e) {
             e.printStackTrace();
-            return "{\"estado\": \"ERROR\", \"feedback\": \"Error al comunicarse con Gemini: " + e.getMessage() + "\"}";
+            return "{\"estado\": \"ERROR\", \"feedback\": \"Error al comunicarse con Groq: " + e.getMessage() + "\"}";
         }
     }
 
