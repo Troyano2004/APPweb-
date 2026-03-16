@@ -241,6 +241,7 @@ export class ShellComponent implements OnInit, OnDestroy {
         { label: 'Parámetros',              path: '/app/admin/parametros' },
         { label: 'Gestión de solicitudes',  path: '/app/admin/gestion-solicitudes' },
         { label: 'Configuración de correo', path: '/app/admin/configuracion-correo' },
+        { label: 'Respaldos BD',            path: '/app/admin/backup',              roles: ['ADMIN'] },
       ],
     },
   ];
