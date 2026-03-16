@@ -1,0 +1,25 @@
+<div class="rep-container">
+  <h2>Actas y Constancias</h2>
+
+  <div class="card-reporte">
+    <div class="card-header">
+      <span class="icono">&#128221;</span>
+      <div>
+        <h3>Actas y Constancias</h3>
+        <p>Actas de tutorias y sustentaciones por proyecto.</p>
+      </div>
+    </div>
+    <div class="card-body">
+      <label>ID del proyecto</label>
+      <input type="number" [(ngModel)]="proyectoIdActas" placeholder="Ingresa el ID del proyecto">
+    </div>
+    <div class="card-actions">
+      <button (click)="actasTutoria()" [disabled]="!proyectoIdActas" class="btn-pdf">
+        &#128196; Actas de Tutorias PDF
+      </button>
+      <button (click)="actasSustentacion()" [disabled]="!proyectoIdActas" class="btn-pdf btn-azul">
+        &#128196; Actas de Sustentacion PDF
+      </button>
+    </div>
+  </div>
+</div>

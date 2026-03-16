@@ -24,15 +24,18 @@ public class AuthService {
     private final UsuarioSpRepository  usuarioSpRepo;
     private final PasswordEncoder      passwordEncoder;
     private final JwtService           jwtService;
+    private final com.erwin.backend.audit.service.AuditService auditService;
 
     public AuthService(UsuarioRepository usuarioRepo,
                        UsuarioSpRepository usuarioSpRepo,
                        PasswordEncoder passwordEncoder,
-                       JwtService jwtService) {
+                       JwtService jwtService,
+                       com.erwin.backend.audit.service.AuditService auditService) {
         this.usuarioRepo    = usuarioRepo;
         this.usuarioSpRepo  = usuarioSpRepo;
         this.passwordEncoder = passwordEncoder;
         this.jwtService     = jwtService;
+        this.auditService   = auditService;
     }
 
     public LoginResponse login(LoginRequest req, HttpSession session) {
@@ -99,6 +102,15 @@ public class AuthService {
             if (!rolPrincipal.isEmpty()) todosLosRoles.add(rolPrincipal);
         }
 
+        try {
+            auditService.registrar(com.erwin.backend.audit.dto.AuditEventDto.builder()
+                .entidad("Login").accion("LOGIN")
+                .idUsuario(usuario.getIdUsuario())
+                .username(usernameLogin)
+                .correoUsuario(usuario.getCorreoInstitucional())
+                .build());
+        } catch (Exception ignored) {}
+
         return new LoginResponse(
                 usuario.getIdUsuario(),
                 rolPrincipal,
@@ -137,9 +149,10 @@ public class AuthService {
     private String convertirRol(String rolAsignado) {
         if (rolAsignado == null) return "";
         String rol = rolAsignado.trim().toUpperCase();
-        if (rol.equals("ADMIN"))      return "ROLE_ADMIN";
-        if (rol.equals("DOCENTE"))    return "ROLE_DOCENTE";
-        if (rol.equals("ESTUDIANTE")) return "ROLE_ESTUDIANTE";
+        if (rol.equals("ADMIN"))        return "ROLE_ADMIN";
+        if (rol.equals("COORDINADOR"))  return "ROLE_COORDINADOR";
+        if (rol.equals("DOCENTE"))      return "ROLE_DOCENTE";
+        if (rol.equals("ESTUDIANTE"))   return "ROLE_ESTUDIANTE";
         return rol;
     }
 }

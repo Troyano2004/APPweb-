@@ -1,0 +1,25 @@
+<div class="d">
+  <h2>Dashboard de Auditorías</h2>
+  <div class="links"><a routerLink="/app/admin/auditoria/logs" class="lb">Ver todos los logs →</a><a routerLink="/app/admin/auditoria/config" class="lb">Configurar →</a></div>
+  <div class="cards" *ngIf="stats">
+    <div class="card"><span class="num">{{stats.totalHoy}}</span><span class="lbl">Eventos hoy</span></div>
+    <div class="card"><span class="num">{{stats.totalSemana}}</span><span class="lbl">Esta semana</span></div>
+    <div class="card crit"><span class="num">{{stats.eventosCriticos24h}}</span><span class="lbl">Críticos 24h</span></div>
+  </div>
+  <div class="tablas" *ngIf="stats">
+    <div class="bloque"><h3>Top entidades (7d)</h3>
+      <div class="br" *ngFor="let e of stats.topEntidades">
+        <span class="bl">{{e.entidad}}</span>
+        <div class="bb"><div class="bf" [style.width.%]="(e.total/maxTotal(stats.topEntidades))*100"></div></div>
+        <span class="bn">{{e.total}}</span>
+      </div>
+    </div>
+    <div class="bloque"><h3>Top usuarios (7d)</h3>
+      <div class="br" *ngFor="let u of stats.topUsuarios">
+        <span class="bl">{{u.username}}</span>
+        <div class="bb"><div class="bf az" [style.width.%]="(u.total/maxTotal(stats.topUsuarios))*100"></div></div>
+        <span class="bn">{{u.total}}</span>
+      </div>
+    </div>
+  </div>
+</div>

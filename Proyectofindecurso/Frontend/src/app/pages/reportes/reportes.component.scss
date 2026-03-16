@@ -1,0 +1,23 @@
+.rep-container { padding: 1.5rem; }
+.rep-container h2 { margin-bottom: 1.5rem; color: #1a365d; font-size: 1.5rem; }
+.card-reporte { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 1.5rem; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+.card-header { display: flex; align-items: flex-start; gap: 1rem; padding: 1.2rem 1.5rem; background: linear-gradient(135deg, #f0fff4, #e6ffed); border-bottom: 1px solid #c6f6d5; }
+.icono { font-size: 2rem; }
+.card-header h3 { margin: 0 0 .3rem; color: #276749; font-size: 1.1rem; }
+.card-header p  { margin: 0; color: #718096; font-size: .875rem; }
+.card-body { padding: 1.2rem 1.5rem; }
+.card-body label { display: block; font-weight: 600; font-size: .875rem; color: #2d3748; margin-bottom: .5rem; }
+.card-body select, .card-body input {
+  width: 100%; padding: .5rem .75rem; border: 1px solid #cbd5e0;
+  border-radius: 6px; font-size: .9rem; box-sizing: border-box;
+  background: #fff; color: #2d3748;
+}
+.card-body select:focus, .card-body input:focus { outline: none; border-color: #276749; box-shadow: 0 0 0 2px rgba(39,103,73,.15); }
+.card-actions { display: flex; gap: .75rem; padding: 1rem 1.5rem; background: #f7fafc; border-top: 1px solid #e2e8f0; flex-wrap: wrap; }
+.btn-pdf   { padding: .5rem 1.2rem; background: #c53030; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: .875rem; font-weight: 600; transition: background .2s; }
+.btn-pdf:hover { background: #9b2c2c; }
+.btn-pdf.btn-azul { background: #2b6cb0; }
+.btn-pdf.btn-azul:hover { background: #2c5282; }
+.btn-excel { padding: .5rem 1.2rem; background: #276749; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: .875rem; font-weight: 600; transition: background .2s; }
+.btn-excel:hover { background: #22543d; }
+button:disabled { opacity: .5; cursor: not-allowed; }

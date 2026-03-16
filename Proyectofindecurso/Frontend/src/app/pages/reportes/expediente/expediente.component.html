@@ -1,0 +1,31 @@
+<div class="rep-container">
+  <h2>Expediente por Estudiante</h2>
+
+  <div class="card-reporte">
+    <div class="card-header">
+      <span class="icono">&#128196;</span>
+      <div>
+        <h3>Expediente por Estudiante</h3>
+        <p>Historial completo del estudiante: proyecto, tutorias, tribunal y sustentaciones.</p>
+      </div>
+    </div>
+    <div class="card-body">
+      <label>Selecciona el estudiante</label>
+      <div *ngIf="cargando" class="cargando-msg">Cargando estudiantes...</div>
+      <select *ngIf="!cargando" [(ngModel)]="estudianteSeleccionado">
+        <option [ngValue]="undefined">-- Selecciona un estudiante --</option>
+        <option *ngFor="let e of estudiantes" [ngValue]="e.idEstudiante">
+          {{nombreEstudiante(e)}}
+        </option>
+      </select>
+    </div>
+    <div class="card-actions">
+      <button (click)="expedientePdf()" [disabled]="!estudianteSeleccionado" class="btn-pdf">
+        &#128196; Descargar PDF
+      </button>
+      <button (click)="expedienteExcel()" [disabled]="!estudianteSeleccionado" class="btn-excel">
+        &#128202; Descargar Excel
+      </button>
+    </div>
+  </div>
+</div>

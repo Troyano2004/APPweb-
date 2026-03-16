@@ -6,6 +6,7 @@ import com.erwin.backend.repository.DocumentoTitulacionRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -23,8 +24,11 @@ public class RevisionIAService {
     @Autowired
     private DocumentoTitulacionRepository documentoRepository;
 
-    private final String groqApiUrl = "https://api.groq.com/openai/v1/chat/completions";
-    private final String groqApiKey = ""; // <-- pega tu key aquí
+    @Value("${groq.api.url}")
+    private String groqApiUrl;
+
+    @Value("${groq.api.key}")
+    private String groqApiKey;
 
     public DocumentoTitulacion evaluarTituloYObjetivos(Integer documentoId, RevisionIARequest request) {
         DocumentoTitulacion doc = documentoRepository.findById(documentoId)

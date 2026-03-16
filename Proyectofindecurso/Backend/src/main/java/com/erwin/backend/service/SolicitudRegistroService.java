@@ -7,6 +7,7 @@ import com.erwin.backend.dtos.VerificarCodigoRequest;
 import com.erwin.backend.entities.*;
 import com.erwin.backend.repository.*;
 import com.erwin.backend.security.CryptoUtil;
+import com.erwin.backend.audit.aspect.Auditable;
 import jakarta.transaction.Transactional;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -191,6 +192,7 @@ public class SolicitudRegistroService {
     // =========================================================
     // ADMIN: aprobar -> usa sp_crear_usuario_v3 (SECURITY DEFINER)
     // =========================================================
+    @Auditable(entidad = "SolicitudRegistro", accion = "UPDATE")
     @Transactional
     public SolicitudRegistroResponse aprobar(Integer idSolicitud) {
         if (idSolicitud == null) {
@@ -267,6 +269,7 @@ public class SolicitudRegistroService {
     // =========================================================
     // ADMIN: rechazar
     // =========================================================
+    @Auditable(entidad = "SolicitudRegistro", accion = "UPDATE")
     @Transactional
     public SolicitudRegistroResponse rechazar(Integer idSolicitud, String motivo) {
         if (idSolicitud == null) {

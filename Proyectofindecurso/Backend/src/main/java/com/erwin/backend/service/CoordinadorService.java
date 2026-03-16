@@ -1,5 +1,6 @@
 package com.erwin.backend.service;
 
+import com.erwin.backend.audit.aspect.Auditable;
 import com.erwin.backend.dtos.*;
 import com.erwin.backend.dtos.CoordinadorDto.*;
 import com.erwin.backend.entities.*;
@@ -389,6 +390,7 @@ public class CoordinadorService {
     // ✅ DT1 - Ahora usando SPs via JdbcTemplate
     // ==========================================================
 
+    @Auditable(entidad = "Dt1Asignacion", accion = "CREATE")
     public Dt1AsignacionResponse crearAsignacionDt1(Dt1AsignacionCreateRequest req) {
         if (req == null || req.getIdUsuario() == null || req.getIdCarrera() == null
                 || req.getIdPeriodo() == null || req.getIdDocente() == null) {
@@ -413,6 +415,7 @@ public class CoordinadorService {
         return r;
     }
 
+    @Auditable(entidad = "Dt1Asignacion", accion = "UPDATE")
     public Dt1AsignarTutorResponse asignarTutorDt1(Dt1AsignarTutorRequest req) {
         if (req == null || req.getIdUsuario() == null || req.getIdEstudiante() == null
                 || req.getIdDocente() == null || req.getIdPeriodo() == null) {

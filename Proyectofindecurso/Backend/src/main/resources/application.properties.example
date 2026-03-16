@@ -1,26 +1,41 @@
-# Configuraci?n de la conexi?n a PostgreSQL
-spring.datasource.url=jdbc:postgresql://localhost:5432/efrain
-spring.datasource.username=auth_reader
-spring.datasource.password=12345
+# Configuracion de la conexion a PostgreSQL
+spring.datasource.url=jdbc:postgresql://localhost:5432/TU_NOMBRE_BD_AQUI
+spring.datasource.username=TU_USUARIO_AQUI
+spring.datasource.password=TU_PASSWORD_AQUI
 spring.datasource.driver-class-name=org.postgresql.Driver
 
-# Configuraci?n de Hibernate (JPA)
+# Configuracion de Hibernate (JPA)
 spring.jpa.hibernate.ddl-auto=update
 spring.jpa.show-sql=true
 spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
-
+spring.jpa.properties.hibernate.default_schema=public
 # Migraciones de base de datos
 spring.flyway.baseline-on-migrate=true
 
 
-# Configuración de Azure Blob Storage
+# ================================
+# AZURE BLOB STORAGE
+# ================================
+# Reemplaza TU_ACCOUNT_NAME con el nombre de tu Storage Account (ej: storagetitulacion)
+# Reemplaza TU_ACCOUNT_KEY con la key que aparece en "Access keys" del portal de Azure
+# Reemplaza TU_CONTENEDOR con el nombre del container que creaste (ej: documentos)
+azure.storage.connection-string=DefaultEndpointsProtocol=https;AccountName=TU_ACCOUNT_NAME_AQUI;AccountKey=TU_ACCOUNT_KEY_AQUI;EndpointSuffix=core.windows.net
+azure.storage.container-name=TU_CONTENEDOR_AQUI
 
+
+# ================================
+# GROQ API
+# ================================
+# Obten tu key gratis en console.groq.com -> API Keys -> Create API Key
+groq.api.url=https://api.groq.com/openai/v1/chat/completions
+groq.api.key=TU_GROQ_API_KEY_AQUI
 
 
 # ================================
 # Hikari (POOL DEFAULT)
 # ================================
 spring.datasource.hikari.pool-name=POOL_DEFAULT
+
 spring.datasource.hikari.maximum-pool-size=15
 spring.datasource.hikari.minimum-idle=2
 spring.datasource.hikari.idle-timeout=300000
@@ -45,11 +60,12 @@ server.servlet.session.cookie.same-site=lax
 # ================================
 # GEMINI API
 # ================================
-#gemini.api.key=
+#gemini.api.key=TU_GEMINI_API_KEY_AQUI
 gemini.api.url=https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent
 
-# ?? IMPORTANTE: expira la sesi?n autom?ticamente (para que el Listener B2 muestre "SESSION DESTROYED")
+# IMPORTANTE: expira la sesion automaticamente
 server.servlet.session.timeout=1m
+
 # ================================
 # MULTIPART (subida de archivos)
 # ================================
@@ -59,8 +75,8 @@ spring.servlet.multipart.max-request-size=22MB
 
 spring.mail.host=smtp.gmail.com
 spring.mail.port=465
-spring.mail.username=erwinbueno05@gmail.com
-spring.mail.password=hgvi homm ihoh wmnl
+spring.mail.username=TU_CORREO_AQUI@gmail.com
+spring.mail.password=TU_APP_PASSWORD_AQUI
 spring.mail.properties.mail.smtp.auth=true
 spring.mail.properties.mail.smtp.starttls.enable=true
 spring.mail.properties.mail.smtp.ssl.enable=true
@@ -69,9 +85,10 @@ spring.mail.properties.mail.smtp.connectiontimeout=5000
 spring.mail.properties.mail.smtp.timeout=5000
 spring.mail.properties.mail.smtp.writetimeout=5000
 
-# Remitente que verán los destinatarios
-app.mail.from=erwinbueno05@gmail.com
+# Remitente que veran los destinatarios
+app.mail.from=TU_CORREO_AQUI@gmail.com
 app.mail.from-name=Sistema de Titulacion UTEQ
+
 # ================================
 # GMAIL SMTP
 # ================================
@@ -86,6 +103,14 @@ app.mail.from-name=Sistema de Titulacion UTEQ
 # ================================
 # ZOOM
 # ================================
-zoom.account-id=RRLmIMThQAe3Pa6t-lwnMA
-zoom.client-id=1lyLecWdQGKAT8mcPZViwA
-zoom.client-secret=7HpyJGVqGCnHedxUP2ENb5iR6kE7vxgJ
+zoom.account-id=TU_ZOOM_ACCOUNT_ID_AQUI
+zoom.client-id=TU_ZOOM_CLIENT_ID_AQUI
+zoom.client-secret=TU_ZOOM_CLIENT_SECRET_AQUI
+
+# ================================
+# Auditoria - async pool
+# ================================
+spring.task.execution.pool.core-size=2
+spring.task.execution.pool.max-size=5
+spring.task.execution.pool.queue-capacity=100
+spring.task.execution.thread-name-prefix=audit-async-

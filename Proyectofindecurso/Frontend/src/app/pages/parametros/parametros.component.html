@@ -1,0 +1,74 @@
+<div class="param-container">
+  <h2>Parametros del Sistema</h2>
+  <p class="subtitulo">Configura el comportamiento de los reportes generados por el sistema.</p>
+
+  <div *ngIf="mensaje" class="mensaje-ok">{{ mensaje }}</div>
+
+  <!-- FIRMA -->
+  <div class="seccion-card">
+    <div class="seccion-header">
+      <span class="icono">&#9998;</span>
+      <div>
+        <h3>Firma en reportes PDF</h3>
+        <p>Nombre y cargo que aparece en la firma de todos los documentos generados.</p>
+      </div>
+    </div>
+    <div class="seccion-body">
+      <div *ngFor="let c of firma" class="campo-grupo">
+        <label>{{ c.descripcion }}</label>
+        <div class="campo-row">
+          <input type="text" [(ngModel)]="c.valor" [placeholder]="c.descripcion">
+          <button (click)="guardar(c)" [disabled]="guardando[c.id]" class="btn-guardar">
+            {{ guardando[c.id] ? 'Guardando...' : 'Guardar' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECCIONES -->
+  <div class="seccion-card">
+    <div class="seccion-header">
+      <span class="icono">&#128196;</span>
+      <div>
+        <h3>Secciones del expediente</h3>
+        <p>Controla que secciones se incluyen al generar el PDF del expediente.</p>
+      </div>
+    </div>
+    <div class="seccion-body">
+      <div *ngFor="let c of secciones" class="toggle-row">
+        <span class="toggle-label">{{ c.descripcion }}</span>
+        <label class="tgl">
+          <input type="checkbox" [checked]="c.valor === 'true'" (change)="toggleBoolean(c)">
+          <span class="sl"></span>
+        </label>
+        <span class="estado-badge" [class.activo]="c.valor === 'true'">
+          {{ c.valor === 'true' ? 'Visible' : 'Oculto' }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- FILTROS -->
+  <div class="seccion-card">
+    <div class="seccion-header">
+      <span class="icono">&#128269;</span>
+      <div>
+        <h3>Filtros disponibles en reportes</h3>
+        <p>Define que filtros puede usar el usuario al generar reportes por periodo.</p>
+      </div>
+    </div>
+    <div class="seccion-body">
+      <div *ngFor="let c of filtros" class="toggle-row">
+        <span class="toggle-label">{{ c.descripcion }}</span>
+        <label class="tgl">
+          <input type="checkbox" [checked]="c.valor === 'true'" (change)="toggleBoolean(c)">
+          <span class="sl"></span>
+        </label>
+        <span class="estado-badge" [class.activo]="c.valor === 'true'">
+          {{ c.valor === 'true' ? 'Activo' : 'Inactivo' }}
+        </span>
+      </div>
+    </div>
+  </div>
+</div>

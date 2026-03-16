@@ -1,0 +1,22 @@
+.cc{padding:1.5rem}.hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem}
+.bn{padding:.4rem 1rem;background:#1a365d;color:#fff;border:none;border-radius:4px;cursor:pointer}
+table{width:100%;border-collapse:collapse}th,td{padding:.6rem .8rem;border-bottom:1px solid #e2e8f0;font-size:.875rem}th{background:#f7fafc;font-weight:600}
+.badge{display:inline-block;color:#fff;padding:.2rem .5rem;border-radius:9999px;font-size:.75rem;font-weight:700}
+.be{padding:.2rem .5rem;background:#2b6cb0;color:#fff;border:none;border-radius:4px;cursor:pointer;margin-right:.2rem}
+.bd{padding:.2rem .5rem;background:#c53030;color:#fff;border:none;border-radius:4px;cursor:pointer}
+.tgl{position:relative;display:inline-block;width:36px;height:20px}
+.tgl input{opacity:0;width:0;height:0}.sl{position:absolute;cursor:pointer;inset:0;background:#ccc;border-radius:20px;transition:.3s}
+.sl::before{content:'';position:absolute;width:14px;height:14px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s}
+.tgl input:checked+.sl{background:#276749}.tgl input:checked+.sl::before{transform:translateX(16px)}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:1000}
+.fp{background:#fff;border-radius:8px;padding:1.5rem;max-width:480px;width:90%}
+.fp label{display:block;margin-bottom:.8rem;font-size:.875rem;font-weight:600}
+.fp input,.fp select{display:block;width:100%;margin-top:.25rem;padding:.4rem .6rem;border:1px solid #ccc;border-radius:4px;box-sizing:border-box}
+.chk{display:flex!important;align-items:center;gap:.5rem}.chk input{display:inline!important;width:auto!important}
+.chips{display:flex;flex-wrap:wrap;gap:.4rem;margin:.5rem 0}
+.chip{background:#ebf8ff;padding:.2rem .5rem;border-radius:9999px;font-size:.8rem;display:flex;align-items:center;gap:.3rem}
+.chip button{background:none;border:none;cursor:pointer;color:#c53030}
+.ad{display:flex;gap:.5rem}.ad input{flex:1}.ad button{padding:.4rem .8rem;background:#2b6cb0;color:#fff;border:none;border-radius:4px;cursor:pointer}
+.fa{display:flex;gap:.5rem;margin-top:1rem;justify-content:flex-end}
+.bg{padding:.4rem 1rem;background:#276749;color:#fff;border:none;border-radius:4px;cursor:pointer}
+.bc{padding:.4rem 1rem;background:#718096;color:#fff;border:none;border-radius:4px;cursor:pointer}

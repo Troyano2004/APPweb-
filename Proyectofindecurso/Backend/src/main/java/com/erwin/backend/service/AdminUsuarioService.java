@@ -9,6 +9,7 @@ import com.erwin.backend.repository.UsuarioRepository;
 import com.erwin.backend.repository.UsuarioSpRepository;
 import com.erwin.backend.security.CryptoUtil;
 
+import com.erwin.backend.audit.aspect.Auditable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,6 +47,7 @@ public class AdminUsuarioService {
     //---------------------------------------------------
     // CREAR USUARIO
     //---------------------------------------------------
+    @Auditable(entidad = "Usuario", accion = "CREATE")
     @Transactional
     public UsuarioAdminDto crear(UsuarioCreateRequest req) {
 
@@ -113,6 +115,7 @@ public class AdminUsuarioService {
     //---------------------------------------------------
     // EDITAR
     //---------------------------------------------------
+    @Auditable(entidad = "Usuario", accion = "UPDATE")
     @Transactional
     public UsuarioAdminDto editar(Integer id, UsuarioUpdateRequest req) {
 
@@ -157,6 +160,7 @@ public class AdminUsuarioService {
     //---------------------------------------------------
     // CAMBIAR ESTADO
     //---------------------------------------------------
+    @Auditable(entidad = "Usuario", accion = "DELETE")
     @Transactional
     public UsuarioAdminDto cambiarEstado(
             Integer id,

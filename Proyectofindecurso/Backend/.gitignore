@@ -31,3 +31,11 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Credenciales sensibles ###
+src/main/resources/application.properties
+
+### Compilados Java ###
+*.class
+*.jar
+*.war

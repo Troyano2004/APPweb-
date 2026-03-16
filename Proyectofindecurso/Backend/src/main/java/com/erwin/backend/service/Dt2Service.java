@@ -1,5 +1,6 @@
 package com.erwin.backend.service;
 
+import com.erwin.backend.audit.aspect.Auditable;
 import com.erwin.backend.dtos.Dt2Dtos;
 import com.erwin.backend.entities.*;
 import com.erwin.backend.enums.EstadoDocumento;
@@ -145,6 +146,7 @@ public class Dt2Service {
                 .collect(Collectors.toList());
     }
 
+    @Auditable(entidad = "Dt2Asignacion", accion = "CREATE")
     @Transactional
     public Dt2Dtos.MensajeDto asignarDocenteDt2(Dt2Dtos.AsignarDocenteDt2Request req) {
         ProyectoTitulacion proyecto = getProyecto(req.getIdProyecto());
@@ -240,6 +242,7 @@ public class Dt2Service {
         return new Dt2Dtos.MensajeDto("Director asignado correctamente", proyecto.getEstado(), true);
     }
 
+    @Auditable(entidad = "TribunalProyecto", accion = "CREATE")
     @Transactional
     public Dt2Dtos.MensajeDto asignarTribunal(Dt2Dtos.AsignarTribunalDt2Request req) {
         ProyectoTitulacion proyecto = getProyecto(req.getIdProyecto());

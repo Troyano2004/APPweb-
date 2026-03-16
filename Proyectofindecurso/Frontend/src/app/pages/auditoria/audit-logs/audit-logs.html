@@ -1,0 +1,55 @@
+<div class="audit-container">
+  <div class="audit-header">
+    <h2>Logs de Auditoría</h2>
+    <button (click)="exportar()" class="btn-export">Exportar CSV</button>
+  </div>
+  <div class="filtros">
+    <select [(ngModel)]="filtros.entidad"><option value="">Todas las entidades</option><option *ngFor="let e of entidades" [value]="e">{{e}}</option></select>
+    <select [(ngModel)]="filtros.accion"><option value="">Todas las acciones</option><option *ngFor="let a of acciones" [value]="a">{{a}}</option></select>
+    <input type="date" [(ngModel)]="filtros.desde">
+    <input type="date" [(ngModel)]="filtros.hasta">
+    <button (click)="aplicarFiltros()">Buscar</button>
+    <button (click)="limpiarFiltros()" class="btn-limpiar">Limpiar</button>
+  </div>
+  <div class="tabla-wrapper">
+    <table>
+      <thead><tr><th>Fecha/Hora</th><th>Entidad</th><th>Acción</th><th>Usuario</th><th>IP</th><th>Severidad</th></tr></thead>
+      <tbody>
+        <tr *ngIf="loading">
+          <td colspan="6" style="text-align:center;padding:2rem">Cargando...</td>
+        </tr>
+        <ng-container *ngIf="!loading">
+          <tr *ngFor="let log of logs" (click)="verDetalle(log)" class="fila-log">
+            <td>{{log.timestampEvento | date:'dd/MM/yyyy HH:mm'}}</td>
+            <td>{{log.entidad}}</td>
+            <td>{{log.accion}}</td>
+            <td>{{log.username ?? '—'}}</td>
+            <td>{{log.ipAddress ?? '—'}}</td>
+            <td><span class="badge" [style.background]="colorSeveridad(log.config?.severidad)">{{log.config?.severidad ?? 'N/A'}}</span></td>
+          </tr>
+          <tr *ngIf="logs.length === 0">
+            <td colspan="6" style="text-align:center;padding:2rem">No hay registros</td>
+          </tr>
+        </ng-container>
+      </tbody>
+    </table>
+  </div>
+  <div class="paginacion">
+    <button (click)="paginaAnterior()" [disabled]="filtros.page === 0">← Anterior</button>
+    <span>Página {{filtros.page + 1}} de {{totalPages}} — {{totalElements}} registros</span>
+    <button (click)="paginaSiguiente()" [disabled]="filtros.page >= totalPages - 1">Siguiente →</button>
+  </div>
+  <div class="overlay" *ngIf="logSeleccionado" (click)="cerrarDetalle()">
+    <div class="detalle-panel" (click)="$event.stopPropagation()">
+      <button class="btn-cerrar" (click)="cerrarDetalle()">✕</button>
+      <h3>Evento #{{logSeleccionado.id}}</h3>
+      <p><strong>Entidad:</strong> {{logSeleccionado.entidad}} / {{logSeleccionado.entidadId}}</p>
+      <p><strong>Acción:</strong> {{logSeleccionado.accion}} — <strong>Usuario:</strong> {{logSeleccionado.username}} — <strong>IP:</strong> {{logSeleccionado.ipAddress}}</p>
+      <p><strong>Fecha:</strong> {{logSeleccionado.timestampEvento | date:'dd/MM/yyyy HH:mm:ss'}}</p>
+      <div class="diff">
+        <div><h4>Estado anterior</h4><pre>{{parsearJson(logSeleccionado.estadoAnterior)}}</pre></div>
+        <div><h4>Estado nuevo</h4><pre>{{parsearJson(logSeleccionado.estadoNuevo)}}</pre></div>
+      </div>
+    </div>
+  </div>
+</div>

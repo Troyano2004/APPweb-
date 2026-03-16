@@ -1,0 +1,30 @@
+<div class="cc">
+  <div class="hdr"><h2>Configuración de Auditorías</h2><button (click)="abrirNuevo()" class="bn">+ Nueva</button></div>
+  <table><thead><tr><th>Entidad</th><th>Acción</th><th>Activo</th><th>Email</th><th>Severidad</th><th>Descripción</th><th></th></tr></thead>
+  <tbody>
+    <tr *ngFor="let c of configs">
+      <td>{{c.entidad}}</td><td>{{c.accion}}</td>
+      <td><label class="tgl"><input type="checkbox" [checked]="c.activo" (change)="toggle(c)"><span class="sl"></span></label></td>
+      <td>{{c.notificarEmail?'✓':'—'}}</td>
+      <td><span class="badge" [style.background]="colorSev(c.severidad)">{{c.severidad}}</span></td>
+      <td>{{c.descripcion}}</td>
+      <td><button (click)="abrirEditar(c)" class="be">✏</button><button (click)="eliminar(c)" class="bd">🗑</button></td>
+    </tr>
+  </tbody></table>
+  <div class="ov" *ngIf="mostrarFormulario" (click)="cerrar()">
+    <div class="fp" (click)="$event.stopPropagation()">
+      <h3>{{modoEdicion?'Editar':'Nueva'}} configuración</h3>
+      <label>Entidad<select [(ngModel)]="formulario.entidad"><option *ngFor="let e of entidades" [value]="e">{{e}}</option></select></label>
+      <label>Acción<select [(ngModel)]="formulario.accion"><option *ngFor="let a of acciones" [value]="a">{{a}}</option></select></label>
+      <label>Severidad<select [(ngModel)]="formulario.severidad"><option *ngFor="let s of severidades" [value]="s">{{s}}</option></select></label>
+      <label>Descripción<input [(ngModel)]="formulario.descripcion"></label>
+      <label class="chk"><input type="checkbox" [(ngModel)]="formulario.activo"> Activo</label>
+      <label class="chk"><input type="checkbox" [(ngModel)]="formulario.notificarEmail"> Notificar email</label>
+      <div *ngIf="formulario.notificarEmail">
+        <div class="chips"><span class="chip" *ngFor="let d of formulario.destinatarios; let i=index">{{d}}<button (click)="quitarDest(i)">✕</button></span></div>
+        <div class="ad"><input [(ngModel)]="nuevoDestinatario" placeholder="correo@dominio.com" (keydown.enter)="agregarDest()"><button (click)="agregarDest()">+</button></div>
+      </div>
+      <div class="fa"><button (click)="guardar()" class="bg">Guardar</button><button (click)="cerrar()" class="bc">Cancelar</button></div>
+    </div>
+  </div>
+</div>
