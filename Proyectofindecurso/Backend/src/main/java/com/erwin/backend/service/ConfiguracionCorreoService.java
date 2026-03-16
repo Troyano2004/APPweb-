@@ -5,6 +5,7 @@ import com.erwin.backend.entities.ConfiguracionCorreo;
 import com.erwin.backend.repository.ConfiguracionCorreoRepository;
 import com.erwin.backend.security.CryptoUtil;
 import org.springframework.http.HttpStatus;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -15,14 +16,16 @@ import java.util.stream.Collectors;
 
 @Service
 public class ConfiguracionCorreoService {
-
+    private final JdbcTemplate jdbcTemplate;
     private final ConfiguracionCorreoRepository repo;
+
     private static Map<String, String> HOSTS = Map.of( "GMAIL",   "smtp.gmail.com",
             "YAHOO",   "smtp.mail.yahoo.com",
             "OUTLOOK", "smtp-mail.outlook.com");
 
-    public ConfiguracionCorreoService(ConfiguracionCorreoRepository repo) {
+    public ConfiguracionCorreoService(ConfiguracionCorreoRepository repo, JdbcTemplate jdbcTemplate) {
         this.repo = repo;
+        this.jdbcTemplate = jdbcTemplate;
     }
     private ConfiguracionCorreoDto toDto(ConfiguracionCorreo e) {
         ConfiguracionCorreoDto dto = new ConfiguracionCorreoDto();
@@ -50,18 +53,24 @@ public class ConfiguracionCorreoService {
     }
     public ConfiguracionCorreoDto crear(ConfiguracionCorreoDto dto) {
         validarBase(dto);
-        if(dto.getPassword() == null || dto.getPassword().isBlank()) {
-            throw  new ResponseStatusException(HttpStatus.BAD_REQUEST, "CONTRASEÑA_OBLIGATORIA");
+        if (dto.getPassword() == null || dto.getPassword().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CONTRASEÑA_OBLIGATORIA");
         }
-        boolean Hayactivo = repo.findFirstByActivoTrue().isPresent();
-        ConfiguracionCorreo config = new ConfiguracionCorreo();
-        config.setUsuario(dto.getUsuario().trim());
-        config.setPassword(CryptoUtil.encrypt(dto.getPassword().trim()));
-        config.setActivo(!Hayactivo);
-        config.setProveedor(dto.getProveedor().toUpperCase());
-        repo.save(config);
-        return toDto(config);
 
+        boolean hayActivo = repo.findFirstByActivoTrue().isPresent();
+        String passwordEncriptado = CryptoUtil.encrypt(dto.getPassword().trim());
+
+        jdbcTemplate.update(
+                "CALL sp_crear_configuracion_correo(?, ?, ?, ?)",
+                dto.getProveedor().toUpperCase(),
+                dto.getUsuario().trim(),
+                passwordEncriptado,
+                !hayActivo
+        );
+
+        return repo.findByUsuario(dto.getUsuario().trim())
+                .map(this::toDto)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "ERROR_AL_CREAR"));
     }
     public ConfiguracionCorreoDto editar(Integer id,ConfiguracionCorreoDto dto) {
         validarBase(dto);

@@ -4,6 +4,7 @@ import com.erwin.backend.dtos.*;
 import com.erwin.backend.entities.*;
 import com.erwin.backend.repository.*;
 import org.springframework.http.HttpStatus;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -16,13 +17,16 @@ public class AnteproyectoService {
     private final AnteproyectoVersionRepository verRepo;
     private final PropuestaRepository propRepo;
     private final AnteproyectoTitulacionRepository anteRepo;
+    private final JdbcTemplate jdbcTemplate;
+
 
     public AnteproyectoService(AnteproyectoVersionRepository verRepo,
                                PropuestaRepository propRepo,
-                               AnteproyectoTitulacionRepository anteRepo) {
+                               AnteproyectoTitulacionRepository anteRepo,  JdbcTemplate jdbcTemplate) {
         this.verRepo = verRepo;
         this.propRepo = propRepo;
         this.anteRepo = anteRepo;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     /**
@@ -145,21 +149,32 @@ public class AnteproyectoService {
     @Transactional
     public AnteproyectoVersionResponse guardarBorrador(Integer idAnteproyecto, AnteproyectoVersionRequest req) {
 
-        AnteproyectoTitulacion a = anteRepo.findById(idAnteproyecto)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "ANTEPROYECTO_NO_EXISTE"));
-
-        if (estaBloqueado(a.getEstado())) {
+        try {
+            jdbcTemplate.update(
+                    "CALL sp_guardar_borrador_anteproyecto(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    idAnteproyecto,
+                    n(req.titulo),
+                    n(req.temaInvestigacion),
+                    n(req.planteamientoProblema),
+                    n(req.objetivosGenerales),
+                    n(req.objetivosEspecificos),
+                    n(req.marcoTeorico),
+                    n(req.metodologia),
+                    n(req.resultadosEsperados),
+                    n(req.bibliografia),
+                    n(req.comentarioCambio)
+            );
+        }  catch (Exception e) {
+        System.out.println("ERROR SP: " + e.getMessage()); // ← agrega esto
+        String msg = e.getMessage();
+        if (msg != null && msg.contains("ANTEPROYECTO_NO_EXISTE"))
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "ANTEPROYECTO_NO_EXISTE");
+        if (msg != null && msg.contains("ANTEPROYECTO_BLOQUEADO"))
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "ANTEPROYECTO_BLOQUEADO");
-        }
+        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "ERROR_AL_GUARDAR");
+    }
 
-        Anteproyectotitulacionversion v = crearVersion(a, req);
-        v.setEstadoVersion("BORRADOR");
-
-        // estado anteproyecto
-        a.setEstado("BORRADOR");
-        anteRepo.save(a);
-
-        return toDto(verRepo.save(v));
+        return ultimaVersion(idAnteproyecto);
     }
 
     /**

@@ -9,4 +9,5 @@ import java.util.Optional;
 @Repository
 public interface ConfiguracionCorreoRepository extends JpaRepository<ConfiguracionCorreo, Integer> {
     Optional<ConfiguracionCorreo> findFirstByActivoTrue();
+    Optional<ConfiguracionCorreo> findByUsuario(String usuario);
 }
