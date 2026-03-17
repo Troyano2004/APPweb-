@@ -107,7 +107,7 @@ export class ShellComponent implements OnInit, OnDestroy {
       title: 'Propuesta y Anteproyecto',
       icon: '📝',
       roles: ['ADMIN', 'DOCENTE', 'DOCENTE_TITULADO', 'ESTUDIANTE'],
-      items: [
+      items: [{ label: 'Reporte de propuestas', path: '/app/propuesta/reporte', roles: ['ADMIN','COORDINADOR','DOCENTE','DOCENTE_TITULADO'] },
         { label: 'Propuestas pendientes',   path: '/app/propuesta/pendientes',  roles: ['ADMIN','DOCENTE','DOCENTE_TITULADO'] },
         { label: 'Registrar propuesta',     path: '/app/propuesta/nueva',       roles: ['ESTUDIANTE','ADMIN'] },
         { label: 'Registrar anteproyecto',  path: '/app/anteproyecto/nuevo',    roles: ['ESTUDIANTE','ADMIN'] },

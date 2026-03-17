@@ -55,7 +55,12 @@ import { AntiplagioDt2Component } from './pages/director/antiplagio-dt2/antiplag
 import { PredefensaDt2Component } from './pages/titulacion2/predefensa/predefensa-dt2';
 import { SustentacionDt2Component } from './pages/titulacion2/sustentacion/sustentacion-dt2';
 
+import { ReportePropuestasComponent } from './pages/propuesta/reporte-propuestas/reporte-propuestas.component';
+
+
 import { BackupComponent } from './pages/backup/backup';
+
+
 
 
 
@@ -117,15 +122,12 @@ export const routes: Routes = [
       { path: 'temas/aprobacion', component: AprobacionTemasComponent, data: { title: 'Aprobación de propuestas' } },
 
       // ── Propuesta y Anteproyecto ─────────────────────────────────────────────
+      // ── Propuesta y Anteproyecto ─────────────────────────────────────────────
       { path: 'propuesta/pendientes', component: PropuestasPendientesComponent, data: { title: 'Propuestas pendientes' } },
       { path: 'propuesta/nueva',      component: PropuestaNuevaComponent,       data: { title: 'Registrar propuesta' } },
+      { path: 'propuesta/reporte',    component: ReportePropuestasComponent,    data: { title: 'Reporte de propuestas' } },
       { path: 'propuesta/revision',   component: PlaceholderPageComponent,      data: { title: 'Revisión por director' } },
       { path: 'propuesta/historial',  component: PlaceholderPageComponent,      data: { title: 'Historial observaciones' } },
-
-      // Tutorías
-      { path: 'tutorias/nueva', component: PlaceholderPageComponent, data: { title: 'Registrar tutoría' } },
-      { path: 'tutorias/actas', component: PlaceholderPageComponent, data: { title: 'Actas de tutoría' } },
-
       // Proyecto
       { path: 'proyecto/documento', component: DocumentoSeccionesComponent, data: { title: 'Documento por secciones' } },
       { path: 'proyecto/revision', component: PlaceholderPageComponent, data: { title: 'Revisión por secciones' } },
