@@ -6,7 +6,7 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>4.0.2</version>
-        <relativePath/>
+        <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.erwin</groupId>
     <artifactId>backend</artifactId>
@@ -14,31 +14,34 @@
     <name>backend</name>
     <description>Demo project for Spring Boot</description>
     <url/>
-    <licenses><license/></licenses>
-    <developers><developer/></developers>
+    <licenses>
+        <license/>
+    </licenses>
+    <developers>
+        <developer/>
+    </developers>
     <scm>
-        <connection/><developerConnection/><tag/><url/>
+        <connection/>
+        <developerConnection/>
+        <tag/>
+        <url/>
     </scm>
     <properties>
         <java.version>17</java.version>
     </properties>
-
     <dependencies>
-
-        <!-- ═══════════════════════════════════════════ -->
-        <!-- SPRING BOOT BASE                            -->
-        <!-- ═══════════════════════════════════════════ -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webmvc</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-security</artifactId>
+            <groupId>com.openhtmltopdf</groupId>
+            <artifactId>openhtmltopdf-pdfbox</artifactId>
+            <version>1.0.10</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-jpa</artifactId>
+            <artifactId>spring-boot-starter-mail</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -47,22 +50,13 @@
             <optional>true</optional>
         </dependency>
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-webmvc-test</artifactId>
-            <scope>test</scope>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
         </dependency>
-
-        <!-- ═══════════════════════════════════════════ -->
-        <!-- MAIL                                        -->
-        <!-- ═══════════════════════════════════════════ -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-mail</artifactId>
+            <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
-
-        <!-- ═══════════════════════════════════════════ -->
-        <!-- JWT                                         -->
-        <!-- ═══════════════════════════════════════════ -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-api</artifactId>
@@ -80,19 +74,16 @@
             <version>0.12.5</version>
             <scope>runtime</scope>
         </dependency>
-
-        <!-- ═══════════════════════════════════════════ -->
-        <!-- BASE DE DATOS                               -->
-        <!-- ═══════════════════════════════════════════ -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webmvc-test</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
-
-        <!-- ═══════════════════════════════════════════ -->
-        <!-- LOMBOK                                      -->
-        <!-- ═══════════════════════════════════════════ -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
@@ -103,17 +94,8 @@
         <!-- JSON                                        -->
         <!-- ═══════════════════════════════════════════ -->
         <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-        </dependency>
-
-        <!-- ═══════════════════════════════════════════ -->
-        <!-- PDF                                         -->
-        <!-- ═══════════════════════════════════════════ -->
-        <dependency>
-            <groupId>com.openhtmltopdf</groupId>
-            <artifactId>openhtmltopdf-pdfbox</artifactId>
-            <version>1.0.10</version>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
 
         <!-- ═══════════════════════════════════════════ -->
@@ -129,10 +111,20 @@
         <!-- AWS S3 (backup)                             -->
         <!-- ═══════════════════════════════════════════ -->
         <dependency>
+            <groupId>com.itextpdf</groupId>
+            <artifactId>itextpdf</artifactId>
+            <version>5.5.13.3</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>5.2.5</version>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>s3</artifactId>
             <version>2.25.40</version>
         </dependency>
+
+
 
     </dependencies>
 

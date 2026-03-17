@@ -1,0 +1,78 @@
+<div class="rep-container">
+  <h2>Reportes</h2>
+
+  <!-- Expediente por estudiante -->
+  <div class="card-reporte">
+    <div class="card-header">
+      <span class="icono">&#128196;</span>
+      <div>
+        <h3>Expediente por Estudiante</h3>
+        <p>Historial completo del estudiante: proyecto, tutorias, tribunal y sustentaciones.</p>
+      </div>
+    </div>
+    <div class="card-body">
+      <label>Selecciona el estudiante</label>
+      <select [(ngModel)]="estudianteSeleccionado">
+        <option [ngValue]="undefined">-- Selecciona un estudiante --</option>
+        <option *ngFor="let e of estudiantes" [ngValue]="e.idEstudiante">{{nombreEstudiante(e)}}</option>
+      </select>
+    </div>
+    <div class="card-actions">
+      <button (click)="expedientePdf()" [disabled]="!estudianteSeleccionado" class="btn-pdf">
+        &#128196; Descargar PDF
+      </button>
+      <button (click)="expedienteExcel()" [disabled]="!estudianteSeleccionado" class="btn-excel">
+        &#128202; Descargar Excel
+      </button>
+    </div>
+  </div>
+
+  <!-- Reporte por periodo -->
+  <div class="card-reporte">
+    <div class="card-header">
+      <span class="icono">&#128197;</span>
+      <div>
+        <h3>Reporte por Periodo</h3>
+        <p>Estadisticas y listado completo de proyectos en el periodo academico seleccionado.</p>
+      </div>
+    </div>
+    <div class="card-body">
+      <label>Selecciona el periodo</label>
+      <select [(ngModel)]="periodoSeleccionado">
+        <option [ngValue]="undefined">-- Selecciona un periodo --</option>
+        <option *ngFor="let p of periodos" [ngValue]="p.idPeriodo">{{p.descripcion}}</option>
+      </select>
+    </div>
+    <div class="card-actions">
+      <button (click)="periodoPdf()" [disabled]="!periodoSeleccionado" class="btn-pdf">
+        &#128196; Descargar PDF
+      </button>
+      <button (click)="periodoExcel()" [disabled]="!periodoSeleccionado" class="btn-excel">
+        &#128202; Descargar Excel
+      </button>
+    </div>
+  </div>
+
+  <!-- Actas y constancias -->
+  <div class="card-reporte">
+    <div class="card-header">
+      <span class="icono">&#128221;</span>
+      <div>
+        <h3>Actas y Constancias</h3>
+        <p>Actas de tutorias y sustentaciones por proyecto.</p>
+      </div>
+    </div>
+    <div class="card-body">
+      <label>ID del proyecto</label>
+      <input type="number" [(ngModel)]="proyectoIdActas" placeholder="Ingresa el ID del proyecto">
+    </div>
+    <div class="card-actions">
+      <button (click)="actasTutoria()" [disabled]="!proyectoIdActas" class="btn-pdf">
+        &#128196; Actas de Tutorias PDF
+      </button>
+      <button (click)="actasSustentacion()" [disabled]="!proyectoIdActas" class="btn-pdf btn-azul">
+        &#128196; Actas de Sustentacion PDF
+      </button>
+    </div>
+  </div>
+</div>

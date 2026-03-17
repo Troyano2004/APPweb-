@@ -4,6 +4,7 @@ import com.erwin.backend.dtos.ConfiguracionCorreoDto;
 import com.erwin.backend.entities.ConfiguracionCorreo;
 import com.erwin.backend.repository.ConfiguracionCorreoRepository;
 import com.erwin.backend.security.CryptoUtil;
+import com.erwin.backend.audit.aspect.Auditable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -60,6 +61,7 @@ public class ConfiguracionCorreoService {
     // Crear nueva configuración
     // Queda activa solo si no hay ninguna activa aún
     // =========================================================
+    @Auditable(entidad = "ConfiguracionCorreo", accion = "CREATE", capturarArgs = false)
     public ConfiguracionCorreoDto crear(ConfiguracionCorreoDto dto) {
         validarBase(dto);
 
@@ -80,6 +82,7 @@ public class ConfiguracionCorreoService {
     // =========================================================
     // Editar configuración existente (password opcional)
     // =========================================================
+    @Auditable(entidad = "ConfiguracionCorreo", accion = "UPDATE", capturarArgs = false)
     public ConfiguracionCorreoDto editar(Integer id, ConfiguracionCorreoDto dto) {
         validarBase(dto);
 

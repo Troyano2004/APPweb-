@@ -1,0 +1,39 @@
+<div class="rep-container">
+  <h2>Reporte por Periodo</h2>
+
+  <div class="card-reporte">
+    <div class="card-header">
+      <span class="icono">&#128197;</span>
+      <div>
+        <h3>Reporte por Periodo</h3>
+        <p>Estadisticas y listado completo de proyectos en el periodo academico seleccionado.</p>
+      </div>
+    </div>
+    <div class="card-body">
+
+      <label>Selecciona el periodo</label>
+      <div *ngIf="cargando" class="cargando-msg">Cargando periodos...</div>
+      <select *ngIf="!cargando" [(ngModel)]="periodoSeleccionado">
+        <option [ngValue]="undefined">-- Selecciona un periodo --</option>
+        <option *ngFor="let p of periodos" [ngValue]="p.idPeriodo">{{p.descripcion}}</option>
+      </select>
+
+      <div *ngIf="!cargando" class="filtro-extra" style="margin-top:.75rem">
+        <label>Filtrar por estado (opcional)</label>
+        <select [(ngModel)]="estadoFiltro">
+          <option value="">Todos los estados</option>
+          <option *ngFor="let e of estados" [value]="e">{{e}}</option>
+        </select>
+      </div>
+
+    </div>
+    <div class="card-actions">
+      <button (click)="periodoPdf()" [disabled]="!periodoSeleccionado" class="btn-pdf">
+        &#128196; Descargar PDF
+      </button>
+      <button (click)="periodoExcel()" [disabled]="!periodoSeleccionado" class="btn-excel">
+        &#128202; Descargar Excel
+      </button>
+    </div>
+  </div>
+</div>

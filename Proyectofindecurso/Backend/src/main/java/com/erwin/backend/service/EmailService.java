@@ -533,6 +533,38 @@ public class EmailService {
     }
 
     // =========================================================
+    // ALERTA DE AUDITORÍA
+    // =========================================================
+    @Async
+    public void enviarAlertaAuditoria(java.util.List<String> destinatarios, String entidad,
+            String accion, String severidad, String username, String ipAddress, String timestampEvento) {
+        String badgeBg, badgeColor, badgeLabel;
+        switch (severidad != null ? severidad.toUpperCase() : "LOW") {
+            case "CRITICAL" -> { badgeBg="#fff5f5"; badgeColor="#c53030"; badgeLabel="CRÍTICO"; }
+            case "HIGH"     -> { badgeBg="#fffaf0"; badgeColor="#c05621"; badgeLabel="ALTO"; }
+            case "MEDIUM"   -> { badgeBg="#ebf8ff"; badgeColor="#2b6cb0"; badgeLabel="MEDIO"; }
+            default         -> { badgeBg="#f0fff4"; badgeColor="#276749"; badgeLabel="BAJO"; }
+        }
+        String asunto = "Alerta Auditoria [" + severidad + "] - " + entidad + "/" + accion;
+        String html = baseTemplate("Evento de auditoría detectado", "Administrador",
+            "<p style='color:#4a5568;font-size:15px'>Se ha registrado un evento que requiere su atención.</p>",
+            java.util.List.of(
+                new String[]{"Entidad",   entidad},
+                new String[]{"Acción",    accion},
+                new String[]{"Severidad", severidad},
+                new String[]{"Usuario",   username},
+                new String[]{"IP",        ipAddress},
+                new String[]{"Fecha",     timestampEvento}
+            ),
+            "<p style='color:#4a5568;font-size:14px'>Revisa el módulo de auditorías para más detalles.</p>",
+            badgeBg, badgeColor, badgeLabel);
+        for (String dest : destinatarios) {
+            try { enviar(dest, asunto, html); }
+            catch (Exception e) { System.err.println("[EmailService] Error alerta auditoria a " + dest + ": " + e.getMessage()); }
+        }
+    }
+
+    // =========================================================
     // UTILIDADES
     // =========================================================
     private String abreviar(String texto, int max) {

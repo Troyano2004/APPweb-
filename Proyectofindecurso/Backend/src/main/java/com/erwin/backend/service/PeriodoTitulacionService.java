@@ -3,6 +3,7 @@ package com.erwin.backend.service;
 import com.erwin.backend.dtos.PeriodoTitulacionDto;
 import com.erwin.backend.entities.PeriodoTitulacion;
 import com.erwin.backend.repository.PeriodoTitulacionRepository;
+import com.erwin.backend.audit.aspect.Auditable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,6 +40,7 @@ public class PeriodoTitulacionService {
         return convertirADto(periodo);
     }
 
+    @Auditable(entidad = "PeriodoTitulacion", accion = "CREATE")
     public PeriodoTitulacionDto crear(PeriodoTitulacionDto dto) {
         PeriodoTitulacion periodo = new PeriodoTitulacion();
         periodo.setDescripcion(dto.getDescripcion());
@@ -50,6 +52,7 @@ public class PeriodoTitulacionService {
         return convertirADto(guardado);
     }
 
+    @Auditable(entidad = "PeriodoTitulacion", accion = "UPDATE")
     public PeriodoTitulacionDto actualizar(Integer id, PeriodoTitulacionDto dto) {
         PeriodoTitulacion periodo = periodoRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Período no encontrado"));
@@ -72,6 +75,7 @@ public class PeriodoTitulacionService {
         return convertirADto(actualizado);
     }
 
+    @Auditable(entidad = "PeriodoTitulacion", accion = "DELETE")
     public void eliminar(Integer id) {
         if (!periodoRepo.existsById(id)) {
             throw new RuntimeException("Período no encontrado");
