@@ -18,7 +18,8 @@ import java.util.Map;
 @Slf4j
 public class GoogleDriveOAuthService {
 
-    private static final String CLIENT_ID     = "472845919463-o6etf8e5bhdp3iaac1veschchl3f7qgr.apps.googleusercontent.com";
+
+    private static final String CLIENT_ID     = "4";
     private static final String CLIENT_SECRET = "";
     private static final String REDIRECT_URI  = "http://localhost:8080/api/backup/oauth/callback";
     private static final String TOKEN_URL     = "https://oauth2.googleapis.com/token";
