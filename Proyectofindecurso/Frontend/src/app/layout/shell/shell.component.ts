@@ -61,6 +61,7 @@ export class ShellComponent implements OnInit, OnDestroy {
   userRole         = 'Sistema';
   isDarkMode       = false;
 
+  // ── Búsqueda ──────────────────────────────────────────
   searchQuery   = '';
   searchFocused = false;
   searchResults: SearchResult[] = [];
@@ -92,20 +93,16 @@ export class ShellComponent implements OnInit, OnDestroy {
         { label: 'Carrera-Modalidad',       path: '/app/catalogos/carrera-modalidad' },
       ],
     },
-
-    // ── BANCO DE TEMAS ── (actualizado con ítem para ESTUDIANTE)
     {
       title: 'Banco de Temas',
       icon: '📚',
-      roles: ['DOCENTE', 'DOCENTE_TITULADO', 'ADMIN', 'COORDINADOR', 'ESTUDIANTE'],
+      roles: ['DOCENTE', 'DOCENTE_TITULADO', 'ADMIN', 'COORDINADOR'],
       items: [
-        { label: 'Listado de temas',        path: '/app/temas',                roles: ['DOCENTE','DOCENTE_TITULADO','ADMIN','COORDINADOR'] },
-        { label: 'Registrar tema',          path: '/app/temas/nuevo',          roles: ['DOCENTE','DOCENTE_TITULADO','ADMIN','COORDINADOR'] },
-        { label: 'Aprobación temas',        path: '/app/temas/aprobacion',     roles: ['DOCENTE','DOCENTE_TITULADO','ADMIN','COORDINADOR'] },
-        { label: 'Mis propuestas de tema',  path: '/app/temas/mis-propuestas', roles: ['ESTUDIANTE'] },
+        { label: 'Listado de temas', path: '/app/temas' },
+        { label: 'Registrar tema',   path: '/app/temas/nuevo' },
+        { label: 'Aprobación temas', path: '/app/temas/aprobacion' },
       ],
     },
-
     {
       title: 'Propuesta y Anteproyecto',
       icon: '📝',
@@ -244,7 +241,7 @@ export class ShellComponent implements OnInit, OnDestroy {
         { label: 'Parámetros',              path: '/app/admin/parametros' },
         { label: 'Gestión de solicitudes',  path: '/app/admin/gestion-solicitudes' },
         { label: 'Configuración de correo', path: '/app/admin/configuracion-correo' },
-        { label: 'Respaldos BD',            path: '/app/admin/backup', roles: ['ADMIN'] },
+        { label: 'Respaldos BD',            path: '/app/admin/backup',              roles: ['ADMIN'] },
       ],
     },
   ];
@@ -273,6 +270,7 @@ export class ShellComponent implements OnInit, OnDestroy {
     this.subscriptions.unsubscribe();
   }
 
+  // ── Sidebar ───────────────────────────────────────────
   toggleCollapse(): void { this.isCollapsed = !this.isCollapsed; }
   toggleMobile():   void { this.isMobileOpen = !this.isMobileOpen; }
   closeMobile():    void { this.isMobileOpen = false; }
@@ -281,17 +279,21 @@ export class ShellComponent implements OnInit, OnDestroy {
     this.openSectionIndex = this.openSectionIndex === index ? -1 : index;
   }
 
+  // ── Tema ──────────────────────────────────────────────
   toggleTheme(): void {
     this.isDarkMode = !this.isDarkMode;
     document.body.classList.toggle('dark-mode', this.isDarkMode);
     localStorage.setItem('theme', this.isDarkMode ? 'dark' : 'light');
   }
 
+  // ── Sesión ────────────────────────────────────────────
   logout(): void {
     localStorage.removeItem('usuario');
     localStorage.removeItem('token');
     this.router.navigate(['/login']);
   }
+
+  // ── Búsqueda ──────────────────────────────────────────
 
   updateSearchResults(): void {
     const q = this.searchQuery.trim().toLowerCase();
@@ -332,6 +334,8 @@ export class ShellComponent implements OnInit, OnDestroy {
   onSearchBlur(): void {
     setTimeout(() => { this.searchFocused = false; this.searchResults = []; }, 160);
   }
+
+  // ── Privados ──────────────────────────────────────────
 
   private loadTheme(): void {
     const saved = localStorage.getItem('theme');

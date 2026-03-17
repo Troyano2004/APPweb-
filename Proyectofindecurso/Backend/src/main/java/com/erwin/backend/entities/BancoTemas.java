@@ -27,9 +27,6 @@ public class BancoTemas {
     @ManyToOne
     @JoinColumn(name = "id_docente_proponente")
     private Docente docenteProponente;
-    @ManyToOne
-    @JoinColumn(name = "id_estudiante_sugerente")
-    private Estudiante estudianteSugerente;
 
     @Column(name = "titulo", length = 500, nullable = false)
     private String titulo;

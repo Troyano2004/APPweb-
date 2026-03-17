@@ -2,8 +2,6 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
-// ── DTOs ────────────────────────────────────────────────────────────────────
-
 export interface TemaBancoDto {
   idTema: number;
   titulo: string;
@@ -12,7 +10,6 @@ export interface TemaBancoDto {
   docente: string;
   estado: string;
   observaciones: string | null;
-  idEstudianteSugerente: number | null; // ✅ NUEVO
 }
 
 export interface PropuestaTemaDto {
@@ -61,16 +58,11 @@ export interface EstadoModalidadDto {
   modalidadesDisponibles: ModalidadSimpleDto[];
 }
 
-// ── Service ─────────────────────────────────────────────────────────────────
-
 @Injectable({ providedIn: 'root' })
 export class ComisionTemasService {
-
   private readonly API_URL = 'http://localhost:8080/api/comision-temas';
 
   constructor(private readonly http: HttpClient) {}
-
-  // ── Comisión: banco de temas ─────────────────────────────────────────────
 
   listarBanco(idDocente: number): Observable<TemaBancoDto[]> {
     return this.http.get<TemaBancoDto[]>(`${this.API_URL}/docente/${idDocente}/banco`);
@@ -79,8 +71,6 @@ export class ComisionTemasService {
   crearTema(idDocente: number, payload: CrearTemaRequest): Observable<TemaBancoDto> {
     return this.http.post<TemaBancoDto>(`${this.API_URL}/docente/${idDocente}/banco`, payload);
   }
-
-  // ── Comisión: propuestas de estudiantes ──────────────────────────────────
 
   listarPropuestasComision(idDocente: number): Observable<PropuestaTemaDto[]> {
     return this.http.get<PropuestaTemaDto[]>(`${this.API_URL}/docente/${idDocente}/propuestas`);
@@ -92,13 +82,11 @@ export class ComisionTemasService {
     estado: 'APROBADA' | 'RECHAZADA',
     observaciones: string
   ): Observable<PropuestaTemaDto> {
-    return this.http.post<PropuestaTemaDto>(
-      `${this.API_URL}/docente/${idDocente}/propuestas/${idPropuesta}/decision`,
-      { estado, observaciones }
-    );
+    return this.http.post<PropuestaTemaDto>(`${this.API_URL}/docente/${idDocente}/propuestas/${idPropuesta}/decision`, {
+      estado,
+      observaciones
+    });
   }
-
-  // ── Estudiante ───────────────────────────────────────────────────────────
 
   crearPropuestaEstudiante(idEstudiante: number, payload: CrearPropuestaRequest): Observable<PropuestaTemaDto> {
     return this.http.post<PropuestaTemaDto>(`${this.API_URL}/estudiante/${idEstudiante}/propuestas`, payload);
@@ -112,51 +100,13 @@ export class ComisionTemasService {
     return this.http.get<TemaBancoDto[]>(`${this.API_URL}/estudiante/${idEstudiante}/temas-disponibles`);
   }
 
-  // ── Estudiante: modalidad ────────────────────────────────────────────────
-
   obtenerEstadoModalidad(idEstudiante: number): Observable<EstadoModalidadDto> {
     return this.http.get<EstadoModalidadDto>(`${this.API_URL}/estudiante/${idEstudiante}/estado-modalidad`);
   }
 
   seleccionarModalidad(idEstudiante: number, idModalidad: number): Observable<EstadoModalidadDto> {
-    return this.http.post<EstadoModalidadDto>(
-      `${this.API_URL}/estudiante/${idEstudiante}/seleccionar-modalidad`,
-      { idModalidad }
-    );
-  }
-
-  // ── Sugerencias de temas ─────────────────────────────────────────────────
-
-  sugerirTema(idEstudiante: number, titulo: string, descripcion: string): Observable<TemaBancoDto> {
-    return this.http.post<TemaBancoDto>(
-      `${this.API_URL}/estudiante/${idEstudiante}/sugerir-tema`,
-      { titulo, descripcion }
-    );
-  }
-
-  listarSugerencias(idDocente: number): Observable<TemaBancoDto[]> {
-    return this.http.get<TemaBancoDto[]>(`${this.API_URL}/docente/${idDocente}/sugerencias`);
-  }
-
-  aprobarSugerencia(idDocente: number, idTema: number, observaciones?: string): Observable<TemaBancoDto> {
-    return this.http.post<TemaBancoDto>(
-      `${this.API_URL}/docente/${idDocente}/sugerencias/${idTema}/aprobar`,
-      { observaciones: observaciones ?? '' }
-    );
-  }
-
-  rechazarSugerencia(idDocente: number, idTema: number, observaciones?: string): Observable<TemaBancoDto> {
-    return this.http.post<TemaBancoDto>(
-      `${this.API_URL}/docente/${idDocente}/sugerencias/${idTema}/rechazar`,
-      { observaciones: observaciones ?? '' }
-    );
-  }
-
-  // ── Temas aprobados para un estudiante específico ────────────────────────
-
-  listarTemasAprobadosEstudiante(idEstudiante: number): Observable<TemaBancoDto[]> {
-    return this.http.get<TemaBancoDto[]>(
-      `${this.API_URL}/estudiante/${idEstudiante}/temas-aprobados`
-    );
+    return this.http.post<EstadoModalidadDto>(`${this.API_URL}/estudiante/${idEstudiante}/seleccionar-modalidad`, {
+      idModalidad
+    });
   }
 }

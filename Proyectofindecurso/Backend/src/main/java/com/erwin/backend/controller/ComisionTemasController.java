@@ -357,10 +357,7 @@ public class ComisionTemasController {
                 carrera,
                 docente,
                 tema.getEstado(),
-                tema.getObservaciones(),
-                tema.getEstudianteSugerente() != null
-                        ? tema.getEstudianteSugerente().getIdEstudiante()
-                        : null
+                tema.getObservaciones()
         );
     }
 
@@ -524,8 +521,7 @@ public class ComisionTemasController {
             String carrera,
             String docente,
             String estado,
-            String observaciones,
-            Integer idEstudianteSugerente
+            String observaciones
     ) {}
 
     public record PropuestaDto(
@@ -555,157 +551,5 @@ public class ComisionTemasController {
         public EstadoModalidadDto withEleccion(Integer nuevoIdEleccion, Integer nuevaIdModalidad, String nuevaModalidad) {
             return new EstadoModalidadDto(true, nuevoIdEleccion, nuevaIdModalidad, nuevaModalidad, idCarrera, modalidadesDisponibles);
         }
-    }
-    // ── AGREGAR estos métodos al ComisionTemasController existente ──────────────
-// Pega estos métodos DENTRO de la clase, antes del último corchete }
-
-    // ════════════════════════════════════════════════════════════════════════
-    // SUGERENCIAS DE TEMAS POR ESTUDIANTES
-    // ════════════════════════════════════════════════════════════════════════
-
-    /**
-     * Estudiante sugiere un tema simple (título + descripción).
-     * Se guarda en banco_temas con estado SUGERIDO, sin docente proponente.
-     */
-    @PostMapping("/estudiante/{idEstudiante}/sugerir-tema")
-    public TemaDto sugerirTema(@PathVariable Integer idEstudiante,
-                               @RequestBody SugerirTemaRequest req) {
-
-        Estudiante estudiante = estudianteRepository.findById(idEstudiante)
-                .orElseThrow(() -> new RuntimeException("Estudiante no encontrado"));
-
-        if (req == null || req.titulo == null || req.titulo.trim().isEmpty()) {
-            throw new RuntimeException("El título es obligatorio");
-        }
-        if (req.descripcion == null || req.descripcion.trim().isEmpty()) {
-            throw new RuntimeException("La descripción es obligatoria");
-        }
-
-        Carrera carrera = estudiante.getCarrera();
-        if (carrera == null) {
-            throw new RuntimeException("El estudiante no tiene carrera asignada");
-        }
-
-        BancoTemas tema = new BancoTemas();
-        tema.setTitulo(req.titulo.trim());
-        tema.setDescripcion(req.descripcion.trim());
-        tema.setEstado("SUGERIDO");
-        tema.setCarrera(carrera);
-        tema.setDocenteProponente(null); // No tiene docente, lo sugiere el estudiante
-        tema.setEstudianteSugerente(estudiante);
-
-        return toTemaDto(bancoTemasRepository.save(tema));
-    }
-
-    /**
-     * Lista las sugerencias de estudiantes (estado SUGERIDO).
-     * Solo accesible para miembros de la comisión.
-     */
-    @GetMapping("/docente/{idDocente}/sugerencias")
-    public List<TemaDto> listarSugerencias(@PathVariable Integer idDocente) {
-        validarMiembroComision(idDocente);
-        return bancoTemasRepository.findByEstadoOrderByIdTemaDesc("SUGERIDO")
-                .stream()
-                .map(this::toTemaDto)
-                .toList();
-    }
-
-    /**
-     * La comisión aprueba una sugerencia: la pasa a estado PROPUESTO
-     * y le asigna el docente como proponente → queda en el banco oficial.
-     */
-    @PostMapping("/docente/{idDocente}/sugerencias/{idTema}/aprobar")
-    public TemaDto aprobarSugerencia(@PathVariable Integer idDocente,
-                                     @PathVariable Integer idTema,
-                                     @RequestBody(required = false) AprobarSugerenciaRequest req) {
-        validarMiembroComision(idDocente);
-
-        BancoTemas tema = bancoTemasRepository.findById(idTema)
-                .orElseThrow(() -> new RuntimeException("Sugerencia no encontrada"));
-
-        if (!"SUGERIDO".equals(tema.getEstado())) {
-            throw new RuntimeException("Este tema ya fue procesado");
-        }
-
-        Docente docente = docenteRepository.findById(idDocente)
-                .orElseThrow(() -> new RuntimeException("Docente no encontrado"));
-
-        tema.setEstado("PROPUESTO");
-        tema.setDocenteProponente(docente);
-        tema.setFechaRevision(java.time.LocalDate.now());
-        if (req != null && req.observaciones != null && !req.observaciones.trim().isEmpty()) {
-            tema.setObservaciones(req.observaciones.trim());
-        }
-
-        return toTemaDto(bancoTemasRepository.save(tema));
-    }
-
-    /**
-     * La comisión rechaza una sugerencia.
-     */
-    @PostMapping("/docente/{idDocente}/sugerencias/{idTema}/rechazar")
-    public TemaDto rechazarSugerencia(@PathVariable Integer idDocente,
-                                      @PathVariable Integer idTema,
-                                      @RequestBody(required = false) AprobarSugerenciaRequest req) {
-        validarMiembroComision(idDocente);
-
-        BancoTemas tema = bancoTemasRepository.findById(idTema)
-                .orElseThrow(() -> new RuntimeException("Sugerencia no encontrada"));
-
-        if (!"SUGERIDO".equals(tema.getEstado())) {
-            throw new RuntimeException("Este tema ya fue procesado");
-        }
-
-        tema.setEstado("RECHAZADO");
-        tema.setFechaRevision(java.time.LocalDate.now());
-        if (req != null && req.observaciones != null && !req.observaciones.trim().isEmpty()) {
-            tema.setObservaciones(req.observaciones.trim());
-        }
-
-        return toTemaDto(bancoTemasRepository.save(tema));
-    }
-
-    /**
-     * Lista las sugerencias enviadas por un estudiante específico.
-     */
-    @GetMapping("/estudiante/{idEstudiante}/mis-sugerencias")
-    public List<TemaDto> misSugerencias(@PathVariable Integer idEstudiante) {
-        estudianteRepository.findById(idEstudiante)
-                .orElseThrow(() -> new RuntimeException("Estudiante no encontrado"));
-
-        return bancoTemasRepository.findAll().stream()
-                .filter(t -> "SUGERIDO".equals(t.getEstado())
-                        || "PROPUESTO".equals(t.getEstado())
-                        || "RECHAZADO".equals(t.getEstado()))
-                .filter(t -> t.getDocenteProponente() == null) // sugeridos por estudiantes
-                .sorted(java.util.Comparator.comparing(BancoTemas::getIdTema).reversed())
-                .map(this::toTemaDto)
-                .toList();
-    }
-
-
-    @GetMapping("/estudiante/{idEstudiante}/temas-aprobados")
-    public List<TemaDto> temasAprobadosEstudiante(@PathVariable Integer idEstudiante) {
-        estudianteRepository.findById(idEstudiante)
-                .orElseThrow(() -> new RuntimeException("Estudiante no encontrado"));
-
-        return bancoTemasRepository.findAll().stream()
-                .filter(t -> "PROPUESTO".equals(t.getEstado()))
-                .filter(t -> t.getEstudianteSugerente() != null
-                        && idEstudiante.equals(t.getEstudianteSugerente().getIdEstudiante()))
-                .sorted(java.util.Comparator.comparing(BancoTemas::getIdTema).reversed())
-                .map(this::toTemaDto)
-                .toList();
-    }
-
-// ── AGREGAR estas clases estáticas junto a las demás al final del controller ─
-
-    public static class SugerirTemaRequest {
-        public String titulo;
-        public String descripcion;
-    }
-
-    public static class AprobarSugerenciaRequest {
-        public String observaciones;
     }
 }
