@@ -25,7 +25,6 @@
 
     <dependencies>
 
-        <!-- ── Spring Boot ──────────────────────────────────────────────────── -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webmvc</artifactId>
@@ -40,10 +39,6 @@
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-mail</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-devtools</artifactId>
             <scope>runtime</scope>
             <optional>true</optional>
@@ -54,14 +49,9 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- ── PDF ──────────────────────────────────────────────────────────── -->
         <dependency>
-            <groupId>com.openhtmltopdf</groupId>
-            <artifactId>openhtmltopdf-pdfbox</artifactId>
-            <version>1.0.10</version>
         </dependency>
 
-        <!-- ── JWT ──────────────────────────────────────────────────────────── -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-api</artifactId>
@@ -80,14 +70,12 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- ── Base de datos ────────────────────────────────────────────────── -->
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
 
-        <!-- ── Utilidades ───────────────────────────────────────────────────── -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
@@ -98,44 +86,13 @@
             <artifactId>jackson-databind</artifactId>
         </dependency>
 
-        <!-- ── Azure Storage ────────────────────────────────────────────────── -->
         <dependency>
             <groupId>com.azure</groupId>
             <artifactId>azure-storage-blob</artifactId>
             <version>12.25.1</version>
         </dependency>
 
-        <!-- ── Google Drive API ─────────────────────────────────────────────── -->
         <dependency>
-            <groupId>com.google.apis</groupId>
-            <artifactId>google-api-services-drive</artifactId>
-            <version>v3-rev20240521-2.0.0</version>
-        </dependency>
-
-        <!-- Google Auth Library -->
-        <dependency>
-            <groupId>com.google.auth</groupId>
-            <artifactId>google-auth-library-oauth2-http</artifactId>
-            <version>1.23.0</version>
-        </dependency>
-
-        <!-- Google HTTP Client con Gson -->
-        <dependency>
-            <groupId>com.google.http-client</groupId>
-            <artifactId>google-http-client-gson</artifactId>
-            <version>1.44.1</version>
-        </dependency>
-
-        <!-- OAuth flujo aplicación de escritorio -->
-        <dependency>
-            <groupId>com.google.oauth-client</groupId>
-            <artifactId>google-oauth-client-jetty</artifactId>
-            <version>1.35.0</version>
-        </dependency>
-        <dependency>
-            <groupId>com.google.oauth-client</groupId>
-            <artifactId>google-oauth-client-java6</artifactId>
-            <version>1.35.0</version>
         </dependency>
 
     </dependencies>
