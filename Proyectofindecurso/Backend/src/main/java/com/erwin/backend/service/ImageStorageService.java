@@ -24,6 +24,7 @@ public class ImageStorageService {
 
     @Value("${azure.storage.container-name}")
     private String containerName;
+    //holllalalalldald
 
     public String storeImage(MultipartFile file) {
         if (file == null || file.isEmpty()) {
