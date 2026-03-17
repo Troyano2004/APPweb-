@@ -8,4 +8,7 @@ import java.util.List;
 public interface BancoTemasRepository extends JpaRepository<BancoTemas, Integer> {
     List<BancoTemas> findByEstadoOrderByIdTemaDesc(String estado);
     List<BancoTemas> findByDocenteProponente_IdDocenteOrderByIdTemaDesc(Integer idDocente);
+
+    // ✅ NUEVO: sugerencias por carrera (para filtrar por carrera del estudiante)
+    List<BancoTemas> findByEstadoAndCarrera_IdCarreraOrderByIdTemaDesc(String estado, Integer idCarrera);
 }
