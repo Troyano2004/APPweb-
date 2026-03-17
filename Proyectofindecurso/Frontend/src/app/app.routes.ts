@@ -55,6 +55,9 @@ import { AntiplagioDt2Component } from './pages/director/antiplagio-dt2/antiplag
 import { PredefensaDt2Component } from './pages/titulacion2/predefensa/predefensa-dt2';
 import { SustentacionDt2Component } from './pages/titulacion2/sustentacion/sustentacion-dt2';
 
+
+import { BackupJobsComponent } from './pages/backup/backup-jobs/backup-jobs.component';
+
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'login' },
   { path: 'login', component: LoginComponent, canActivate: [loginGuard], data: { title: 'Login' } },
@@ -154,6 +157,8 @@ export const routes: Routes = [
       { path: 'admin/parametros', component: PlaceholderPageComponent, data: { title: 'Parámetros' } },
       { path: 'admin/gestion-solicitudes', component: GestionSolicitudesComponent, data: { title: 'Gestión de Solicitudes' } },
       { path: 'admin/configuracion-correo', component: ConfiguracionCorreoComponent, data: { title: 'Configuración de Correo' } },
+      // ── Backup ───────────────────────────────────────────────────────────────────
+      { path: 'admin/backup', component: BackupJobsComponent, data: { title: 'Respaldos de Base de Datos' } },
 
       // ── Coordinación ─────────────────────────────────────────────────────────
       { path: 'coordinador/seguimiento',   component: SeguimientoProyectosComponent, data: { title: 'Seguimiento de proyectos' } },
