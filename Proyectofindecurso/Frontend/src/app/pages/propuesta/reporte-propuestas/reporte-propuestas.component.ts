@@ -1,4 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
@@ -366,7 +367,7 @@ export class ReportePropuestasComponent implements OnInit {
     { valor: 'RECHAZADA',  etiqueta: 'Rechazadas' },
   ];
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.cargarDatos();
@@ -375,6 +376,7 @@ export class ReportePropuestasComponent implements OnInit {
   cargarDatos(): void {
     this.cargando = true;
     this.error = '';
+    this.cdr.detectChanges();
     const params = this.filtroEstado ? `?estado=${this.filtroEstado}` : '';
     this.http.get<RespuestaCompleta>(`${this.API}${params}`).subscribe({
       next: (res) => {
@@ -382,10 +384,12 @@ export class ReportePropuestasComponent implements OnInit {
         this.propuestasFiltradas = res.propuestas;
         this.textoBusqueda = '';
         this.cargando = false;
+        this.cdr.detectChanges();
       },
       error: () => {
         this.error = 'No se pudo cargar el reporte. Verifica que el servidor esté activo.';
         this.cargando = false;
+        this.cdr.detectChanges();
       }
     });
   }

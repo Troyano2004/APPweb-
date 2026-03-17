@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CatalogoCarrera, ComisionFormativa, CoordinadorService, DirectorCarga } from '../../../services/coordinador';
@@ -297,9 +297,11 @@ export class ComisionFormativaComponent implements OnInit {
   mensaje = '';
   error = '';
 
+  // Constructor:
   constructor(
     private coordinadorService: CoordinadorService,
-    private catalogosBasicosService: CatalogosBasicosService
+    private catalogosBasicosService: CatalogosBasicosService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -368,9 +370,11 @@ export class ComisionFormativaComponent implements OnInit {
     });
   }
 
+  // Método cargarComisiones():
   cargarComisiones(): void {
     this.coordinadorService.getComisiones().subscribe((data) => {
       this.comisiones = data;
+      this.cdr.detectChanges();
     });
   }
 

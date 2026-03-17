@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CoordinadorService, SeguimientoProyecto } from '../../../services/coordinador';
 
@@ -137,15 +137,17 @@ import { CoordinadorService, SeguimientoProyecto } from '../../../services/coord
 export class ValidacionComponent implements OnInit {
   proyectos: SeguimientoProyecto[] = [];
 
-  constructor(private coordinadorService: CoordinadorService) {}
+  constructor(private coordinadorService: CoordinadorService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.cargarProyectos();
   }
 
+  // Método cargarProyectos():
   cargarProyectos(): void {
     this.coordinadorService.getSeguimiento().subscribe((data) => {
       this.proyectos = data;
+      this.cdr.detectChanges();
     });
   }
 
