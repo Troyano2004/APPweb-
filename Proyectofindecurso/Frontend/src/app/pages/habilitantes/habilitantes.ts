@@ -236,7 +236,17 @@ export class DocumentosHabilitantesComponent implements OnInit {
     });
   }
 
-  esAntiplagio(tipo: string): boolean { return tipo === 'CERTIFICADO_ANTIPLAGIO'; }
+  // Detecta documentos que requieren verificación de antiplagio (COMPILATIO)
+  esAntiplagio(tipo: string): boolean {
+    return tipo === 'CERTIFICADO_ANTIPLAGIO';
+  }
+
+// NUEVO — identifica el informe práctico del Complexivo
+// Esto permite diferenciarlo del certificado antiplagio
+// y asegura que NO se pida porcentaje COMPILATIO
+  esInformePractico(tipo: string): boolean {
+    return tipo === 'INFORME_PRACTICO_COMPLEXIVO';
+  }
 
   badgeClass(estado: string): string {
     const map: Record<string, string> = {
