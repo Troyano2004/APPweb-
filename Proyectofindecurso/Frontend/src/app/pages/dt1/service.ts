@@ -21,7 +21,9 @@ export class Dt1ApiService {
   revisar(data: Dt1RevisionRequest): Observable<void> {
     return this.http.post<void>(`${this.base}/revisar`, data);
   }
-
+  ultimaRevision(idAnteproyecto: number): Observable<{decision: string, observacion: string, fechaRevision: string}> {
+    return this.http.get<any>(`${this.base}/${idAnteproyecto}/ultima-revision`);
+  }
   pdf(idAnteproyecto: number, idDocente: number): Observable<Blob> {
     return this.http.get(`${this.base}/pdf/${idAnteproyecto}/${idDocente}`, {
       responseType: 'blob'

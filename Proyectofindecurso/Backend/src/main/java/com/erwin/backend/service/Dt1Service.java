@@ -3,6 +3,7 @@ package com.erwin.backend.service;
 import com.erwin.backend.dtos.Dt1DetalleResponse;
 import com.erwin.backend.dtos.Dt1EnviadoResponse;
 import com.erwin.backend.dtos.Dt1RevisionRequest;
+import com.erwin.backend.dtos.Dt1UltimaRevisionResponse;
 import com.erwin.backend.entities.*;
 import com.erwin.backend.repository.*;
 import org.springframework.http.HttpStatus;
@@ -22,6 +23,7 @@ public class Dt1Service {
     private final PeriodoTitulacionRepository      periodoRepo;
     private final Dt1PdfService                    pdf;
     private final JdbcTemplate                     jdbcTemplate;
+    private final Dt1RevisionRepository           dt1RevisionRepo;
 
     // revisionRepo y docenteRepo eliminados: el SP maneja el INSERT en dt1_revision
 
@@ -31,7 +33,8 @@ public class Dt1Service {
             Dt1AsignacionRepository          dt1AsignacionRepo,
             PeriodoTitulacionRepository      periodoRepo,
             Dt1PdfService                    pdf,
-            JdbcTemplate                     jdbcTemplate
+            JdbcTemplate                     jdbcTemplate,
+            Dt1RevisionRepository           dt1RevisionRepo
     ) {
         this.anteRepo          = anteRepo;
         this.verRepo           = verRepo;
@@ -39,6 +42,7 @@ public class Dt1Service {
         this.periodoRepo       = periodoRepo;
         this.pdf               = pdf;
         this.jdbcTemplate      = jdbcTemplate;
+        this.dt1RevisionRepo   = dt1RevisionRepo;
     }
 
     // =========================================================
@@ -189,6 +193,18 @@ public class Dt1Service {
             };
             throw new ResponseStatusException(status, msg);
         }
+    }
+    @Transactional(readOnly = true)
+    public Dt1UltimaRevisionResponse ultimaRevision(Integer idAnteproyecto) {
+        return dt1RevisionRepo
+                .findTopByAnteproyecto_IdAnteproyectoOrderByFechaRevisionDesc(idAnteproyecto)
+                .map(r ->
+                        new Dt1UltimaRevisionResponse(
+                        r.getDecision(),
+                        r.getObservacion(),
+                        r.getFechaRevision()
+                ))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "SIN REVISION"));
     }
 
     // =========================================================

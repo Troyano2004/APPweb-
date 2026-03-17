@@ -46,3 +46,13 @@ export interface ActaRevisionDirectorResponse extends ActaRevisionDirectorReques
   observaciones?: string;
   estudianteNombre: string;
 }
+export interface TutoriaCalendario {
+  idTutoria: number;
+  fecha: string;
+  hora?: string;
+  modalidad: Modalidad;
+  estado: EstadoTutoria;
+  linkReunion?: string;
+  estudianteNombre: string;
+  tituloProyecto: string;
+}

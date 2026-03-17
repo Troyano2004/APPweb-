@@ -20,6 +20,7 @@ export interface Anteproyecto {
   apellidosEstudiante?: string;
   mensaje?: string;
 
+
   ultimaVersion?: AnteproyectoVersion;
   propuesta?: PropuestaSnapshot;
 }
@@ -29,7 +30,7 @@ export interface AnteproyectoVersion {
   idVersion: number;
   fechaCreacion?: string; // ISO string (desde backend)
   comentarioCambio?: string;
-
+  estadoVersion?: string;
   titulo?: string;
   temaInvestigacion?: string;
   planteamientoProblema?: string;

@@ -26,6 +26,8 @@ export class AnteproyectoComponent {
 
   idEstudiante!: number;
   idAnteproyecto!: number;
+  ultimaRevision: {decision: string, observacion: string} | null = null;
+
 
   nombreEstudiante = '';
 
@@ -197,6 +199,13 @@ export class AnteproyectoComponent {
 
           if (this.puedeEditar) this.form.enable({ emitEvent: false });
           else this.form.disable({ emitEvent: false });
+
+          if (a.ultimaVersion?.estadoVersion === 'RECHAZADO') {
+            this.api.ultimaRevision(a.idAnteproyecto!).subscribe({
+              next: r => { this.ultimaRevision = r; this.cdr.detectChanges(); },
+              error: () => {}
+            });
+          }
         },
         error: (e) => {
           this.mensaje = this.err(e);

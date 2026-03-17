@@ -69,4 +69,9 @@ public class TutorController {
     ) {
         return service.guardarActa(idTutoria, idDocente, req);
     }
+    // 7) Calendario de tutorías del docente
+    @GetMapping("/calendario/{idDocente}")
+    public List<TutoriaCalendarioResponse> calendarioTutorias(@PathVariable Integer idDocente) {
+        return service.calendarioTutorias(idDocente);
+    }
 }

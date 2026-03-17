@@ -69,7 +69,15 @@ export class Tutoriasdirector {
     this.api.programarTutoria(this.idAnteproyecto, this.idDocente, req)
       .pipe(finalize(() => { this.cargando = false; this.cdr.detectChanges(); }))
       .subscribe({
-        next: () => { this.mensaje = 'Tutoría programada'; this.form.reset({ modalidad:'PRESENCIAL' }); this.cargar(); },
+        next: (tutoria) => {
+          this.form.reset({ modalidad: 'PRESENCIAL' });
+          this.cargar();
+          if (req.modalidad === 'VIRTUAL' && !tutoria.linkReunion) {
+            this.mensaje = '⚠️ Tutoría creada, pero configure sus credenciales de Zoom para generar el link de reunión.';
+          } else {
+            this.mensaje = 'Tutoría programada correctamente.';
+          }
+        },
         error: (e) => this.mensaje = this.err(e)
       });
   }

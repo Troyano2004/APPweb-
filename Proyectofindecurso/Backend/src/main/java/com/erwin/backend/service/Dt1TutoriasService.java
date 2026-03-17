@@ -249,6 +249,25 @@ public class Dt1TutoriasService {
         }
 
     }
+    @Transactional(readOnly = true)
+    public List<TutoriaCalendarioResponse> calendarioTutorias(Integer idDocente) {
+        validarDocenteExiste(idDocente);
+        return tutRepo.findByDocente_IdDocenteOrderByFechaDesc(idDocente)
+                .stream()
+                .map(t -> {
+                    TutoriaCalendarioResponse r = new TutoriaCalendarioResponse();
+                    r.setIdTutoria(t.getIdTutoria());
+                    r.setFecha(t.getFecha());
+                    r.setHora(t.getHora());
+                    r.setModalidad(t.getModalidad());
+                    r.setEstado(t.getEstado());
+                    r.setLinkReunion(t.getLinkReunion());
+                    r.setEstudianteNombre(nombreCompletoEstudiante(t.getAnteproyecto().getEstudiante()));
+                    r.setTituloProyecto(textoSeguro(t.getAnteproyecto().getPropuesta().getTitulo()));
+                    return r;
+                })
+                .toList();
+    }
 
     // ==========================================================
     // ===================== VALIDACIONES =======================
@@ -314,7 +333,7 @@ public class Dt1TutoriasService {
         );
 
         if (!esTutor) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "NO_ES_TUTOR_DEL_ESTUDIANTE");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "NO ES TUTOR DEL ESTUDIANTE");
         }
     }
 

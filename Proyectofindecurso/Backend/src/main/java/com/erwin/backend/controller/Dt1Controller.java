@@ -3,6 +3,7 @@ package com.erwin.backend.controller;
 import com.erwin.backend.dtos.Dt1DetalleResponse;
 import com.erwin.backend.dtos.Dt1EnviadoResponse;
 import com.erwin.backend.dtos.Dt1RevisionRequest;
+import com.erwin.backend.dtos.Dt1UltimaRevisionResponse;
 import com.erwin.backend.service.Dt1Service;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
@@ -36,6 +37,10 @@ public class Dt1Controller {
     @PostMapping("/revisar")
     public void revisar(@RequestBody Dt1RevisionRequest req) {
         service.revisar(req);
+    }
+    @GetMapping("/{idAnteproyecto}/ultima-revision")
+    public Dt1UltimaRevisionResponse ultimaRevision(@PathVariable Integer idAnteproyecto) {
+        return service.ultimaRevision(idAnteproyecto);
     }
     @GetMapping("/pdf/{idAnteproyecto}/{idDocente}")
     public ResponseEntity<byte[]> pdf(

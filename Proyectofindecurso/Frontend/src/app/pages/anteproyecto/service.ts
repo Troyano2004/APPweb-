@@ -28,5 +28,8 @@ export class AnteproyectoService {
   ultimaVersion(idAnteproyecto: number): Observable<AnteproyectoVersion> {
     return this.http.get<AnteproyectoVersion>(`${this.base}/${idAnteproyecto}/ultima-version`);
   }
+  ultimaRevision(idAnteproyecto: number): Observable<{decision: string, observacion: string}> {
+    return this.http.get<any>(`${this.base}/${idAnteproyecto}/ultima-revision`);
+  }
 
 }

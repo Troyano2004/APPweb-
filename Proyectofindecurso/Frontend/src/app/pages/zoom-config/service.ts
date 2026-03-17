@@ -2,6 +2,7 @@ import {Injectable} from '@angular/core';
 import {ZoomConfigDto, ZoomConfigRequest} from './model';
 import {HttpClient} from '@angular/common/http';
 import {Observable} from 'rxjs';
+import {map} from 'rxjs/operators';
 
 @Injectable({providedIn:'root'})
 export class  ZoomConfigService {
@@ -19,5 +20,10 @@ export class  ZoomConfigService {
 
   eliminar(idDocente: number): Observable<void> {
     return this.http.delete<void>(`${this.base}/${idDocente}`);
+  }
+  verificarConfiguracion(idDocente: number): Observable<boolean> {
+    return this.obtener(idDocente).pipe(
+      map(config => config.configurado)
+    );
   }
 }

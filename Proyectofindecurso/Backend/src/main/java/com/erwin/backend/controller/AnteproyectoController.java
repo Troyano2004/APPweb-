@@ -2,6 +2,7 @@ package com.erwin.backend.controller;
 
 import com.erwin.backend.dtos.*;
 import com.erwin.backend.service.AnteproyectoService;
+import com.erwin.backend.service.Dt1Service;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -10,11 +11,12 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/anteproyectos")
 public class AnteproyectoController {
-
+    private final Dt1Service  dt1Service;
     private final AnteproyectoService service;
 
-    public AnteproyectoController(AnteproyectoService service) {
+    public AnteproyectoController(AnteproyectoService service, Dt1Service  dt1Service) {
         this.service = service;
+        this.dt1Service = dt1Service;
     }
 
     @GetMapping("/mi-anteproyecto/{idEstudiante}")
@@ -42,5 +44,9 @@ public class AnteproyectoController {
     public AnteproyectoVersionResponse enviar(@PathVariable Integer idAnteproyecto,
                                               @RequestBody AnteproyectoVersionRequest req) {
         return service.enviarRevision(idAnteproyecto, req);
+    }
+    @GetMapping("/{idAnteproyecto}/ultima-revision")
+    public Dt1UltimaRevisionResponse ultimaRevision(@PathVariable Integer idAnteproyecto) {
+        return dt1Service.ultimaRevision(idAnteproyecto);
     }
 }

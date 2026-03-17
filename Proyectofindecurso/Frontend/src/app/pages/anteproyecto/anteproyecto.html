@@ -6,9 +6,7 @@
       <div class="ap-header-title">Registrar / Editar Anteproyecto</div>
       <div class="ap-header-sub">Gestión y revisión del anteproyecto de titulación</div>
     </div>
-    <div class="ap-header-right">
-
-    </div>
+    <div class="ap-header-right"></div>
   </div>
 
   <!-- CUERPO -->
@@ -20,7 +18,8 @@
     </div>
 
     <!-- MENSAJE -->
-    <div class="ap-alert" [class.danger]="mensaje.startsWith('Error') || mensaje.startsWith('No puedes') || mensaje.startsWith('Completa')"
+    <div class="ap-alert"
+         [class.danger]="mensaje.startsWith('Error') || mensaje.startsWith('No puedes') || mensaje.startsWith('Completa')"
          [class.success]="mensaje.startsWith('Borrador') || mensaje.startsWith('Enviado') || mensaje.startsWith('Recargada') || mensaje.startsWith('Se copiaron')"
          [class.info]="!mensaje.startsWith('Error') && !mensaje.startsWith('No puedes') && !mensaje.startsWith('Completa') && !mensaje.startsWith('Borrador') && !mensaje.startsWith('Enviado') && !mensaje.startsWith('Recargada') && !mensaje.startsWith('Se copiaron')"
          *ngIf="!cargando && mensaje">
@@ -42,24 +41,25 @@
             {{ anteproyecto?.estado || '---' }}
           </span>
         </div>
-
-        <!-- BOTONES ACCIÓN -->
         <div class="ap-actions">
-          <button class="ap-btn ghost" type="button" (click)="cargarMiAnteproyecto()" [disabled]="cargando">
-            ↺ Recargar
-          </button>
-          <button class="ap-btn ghost" type="button" (click)="recargarUltimaVersion()" [disabled]="!puedeEditar || cargando">
-            ⟳ Última versión
-          </button>
-          <button class="ap-btn ghost" type="button" (click)="copiarDesdePropuesta()" [disabled]="!puedeEditar || cargando">
-            ⎘ Copiar propuesta
-          </button>
-          <button class="ap-btn save" type="button" (click)="guardarBorrador()" [disabled]="!puedeEditar || form.invalid || cargando">
-            ✓ Guardar
-          </button>
-          <button class="ap-btn primary" type="button" (click)="enviarARevision()" [disabled]="!puedeEditar || form.invalid || cargando">
-            → Enviar a revisión
-          </button>
+          <button class="ap-btn ghost" type="button" (click)="cargarMiAnteproyecto()" [disabled]="cargando">↺ Recargar</button>
+          <button class="ap-btn ghost" type="button" (click)="recargarUltimaVersion()" [disabled]="!puedeEditar || cargando">⟳ Última versión</button>
+          <button class="ap-btn ghost" type="button" (click)="copiarDesdePropuesta()" [disabled]="!puedeEditar || cargando">⎘ Copiar propuesta</button>
+          <button class="ap-btn save" type="button" (click)="guardarBorrador()" [disabled]="!puedeEditar || form.invalid || cargando">✓ Guardar</button>
+          <button class="ap-btn primary" type="button" (click)="enviarARevision()" [disabled]="!puedeEditar || form.invalid || cargando">→ Enviar a revisión</button>
+        </div>
+      </div>
+
+      <!-- MOTIVO DE RECHAZO -->
+      <div class="ap-rechazo"
+           *ngIf="anteproyecto?.ultimaVersion?.estadoVersion?.toUpperCase() === 'RECHAZADO'">
+        <div class="ap-rechazo-icon">⚠️</div>
+        <div class="ap-rechazo-content">
+          <div class="ap-rechazo-title">Tu anteproyecto fue rechazado</div>
+          <div class="ap-rechazo-motivo">
+            <strong>Motivo:</strong> {{ ultimaRevision?.observacion || 'Sin observación registrada.' }}
+          </div>
+          <div class="ap-rechazo-tip">Corrige tu anteproyecto y vuelve a enviarlo a revisión.</div>
         </div>
       </div>
 

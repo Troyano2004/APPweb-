@@ -177,7 +177,7 @@ export class ShellComponent implements OnInit, OnDestroy {
     {
       title: 'Administración del aplicativo',
       icon: '🛠️',
-      roles: ['ADMIN', 'COORDINADOR'],
+      roles: ['ADMIN'],
       items: [
         { label: 'Usuarios', path: '/app/admin/usuarios' },
         { label: 'Roles y permisos', path: '/app/admin/roles' },
