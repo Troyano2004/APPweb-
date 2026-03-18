@@ -7,7 +7,12 @@ import java.util.List;
 import java.util.Optional;
 
 public interface EleccionTitulacionRepository extends JpaRepository<EleccionTitulacion, Integer> {
-    List<EleccionTitulacion> findByEstudiante_IdEstudiante(Integer IdEstudiante);
 
-    Optional<EleccionTitulacion> findByEstudiante_IdEstudianteAndPeriodo_IdPeriodo(Integer IdEstudiante, Integer IdPeriodo);
+    List<EleccionTitulacion> findByEstudiante_IdEstudiante(Integer idEstudiante);
+
+    Optional<EleccionTitulacion> findByEstudiante_IdEstudianteAndPeriodo_IdPeriodo(
+            Integer idEstudiante, Integer idPeriodo);
+
+    List<EleccionTitulacion> findByCarrera_IdCarreraAndModalidad_NombreAndPeriodo_IdPeriodoAndEstado(
+            Integer idCarrera, String nombre, Integer idPeriodo, String estado);
 }

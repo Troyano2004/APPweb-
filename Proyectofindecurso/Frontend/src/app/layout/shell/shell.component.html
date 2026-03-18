@@ -1,3 +1,4 @@
+
 <div class="shell" [class.is-collapsed]="isCollapsed">
   <aside class="sidebar" [class.collapsed]="isCollapsed" [class.mobile-open]="isMobileOpen">
     <div class="sidebar-header">
@@ -21,14 +22,12 @@
           <span class="chevron" [class.open]="openSectionIndex === i" *ngIf="!isCollapsed">▾</span>
         </button>
         <div class="section-items" [class.open]="openSectionIndex === i" [class.collapsed]="isCollapsed">
-          <a
-            *ngFor="let item of section.items"
-            [routerLink]="item.path"
-            routerLinkActive="active"
-            (click)="closeMobile()"
-          >
+          <a *ngFor="let menuItem of itemsVisibles(section)"
+             [routerLink]="menuItem.path"
+             routerLinkActive="active"
+             (click)="closeMobile()">
             <span class="bullet"></span>
-            <span class="item-text">{{ item.label }}</span>
+            <span class="item-text">{{ menuItem.label }}</span>
           </a>
         </div>
       </div>
@@ -45,7 +44,6 @@
         <div class="module-title">{{ currentTitle }}</div>
       </div>
 
-      <!-- ✅ BUSCADOR MEJORADO -->
       <div class="topbar-center">
         <div class="search-box" [class.active]="searchFocused">
           <span class="search-icon">🔍</span>
@@ -69,24 +67,20 @@
             (click)="clearSearch()"
           >✕</button>
 
-          <!-- Dropdown resultados -->
           <div class="search-dropdown" *ngIf="searchFocused && searchResults.length > 0">
-            <a
-              *ngFor="let r of searchResults"
-              class="search-result"
-              [routerLink]="r.path"
-              (mousedown)="$event.preventDefault()"
-              (click)="onResultClick()"
-            >
-              <span class="result-icon">{{ r.icon }}</span>
+            <a *ngFor="let result of searchResults"
+               class="search-result"
+               [routerLink]="result.path"
+               (mousedown)="$event.preventDefault()"
+               (click)="onResultClick()">
+              <span class="result-icon">{{ result.icon }}</span>
               <div class="result-info">
-                <span class="result-label">{{ r.label }}</span>
-                <span class="result-section">{{ r.section }}</span>
+                <span class="result-label">{{ result.label }}</span>
+                <span class="result-section">{{ result.section }}</span>
               </div>
             </a>
           </div>
 
-          <!-- Sin resultados -->
           <div class="search-dropdown search-empty"
                *ngIf="searchFocused && searchQuery && searchResults.length === 0">
             <span>Sin resultados para "{{ searchQuery }}"</span>

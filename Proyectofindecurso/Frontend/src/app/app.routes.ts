@@ -65,6 +65,11 @@ import { SustentacionDt2Component } from './pages/titulacion2/sustentacion/suste
 
 import { BackupJobsComponent } from './pages/backup/backup-jobs/backup-jobs.component';
 
+
+import { ComplexivoInformeComponent } from './pages/complexivo/informe/complexivo-informe';
+import { AsignacionComplexivoComponent } from './pages/coordinador/asignacion-complexivo/asignacion-complexivo';
+
+
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'login' },
   { path: 'login', component: LoginComponent, canActivate: [loginGuard], data: { title: 'Login' } },
@@ -102,6 +107,8 @@ export const routes: Routes = [
       { path: 'titulacion2/workflow',                 component: TitulacionWorkflowComponent,  data: { title: 'Workflow Titulación II' } },
       // Redirecciones de compatibilidad (rutas antiguas → nuevas)
       { path: 'titulacion2/revision',                 pathMatch: 'full', redirectTo: 'titulacion2/revisar' },
+      { path: 'complexivo/informe', component: ComplexivoInformeComponent, data: { title: 'Complexivo - Informe Práctico' } },
+
       { path: 'titulacion2/revision/:idDocumento',    pathMatch: 'full', redirectTo: 'titulacion2/revisar/:idDocumento' },
 
       // ── Estudiantes ──────────────────────────────────────────────────────────
@@ -179,6 +186,8 @@ export const routes: Routes = [
       { path: 'coordinador/reportes',      component: ReportesCoordinacionComponent, data: { title: 'Reportes de coordinación' } },
       { path: 'coordinador/comision',      component: ComisionFormativaComponent,    data: { title: 'Comisión formativa' } },
       { path: 'coordinador/proyecto',      component: VisualizarProyectoComponent,   data: { title: 'Visualización de proyecto' } },
+      { path: 'coordinador/complexivo-asignacion', component: AsignacionComplexivoComponent, data: { title: 'Complexivo - Asignación Docente' } },
+
       { path: 'coordinador/dt1-asignacion', component: AsignacionDt1,               data: { title: 'DT1 - Asignación Docentes y Tutores' } },
 
       // ── Rutas de secciones pendientes (roles nuevos del shell) ────────────────

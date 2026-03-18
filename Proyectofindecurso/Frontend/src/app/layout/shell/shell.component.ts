@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { ComisionTemasService } from '../../services/comision-temas';
 import {
   ActivatedRoute,
   NavigationEnd,
@@ -10,7 +11,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { filter, Subscription } from 'rxjs';
-import { getSessionUser, getUserRoles } from '../../services/session';
+import { getSessionEntityId, getSessionUser, getUserRoles } from '../../services/session';
 
 type AppRole =
   | 'ADMIN'
@@ -28,12 +29,14 @@ interface MenuItem {
   label: string;
   path: string;
   roles?: AppRole[];
+  soloComplexivo?: boolean;
 }
 
 interface MenuSection {
   title: string;
   icon: string;
   roles?: AppRole[];
+  soloComplexivo?: boolean;
   items: MenuItem[];
 }
 
@@ -61,7 +64,8 @@ export class ShellComponent implements OnInit, OnDestroy {
   userRole         = 'Sistema';
   isDarkMode       = false;
 
-  // ── Búsqueda ──────────────────────────────────────────
+  modalidadEstudiante: string | null = null;
+
   searchQuery   = '';
   searchFocused = false;
   searchResults: SearchResult[] = [];
@@ -91,6 +95,7 @@ export class ShellComponent implements OnInit, OnDestroy {
         { label: 'Período Académico',       path: '/app/catalogos/periodo' },
         { label: 'Tipo Trabajo Titulación', path: '/app/catalogos/tipo-trabajo' },
         { label: 'Carrera-Modalidad',       path: '/app/catalogos/carrera-modalidad' },
+        { label: 'Docentes por Carrera',    path: '/app/catalogos/docente-carrera' },
       ],
     },
     {
@@ -142,6 +147,7 @@ export class ShellComponent implements OnInit, OnDestroy {
       ],
     },
     {
+      // Titulación II — igual que en el original, sin cambios
       title: 'Titulación II',
       icon: '🧐',
       roles: ['DOCENTE', 'DOCENTE_TITULADO', 'ESTUDIANTE', 'ADMIN'],
@@ -153,6 +159,16 @@ export class ShellComponent implements OnInit, OnDestroy {
         { label: 'Antiplagio COMPILATIO',   path: '/app/director/antiplagio-dt2',  roles: ['DOCENTE','DOCENTE_TITULADO','ADMIN'] },
         { label: 'Predefensa',              path: '/app/titulacion2/predefensa',   roles: ['DOCENTE','DOCENTE_TITULADO','ADMIN'] },
         { label: 'Sustentación Final',      path: '/app/titulacion2/sustentacion', roles: ['DOCENTE','DOCENTE_TITULADO','ADMIN'] },
+      ],
+    },
+    {
+      // NUEVO — solo aparece si el estudiante eligió Examen Complexivo
+      title: 'Titulación II — Complexivo',
+      icon: '📋',
+      roles: ['ESTUDIANTE'],
+      soloComplexivo: true,
+      items: [
+        { label: 'Informe Práctico', path: '/app/complexivo/informe', roles: ['ESTUDIANTE'] },
       ],
     },
     {
@@ -202,6 +218,8 @@ export class ShellComponent implements OnInit, OnDestroy {
         { label: 'Reportes',                      path: '/app/coordinador/reportes' },
         { label: 'Comisión formativa',            path: '/app/coordinador/comision' },
         { label: 'DT1 - Docentes y Tutores',      path: '/app/coordinador/dt1-asignacion' },
+        // NUEVO
+        { label: 'Complexivo - Asignar Docente',  path: '/app/coordinador/complexivo-asignacion' },
       ],
     },
     {
@@ -244,7 +262,7 @@ export class ShellComponent implements OnInit, OnDestroy {
         { label: 'Dashboard Auditoría',     path: '/app/admin/auditoria/dashboard' },
         { label: 'Logs de Auditoría',       path: '/app/admin/auditoria/logs' },
         { label: 'Config. Auditoría',       path: '/app/admin/auditoria/config' },
-        { label: 'Respaldos BD',            path: '/app/admin/backup',              roles: ['ADMIN'] },
+        { label: 'Respaldos BD',            path: '/app/admin/backup', roles: ['ADMIN'] },
       ],
     },
   ];
@@ -253,12 +271,14 @@ export class ShellComponent implements OnInit, OnDestroy {
 
   constructor(
     private readonly router: Router,
-    private readonly route: ActivatedRoute
+    private readonly route: ActivatedRoute,
+    private readonly comisionTemasService: ComisionTemasService
   ) {}
 
   ngOnInit(): void {
     this.loadUserData();
     this.loadTheme();
+    // Construir menú inmediatamente — igual que el original
     this.menuSections = this.buildMenuByRoles();
     this.openSectionIndex = this.menuSections.length ? 0 : -1;
     this.updateTitles();
@@ -267,13 +287,25 @@ export class ShellComponent implements OnInit, OnDestroy {
       .pipe(filter(event => event instanceof NavigationEnd))
       .subscribe(() => this.updateTitles());
     this.subscriptions.add(sub);
+
+    // En segundo plano: si es estudiante, consultar modalidad
+    // y agregar sección complexivo solo si la eligió
+    this.cargarModalidadSiEsEstudiante();
   }
 
   ngOnDestroy(): void {
     this.subscriptions.unsubscribe();
   }
 
-  // ── Sidebar ───────────────────────────────────────────
+  esComplexivo(): boolean {
+    return (this.modalidadEstudiante ?? '').toLowerCase().includes('complexivo');
+  }
+
+  // Igual que el original — sin filtros adicionales
+  itemsVisibles(section: MenuSection): MenuItem[] {
+    return section.items;
+  }
+
   toggleCollapse(): void { this.isCollapsed = !this.isCollapsed; }
   toggleMobile():   void { this.isMobileOpen = !this.isMobileOpen; }
   closeMobile():    void { this.isMobileOpen = false; }
@@ -282,21 +314,17 @@ export class ShellComponent implements OnInit, OnDestroy {
     this.openSectionIndex = this.openSectionIndex === index ? -1 : index;
   }
 
-  // ── Tema ──────────────────────────────────────────────
   toggleTheme(): void {
     this.isDarkMode = !this.isDarkMode;
     document.body.classList.toggle('dark-mode', this.isDarkMode);
     localStorage.setItem('theme', this.isDarkMode ? 'dark' : 'light');
   }
 
-  // ── Sesión ────────────────────────────────────────────
   logout(): void {
     localStorage.removeItem('usuario');
     localStorage.removeItem('token');
     this.router.navigate(['/login']);
   }
-
-  // ── Búsqueda ──────────────────────────────────────────
 
   updateSearchResults(): void {
     const q = this.searchQuery.trim().toLowerCase();
@@ -340,6 +368,26 @@ export class ShellComponent implements OnInit, OnDestroy {
 
   // ── Privados ──────────────────────────────────────────
 
+  private cargarModalidadSiEsEstudiante(): void {
+    const roles = getUserRoles().map(r => r.replace('ROLE_', '').toUpperCase());
+    if (!roles.includes('ESTUDIANTE')) return;
+
+    const user  = getSessionUser();
+    const idEst = getSessionEntityId(user, 'estudiante');
+    if (!idEst) return;
+
+    this.comisionTemasService.obtenerEstadoModalidad(idEst).subscribe({
+      next: (estado) => {
+        if (estado.tieneModalidad && estado.modalidad) {
+          this.modalidadEstudiante = estado.modalidad;
+          // Reconstruir menú ahora que sabemos la modalidad
+          this.menuSections = this.buildMenuByRoles();
+        }
+      },
+      error: () => {} // Si falla, el menú ya está construido correctamente
+    });
+  }
+
   private loadTheme(): void {
     const saved = localStorage.getItem('theme');
     if (saved === 'dark') {
@@ -373,7 +421,12 @@ export class ShellComponent implements OnInit, OnDestroy {
     if (userRoles.length === 0) return [];
 
     return this.ALL_SECTIONS
-      .filter(sec => !sec.roles || sec.roles.some(r => userRoles.includes(r)))
+      .filter(sec => {
+        if (sec.roles && !sec.roles.some(r => userRoles.includes(r))) return false;
+        // Sección complexivo: solo si el estudiante ya eligió esa modalidad
+        if (sec.soloComplexivo && !this.esComplexivo()) return false;
+        return true;
+      })
       .map(sec => ({
         ...sec,
         items: sec.items.filter(it => !it.roles || it.roles.some(r => userRoles.includes(r))),
