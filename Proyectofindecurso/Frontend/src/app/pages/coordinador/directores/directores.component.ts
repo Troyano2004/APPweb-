@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CoordinadorService, DirectorCarga, EstudianteSinDirector } from '../../../services/coordinador';
@@ -205,18 +205,21 @@ export class DirectoresComponent implements OnInit {
     motivo: ''
   };
 
-  constructor(private coordinadorService: CoordinadorService) {}
+  constructor(private coordinadorService: CoordinadorService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.cargarListas();
   }
 
+  // Método cargarListas():
   cargarListas(): void {
     this.coordinadorService.getEstudiantesSinDirector().subscribe((data) => {
       this.estudiantesSinDirector = data;
+      this.cdr.detectChanges();
     });
     this.coordinadorService.getCargaDirectores().subscribe((data) => {
       this.cargaDirectores = data;
+      this.cdr.detectChanges();
     });
   }
 
