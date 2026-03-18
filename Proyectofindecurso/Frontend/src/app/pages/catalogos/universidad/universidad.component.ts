@@ -1,3 +1,5 @@
+
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CatalogosBasicosService, Universidad } from '../../../services/catalogos-basicos.service';
@@ -123,12 +125,26 @@ export class UniversidadComponent implements OnInit {
   error = '';
   mensaje = '';
 
+  constructor(private service: CatalogosBasicosService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void { this.cargar(); }
 
   cargar(): void {
     this.loading = true;
+    this.error = '';
+    this.cdr.detectChanges();
     this.service.listarUniversidades().subscribe({
+      next: (data) => {
+        this.items = data ?? [];
+        this.loading = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error al cargar universidades:', err);
+        this.error = 'Error al cargar. Verifica la conexión con el servidor.';
+        this.loading = false;
+        this.cdr.detectChanges();
+      }
     });
   }
 

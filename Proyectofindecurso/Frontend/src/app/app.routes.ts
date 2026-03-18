@@ -58,7 +58,6 @@ import { SustentacionDt2Component } from './pages/titulacion2/sustentacion/suste
 import { ReportePropuestasComponent } from './pages/propuesta/reporte-propuestas/reporte-propuestas.component';
 
 
-import { BackupComponent } from './pages/backup/backup';
 
 
 
@@ -75,7 +74,7 @@ export const routes: Routes = [
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
       { path: 'dashboard', component: DashboardComponent, data: { title: 'Dashboard' } },
-      { path: 'admin/backup', component: BackupComponent, data: { title: 'Respaldos' } },
+
 
       // Estudiante / Anteproyecto
       { path: 'anteproyecto/nuevo', component: AnteproyectoComponent, data: { title: 'Registrar anteproyecto' } },
