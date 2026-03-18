@@ -9,5 +9,10 @@ import java.util.Optional;
 public interface EleccionTitulacionRepository extends JpaRepository<EleccionTitulacion, Integer> {
     List<EleccionTitulacion> findByEstudiante_IdEstudiante(Integer IdEstudiante);
 
-    Optional<EleccionTitulacion> findByEstudiante_IdEstudianteAndPeriodo_IdPeriodo(Integer IdEstudiante, Integer IdPeriodo);
+    Optional<EleccionTitulacion> findByEstudiante_IdEstudianteAndPeriodo_IdPeriodo(
+            Integer IdEstudiante, Integer IdPeriodo);
+
+    // NUEVO: buscar la elección activa del estudiante para saber su modalidad
+    Optional<EleccionTitulacion> findByEstudiante_IdEstudianteAndEstado(
+            Integer idEstudiante, String estado);
 }
