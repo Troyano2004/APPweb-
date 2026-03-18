@@ -65,7 +65,7 @@ import { SustentacionDt2Component } from './pages/titulacion2/sustentacion/suste
 import { ReportePropuestasComponent } from './pages/propuesta/reporte-propuestas/reporte-propuestas.component';
 
 
-import { BackupJobsComponent } from './pages/backup/backup-jobs/backup-jobs.component';
+
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'login' },
@@ -169,7 +169,7 @@ export const routes: Routes = [
       { path: 'admin/gestion-solicitudes', component: GestionSolicitudesComponent, data: { title: 'Gestión de Solicitudes' } },
       { path: 'admin/configuracion-correo', component: ConfiguracionCorreoComponent, data: { title: 'Configuración de Correo' } },
       // ── Backup ───────────────────────────────────────────────────────────────────
-      { path: 'admin/backup', component: BackupJobsComponent, data: { title: 'Respaldos de Base de Datos' } },
+
       { path: 'admin/auditoria/dashboard', component: AuditDashboardComponent, data: { title: 'Dashboard Auditoría' } },
       { path: 'admin/auditoria/logs',      component: AuditLogsComponent,      data: { title: 'Logs de Auditoría' } },
       { path: 'admin/auditoria/config',    component: AuditConfigComponent,     data: { title: 'Configuración Auditoría' } },
