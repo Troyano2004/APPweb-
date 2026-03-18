@@ -1,3 +1,4 @@
+
 package com.erwin.backend.dtos;
 
 import java.time.LocalDateTime;
@@ -25,7 +26,6 @@ public class ComplexivoDtos {
             Boolean activo
     ) {}
 
-    // ─── Lista de estudiantes complexivo sin docente ──────────────────
     public record EstudianteComplexivoSinDocenteDto(
             Integer idEstudiante,
             String nombre,
@@ -34,7 +34,6 @@ public class ComplexivoDtos {
             String estadoComplexivo
     ) {}
 
-    // ─── Info académica coordinador complexivo ────────────────────────
     public record InfoCoordinadorComplexivoDto(
             Integer idCarrera,
             String carrera,
@@ -47,7 +46,6 @@ public class ComplexivoDtos {
 
     public record DocenteOpcionDto(Integer idDocente, String nombre) {}
 
-    // ─── Informe práctico (Estudiante — Titulación II Complexivo) ─────
     public record ComplexivoInformeDto(
             Integer idInforme,
             Integer idComplexivo,
@@ -61,7 +59,6 @@ public class ComplexivoDtos {
             String bibliografia,
             String estado,
             String observaciones,
-            // datos del docente asignado
             Integer idDocente,
             String nombreDocente
     ) {}
@@ -77,7 +74,6 @@ public class ComplexivoDtos {
             String bibliografia
     ) {}
 
-    // ─── Estado del complexivo del estudiante ────────────────────────
     public record EstadoComplexivoEstudianteDto(
             boolean tieneComplexivo,
             Integer idComplexivo,
@@ -89,5 +85,47 @@ public class ComplexivoDtos {
             String nombreDocente
     ) {}
 
+    // ─── NUEVOS — Docente complexivo ──────────────────────────────
+    public record EstudianteDeDocenteDto(
+            Integer idComplexivo,
+            Integer idEstudiante,
+            String  nombreEstudiante,
+            String  carrera,
+            String  estadoComplexivo,
+            boolean tieneInforme,
+            String  estadoInforme
+    ) {}
 
+    public record ComplexivoAsesoriaDto(
+            Integer idAsesoria,
+            Integer idComplexivo,
+            String  fecha,
+            String  observaciones,
+            String  nombreDocente
+    ) {}
+
+    public record RegistrarAsesoriaRequest(
+            String observaciones
+    ) {}
+    // ─── Propuestas para docente complexivo ──────────────────────
+    public record PropuestaComplexivoDto(
+            Integer idPropuesta,
+            Integer idEstudiante,
+            String  nombreEstudiante,
+            String  titulo,
+            String  planteamientoProblema,
+            String  objetivosGenerales,
+            String  objetivosEspecificos,
+            String  metodologia,
+            String  resultadosEsperados,
+            String  bibliografia,
+            String  estado,
+            String  observacionesComision,
+            String  fechaEnvio
+    ) {}
+
+    public record DecisionPropuestaComplexivoRequest(
+            String estado,        // APROBADA o RECHAZADA
+            String observaciones
+    ) {}
 }

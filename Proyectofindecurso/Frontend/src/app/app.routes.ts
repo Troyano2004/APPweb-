@@ -69,6 +69,10 @@ import { BackupJobsComponent } from './pages/backup/backup-jobs/backup-jobs.comp
 import { ComplexivoInformeComponent } from './pages/complexivo/informe/complexivo-informe';
 import { AsignacionComplexivoComponent } from './pages/coordinador/asignacion-complexivo/asignacion-complexivo';
 
+import { ComplexivoDocenteComponent } from './pages/complexivo/docente/complexivo-docente';
+
+
+
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'login' },
@@ -110,7 +114,7 @@ export const routes: Routes = [
       { path: 'complexivo/informe', component: ComplexivoInformeComponent, data: { title: 'Complexivo - Informe Práctico' } },
 
       { path: 'titulacion2/revision/:idDocumento',    pathMatch: 'full', redirectTo: 'titulacion2/revisar/:idDocumento' },
-
+      { path: 'complexivo/mis-estudiantes', component: ComplexivoDocenteComponent, data: { title: 'Complexivo - Mis Estudiantes' } },
       // ── Estudiantes ──────────────────────────────────────────────────────────
       { path: 'estudiantes', component: EstudiantesComponent, data: { title: 'Estudiantes' } },
 

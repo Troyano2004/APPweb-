@@ -1,3 +1,4 @@
+
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -83,6 +84,24 @@ export interface AsignarDocenteComplexivoRequest {
   observacion: string;
 }
 
+export interface EstudianteDeDocenteDto {
+  idComplexivo: number;
+  idEstudiante: number;
+  nombreEstudiante: string;
+  carrera: string;
+  estadoComplexivo: string;
+  tieneInforme: boolean;
+  estadoInforme: string | null;
+}
+
+export interface ComplexivoAsesoriaDto {
+  idAsesoria: number;
+  idComplexivo: number;
+  fecha: string;
+  observaciones: string;
+  nombreDocente: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ComplexivoService {
   private readonly BASE = 'http://localhost:8080/api/complexivo';
@@ -119,5 +138,39 @@ export class ComplexivoService {
   asignarDocente(req: AsignarDocenteComplexivoRequest): Observable<ComplexivoDocenteAsignacionResponse> {
     return this.http.post<ComplexivoDocenteAsignacionResponse>(
       `${this.BASE}/coordinador/asignar-docente`, req);
+  }
+
+  // ── Docente ────────────────────────────────────────────────────
+  getMisEstudiantes(idDocente: number): Observable<EstudianteDeDocenteDto[]> {
+    return this.http.get<EstudianteDeDocenteDto[]>(
+      `${this.BASE}/docente/${idDocente}/estudiantes`);
+  }
+
+  getInformeDocente(idDocente: number, idComplexivo: number): Observable<ComplexivoInformeDto> {
+    return this.http.get<ComplexivoInformeDto>(
+      `${this.BASE}/docente/${idDocente}/informe/${idComplexivo}`);
+  }
+
+  aprobarInforme(idDocente: number, idInforme: number, observaciones: string): Observable<ComplexivoInformeDto> {
+    return this.http.post<ComplexivoInformeDto>(
+      `${this.BASE}/docente/${idDocente}/informe/${idInforme}/aprobar`,
+      { observaciones });
+  }
+
+  rechazarInforme(idDocente: number, idInforme: number, observaciones: string): Observable<ComplexivoInformeDto> {
+    return this.http.post<ComplexivoInformeDto>(
+      `${this.BASE}/docente/${idDocente}/informe/${idInforme}/rechazar`,
+      { observaciones });
+  }
+
+  registrarAsesoria(idDocente: number, idComplexivo: number, observaciones: string): Observable<ComplexivoAsesoriaDto> {
+    return this.http.post<ComplexivoAsesoriaDto>(
+      `${this.BASE}/docente/${idDocente}/asesoria/${idComplexivo}`,
+      { observaciones });
+  }
+
+  listarAsesorias(idDocente: number, idComplexivo: number): Observable<ComplexivoAsesoriaDto[]> {
+    return this.http.get<ComplexivoAsesoriaDto[]>(
+      `${this.BASE}/docente/${idDocente}/asesorias/${idComplexivo}`);
   }
 }

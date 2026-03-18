@@ -133,6 +133,7 @@ export class ShellComponent implements OnInit, OnDestroy {
         { label: 'Registrar tutoría',           path: '/app/tutorias/nueva' },
         { label: 'Actas de tutoría',            path: '/app/tutorias/actas' },
         { label: 'Historial',                   path: '/app/tutorias/historial', roles: ['ADMIN'] },
+        { label: 'Complexivo - Mis estudiantes', path: '/app/complexivo/mis-estudiantes', roles: ['DOCENTE','DOCENTE_TITULADO','ADMIN'] },
       ],
     },
     {
