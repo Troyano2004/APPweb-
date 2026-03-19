@@ -32,7 +32,8 @@ public class ComplexivoController {
 
     // ── Estudiante ───────────────────────────────────────────────────
     @GetMapping("/estudiante/{idEstudiante}/estado")
-    public EstadoComplexivoEstudianteDto estadoEstudiante(@PathVariable Integer idEstudiante) {
+    public EstadoComplexivoEstudianteDto estadoEstudiante(
+            @PathVariable Integer idEstudiante) {
         return service.estadoEstudiante(idEstudiante);
     }
 
@@ -42,8 +43,9 @@ public class ComplexivoController {
     }
 
     @PutMapping("/estudiante/{idEstudiante}/informe")
-    public ComplexivoInformeDto guardarInforme(@PathVariable Integer idEstudiante,
-                                               @RequestBody ComplexivoInformeUpdateRequest req) {
+    public ComplexivoInformeDto guardarInforme(
+            @PathVariable Integer idEstudiante,
+            @RequestBody ComplexivoInformeUpdateRequest req) {
         return service.guardarInforme(idEstudiante, req);
     }
 
@@ -53,45 +55,64 @@ public class ComplexivoController {
     }
 
     // ── Docente complexivo ───────────────────────────────────────────
+
+    @GetMapping("/docente/{idDocente}/propuestas")
+    public List<PropuestaComplexivoDto> propuestasDeDocente(
+            @PathVariable Integer idDocente) {
+        return service.propuestasDeDocente(idDocente);
+    }
+
+    @PostMapping("/docente/{idDocente}/propuestas/{idPropuesta}/decision")
+    public PropuestaComplexivoDto decidirPropuesta(
+            @PathVariable Integer idDocente,
+            @PathVariable Integer idPropuesta,
+            @RequestBody DecisionPropuestaComplexivoRequest req) {
+        return service.decidirPropuesta(idDocente, idPropuesta, req);
+    }
+
     @GetMapping("/docente/{idDocente}/estudiantes")
-    public List<EstudianteDeDocenteDto> misEstudiantes(@PathVariable Integer idDocente) {
+    public List<EstudianteDeDocenteDto> misEstudiantes(
+            @PathVariable Integer idDocente) {
         return service.estudiantesDeDocente(idDocente);
     }
 
     @GetMapping("/docente/{idDocente}/informe/{idComplexivo}")
-    public ComplexivoInformeDto getInformeDocente(@PathVariable Integer idDocente,
-                                                  @PathVariable Integer idComplexivo) {
+    public ComplexivoInformeDto getInformeDocente(
+            @PathVariable Integer idDocente,
+            @PathVariable Integer idComplexivo) {
         return service.getInformeParaDocente(idDocente, idComplexivo);
     }
 
     @PostMapping("/docente/{idDocente}/informe/{idInforme}/aprobar")
-    public ComplexivoInformeDto aprobarInforme(@PathVariable Integer idDocente,
-                                               @PathVariable Integer idInforme,
-                                               @RequestBody(required = false) Map<String, String> body) {
+    public ComplexivoInformeDto aprobarInforme(
+            @PathVariable Integer idDocente,
+            @PathVariable Integer idInforme,
+            @RequestBody(required = false) Map<String, String> body) {
         return service.revisarInforme(idDocente, idInforme, "APROBADO",
                 body != null ? body.get("observaciones") : null);
     }
 
     @PostMapping("/docente/{idDocente}/informe/{idInforme}/rechazar")
-    public ComplexivoInformeDto rechazarInforme(@PathVariable Integer idDocente,
-                                                @PathVariable Integer idInforme,
-                                                @RequestBody Map<String, String> body) {
+    public ComplexivoInformeDto rechazarInforme(
+            @PathVariable Integer idDocente,
+            @PathVariable Integer idInforme,
+            @RequestBody Map<String, String> body) {
         return service.revisarInforme(idDocente, idInforme, "RECHAZADO",
                 body.get("observaciones"));
     }
 
     @PostMapping("/docente/{idDocente}/asesoria/{idComplexivo}")
-    public ComplexivoAsesoriaDto registrarAsesoria(@PathVariable Integer idDocente,
-                                                   @PathVariable Integer idComplexivo,
-                                                   @RequestBody RegistrarAsesoriaRequest req) {
+    public ComplexivoAsesoriaDto registrarAsesoria(
+            @PathVariable Integer idDocente,
+            @PathVariable Integer idComplexivo,
+            @RequestBody RegistrarAsesoriaRequest req) {
         return service.registrarAsesoria(idDocente, idComplexivo, req);
     }
 
     @GetMapping("/docente/{idDocente}/asesorias/{idComplexivo}")
-    public List<ComplexivoAsesoriaDto> listarAsesorias(@PathVariable Integer idDocente,
-                                                       @PathVariable Integer idComplexivo) {
+    public List<ComplexivoAsesoriaDto> listarAsesorias(
+            @PathVariable Integer idDocente,
+            @PathVariable Integer idComplexivo) {
         return service.listarAsesorias(idDocente, idComplexivo);
     }
-
-
 }

@@ -6,7 +6,7 @@ import java.util.List;
 
 public class ComplexivoDtos {
 
-    // ─── Asignación de docente (Coordinador) ───────────────────────────
+    // ─── Asignación de docente (Coordinador) ──────────────────────
     public record AsignarDocenteComplexivoRequest(
             Integer idEstudiante,
             Integer idDocente,
@@ -46,6 +46,7 @@ public class ComplexivoDtos {
 
     public record DocenteOpcionDto(Integer idDocente, String nombre) {}
 
+    // ─── Informe práctico ──────────────────────────────────────────
     public record ComplexivoInformeDto(
             Integer idInforme,
             Integer idComplexivo,
@@ -74,6 +75,7 @@ public class ComplexivoDtos {
             String bibliografia
     ) {}
 
+    // ─── Estado del complexivo del estudiante ──────────────────────
     public record EstadoComplexivoEstudianteDto(
             boolean tieneComplexivo,
             Integer idComplexivo,
@@ -85,7 +87,7 @@ public class ComplexivoDtos {
             String nombreDocente
     ) {}
 
-    // ─── NUEVOS — Docente complexivo ──────────────────────────────
+    // ─── Docente complexivo — estudiantes e informes ───────────────
     public record EstudianteDeDocenteDto(
             Integer idComplexivo,
             Integer idEstudiante,
@@ -107,7 +109,8 @@ public class ComplexivoDtos {
     public record RegistrarAsesoriaRequest(
             String observaciones
     ) {}
-    // ─── Propuestas para docente complexivo ──────────────────────
+
+    // ─── Propuestas para docente complexivo ───────────────────────
     public record PropuestaComplexivoDto(
             Integer idPropuesta,
             Integer idEstudiante,
@@ -125,7 +128,7 @@ public class ComplexivoDtos {
     ) {}
 
     public record DecisionPropuestaComplexivoRequest(
-            String estado,        // APROBADA o RECHAZADA
+            String estado,
             String observaciones
     ) {}
 }

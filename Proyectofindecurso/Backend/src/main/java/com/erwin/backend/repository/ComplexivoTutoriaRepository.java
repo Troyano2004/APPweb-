@@ -5,7 +5,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 
-public interface ComplexivoTutoriaRepository extends JpaRepository<ComplexivoTutoria, Integer> {
+public interface ComplexivoTutoriaRepository
+        extends JpaRepository<ComplexivoTutoria, Integer> {
 
-    List<ComplexivoTutoria> findByInforme_Complexivo_IdComplexivo(Integer idComplexivo);
+    List<ComplexivoTutoria> findByInforme_Complexivo_IdComplexivo(
+            Integer idComplexivo);
 }
