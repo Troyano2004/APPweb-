@@ -5,11 +5,12 @@ import { DashboardDetalle, DashboardService, DashboardResumen } from '../../serv
 import { DocumentoPendienteDto, RevisionDirectorService } from '../../services/revision-director';
 import { DocumentoTitulacionDto, DocumentoTitulacionService } from '../../services/documento-titulacion';
 import { getSessionEntityId, getSessionUser, hasRole } from '../../services/session';
+import { BackupStatsWidgetComponent } from '../../shared/backup-stats-widget.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, BackupStatsWidgetComponent],
   template: `
     <section class="page">
       <div class="page-header">
@@ -45,6 +46,11 @@ import { getSessionEntityId, getSessionUser, hasRole } from '../../services/sess
             </ul>
             <ng-template #emptyAlertas><p class="empty">Sin alertas disponibles.</p></ng-template>
           </article>
+        </div>
+
+        <!-- Widget de backups solo para ADMIN -->
+        <div class="grid" *ngIf="isAdmin()">
+          <app-backup-stats-widget></app-backup-stats-widget>
         </div>
       </ng-container>
 
@@ -173,8 +179,9 @@ export class DashboardComponent implements OnInit {
 
   private readonly user = signal(getSessionUser());
   isCoordinator = computed(() => hasRole(this.user()?.rol, 'ROLE_COORDINADOR'));
-  isTeacher = computed(() => hasRole(this.user()?.rol, 'ROLE_DOCENTE'));
-  isStudent = computed(() => hasRole(this.user()?.rol, 'ROLE_ESTUDIANTE'));
+  isTeacher     = computed(() => hasRole(this.user()?.rol, 'ROLE_DOCENTE'));
+  isStudent     = computed(() => hasRole(this.user()?.rol, 'ROLE_ESTUDIANTE'));
+  isAdmin       = computed(() => hasRole(this.user()?.rol, 'ROLE_ADMIN'));
 
   constructor(
     private readonly dashboardService: DashboardService,
@@ -183,66 +190,39 @@ export class DashboardComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    if (this.isCoordinator()) {
-      this.cargarDashboardCoordinacion();
-      return;
-    }
-
-    if (this.isTeacher()) {
-      this.cargarDashboardDocente();
-      return;
-    }
-
-    if (this.isStudent()) {
-      this.cargarDashboardEstudiante();
-    }
+    if (this.isCoordinator()) { this.cargarDashboardCoordinacion(); return; }
+    if (this.isTeacher())     { this.cargarDashboardDocente();      return; }
+    if (this.isStudent())     { this.cargarDashboardEstudiante(); }
   }
 
   pageTitle(): string {
     if (this.isCoordinator()) return 'Dashboard de coordinación';
-    if (this.isTeacher()) return 'Dashboard docente';
-    if (this.isStudent()) return 'Mi dashboard de titulación';
+    if (this.isTeacher())     return 'Dashboard docente';
+    if (this.isStudent())     return 'Mi dashboard de titulación';
     return 'Dashboard';
   }
 
   pageSubtitle(): string {
     if (this.isCoordinator()) return 'Monitorea coordinación y administración del aplicativo.';
-    if (this.isTeacher()) return 'Revisa los proyectos que tienes asignados.';
-    if (this.isStudent()) return 'Gestiona tu avance de proyecto y prepara tu envío a revisión.';
+    if (this.isTeacher())     return 'Revisa los proyectos que tienes asignados.';
+    if (this.isStudent())     return 'Gestiona tu avance de proyecto y prepara tu envío a revisión.';
     return 'Panel principal del proceso de titulación.';
   }
 
   completitudDocumento(): number {
     const doc = this.documentoEstudiante;
     if (!doc) return 0;
-
-    const fields = [
-      doc.titulo,
-      doc.resumen,
-      doc.introduccion,
-      doc.metodologia,
-      doc.resultados,
-      doc.conclusiones,
-      doc.bibliografia
-    ];
-
-    const completados = fields.filter((f) => (f ?? '').toString().trim().length > 0).length;
+    const fields = [doc.titulo, doc.resumen, doc.introduccion, doc.metodologia, doc.resultados, doc.conclusiones, doc.bibliografia];
+    const completados = fields.filter(f => (f ?? '').toString().trim().length > 0).length;
     return Math.round((completados / fields.length) * 100);
   }
 
   formatFechaSustentacion(): string {
     const fecha = this.documentoEstudiante?.fechaSustentacion;
     if (!fecha) return 'Por definir';
-
     const value = new Date(`${fecha}T00:00:00`);
-    return Number.isNaN(value.getTime())
-      ? fecha
-      : value.toLocaleDateString('es-EC', {
-        weekday: 'short',
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      });
+    return Number.isNaN(value.getTime()) ? fecha
+      : value.toLocaleDateString('es-EC', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
   }
 
   formatHoraSustentacion(): string {
@@ -253,79 +233,42 @@ export class DashboardComponent implements OnInit {
 
   recomendacionesPreview(): string {
     const contenido = this.documentoEstudiante?.recomendaciones;
-    if (!contenido) {
-      return 'Aún no has registrado recomendaciones en tu documento. Añádelas para tener una guía clara antes de la defensa.';
-    }
-
-    const textoPlano = contenido
-      .replace(/<[^>]*>/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-
-    if (!textoPlano) {
-      return 'Aún no has registrado recomendaciones en tu documento. Añádelas para tener una guía clara antes de la defensa.';
-    }
-
+    if (!contenido) return 'Aún no has registrado recomendaciones en tu documento. Añádelas para tener una guía clara antes de la defensa.';
+    const textoPlano = contenido.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    if (!textoPlano) return 'Aún no has registrado recomendaciones en tu documento. Añádelas para tener una guía clara antes de la defensa.';
     return textoPlano.length > 220 ? `${textoPlano.slice(0, 220)}...` : textoPlano;
   }
 
   private cargarDashboardCoordinacion(): void {
     this.loading = true;
-    this.error = '';
+    this.error   = '';
     this.dashboardService.getResumen().subscribe({
-      next: (resumen) => {
-        this.resumen = resumen;
-        this.loading = false;
-      },
-      error: () => {
-        this.error = 'No se pudo cargar el resumen del dashboard.';
-        this.loading = false;
-      }
+      next:  resumen => { this.resumen = resumen; this.loading = false; },
+      error: ()      => { this.error = 'No se pudo cargar el resumen del dashboard.'; this.loading = false; }
     });
-
     this.dashboardService.getDetalle().subscribe({
-      next: (detalle) => (this.detalle = detalle),
-      error: () => (this.detalle = { alertas: [], actividades: [] })
+      next:  detalle => this.detalle = detalle,
+      error: ()      => this.detalle = { alertas: [], actividades: [] }
     });
   }
 
   private cargarDashboardEstudiante(): void {
     const idEstudiante = getSessionEntityId(this.user(), 'estudiante');
-    if (!idEstudiante) {
-      this.error = 'No se pudo identificar el estudiante autenticado.';
-      return;
-    }
-
+    if (!idEstudiante) { this.error = 'No se pudo identificar el estudiante autenticado.'; return; }
     this.loading = true;
     this.documentoService.getDocumento(idEstudiante).subscribe({
-      next: (doc) => {
-        this.documentoEstudiante = doc;
-        this.loading = false;
-      },
-      error: (err) => {
-        this.error = err?.error?.message ?? 'No se pudo cargar tu documento de titulación.';
-        this.loading = false;
-      }
+      next:  doc => { this.documentoEstudiante = doc; this.loading = false; },
+      error: err => { this.error = err?.error?.message ?? 'No se pudo cargar tu documento de titulación.'; this.loading = false; }
     });
   }
 
   private cargarDashboardDocente(): void {
     const idDocente = getSessionEntityId(this.user(), 'docente');
-    if (!idDocente) {
-      this.error = 'No se pudo identificar el docente autenticado.';
-      return;
-    }
-
+    if (!idDocente) { this.error = 'No se pudo identificar el docente autenticado.'; return; }
     this.loading = true;
     this.revisionService.pendientes(idDocente).subscribe({
-      next: (items) => {
-        this.pendientesDocente = items ?? [];
-        this.loading = false;
-      },
-      error: (err) => {
-        this.error = err?.error?.message ?? 'No se pudo cargar los proyectos pendientes.';
-        this.loading = false;
-      }
+      next:  items => { this.pendientesDocente = items ?? []; this.loading = false; },
+      error: err   => { this.error = err?.error?.message ?? 'No se pudo cargar los proyectos pendientes.'; this.loading = false; }
     });
   }
 }

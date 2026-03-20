@@ -38,9 +38,10 @@ public class BackupService {
 
     private final BackupJobRepository       jobRepo;
     private final BackupExecutionRepository execRepo;
-    private final BackupEncryptionUtil      encryption;
-    private final BackupStorageService      storageService;
-    private final BackupNotificationService notificationService;
+    private final BackupEncryptionUtil        encryption;
+    private final BackupStorageService        storageService;
+    private final BackupNotificationService   notificationService;      // email
+    private final BackupSseNotificationService sseService;              // SSE tiempo real
 
     // ── CRUD ───────────────────────────────────────────────────
 
@@ -106,6 +107,12 @@ public class BackupService {
         jobFresh.setUltimaEjecucion(LocalDateTime.now());
         jobRepo.save(jobFresh);
         notificationService.notificar(jobFresh, lastExec);
+
+        // Emitir notificación SSE en tiempo real
+        if (lastExec != null) {
+            sseService.notificarBackupCompletado(lastExec, lastExec.getEstado());
+        }
+
         return lastExec;
     }
 

@@ -93,6 +93,35 @@ export interface BackupJobRequest {
   destinos:             BackupDestinationRequest[];
 }
 
+export interface RestoreResponse {
+  idExecution:       number;
+  idJob:             number;
+  jobNombre:         string;
+  databaseNombre:    string;
+  archivoNombre:     string | null;
+  archivoRuta:       string | null;
+  tamanoBytes:       number | null;
+  estado:            string;
+  iniciadoEn:        string;
+  archivoDisponible: boolean;
+  destinoTipo:       string | null;
+}
+
+export interface RestoreRequest {
+  idExecution:   number;
+  idJob:         number;
+  modo:          'REEMPLAZAR' | 'NUEVA_BD';
+  nombreBdNueva?: string;
+}
+
+export interface RestoreResultado {
+  exitoso:          boolean;
+  mensaje:          string;
+  log:              string | null;
+  bdRestaurada:     string | null;
+  duracionSegundos: number;
+}
+
 export interface BackupExecutionResponse {
   idExecution:       number;
   idJob:             number;
@@ -177,6 +206,29 @@ export class BackupService {
 
   probarEmail(email: string): Observable<TestResultado> {
     return this.http.post<TestResultado>(`${this.API_URL}/test/email`, { email });
+  }
+
+  // ── Estadísticas ──────────────────────────────────────────────────────────
+  estadisticas(): Observable<any> {
+    return this.http.get<any>(`${this.API_URL}/stats`);
+  }
+
+  verificarIntegridad(idExecution: number, idJob: number): Observable<any> {
+    return this.http.post<any>(
+      `${this.API_URL}/integridad/${idExecution}?idJob=${idJob}`, {});
+  }
+
+  aplicarRetencion(): Observable<void> {
+    return this.http.post<void>(`${this.API_URL}/retencion/aplicar`, {});
+  }
+
+  // ── Restauración ──────────────────────────────────────────────────────────
+  historialRestore(jobId: number): Observable<RestoreResponse[]> {
+    return this.http.get<RestoreResponse[]>(`${this.API_URL}/restaurar/historial/${jobId}`);
+  }
+
+  ejecutarRestore(req: RestoreRequest): Observable<RestoreResultado> {
+    return this.http.post<RestoreResultado>(`${this.API_URL}/restaurar/ejecutar`, req);
   }
 
   zonasHorarias(): Observable<string[]> {

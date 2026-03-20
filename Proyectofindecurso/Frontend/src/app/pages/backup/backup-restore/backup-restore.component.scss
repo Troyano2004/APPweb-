@@ -1,0 +1,606 @@
+// ── Variables ───────────────────────────────────────────────────────────────
+$green:       #1a7a4a;
+$green-light: #e8f5ee;
+$green-hover: #155f38;
+$red:         #dc2626;
+$red-light:   #fee2e2;
+$yellow:      #d97706;
+$yellow-light:#fef3c7;
+$border:      #e5e7eb;
+$bg:          #f9fafb;
+$text:        #1f2937;
+$text-muted:  #6b7280;
+$white:       #ffffff;
+$shadow:      0 1px 3px rgba(0,0,0,0.08);
+$radius:      10px;
+
+// ── Page ────────────────────────────────────────────────────────────────────
+.restore-page {
+  padding: 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+
+  h2 { margin: 0; font-size: 1.5rem; color: $green; }
+  .subtitle { font-size: 0.85rem; color: $text-muted; display: block; margin-top: 0.2rem; }
+}
+
+// ── Layout 3 columnas ────────────────────────────────────────────────────────
+.restore-layout {
+  display: grid;
+  grid-template-columns: 240px 1fr 320px;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+// ── Panel genérico ───────────────────────────────────────────────────────────
+.jobs-panel, .calendar-panel, .detail-panel {
+  background: $white;
+  border: 1px solid $border;
+  border-radius: $radius;
+  overflow: hidden;
+  box-shadow: $shadow;
+}
+
+.panel-title {
+  padding: 0.85rem 1rem;
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: $text;
+  background: $bg;
+  border-bottom: 1px solid $border;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+// ── Jobs list ────────────────────────────────────────────────────────────────
+.jobs-list { padding: 0.5rem; }
+
+.job-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:hover { background: $green-light; }
+
+  &.active {
+    background: $green;
+    .job-item-name, .job-item-db, .job-item-arrow { color: $white; }
+  }
+
+  .job-item-icon { font-size: 1.1rem; }
+  .job-item-info { flex: 1; min-width: 0; }
+  .job-item-name { font-size: 0.85rem; font-weight: 600; color: $text; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .job-item-db   { font-size: 0.75rem; color: $text-muted; display: block; }
+  .job-item-arrow { color: $text-muted; font-size: 1.1rem; }
+}
+
+.jobs-empty {
+  padding: 1.5rem 1rem;
+  text-align: center;
+  color: $text-muted;
+  font-size: 0.85rem;
+}
+
+// ── Calendario ───────────────────────────────────────────────────────────────
+.calendar-legend {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: $text-muted;
+}
+
+.legend-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  &.exito { background: $green; }
+  &.fallo { background: $red; }
+  &.ambos { background: $yellow; }
+}
+
+.calendarios-grid {
+  padding: 1rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.mes-card {
+  border: 1px solid $border;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.mes-header {
+  padding: 0.5rem 0.75rem;
+  background: $bg;
+  border-bottom: 1px solid $border;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  .mes-nombre { font-weight: 700; font-size: 0.8rem; color: $text; }
+  .mes-count  { font-size: 0.7rem; color: $green; font-weight: 600; background: $green-light; padding: 0.1rem 0.4rem; border-radius: 10px; }
+}
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  padding: 0.4rem;
+  gap: 1px;
+}
+
+.cal-dow {
+  text-align: center;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: $text-muted;
+  padding: 0.2rem 0;
+}
+
+.cal-day {
+  position: relative;
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  color: $text;
+  transition: all 0.15s;
+
+  &.other-month { opacity: 0; pointer-events: none; }
+
+  &.clickable { cursor: pointer; }
+  &.clickable:hover { background: $green-light; }
+
+  &.today .cal-day-num {
+    font-weight: 800;
+    color: $green;
+    text-decoration: underline;
+  }
+
+  &.selected {
+    background: $green !important;
+    .cal-day-num { color: $white !important; }
+    .cal-dot { background: $white !important; }
+  }
+
+  &.exito { background: lighten(#1a7a4a, 58%); }
+  &.fallo { background: lighten(#dc2626, 48%); }
+  &.ambos { background: lighten(#d97706, 48%); }
+
+  .cal-day-num { font-size: 0.72rem; line-height: 1; }
+
+  .cal-dot {
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: $green;
+    margin-top: 1px;
+  }
+
+  &.fallo .cal-dot  { background: $red; }
+  &.ambos .cal-dot  { background: $yellow; }
+}
+
+.calendar-empty {
+  padding: 2.5rem;
+  text-align: center;
+  color: $text-muted;
+  grid-column: 1/-1;
+  span { font-size: 2rem; display: block; margin-bottom: 0.5rem; }
+  p { margin: 0; font-size: 0.88rem; }
+}
+
+.loading-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  color: $text-muted;
+  font-size: 0.88rem;
+}
+
+// ── Panel detalle día ────────────────────────────────────────────────────────
+.detail-count {
+  font-size: 0.75rem;
+  color: $text-muted;
+  font-weight: 400;
+}
+
+.backups-list { padding: 0.5rem; max-height: 400px; overflow-y: auto; }
+
+.backup-item {
+  border: 1.5px solid $border;
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &:hover:not(.no-disponible) { border-color: $green; background: $green-light; }
+  &.selected { border-color: $green; background: $green-light; }
+  &.no-disponible { opacity: 0.55; cursor: not-allowed; }
+
+  .backup-item-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.4rem;
+  }
+  .backup-hora { font-size: 0.82rem; font-weight: 700; color: $text; }
+  .backup-item-info {
+    display: flex;
+    gap: 0.75rem;
+    font-size: 0.78rem;
+    color: $text-muted;
+    margin-bottom: 0.3rem;
+  }
+  .backup-item-archivo {
+    font-size: 0.72rem;
+    color: $text-muted;
+    margin-bottom: 0.3rem;
+  }
+  .archivo-nombre {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+    max-width: 100%;
+  }
+  .backup-disponibilidad {
+    font-size: 0.75rem;
+    .disponible       { color: $green; }
+    .no-disponible-tag { color: $yellow; }
+  }
+}
+
+// ── Botón restaurar ──────────────────────────────────────────────────────────
+.restore-action {
+  padding: 0.75rem;
+  border-top: 1px solid $border;
+
+  .btn-restore {
+    width: 100%;
+    background: $green;
+    color: $white;
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s;
+    &:hover { background: $green-hover; }
+  }
+
+  .restore-selection-info {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1rem;
+    margin-top: 0.5rem;
+    font-size: 0.75rem;
+    color: $text-muted;
+  }
+}
+
+// ── Badges ───────────────────────────────────────────────────────────────────
+.badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+
+  &.badge-ok      { background: $green-light; color: $green; }
+  &.badge-error   { background: $red-light;   color: $red; }
+  &.badge-warning { background: $yellow-light; color: $yellow; }
+  &.badge-info    { background: #e0f2fe; color: #0369a1; }
+}
+
+// ── Loading spinner ──────────────────────────────────────────────────────────
+.loading {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 2rem;
+  color: $text-muted;
+}
+
+.spinner {
+  width: 20px; height: 20px;
+  border: 2px solid $border;
+  border-top-color: $green;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+// ── Modal ────────────────────────────────────────────────────────────────────
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal-box {
+  background: $white;
+  border-radius: 14px;
+  width: 100%;
+  max-width: 540px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem 0;
+
+  h3 { margin: 0; font-size: 1.1rem; color: $text; }
+
+  .btn-close {
+    background: none;
+    border: none;
+    font-size: 1.1rem;
+    cursor: pointer;
+    color: $text-muted;
+    padding: 0.25rem;
+    &:hover { color: $text; }
+    &:disabled { opacity: 0.4; cursor: not-allowed; }
+  }
+}
+
+// ── Info card dentro del modal ───────────────────────────────────────────────
+.restore-info-card {
+  margin: 1rem 1.5rem;
+  background: $bg;
+  border: 1px solid $border;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 0.3rem 0;
+    font-size: 0.83rem;
+    border-bottom: 1px solid $border;
+    &:last-child { border-bottom: none; }
+  }
+  .info-label { color: $text-muted; white-space: nowrap; }
+  .info-value { font-weight: 600; color: $text; text-align: right; }
+  .info-value.file { font-family: monospace; font-size: 0.75rem; word-break: break-all; }
+}
+
+// ── Selector modo ────────────────────────────────────────────────────────────
+.modo-selector {
+  padding: 0 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.modo-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  border: 1.5px solid $border;
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &.active { border-color: $green; background: $green-light; }
+  &:hover:not(.active) { border-color: lighten($green, 30%); }
+
+  input[type=radio] { display: none; }
+
+  .modo-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+  }
+  .modo-icon  { font-size: 1.3rem; margin-top: 0.1rem; }
+  .modo-title { font-weight: 700; font-size: 0.88rem; color: $text; display: block; }
+  .modo-desc  { font-size: 0.78rem; color: $text-muted; display: block; margin-top: 0.2rem; }
+}
+
+// ── Input nueva BD ───────────────────────────────────────────────────────────
+.nueva-bd-input {
+  padding: 0.75rem 1.5rem 0;
+
+  label { font-size: 0.82rem; font-weight: 600; color: $text; display: block; margin-bottom: 0.4rem; }
+  input {
+    width: 100%;
+    border: 1.5px solid $border;
+    border-radius: 8px;
+    padding: 0.6rem 0.85rem;
+    font-size: 0.88rem;
+    color: $text;
+    box-sizing: border-box;
+    &:focus { outline: none; border-color: $green; }
+  }
+}
+
+// ── Advertencia ──────────────────────────────────────────────────────────────
+.advertencia {
+  margin: 0.75rem 1.5rem 0;
+  background: $red-light;
+  border: 1px solid lighten($red, 20%);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  font-size: 0.82rem;
+  color: $red;
+  line-height: 1.5;
+}
+
+// ── Progress bar ─────────────────────────────────────────────────────────────
+.progress-bar {
+  padding: 1.25rem 1.5rem;
+  text-align: center;
+
+  .progress-track {
+    height: 6px;
+    background: $border;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 0.6rem;
+  }
+  .progress-fill {
+    height: 100%;
+    background: $green;
+    border-radius: 10px;
+    animation: progress 1.5s ease-in-out infinite alternate;
+  }
+  span { font-size: 0.82rem; color: $text-muted; }
+}
+
+@keyframes progress {
+  from { width: 20%; margin-left: 0; }
+  to   { width: 60%; margin-left: 30%; }
+}
+
+// ── Modal footer ─────────────────────────────────────────────────────────────
+.modal-footer {
+  padding: 1rem 1.5rem 1.25rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+
+  .btn {
+    padding: 0.65rem 1.25rem;
+    border-radius: 8px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s;
+
+    &.btn-secondary { background: $bg; border: 1px solid $border; color: $text; &:hover { background: darken($bg, 5%); } }
+    &.btn-primary   { background: $green; color: $white; &:hover { background: $green-hover; } }
+    &.btn-restore   { background: $green; color: $white; &:hover { background: $green-hover; } &:disabled { opacity: 0.5; cursor: not-allowed; } }
+  }
+}
+
+// ── Resultado ─────────────────────────────────────────────────────────────────
+.restore-resultado {
+  padding: 2rem 1.5rem 1.5rem;
+  text-align: center;
+
+  .resultado-icon { font-size: 3rem; display: block; margin-bottom: 0.75rem; }
+  h3 { margin: 0 0 0.5rem; font-size: 1.15rem; color: $text; }
+  .resultado-mensaje { color: $text-muted; font-size: 0.88rem; margin: 0 0 1rem; line-height: 1.5; }
+
+  .resultado-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    background: $green-light;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    text-align: left;
+    font-size: 0.85rem;
+    color: $text;
+    margin-bottom: 1rem;
+  }
+}
+
+.btn-log-toggle {
+  background: none;
+  border: 1px solid $border;
+  border-radius: 6px;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+  color: $text-muted;
+  margin-bottom: 0.5rem;
+  &:hover { background: $bg; }
+}
+
+.log-content {
+  background: #1e1e2e;
+  color: #a6e3a1;
+  border-radius: 8px;
+  padding: 1rem;
+  font-size: 0.72rem;
+  text-align: left;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 250px;
+  overflow-y: auto;
+  margin: 0;
+}
+
+// ── Responsive ────────────────────────────────────────────────────────────────
+@media (max-width: 1100px) {
+  .restore-layout {
+    grid-template-columns: 200px 1fr;
+    .detail-panel { grid-column: 1 / -1; }
+  }
+}
+
+@media (max-width: 700px) {
+  .restore-layout { grid-template-columns: 1fr; }
+  .calendarios-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+}
+
+// ── Verificación de integridad ─────────────────────────────────────────────
+.backup-integridad {
+  margin-top: 0.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.btn-verificar {
+  background: none;
+  border: 1px solid $border;
+  border-radius: 6px;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.72rem;
+  cursor: pointer;
+  color: $text-muted;
+  transition: all 0.15s;
+  align-self: flex-start;
+
+  &:hover:not(:disabled) { background: $bg; border-color: $green; color: $green; }
+  &:disabled { opacity: 0.6; cursor: not-allowed; }
+}
+
+.integridad-result {
+  font-size: 0.72rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 5px;
+
+  &.valido   { background: $green-light; color: $green; }
+  &.invalido { background: $red-light;   color: $red; }
+}

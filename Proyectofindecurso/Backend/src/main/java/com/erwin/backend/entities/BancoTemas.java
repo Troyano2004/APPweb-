@@ -15,6 +15,7 @@ import java.time.LocalDate;
 @Entity
 @Table(name = "banco_temas")
 public class BancoTemas {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_tema")
@@ -28,6 +29,11 @@ public class BancoTemas {
     @JoinColumn(name = "id_docente_proponente")
     private Docente docenteProponente;
 
+    // ✅ NUEVO: estudiante que sugirió el tema
+    @ManyToOne
+    @JoinColumn(name = "id_estudiante_sugerente")
+    private Estudiante estudianteSugerente;
+
     @Column(name = "titulo", length = 500, nullable = false)
     private String titulo;
 
@@ -35,7 +41,7 @@ public class BancoTemas {
     private String descripcion;
 
     @Column(name = "estado", length = 20)
-    private String estado; // PROPUESTO/APROBADO/RECHAZADO
+    private String estado; // PROPUESTO / APROBADO / RECHAZADO / SUGERIDO
 
     @Column(name = "fecha_revision")
     private LocalDate fechaRevision;

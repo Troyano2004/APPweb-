@@ -19,8 +19,8 @@ import java.util.Map;
 public class GoogleDriveOAuthService {
 
 
-    private static final String CLIENT_ID     = "";
-    private static final String CLIENT_SECRET = "";
+    private static final String CLIENT_ID     = "472845919463-o6etf8e5bhdp3iaac1veschchl3f7qgr.apps.googleusercontent.com";
+    private static final String CLIENT_SECRET = "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";
     private static final String REDIRECT_URI  = "http://localhost:8080/api/backup/oauth/callback";
     private static final String TOKEN_URL     = "https://oauth2.googleapis.com/token";
     private static final String USERINFO_URL  = "https://www.googleapis.com/oauth2/v3/userinfo";

@@ -93,16 +93,20 @@ export class ShellComponent implements OnInit, OnDestroy {
         { label: 'Carrera-Modalidad',       path: '/app/catalogos/carrera-modalidad' },
       ],
     },
+
+    // ── BANCO DE TEMAS — comisión + estudiante ────────────────────────────
     {
       title: 'Banco de Temas',
       icon: '📚',
-      roles: ['DOCENTE', 'DOCENTE_TITULADO', 'ADMIN', 'COORDINADOR'],
+      roles: ['DOCENTE', 'DOCENTE_TITULADO', 'ADMIN', 'COORDINADOR', 'ESTUDIANTE'],
       items: [
-        { label: 'Listado de temas', path: '/app/temas' },
-        { label: 'Registrar tema',   path: '/app/temas/nuevo' },
-        { label: 'Aprobación temas', path: '/app/temas/aprobacion' },
+        { label: 'Listado de temas',       path: '/app/temas',                roles: ['DOCENTE','DOCENTE_TITULADO','ADMIN','COORDINADOR'] },
+        { label: 'Registrar tema',         path: '/app/temas/nuevo',          roles: ['DOCENTE','DOCENTE_TITULADO','ADMIN','COORDINADOR'] },
+        { label: 'Aprobación temas',       path: '/app/temas/aprobacion',     roles: ['DOCENTE','DOCENTE_TITULADO','ADMIN','COORDINADOR'] },
+        { label: 'Mis propuestas de tema', path: '/app/temas/mis-propuestas', roles: ['ESTUDIANTE'] },
       ],
     },
+
     {
       title: 'Propuesta y Anteproyecto',
       icon: '📝',
@@ -244,7 +248,8 @@ export class ShellComponent implements OnInit, OnDestroy {
         { label: 'Dashboard Auditoría',     path: '/app/admin/auditoria/dashboard' },
         { label: 'Logs de Auditoría',       path: '/app/admin/auditoria/logs' },
         { label: 'Config. Auditoría',       path: '/app/admin/auditoria/config' },
-        { label: 'Respaldos BD',            path: '/app/admin/backup',              roles: ['ADMIN'] },
+        { label: 'Respaldos BD',            path: '/app/admin/backup',           roles: ['ADMIN'] },
+        { label: 'Restaurar BD',            path: '/app/admin/backup/restaurar', roles: ['ADMIN'] },
       ],
     },
   ];
@@ -297,7 +302,6 @@ export class ShellComponent implements OnInit, OnDestroy {
   }
 
   // ── Búsqueda ──────────────────────────────────────────
-
   updateSearchResults(): void {
     const q = this.searchQuery.trim().toLowerCase();
     if (!q) { this.searchResults = []; return; }
