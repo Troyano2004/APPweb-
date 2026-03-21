@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CatalogosBasicosService, PeriodoTitulacion } from '../../../services/catalogos-basicos.service';
@@ -144,17 +144,20 @@ export class PeriodoComponent implements OnInit {
   error = '';
   mensaje = '';
 
-  constructor(private service: CatalogosBasicosService) {}
+  constructor(private service: CatalogosBasicosService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.cargar();
   }
 
+  // Método cargar():
   cargar(): void {
     this.loading = true;
+    this.error = '';
+    this.cdr.detectChanges();
     this.service.listarPeriodos().subscribe({
-      next: (data) => { this.items = data; this.loading = false; },
-      error: () => { this.error = 'Error al cargar'; this.loading = false; }
+      next: (data) => { this.items = data ?? []; this.loading = false; this.cdr.detectChanges(); },
+      error: (err) => { console.error(err); this.error = 'Error al cargar. Verifica la conexión.'; this.loading = false; this.cdr.detectChanges(); }
     });
   }
 

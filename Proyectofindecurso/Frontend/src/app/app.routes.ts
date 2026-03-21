@@ -35,7 +35,7 @@ import { ModalidadCatalogoComponent } from './pages/catalogos/modalidad/modalida
 import { PeriodoComponent } from './pages/catalogos/periodo/periodo.component';
 import { TipoTrabajoComponent } from './pages/catalogos/tipo-trabajo/tipo-trabajo.component';
 import { CarreraModalidadComponent } from './pages/catalogos/carrera-modalidad/carrera-modalidad.component';
-
+import { ReportePropuestasComponent } from './pages/propuesta/reporte-propuestas/reporte-propuestas.component';
 // Otros
 import { Historialtutorias } from './pages/historialtutorias/historialtutorias';
 import { Dt1EnviadosComponent } from './pages/dt1/dt1lista/dt1lista';
@@ -137,6 +137,7 @@ export const routes: Routes = [
       { path: 'propuesta/nueva',      component: PropuestaNuevaComponent,       data: { title: 'Registrar propuesta' } },
       { path: 'propuesta/revision',   component: PlaceholderPageComponent,      data: { title: 'Revisión por director' } },
       { path: 'propuesta/historial',  component: PlaceholderPageComponent,      data: { title: 'Historial observaciones' } },
+      { path: 'propuesta/reporte', component: ReportePropuestasComponent, data: { title: 'Reporte de propuestas' } },
 
       // Tutorías
       { path: 'tutorias/nueva', component: PlaceholderPageComponent, data: { title: 'Registrar tutoría' } },

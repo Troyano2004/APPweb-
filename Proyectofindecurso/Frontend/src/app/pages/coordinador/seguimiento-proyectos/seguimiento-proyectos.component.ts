@@ -1,5 +1,6 @@
+
 // Proyectofindecurso/Frontend/src/app/pages/coordinador/seguimiento-proyectos/seguimiento-proyectos.component.ts
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -196,7 +197,8 @@ export class SeguimientoProyectosComponent implements OnInit {
 
   constructor(
     private coordinadorService: CoordinadorService,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {}
 
   get estadosDisponibles(): string[] {
@@ -212,6 +214,7 @@ export class SeguimientoProyectosComponent implements OnInit {
     this.coordinadorService.getSeguimiento().subscribe((data) => {
       this.seguimientos = data.map((item) => this.normalizarSeguimiento(item));
       this.aplicarFiltros();
+      this.cdr.detectChanges();
     });
   }
 

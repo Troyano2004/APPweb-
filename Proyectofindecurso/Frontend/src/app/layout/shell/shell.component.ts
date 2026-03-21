@@ -119,6 +119,8 @@ export class ShellComponent implements OnInit, OnDestroy {
         { label: 'Revisión por director',   path: '/app/propuesta/revision',    roles: ['DOCENTE','DOCENTE_TITULADO','ADMIN'] },
         { label: 'Historial observaciones', path: '/app/tutorias/historial',    roles: ['ESTUDIANTE','ADMIN'] },
         { label: 'Historial observaciones', path: '/app/propuesta/historial',   roles: ['DOCENTE','DOCENTE_TITULADO'] },
+        { label: 'Reporte de propuestas', path: '/app/propuesta/reporte', roles: ['ADMIN','COORDINADOR','DOCENTE','DOCENTE_TITULADO'] },
+
       ],
     },
     {
