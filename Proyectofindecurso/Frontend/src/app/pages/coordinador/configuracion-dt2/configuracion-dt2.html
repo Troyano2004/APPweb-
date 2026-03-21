@@ -30,47 +30,62 @@
       <div *ngIf="!loading() && proyectos().length === 0" class="empty">
         No hay proyectos pendientes de configuración.
       </div>
+
+      <!-- Acceso directo a semana sin seleccionar proyecto -->
+      <div class="semana-acceso" (click)="setTab('semana'); proyectoSeleccionado.set(null)">
+        📅 Configurar semana de predefensas
+        <span class="semana-badge" *ngIf="semanaActual()">✓</span>
+      </div>
     </div>
 
     <!-- Panel derecho: detalle + formularios -->
-    <div class="panel-detalle" *ngIf="proyectoSeleccionado(); else sinSeleccion">
-      <h3>{{ proyectoSeleccionado()!.titulo }}</h3>
-      <p>{{ proyectoSeleccionado()!.estudiante }} · {{ proyectoSeleccionado()!.periodo }}</p>
+    <div class="panel-detalle" *ngIf="proyectoSeleccionado() || tab() === 'semana'; else sinSeleccion">
 
-      <!-- Configuración actual -->
-      <div class="config-actual" *ngIf="configuracion()">
-        <div class="config-item">
-          <span class="label">Docente DT2:</span>
-          <span>{{ configuracion()!.docenteDt2 || '— Sin asignar —' }}</span>
-        </div>
-        <div class="config-item">
-          <span class="label">Director:</span>
-          <span>{{ configuracion()!.director || '— Sin asignar —' }}</span>
-        </div>
-        <div class="config-item">
-          <span class="label">Tribunal:</span>
-          <span *ngIf="configuracion()!.tribunal?.length">
-            <span *ngFor="let m of configuracion()!.tribunal" class="miembro-tag">
-              {{ m.nombre }} ({{ m.cargo }})
+      <ng-container *ngIf="proyectoSeleccionado()">
+        <h3>{{ proyectoSeleccionado()!.titulo }}</h3>
+        <p>{{ proyectoSeleccionado()!.estudiante }} · {{ proyectoSeleccionado()!.periodo }}</p>
+
+        <!-- Configuración actual -->
+        <div class="config-actual" *ngIf="configuracion()">
+          <div class="config-item">
+            <span class="label">Docente DT2:</span>
+            <span>{{ configuracion()!.docenteDt2 || '— Sin asignar —' }}</span>
+          </div>
+          <div class="config-item">
+            <span class="label">Director:</span>
+            <span>{{ configuracion()!.director || '— Sin asignar —' }}</span>
+          </div>
+          <div class="config-item">
+            <span class="label">Tribunal:</span>
+            <span *ngIf="configuracion()!.tribunal?.length">
+              <span *ngFor="let m of configuracion()!.tribunal" class="miembro-tag">
+                {{ m.nombre }} ({{ m.cargo }})
+              </span>
             </span>
-          </span>
-          <span *ngIf="!configuracion()!.tribunal?.length">— Sin asignar —</span>
+            <span *ngIf="!configuracion()!.tribunal?.length">— Sin asignar —</span>
+          </div>
         </div>
-      </div>
+      </ng-container>
 
       <!-- Tabs -->
       <div class="tabs">
-        <button type="button" [class.active]="tab() === 'docente'"    (click)="setTab('docente')">Docente DT2</button>
-        <button type="button" [class.active]="tab() === 'director'"   (click)="setTab('director')">Director TIC</button>
-        <button type="button" [class.active]="tab() === 'tribunal'"   (click)="setTab('tribunal')">Tribunal</button>
-        <button type="button" [class.active]="tab() === 'predefensa'" (click)="setTab('predefensa')"
-                *ngIf="proyectoSeleccionado()?.estadoProyecto === 'PREDEFENSA' || configuracion()?.configuracionCompleta">
-          Predefensa
+        <ng-container *ngIf="proyectoSeleccionado()">
+          <button type="button" [class.active]="tab() === 'docente'"    (click)="setTab('docente')">Docente DT2</button>
+          <button type="button" [class.active]="tab() === 'director'"   (click)="setTab('director')">Director TIC</button>
+          <button type="button" [class.active]="tab() === 'tribunal'"   (click)="setTab('tribunal')">Tribunal</button>
+          <button type="button" [class.active]="tab() === 'predefensa'" (click)="setTab('predefensa')"
+                  *ngIf="proyectoSeleccionado()?.estadoProyecto === 'PREDEFENSA' || configuracion()?.configuracionCompleta">
+            Predefensa
+          </button>
+        </ng-container>
+        <button type="button" [class.active]="tab() === 'semana'" (click)="setTab('semana')">
+          📅 Semana Predefensas
+          <span class="tab-badge-ok" *ngIf="semanaActual()">✓</span>
         </button>
       </div>
 
       <!-- ── Tab: Docente DT2 ── -->
-      <form *ngIf="tab() === 'docente'" [formGroup]="formDocente" (ngSubmit)="asignarDocente()">
+      <form *ngIf="tab() === 'docente' && proyectoSeleccionado()" [formGroup]="formDocente" (ngSubmit)="asignarDocente()">
         <div class="form-row">
           <label>Docente DT2</label>
           <select formControlName="idDocenteDt2">
@@ -98,7 +113,7 @@
       </form>
 
       <!-- ── Tab: Director TIC ── -->
-      <form *ngIf="tab() === 'director'" [formGroup]="formDirector" (ngSubmit)="asignarDirector()">
+      <form *ngIf="tab() === 'director' && proyectoSeleccionado()" [formGroup]="formDirector" (ngSubmit)="asignarDirector()">
         <div class="form-row">
           <label>Director TIC</label>
           <select formControlName="idDirector">
@@ -124,7 +139,7 @@
       </form>
 
       <!-- ── Tab: Tribunal ── -->
-      <form *ngIf="tab() === 'tribunal'" [formGroup]="formTribunal" (ngSubmit)="asignarTribunal()">
+      <form *ngIf="tab() === 'tribunal' && proyectoSeleccionado()" [formGroup]="formTribunal" (ngSubmit)="asignarTribunal()">
         <div class="form-row">
           <label>Periodo académico</label>
           <select formControlName="periodo">
@@ -133,19 +148,16 @@
           </select>
           <small *ngIf="opcionesPeriodo.length === 0" class="warn-inline">No hay periodos activos.</small>
         </div>
-
         <div class="tribunal-header">
           <span>Miembros del Tribunal (mínimo 3)</span>
           <button type="button" (click)="addMiembro()">+ Miembro</button>
         </div>
-
         <div formArrayName="miembros">
           <div class="miembro-row"
                *ngFor="let m of miembros.controls; let i = index"
                [formGroupName]="i">
             <select formControlName="idDocente">
               <option [value]="null" disabled>Seleccione docente</option>
-              <!-- ✅ Solo muestra docentes no usados en otras filas -->
               <option *ngFor="let d of getDocentesParaFila(i)" [value]="d.idDocente">
                 {{ d.director }}
               </option>
@@ -158,14 +170,13 @@
             <button type="button" class="btn-remove" (click)="removeMiembro(i)" *ngIf="miembros.length > 3">✕</button>
           </div>
         </div>
-
         <button type="submit" [disabled]="loading() || opcionesPeriodo.length === 0">
           {{ loading() ? 'Guardando...' : 'Asignar Tribunal' }}
         </button>
       </form>
 
       <!-- ── Tab: Predefensa ── -->
-      <form *ngIf="tab() === 'predefensa'" [formGroup]="formPredefensa" (ngSubmit)="programarPredefensa()">
+      <form *ngIf="tab() === 'predefensa' && proyectoSeleccionado()" [formGroup]="formPredefensa" (ngSubmit)="programarPredefensa()">
         <h4 style="margin-bottom:12px">Programar fecha de Predefensa</h4>
         <p class="hint" *ngIf="predefensaActual()">
           Ya programada: <strong>{{ predefensaActual()!.fecha | date:'dd/MM/yyyy' }}
@@ -175,24 +186,18 @@
           <div class="form-row">
             <label>Fecha</label>
             <input type="date" formControlName="fecha" />
-            <span class="field-error" *ngIf="formPredefensa.get('fecha')?.invalid && formPredefensa.get('fecha')?.touched">
-              Requerido
-            </span>
+            <span class="field-error" *ngIf="formPredefensa.get('fecha')?.invalid && formPredefensa.get('fecha')?.touched">Requerido</span>
           </div>
           <div class="form-row">
             <label>Hora</label>
             <input type="time" formControlName="hora" />
-            <span class="field-error" *ngIf="formPredefensa.get('hora')?.invalid && formPredefensa.get('hora')?.touched">
-              Requerido
-            </span>
+            <span class="field-error" *ngIf="formPredefensa.get('hora')?.invalid && formPredefensa.get('hora')?.touched">Requerido</span>
           </div>
         </div>
         <div class="form-row">
           <label>Lugar</label>
           <input formControlName="lugar" placeholder="Aula, sala, enlace Meet..." />
-          <span class="field-error" *ngIf="formPredefensa.get('lugar')?.invalid && formPredefensa.get('lugar')?.touched">
-            Requerido
-          </span>
+          <span class="field-error" *ngIf="formPredefensa.get('lugar')?.invalid && formPredefensa.get('lugar')?.touched">Requerido</span>
         </div>
         <div class="form-row">
           <label>Observaciones</label>
@@ -203,21 +208,197 @@
         </button>
       </form>
 
-      <!-- Bitácora -->
-      <div class="bitacora" *ngIf="configuracion()?.bitacora?.length">
-        <h4>Bitácora de asignaciones</h4>
-        <div class="bitacora-row" *ngFor="let b of configuracion()!.bitacora">
-          <span class="tipo">{{ b.tipo }}</span>
-          <span>{{ b.nombreAsignado }} {{ b.cargo ? '(' + b.cargo + ')' : '' }}</span>
-          <span class="fecha">{{ b.fecha | date: 'dd/MM/yyyy HH:mm' }}</span>
+      <!-- ════════════════════════════════════════════════════════
+           Tab: Semana de Predefensas
+           ════════════════════════════════════════════════════════ -->
+      <div *ngIf="tab() === 'semana'" class="semana-predefensa-tab">
+
+        <!-- Estado actual -->
+        <div class="semana-actual" *ngIf="semanaActual()">
+          <div class="semana-actual-header">
+            <span class="semana-actual-badge">✅ Semana configurada</span>
+            <button class="btn-extender-toggle"
+                    (click)="mostrarFormExtender ? mostrarFormExtender = false : abrirFormExtender()">
+              {{ mostrarFormExtender ? '✕ Cancelar' : '✏️ Modificar semana' }}
+            </button>
+          </div>
+          <div class="semana-actual-info">
+            <div class="semana-stat">
+              <span class="semana-stat-label">Rango</span>
+              <span class="semana-stat-val">
+                {{ semanaActual()!.fechaInicio | date:'dd/MM/yyyy' }}
+                — {{ semanaActual()!.fechaFin | date:'dd/MM/yyyy' }}
+              </span>
+            </div>
+            <div class="semana-stat">
+              <span class="semana-stat-label">Horario</span>
+              <span class="semana-stat-val">{{ semanaActual()!.horaInicio }} — {{ semanaActual()!.horaFin }}</span>
+            </div>
+            <div class="semana-stat">
+              <span class="semana-stat-label">Duración por defensa</span>
+              <span class="semana-stat-val">{{ semanaActual()!.duracionMinutos }} minutos</span>
+            </div>
+            <div class="semana-stat">
+              <span class="semana-stat-label">Slots</span>
+              <span class="semana-stat-val">
+                <span class="slot-libre">{{ semanaActual()!.slotsLibres }} libres</span>
+                /
+                <span class="slot-ocup">{{ semanaActual()!.slotsOcupados }} ocupados</span>
+                / {{ semanaActual()!.totalSlots }} total
+              </span>
+            </div>
+            <div class="semana-stat" *ngIf="semanaActual()!.lugarDefecto">
+              <span class="semana-stat-label">Lugar por defecto</span>
+              <span class="semana-stat-val">{{ semanaActual()!.lugarDefecto }}</span>
+            </div>
+          </div>
         </div>
+
       </div>
+
+      <!-- Formulario de modificación rápida -->
+      <div class="form-extender" *ngIf="semanaActual() && mostrarFormExtender">
+        <h5>✏️ Modificar semana — los slots ya asignados se conservan</h5>
+        <form [formGroup]="formExtender" (ngSubmit)="extenderSemana()">
+          <div class="form-row-grid">
+            <div class="form-row">
+              <label>Nueva fecha fin</label>
+              <input type="date" formControlName="fechaFin" />
+              <span class="hint-inline">Actual: {{ semanaActual()!.fechaFin | date:'dd/MM/yyyy' }}</span>
+            </div>
+            <div class="form-row">
+              <label>Duración por defensa (min)</label>
+              <input type="number" formControlName="duracionMinutos" min="15" max="240" step="5" />
+              <span class="hint-inline">Actual: {{ semanaActual()!.duracionMinutos }} min</span>
+            </div>
+          </div>
+          <div class="form-row-grid">
+            <div class="form-row">
+              <label>Hora inicio del día</label>
+              <input type="time" formControlName="horaInicio" />
+              <span class="hint-inline">Actual: {{ semanaActual()!.horaInicio }}</span>
+            </div>
+            <div class="form-row">
+              <label>Hora fin del día</label>
+              <input type="time" formControlName="horaFin" />
+              <span class="hint-inline">Actual: {{ semanaActual()!.horaFin }}</span>
+            </div>
+          </div>
+          <div class="form-row">
+            <label>Lugar por defecto</label>
+            <input type="text" formControlName="lugarDefecto"
+                   [placeholder]="semanaActual()!.lugarDefecto || 'Sala de defensas...'" />
+          </div>
+          <div class="form-extender-info">
+            ℹ️ Solo se modifican los campos que cambies. Los slots ya asignados conservan su fecha y hora.
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn-cancelar-extender"
+                    (click)="mostrarFormExtender = false">
+              Cancelar
+            </button>
+            <button type="submit" class="btn-guardar-semana" [disabled]="loading()">
+              {{ loading() ? 'Guardando...' : '💾 Guardar cambios' }}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div class="semana-no-config" *ngIf="!semanaActual() && !cargandoSemana">
+        ⚠️ No hay semana de predefensas configurada para el período actual.
+      </div>
+      <div class="loading" *ngIf="cargandoSemana">Cargando semana actual...</div>
+
+      <h4 style="margin: 1.25rem 0 0.75rem">
+        {{ semanaActual() ? '✏️ Modificar semana' : '➕ Configurar semana de predefensas' }}
+      </h4>
+
+      <form [formGroup]="formSemana" (ngSubmit)="guardarSemana()">
+
+        <div class="form-row-grid">
+          <div class="form-row">
+            <label>Fecha inicio *</label>
+            <input type="date" formControlName="fechaInicio" />
+            <span class="field-error" *ngIf="formSemana.get('fechaInicio')?.invalid && formSemana.get('fechaInicio')?.touched">Requerido</span>
+          </div>
+          <div class="form-row">
+            <label>Fecha fin *</label>
+            <input type="date" formControlName="fechaFin" />
+            <span class="field-error" *ngIf="formSemana.get('fechaFin')?.invalid && formSemana.get('fechaFin')?.touched">Requerido</span>
+          </div>
+        </div>
+
+        <div class="form-row-grid">
+          <div class="form-row">
+            <label>Hora inicio del día *</label>
+            <input type="time" formControlName="horaInicio" />
+          </div>
+          <div class="form-row">
+            <label>Hora fin del día *</label>
+            <input type="time" formControlName="horaFin" />
+          </div>
+        </div>
+
+        <div class="form-row-grid">
+          <div class="form-row">
+            <label>Duración por defensa (min) * <span class="hint-inline">mín. 15</span></label>
+            <input type="number" formControlName="duracionMinutos" min="15" max="240" step="5" />
+            <span class="field-error" *ngIf="formSemana.get('duracionMinutos')?.invalid && formSemana.get('duracionMinutos')?.touched">Mínimo 15 minutos</span>
+          </div>
+          <div class="form-row" *ngIf="formSemana.get('duracionMinutos')?.value">
+            <label>Slots por día hábil</label>
+            <div class="slots-preview">
+              <span class="slots-num">{{ calcularSlotsPreview() }}</span>
+              <span class="slots-desc">defensas/día</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label>Lugar por defecto <span class="hint-inline">(puede cambiarse por slot)</span></label>
+          <input type="text" formControlName="lugarDefecto" placeholder="Ej: Sala de defensas B2..." />
+        </div>
+
+        <div class="form-row">
+          <label>Observaciones</label>
+          <textarea formControlName="observaciones" rows="2"
+                    placeholder="Instrucciones generales..."></textarea>
+        </div>
+
+        <!-- Preview -->
+        <div class="semana-preview"
+             *ngIf="formSemana.get('fechaInicio')?.value && formSemana.get('fechaFin')?.value">
+          <span class="preview-label">Vista previa:</span>
+          <span>Del <strong>{{ formSemana.get('fechaInicio')?.value | date:'dd/MM/yyyy' }}</strong>
+                  al <strong>{{ formSemana.get('fechaFin')?.value | date:'dd/MM/yyyy' }}</strong></span>
+          <span>· {{ formSemana.get('horaInicio')?.value }} — {{ formSemana.get('horaFin')?.value }}</span>
+          <span>· {{ formSemana.get('duracionMinutos')?.value }} min/defensa</span>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn-guardar-semana"
+                  [disabled]="loading() || formSemana.invalid">
+            {{ loading() ? 'Guardando...' : '💾 Guardar semana de predefensas' }}
+          </button>
+        </div>
+      </form>
     </div>
 
-    <ng-template #sinSeleccion>
-      <div class="panel-detalle empty-panel">
-        <p>Selecciona un proyecto de la lista para configurarlo.</p>
+    <!-- Bitácora — solo cuando hay proyecto seleccionado -->
+    <div class="bitacora" *ngIf="proyectoSeleccionado() && configuracion()?.bitacora?.length">
+      <h4>Bitácora de asignaciones</h4>
+      <div class="bitacora-row" *ngFor="let b of configuracion()!.bitacora">
+        <span class="tipo">{{ b.tipo }}</span>
+        <span>{{ b.nombreAsignado }} {{ b.cargo ? '(' + b.cargo + ')' : '' }}</span>
+        <span class="fecha">{{ b.fecha | date: 'dd/MM/yyyy HH:mm' }}</span>
       </div>
-    </ng-template>
+    </div>
   </div>
+
+  <ng-template #sinSeleccion>
+    <div class="panel-detalle empty-panel">
+      <p>Selecciona un proyecto de la lista o configura la semana de predefensas.</p>
+    </div>
+  </ng-template>
 </div>
+

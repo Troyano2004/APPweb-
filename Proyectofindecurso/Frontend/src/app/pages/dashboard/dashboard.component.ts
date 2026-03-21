@@ -4,7 +4,7 @@ import { RouterLink } from '@angular/router';
 import { DashboardDetalle, DashboardService, DashboardResumen } from '../../services/DashboardService';
 import { DocumentoPendienteDto, RevisionDirectorService } from '../../services/revision-director';
 import { DocumentoTitulacionDto, DocumentoTitulacionService } from '../../services/documento-titulacion';
-import { getSessionEntityId, getSessionUser, hasRole } from '../../services/session';
+import { getSessionEntityId, getSessionUser, getUserRoles, hasRole } from '../../services/session';
 import { BackupStatsWidgetComponent } from '../../shared/backup-stats-widget.component';
 
 @Component({
@@ -53,6 +53,11 @@ import { BackupStatsWidgetComponent } from '../../shared/backup-stats-widget.com
           <app-backup-stats-widget></app-backup-stats-widget>
         </div>
       </ng-container>
+
+      <!-- Widget backups visible para ADMIN aunque no sea COORDINADOR -->
+      <div class="grid" *ngIf="isAdmin() && !isCoordinator()">
+        <app-backup-stats-widget></app-backup-stats-widget>
+      </div>
 
       <ng-container *ngIf="isStudent()">
         <div class="stats student-stats">
@@ -181,7 +186,10 @@ export class DashboardComponent implements OnInit {
   isCoordinator = computed(() => hasRole(this.user()?.rol, 'ROLE_COORDINADOR'));
   isTeacher     = computed(() => hasRole(this.user()?.rol, 'ROLE_DOCENTE'));
   isStudent     = computed(() => hasRole(this.user()?.rol, 'ROLE_ESTUDIANTE'));
-  isAdmin       = computed(() => hasRole(this.user()?.rol, 'ROLE_ADMIN'));
+  isAdmin       = computed(() => {
+    const roles = getUserRoles();
+    return roles.some(r => r === 'ROLE_ADMIN' || r === 'ADMIN');
+  });
 
   constructor(
     private readonly dashboardService: DashboardService,
@@ -190,12 +198,13 @@ export class DashboardComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    if (this.isCoordinator()) { this.cargarDashboardCoordinacion(); return; }
-    if (this.isTeacher())     { this.cargarDashboardDocente();      return; }
-    if (this.isStudent())     { this.cargarDashboardEstudiante(); }
+    if (this.isAdmin() || this.isCoordinator()) { this.cargarDashboardCoordinacion(); return; }
+    if (this.isTeacher())                        { this.cargarDashboardDocente();      return; }
+    if (this.isStudent())                        { this.cargarDashboardEstudiante(); }
   }
 
   pageTitle(): string {
+    if (this.isAdmin())       return 'Dashboard de administración';
     if (this.isCoordinator()) return 'Dashboard de coordinación';
     if (this.isTeacher())     return 'Dashboard docente';
     if (this.isStudent())     return 'Mi dashboard de titulación';
@@ -203,6 +212,7 @@ export class DashboardComponent implements OnInit {
   }
 
   pageSubtitle(): string {
+    if (this.isAdmin())       return 'Monitorea el sistema, usuarios y respaldos de base de datos.';
     if (this.isCoordinator()) return 'Monitorea coordinación y administración del aplicativo.';
     if (this.isTeacher())     return 'Revisa los proyectos que tienes asignados.';
     if (this.isStudent())     return 'Gestiona tu avance de proyecto y prepara tu envío a revisión.';

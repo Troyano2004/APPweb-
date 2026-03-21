@@ -10,9 +10,7 @@
     <!-- ── Lista de proyectos ── -->
     <div class="panel-lista">
       <h3>Proyectos en Predefensa</h3>
-
       <div *ngIf="loading() && proyectos().length === 0" class="loading">Cargando...</div>
-
       <div class="proyecto-card"
            *ngFor="let p of proyectos()"
            [class.activo]="proyectoSeleccionado()?.idProyecto === p.idProyecto"
@@ -20,7 +18,6 @@
         <div class="proyecto-titulo">{{ p.titulo }}</div>
         <div class="proyecto-meta">{{ p.estudiante }}</div>
       </div>
-
       <div *ngIf="!loading() && proyectos().length === 0" class="empty">
         No hay proyectos en etapa de Predefensa.
       </div>
@@ -30,14 +27,13 @@
     <div class="panel-detalle" *ngIf="proyectoSeleccionado(); else sinSeleccion">
       <h3>{{ proyectoSeleccionado()!.titulo }}</h3>
 
-      <!-- ── Estado actual de la predefensa ── -->
+      <!-- Estado actual -->
       <div class="predefensa-estado" *ngIf="predefensa()?.idSustentacion">
         <div class="estado-row">
           <span class="badge {{ predefensa()!.estado }}">{{ predefensa()!.estado }}</span>
-          <span class="lbl">📅 {{ predefensa()!.fecha | date:'dd/MM/yyyy' }} {{ predefensa()!.hora }}</span>
+          <span class="lbl">📅 {{ predefensa()!.fecha | date:'dd/MM/yyyy' }} {{ formatHora(predefensa()!.hora) }}</span>
           <span class="lbl">📍 {{ predefensa()!.lugar }}</span>
         </div>
-
         <div class="notas-grid" *ngIf="predefensa()!.notaDocenteDt2 != null || predefensa()!.promedioTribunal != null">
           <div class="nota-card">
             <span class="nota-val">{{ predefensa()!.notaDocenteDt2 ?? '—' }}</span>
@@ -52,13 +48,10 @@
             <span class="nota-lbl">Nota Final</span>
           </div>
         </div>
-
         <div class="progreso-tribunal">
           <span>Calificaciones tribunal: {{ predefensa()!.miembrosQueCalificaron }}/{{ predefensa()!.totalMiembrosTribunal }}</span>
           <span *ngIf="predefensa()!.solicitudCorrecciones" class="warn-badge">⚠ Tribunal solicitó correcciones</span>
         </div>
-
-        <!-- Evaluaciones individuales del tribunal -->
         <div class="evaluaciones" *ngIf="predefensa()!.evaluacionesTribunal?.length">
           <h4>Evaluaciones del tribunal</h4>
           <div class="eval-row" *ngFor="let e of predefensa()!.evaluacionesTribunal">
@@ -74,90 +67,176 @@
         <p>⏳ No hay predefensa programada aún. El coordinador debe programarla desde <strong>Configuración DT2</strong>.</p>
       </div>
 
-      <!-- ══════════════════════════════════════════════
-           COORDINADOR: programa la predefensa
-           ══════════════════════════════════════════════ -->
+      <!-- ════════════════════════════════════════
+           COORDINADOR
+           ════════════════════════════════════════ -->
       <ng-container *ngIf="esCoordinador">
         <div class="tabs">
-          <button [class.active]="tab() === 'estado'"   (click)="setTab('estado')">Estado</button>
-          <button [class.active]="tab() === 'programar'" (click)="setTab('programar')">Programar</button>
+          <button [class.active]="tab() === 'estado'"    (click)="setTab('estado')">Estado</button>
+          <button [class.active]="tab() === 'programar'" (click)="setTab('programar')">📅 Programar</button>
         </div>
 
-        <!-- Tab: Programar predefensa -->
+        <!-- Tab: Programar con calendario -->
         <div *ngIf="tab() === 'programar'">
-          <h4 style="margin-bottom:12px">Programar fecha de Predefensa</h4>
-          <p class="hint" *ngIf="predefensa()?.idSustentacion">
-            Ya programada: <strong>{{ predefensa()!.fecha | date:'dd/MM/yyyy' }}
-            {{ predefensa()!.hora }} — {{ predefensa()!.lugar }}</strong>. Puedes reprogramar.
-          </p>
-          <form [formGroup]="formProgramar" (ngSubmit)="programar()">
-            <div class="form-row-grid">
-              <div class="form-row">
-                <label>Fecha</label>
-                <input type="date" formControlName="fecha" />
-                <span class="field-error"
-                      *ngIf="formProgramar.get('fecha')?.invalid && formProgramar.get('fecha')?.touched">
-                  Requerido
+
+          <!-- ─ Calendario de slots ─ -->
+          <ng-container *ngIf="calendario(); else sinCalendario">
+
+            <div class="cal-header">
+              <div class="cal-semana-info">
+                <span class="cal-rango">
+                  📅 {{ formatFecha(calendario()!.semana.fechaInicio) }}
+                  — {{ formatFecha(calendario()!.semana.fechaFin) }}
+                </span>
+                <span class="cal-duracion">⏱ {{ calendario()!.semana.duracionMinutos }} min por defensa</span>
+                <span class="cal-stats">
+                  <span class="stat-libre">{{ calendario()!.semana.slotsLibres }} libres</span>
+                  <span class="stat-sep">/</span>
+                  <span class="stat-ocupado">{{ calendario()!.semana.slotsOcupados }} ocupados</span>
                 </span>
               </div>
-              <div class="form-row">
-                <label>Hora</label>
-                <input type="time" formControlName="hora" />
-                <span class="field-error"
-                      *ngIf="formProgramar.get('hora')?.invalid && formProgramar.get('hora')?.touched">
-                  Requerido
-                </span>
+              <button class="btn-refresh" (click)="cargarCalendario()" title="Actualizar">↻</button>
+            </div>
+
+            <div class="loading-cal" *ngIf="cargandoCalendario">
+              <span class="spinner-sm"></span> Cargando calendario...
+            </div>
+
+            <!-- Grid de días -->
+            <div class="cal-grid" *ngIf="!cargandoCalendario">
+              <div class="cal-dia" *ngFor="let dia of calendario()!.dias">
+
+                <!-- Cabecera del día -->
+                <div class="cal-dia-header">
+                  <span class="dia-nombre">{{ dia.diaSemana | titlecase }}</span>
+                  <span class="dia-fecha">{{ formatFecha(dia.fecha) }}</span>
+                  <div class="dia-barra">
+                    <div class="dia-barra-fill"
+                         [style.width.%]="porcentajeOcupacion(dia)"
+                         [class.lleno]="dia.libres === 0">
+                    </div>
+                  </div>
+                  <span class="dia-contador">
+                    <span class="cnt-libre">{{ dia.libres }}L</span> /
+                    <span class="cnt-ocup">{{ dia.ocupados }}O</span>
+                  </span>
+                </div>
+
+                <!-- Slots del día -->
+                <div class="slots-lista">
+                  <div class="slot"
+                       *ngFor="let slot of dia.slots"
+                       [class.slot-libre]="!slot.ocupado"
+                       [class.slot-ocupado]="slot.ocupado"
+                       [class.slot-seleccionado]="slotSeleccionado() === slot"
+                       (click)="seleccionarSlot(slot)">
+
+                    <div class="slot-hora">
+                      {{ formatHora(slot.horaInicio) }} — {{ formatHora(slot.horaFin) }}
+                    </div>
+
+                    <!-- Slot libre -->
+                    <div class="slot-libre-label" *ngIf="!slot.ocupado">
+                      <span>Disponible</span>
+                      <span class="slot-sel-hint" *ngIf="proyectoSeleccionado()">Clic para asignar</span>
+                    </div>
+
+                    <!-- Slot ocupado -->
+                    <div class="slot-ocupado-info" *ngIf="slot.ocupado">
+                      <span class="slot-estudiante">👤 {{ slot.estudiante }}</span>
+                      <span class="slot-titulo" [title]="slot.tituloProyecto ?? ''">
+                        {{ slot.tituloProyecto | slice:0:35 }}{{ (slot.tituloProyecto?.length ?? 0) > 35 ? '...' : '' }}
+                      </span>
+                      <span class="slot-lugar" *ngIf="slot.lugar">📍 {{ slot.lugar }}</span>
+                    </div>
+
+                  </div>
+                </div>
+
               </div>
             </div>
-            <div class="form-row">
-              <label>Lugar</label>
-              <input formControlName="lugar" placeholder="Aula, sala, enlace Meet..." />
-              <span class="field-error"
-                    *ngIf="formProgramar.get('lugar')?.invalid && formProgramar.get('lugar')?.touched">
-                Requerido
-              </span>
+
+            <!-- Panel de confirmación de slot seleccionado -->
+            <div class="slot-confirm-panel" *ngIf="slotSeleccionado()">
+              <div class="slot-confirm-header">
+                <span>✅ Slot seleccionado</span>
+                <button class="btn-cancel-slot" (click)="cancelarSlot()">✕</button>
+              </div>
+              <div class="slot-confirm-info">
+                <span>📅 {{ formatFecha(slotSeleccionado()!.fechaSlot) }}</span>
+                <span>🕐 {{ formatHora(slotSeleccionado()!.horaInicio) }} — {{ formatHora(slotSeleccionado()!.horaFin) }}</span>
+                <span>💾 {{ proyectoSeleccionado()!.titulo | slice:0:40 }}</span>
+              </div>
+              <div class="slot-confirm-lugar">
+                <label>Lugar <span class="hint">(opcional, usa el default si está vacío)</span></label>
+                <input type="text" [(ngModel)]="lugarSlot"
+                       placeholder="{{ calendario()!.semana.lugarDefecto || 'Aula, sala...' }}" />
+              </div>
+              <button class="btn-asignar" (click)="confirmarSlot()" [disabled]="asignando">
+                {{ asignando ? 'Asignando...' : '📅 Confirmar predefensa' }}
+              </button>
             </div>
-            <div class="form-row">
-              <label>Observaciones</label>
-              <textarea formControlName="observaciones" rows="2"></textarea>
+
+          </ng-container>
+
+          <!-- Sin semana configurada -->
+          <ng-template #sinCalendario>
+            <div class="sin-semana">
+              <span class="sin-semana-icon">📅</span>
+              <p>No hay semana de predefensas configurada.</p>
+              <p class="sin-semana-hint">
+                Ve a <strong>Configuración DT2 → pestaña "Semana Predefensas"</strong>
+                para definir el rango de fechas y horarios.
+              </p>
+              <div class="divider-o">— o programa manualmente —</div>
+              <!-- Formulario manual como fallback -->
+              <form [formGroup]="formProgramar" (ngSubmit)="programar()">
+                <div class="form-row-grid">
+                  <div class="form-row">
+                    <label>Fecha</label>
+                    <input type="date" formControlName="fecha" />
+                  </div>
+                  <div class="form-row">
+                    <label>Hora</label>
+                    <input type="time" formControlName="hora" />
+                  </div>
+                </div>
+                <div class="form-row">
+                  <label>Lugar</label>
+                  <input formControlName="lugar" placeholder="Aula, sala, enlace Meet..." />
+                </div>
+                <div class="form-row">
+                  <label>Observaciones</label>
+                  <textarea formControlName="observaciones" rows="2"></textarea>
+                </div>
+                <button type="submit" class="btn-tribunal" [disabled]="loading()">
+                  {{ loading() ? 'Guardando...' : 'Programar Predefensa' }}
+                </button>
+              </form>
             </div>
-            <!-- ✅ CORREGIDO: agregada clase btn-tribunal -->
-            <button type="submit" class="btn-tribunal" [disabled]="loading()">
-              {{ loading() ? 'Guardando...' : 'Programar Predefensa' }}
-            </button>
-          </form>
+          </ng-template>
+
         </div>
       </ng-container>
 
-      <!-- ══════════════════════════════════════════════
-           DOCENTE: tabs según su rol en el proyecto
-           ══════════════════════════════════════════════ -->
+      <!-- ════════════════════════════════════════
+           DOCENTE
+           ════════════════════════════════════════ -->
       <ng-container *ngIf="!esCoordinador">
-
-        <!-- Sin rol asignado en este proyecto -->
         <div *ngIf="!esDocenteDt2 && !esTribunal" class="info-box warn">
           ⚠️ No tienes un rol asignado en este proyecto (DT2 o Tribunal). Contacta al coordinador.
         </div>
 
-        <!-- Tabs solo si tiene rol -->
         <div class="tabs" *ngIf="esDocenteDt2 || esTribunal">
-          <button [class.active]="tab() === 'estado'"
-                  (click)="setTab('estado')">Estado</button>
-
-          <button *ngIf="esDocenteDt2"
-                  [class.active]="tab() === 'calificar-dt2'"
-                  (click)="setTab('calificar-dt2')">
+          <button [class.active]="tab() === 'estado'" (click)="setTab('estado')">Estado</button>
+          <button *ngIf="esDocenteDt2" [class.active]="tab() === 'calificar-dt2'" (click)="setTab('calificar-dt2')">
             Mi calificación (DT2)
           </button>
-
-          <button *ngIf="esTribunal"
-                  [class.active]="tab() === 'calificar-tribunal'"
-                  (click)="setTab('calificar-tribunal')">
+          <button *ngIf="esTribunal" [class.active]="tab() === 'calificar-tribunal'" (click)="setTab('calificar-tribunal')">
             Mi calificación (Tribunal)
           </button>
         </div>
 
-        <!-- ── Tab: Calificar como Docente DT2 ── -->
         <div *ngIf="tab() === 'calificar-dt2' && esDocenteDt2">
           <div class="calificar-section">
             <h4>Tu calificación como Docente DT2 (60%)</h4>
@@ -168,8 +247,7 @@
               <div class="form-row">
                 <label>Nota (0-10)</label>
                 <input type="number" formControlName="nota" min="0" max="10" step="0.01" />
-                <span class="field-error"
-                      *ngIf="formCalificarDocente.get('nota')?.invalid && formCalificarDocente.get('nota')?.touched">
+                <span class="field-error" *ngIf="formCalificarDocente.get('nota')?.invalid && formCalificarDocente.get('nota')?.touched">
                   Nota requerida entre 0 y 10
                 </span>
               </div>
@@ -184,21 +262,13 @@
           </div>
         </div>
 
-        <!-- ── Tab: Calificar como Tribunal ── -->
         <div *ngIf="tab() === 'calificar-tribunal' && esTribunal">
           <div class="calificar-section">
             <h4>Tu calificación como Miembro del Tribunal (40% promedio)</h4>
-            <p class="hint">
-              Tu nota se promediará con la de los demás miembros del tribunal.
-            </p>
             <form [formGroup]="formCalificarTribunal" (ngSubmit)="calificarTribunal()">
               <div class="form-row">
                 <label>Nota (0-10)</label>
                 <input type="number" formControlName="nota" min="0" max="10" step="0.01" />
-                <span class="field-error"
-                      *ngIf="formCalificarTribunal.get('nota')?.invalid && formCalificarTribunal.get('nota')?.touched">
-                  Nota requerida entre 0 y 10
-                </span>
               </div>
               <div class="form-row">
                 <label>Observaciones</label>
@@ -216,7 +286,6 @@
             </form>
           </div>
         </div>
-
       </ng-container>
     </div>
 

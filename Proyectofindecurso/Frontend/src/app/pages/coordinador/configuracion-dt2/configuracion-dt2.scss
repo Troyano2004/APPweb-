@@ -21,6 +21,7 @@
     align-items: start;
   }
 
+  // ── Panel lista ─────────────────────────────────────────────────────────────
   .panel-lista {
     background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px;
     h3 { margin: 0 0 12px; font-size: 1rem; }
@@ -52,6 +53,33 @@
 
   .empty { color: #999; font-size: .9rem; text-align: center; padding: 20px 0; }
 
+  // Acceso rápido a semana desde el panel lista
+  .semana-acceso {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 12px;
+    padding: 10px 12px;
+    border: 1.5px dashed #bee3f8;
+    border-radius: 6px;
+    font-size: .82rem;
+    font-weight: 600;
+    color: #3182ce;
+    cursor: pointer;
+    transition: all .15s;
+
+    &:hover { background: #ebf8ff; border-color: #3182ce; }
+
+    .semana-badge {
+      background: #38a169;
+      color: #fff;
+      font-size: .7rem;
+      padding: 2px 6px;
+      border-radius: 10px;
+    }
+  }
+
+  // ── Panel detalle ────────────────────────────────────────────────────────────
   .panel-detalle {
     background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px;
     &.empty-panel { display: flex; align-items: center; justify-content: center; min-height: 200px; color: #999; }
@@ -69,29 +97,44 @@
   }
 
   .miembro-tag {
-    display: inline-block; background: #e9ecef; border-radius: 4px; padding: 2px 6px; font-size: .8rem; margin: 2px;
+    display: inline-block; background: #e9ecef; border-radius: 4px;
+    padding: 2px 6px; font-size: .8rem; margin: 2px;
   }
 
+  // ── Tabs ─────────────────────────────────────────────────────────────────────
   .tabs {
-    display: flex; gap: 4px; margin-bottom: 16px;
+    display: flex; gap: 4px; margin-bottom: 16px; flex-wrap: wrap;
     button {
-      padding: 8px 16px; border: 1px solid #e2e8f0; background: #f7fafc;
-      border-radius: 6px 6px 0 0; cursor: pointer; font-size: .85rem;
+      padding: 8px 14px; border: 1px solid #e2e8f0; background: #f7fafc;
+      border-radius: 6px 6px 0 0; cursor: pointer; font-size: .82rem;
+      display: flex; align-items: center; gap: 4px;
       &.active { background: #fff; border-bottom-color: #fff; font-weight: 600; color: #3182ce; }
+
+      .tab-badge-ok {
+        background: #38a169; color: #fff;
+        font-size: .65rem; padding: 1px 4px; border-radius: 8px;
+      }
     }
   }
 
+  // ── Formularios ───────────────────────────────────────────────────────────────
   form {
     .form-row {
       margin-bottom: 12px;
       label { display: block; font-size: .85rem; font-weight: 600; color: #4a5568; margin-bottom: 4px; }
-      input, select {
+      input, select, textarea {
         width: 100%; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px;
-        font-size: .9rem; box-sizing: border-box;
+        font-size: .9rem; box-sizing: border-box; font-family: inherit;
         &:focus { outline: none; border-color: #3182ce; }
       }
+      textarea { resize: vertical; }
       small { color: #999; }
+      .field-error { color: #e53e3e; font-size: .78rem; display: block; margin-top: 3px; }
+      .hint-inline  { color: #718096; font-weight: 400; font-size: .78rem; }
     }
+
+    .form-row-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
     button[type=submit] {
       background: #0f7a3a; color: #fff; border: none; padding: 10px 24px;
       border-radius: 6px; cursor: pointer; font-size: .9rem;
@@ -111,6 +154,7 @@
     .btn-remove { background: none; border: 1px solid #e53e3e; color: #e53e3e; border-radius: 4px; cursor: pointer; padding: 4px 8px; }
   }
 
+  // ── Bitácora ──────────────────────────────────────────────────────────────────
   .bitacora {
     margin-top: 24px; border-top: 1px solid #e2e8f0; padding-top: 16px;
     h4 { margin: 0 0 10px; font-size: .95rem; }
@@ -122,32 +166,155 @@
     .tipo  { background: #e9ecef; border-radius: 4px; padding: 2px 6px; font-size: .75rem; font-weight: 600; }
     .fecha { color: #999; margin-left: auto; }
   }
+
+  // ══════════════════════════════════════════════════
+  // SEMANA PREDEFENSAS
+  // ══════════════════════════════════════════════════
+
+  .semana-predefensa-tab {
+    animation: fadeIn .2s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .semana-actual {
+    background: #f0fff4;
+    border: 1.5px solid #9ae6b4;
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .semana-actual-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: .6rem;
+    .semana-actual-badge { font-weight: 700; font-size: .88rem; color: #276749; }
+  }
+
+  .btn-extender-toggle {
+    background: none;
+    border: 1.5px solid #38a169;
+    color: #276749;
+    border-radius: 6px;
+    padding: .3rem .75rem;
+    font-size: .8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .15s;
+    &:hover { background: #38a169; color: #fff; }
+  }
+
+  .form-extender {
+    background: #fffff0;
+    border: 1.5px solid #d69e2e;
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: .75rem;
+    animation: fadeIn .2s ease;
+
+    h5 {
+      margin: 0 0 .75rem;
+      font-size: .88rem;
+      color: #744210;
+      font-weight: 700;
+    }
+  }
+
+  .form-extender-info {
+    background: #fefce8;
+    border: 1px solid #fde68a;
+    border-radius: 6px;
+    padding: .5rem .75rem;
+    font-size: .78rem;
+    color: #92400e;
+    margin-bottom: .75rem;
+  }
+
+  .btn-cancelar-extender {
+    background: none;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: .6rem 1rem;
+    font-size: .85rem;
+    cursor: pointer;
+    color: #718096;
+    &:hover { background: #f7fafc; }
+  }
+
+  .semana-actual-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: .5rem;
+  }
+
+  .semana-stat {
+    display: flex; flex-direction: column; gap: .1rem;
+    .semana-stat-label { font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; color: #4a5568; font-weight: 600; }
+    .semana-stat-val   { font-size: .85rem; color: #2d3748; font-weight: 600; }
+    .slot-libre        { color: #38a169; }
+    .slot-ocup         { color: #e53e3e; }
+  }
+
+  .semana-no-config {
+    background: #fffbeb;
+    border-left: 4px solid #d69e2e;
+    padding: .7rem 1rem;
+    border-radius: 4px;
+    font-size: .88rem;
+    color: #744210;
+    margin-bottom: .75rem;
+  }
+
+  .slots-preview {
+    display: flex; align-items: baseline; gap: .4rem;
+    padding: .6rem .75rem;
+    background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 6px; margin-top: .25rem;
+    .slots-num  { font-size: 1.4rem; font-weight: 800; color: #3182ce; }
+    .slots-desc { font-size: .78rem; color: #718096; }
+  }
+
+  .semana-preview {
+    display: flex; flex-wrap: wrap; gap: .4rem 1.25rem; align-items: center;
+    background: #ebf8ff; border: 1px solid #bee3f8; border-radius: 8px;
+    padding: .6rem .9rem; font-size: .82rem; color: #2b6cb0; margin-bottom: .75rem;
+    .preview-label { font-weight: 700; }
+  }
+
+  .form-actions {
+    display: flex; justify-content: flex-end;
+  }
+
+  .btn-guardar-semana {
+    background: #0f7a3a; color: #fff; border: none;
+    border-radius: 8px; padding: .7rem 1.5rem;
+    font-size: .9rem; font-weight: 700; cursor: pointer; transition: background .15s;
+    &:hover:not(:disabled) { background: #276749; }
+    &:disabled { opacity: .55; cursor: not-allowed; }
+  }
 }
 
 
-// ===============================================
+// ═══════════════════════════════════════════════════
 // MODO OSCURO
-// ===============================================
+// ═══════════════════════════════════════════════════
 
 :host-context(body.dark-mode) .dt2-config {
 
   h2, h3, h4 { color: #f1f5f9; }
   .subtitle, .loading { color: #94a3b8; }
 
-  // Alertas
   .alert {
     &.error { background: #2d1b1b; border-left-color: #e53e3e; color: #fca5a5; }
     &.ok    { background: #052e16; border-left-color: #38a169; color: #86efac; }
   }
 
-  // Panel lista
-  .panel-lista {
-    background: #1e293b;
-    border-color: #334155;
-    h3 { color: #f1f5f9; }
-  }
+  .panel-lista { background: #1e293b; border-color: #334155; h3 { color: #f1f5f9; } }
 
-  // Tarjetas de proyecto
   .proyecto-card {
     border-color: #334155;
     &:hover  { background: #263448; }
@@ -157,80 +324,67 @@
   .proyecto-meta   { color: #94a3b8; }
   .empty           { color: #64748b; }
 
-  // Checks de proyecto
   .proyecto-checks .check {
     &.ok       { background: #052e16; color: #86efac; }
     &.pendiente{ background: #2d1b1b; color: #fca5a5; }
   }
 
-  // Panel detalle
+  .semana-acceso {
+    border-color: #1e4a6e; color: #60a5fa;
+    &:hover { background: #0f2a3d; border-color: #3182ce; }
+  }
+
   .panel-detalle {
-    background: #1e293b;
-    border-color: #334155;
+    background: #1e293b; border-color: #334155;
     &.empty-panel { color: #64748b; }
     h3 { color: #f1f5f9; }
     p  { color: #94a3b8; }
   }
 
-  // Config actual
   .config-actual { background: #0f172a; }
-  .config-item {
-    color: #e2e8f0;
-    .label { color: #94a3b8; }
-  }
-
-  // Tags de miembros
+  .config-item { color: #e2e8f0; .label { color: #94a3b8; } }
   .miembro-tag { background: #334155; color: #e2e8f0; }
 
-  // Tabs
   .tabs button {
-    background: #0f172a;
-    border-color: #334155;
-    color: #94a3b8;
+    background: #0f172a; border-color: #334155; color: #94a3b8;
     &.active { background: #1e293b; border-bottom-color: #1e293b; color: #60a5fa; }
   }
 
-  // Formulario
   form {
     .form-row {
       label { color: #94a3b8; }
       small { color: #64748b; }
-      input, select {
-        background: #0f172a;
-        color: #e2e8f0;
-        border-color: #334155;
+      .hint-inline { color: #64748b; }
+      input, select, textarea {
+        background: #0f172a; color: #e2e8f0; border-color: #334155;
         &:focus { border-color: #3182ce; }
       }
     }
     button[type=submit] {
-      background: #0f7a3a !important;
-      color: #fff !important;
+      background: #0f7a3a !important; color: #fff !important;
       &:disabled { background: #0f7a3a !important; color: rgba(255,255,255,0.7) !important; opacity: 1; }
     }
   }
 
-  // Tribunal header
-  .tribunal-header {
-    color: #e2e8f0;
-    button {
-      background: #0f2a3d;
-      border-color: #3182ce;
-      color: #60a5fa;
-    }
-  }
-
-  // Fila de miembro
-  .miembro-row {
-    select { background: #0f172a; color: #e2e8f0; border-color: #334155; }
-    .btn-remove { border-color: #e53e3e; color: #fca5a5; }
-  }
-
-  // Bitácora
+  .tribunal-header { color: #e2e8f0; button { background: #0f2a3d; border-color: #3182ce; color: #60a5fa; } }
+  .miembro-row { select { background: #0f172a; color: #e2e8f0; border-color: #334155; } .btn-remove { border-color: #e53e3e; color: #fca5a5; } }
   .bitacora { border-top-color: #334155; }
-  .bitacora-row {
-    border-bottom-color: #334155;
-    color: #e2e8f0;
-    .tipo  { background: #334155; color: #e2e8f0; }
-    .fecha { color: #64748b; }
-  }
+  .bitacora-row { border-bottom-color: #334155; color: #e2e8f0; .tipo { background: #334155; color: #e2e8f0; } .fecha { color: #64748b; } }
+
+  .btn-extender-toggle    { border-color: #166534; color: #4ade80; &:hover { background: #166534; color: #fff; } }
+  .form-extender          { background: #2a1f0a; border-color: #d69e2e; h5 { color: #fcd34d; } }
+  .form-extender-info     { background: #2a1f0a; border-color: #92400e; color: #fcd34d; }
+  .btn-cancelar-extender  { border-color: #334155; color: #94a3b8; &:hover { background: #0f172a; } }
+
+  // Semana dark mode
+  .semana-actual          { background: #052e16; border-color: #166534; }
+  .semana-actual-badge    { color: #4ade80; }
+  .semana-stat-label      { color: #94a3b8; }
+  .semana-stat-val        { color: #e2e8f0; }
+  .slot-libre             { color: #4ade80 !important; }
+  .slot-ocup              { color: #f87171 !important; }
+  .semana-no-config       { background: #2a1f0a; border-left-color: #d69e2e; color: #fcd34d; }
+  .slots-preview          { background: #0f172a; border-color: #334155; .slots-num { color: #60a5fa; } .slots-desc { color: #64748b; } }
+  .semana-preview         { background: #0f2a3d; border-color: #1e4a6e; color: #60a5fa; }
+  .btn-guardar-semana     { &:hover:not(:disabled) { background: #166534; } }
 }

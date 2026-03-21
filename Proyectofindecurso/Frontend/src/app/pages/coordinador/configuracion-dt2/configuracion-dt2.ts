@@ -11,11 +11,18 @@ import {
 } from '../../../services/dt2.service';
 import { CoordinadorService, DirectorCarga } from '../../../services/coordinador';
 import { CatalogosBasicosService, PeriodoTitulacion } from '../../../services/catalogos-basicos.service';
+import {
+  SemanaPredefensaService,
+  SemanaPredefensaDto,
+  GuardarSemanaRequest,
+  ExtenderSemanaRequest
+} from '../../../services/semana-predefensa.service';
 import { getSessionUser, getSessionEntityId } from '../../../services/session';
 
 interface OpcionPeriodo {
   etiqueta: string;
   valor: string;
+  idPeriodo?: number;
 }
 
 @Component({
@@ -36,7 +43,7 @@ export class ConfiguracionDt2Component implements OnInit {
   proyectoSeleccionado = signal<ProyectoPendienteConfiguracionDto | null>(null);
   configuracion = signal<ConfiguracionProyectoDto | null>(null);
 
-  tab = signal<'docente' | 'director' | 'tribunal' | 'predefensa'>('docente');
+  tab = signal<'docente' | 'director' | 'tribunal' | 'predefensa' | 'semana'>('docente');
 
   // Periodos
   periodosActivos: PeriodoTitulacion[] = [];
@@ -44,10 +51,17 @@ export class ConfiguracionDt2Component implements OnInit {
 
   predefensaActual = signal<PredefensaDto | null>(null);
 
+  // Semana predefensas
+  semanaActual = signal<SemanaPredefensaDto | null>(null);
+  cargandoSemana = false;
+  mostrarFormExtender = false;
+
   formDocente: FormGroup;
   formPredefensa: FormGroup;
   formDirector: FormGroup;
   formTribunal: FormGroup;
+  formSemana: FormGroup;
+  formExtender: FormGroup;
 
   private idRealizadoPor = 0;
 
@@ -55,6 +69,7 @@ export class ConfiguracionDt2Component implements OnInit {
     private dt2: Dt2Service,
     private coordinadorApi: CoordinadorService,
     private catalogosBasicosService: CatalogosBasicosService,
+    private semanaService: SemanaPredefensaService,
     private fb: FormBuilder
   ) {
     this.formDocente = this.fb.group({
@@ -84,6 +99,26 @@ export class ConfiguracionDt2Component implements OnInit {
         this.crearMiembro()
       ])
     });
+
+    this.formSemana = this.fb.group({
+      fechaInicio:     ['', Validators.required],
+      fechaFin:        ['', Validators.required],
+      horaInicio:      ['08:00', Validators.required],
+      horaFin:         ['18:00', Validators.required],
+      duracionMinutos: [60, [Validators.required, Validators.min(15), Validators.max(240)]],
+      lugarDefecto:    [''],
+      observaciones:   [''],
+      idPeriodo:       [null]
+    });
+
+    this.formExtender = this.fb.group({
+      fechaFin:        [''],
+      horaInicio:      [''],
+      horaFin:         [''],
+      duracionMinutos: [null, [Validators.min(15), Validators.max(240)]],
+      lugarDefecto:    [''],
+      observaciones:   ['']
+    });
   }
 
   ngOnInit(): void {
@@ -92,6 +127,7 @@ export class ConfiguracionDt2Component implements OnInit {
     this.cargarPeriodosActivos();
     this.cargarProyectos();
     this.cargarDocentes();
+    this.cargarSemanaActual();
   }
 
   get miembros(): FormArray {
@@ -120,18 +156,120 @@ export class ConfiguracionDt2Component implements OnInit {
     this.cargarPredefensa(p.idProyecto);
   }
 
-  setTab(t: 'docente' | 'director' | 'tribunal' | 'predefensa'): void {
+  setTab(t: 'docente' | 'director' | 'tribunal' | 'predefensa' | 'semana'): void {
     this.tab.set(t);
     this.error.set(null);
     this.ok.set(null);
+    if (t === 'semana') this.cargarSemanaActual();
   }
+
+  // ── Semana de predefensas ──────────────────────────────────────────────────
+
+  cargarSemanaActual(): void {
+    this.cargandoSemana = true;
+    this.semanaService.obtenerSemana().subscribe({
+      next: semana => {
+        this.semanaActual.set(semana);
+        if (semana) {
+          this.formSemana.patchValue({
+            fechaInicio:     semana.fechaInicio,
+            fechaFin:        semana.fechaFin,
+            horaInicio:      semana.horaInicio,
+            horaFin:         semana.horaFin,
+            duracionMinutos: semana.duracionMinutos,
+            lugarDefecto:    semana.lugarDefecto ?? '',
+            observaciones:   semana.observaciones ?? ''
+          });
+        }
+        this.cargandoSemana = false;
+      },
+      error: () => { this.cargandoSemana = false; }
+    });
+  }
+
+  abrirFormExtender(): void {
+    const s = this.semanaActual();
+    if (s) {
+      this.formExtender.patchValue({
+        fechaFin:        s.fechaFin,
+        horaInicio:      s.horaInicio,
+        horaFin:         s.horaFin,
+        duracionMinutos: s.duracionMinutos,
+        lugarDefecto:    s.lugarDefecto ?? '',
+        observaciones:   s.observaciones ?? ''
+      });
+    }
+    this.mostrarFormExtender = true;
+  }
+
+  extenderSemana(): void {
+    const v = this.formExtender.value;
+    const req: ExtenderSemanaRequest = {};
+    if (v.fechaFin)        req.fechaFin        = v.fechaFin;
+    if (v.horaInicio)      req.horaInicio      = v.horaInicio;
+    if (v.horaFin)         req.horaFin         = v.horaFin;
+    if (v.duracionMinutos) req.duracionMinutos  = Number(v.duracionMinutos);
+    if (v.lugarDefecto)    req.lugarDefecto     = v.lugarDefecto;
+    if (v.observaciones)   req.observaciones    = v.observaciones;
+
+    this.loading.set(true);
+    this.error.set(null);
+    this.ok.set(null);
+
+    this.semanaService.extenderSemana(req).subscribe({
+      next: semana => {
+        this.semanaActual.set(semana);
+        this.mostrarFormExtender = false;
+        this.ok.set(`✅ Semana actualizada: ${semana.fechaInicio} al ${semana.fechaFin} · ${semana.duracionMinutos} min/defensa`);
+        this.loading.set(false);
+      },
+      error: err => {
+        this.error.set(err?.error?.message ?? 'Error al modificar la semana');
+        this.loading.set(false);
+      }
+    });
+  }
+
+  guardarSemana(): void {
+    if (this.formSemana.invalid) {
+      this.formSemana.markAllAsTouched();
+      return;
+    }
+
+    const v = this.formSemana.value;
+    const req: GuardarSemanaRequest = {
+      fechaInicio:     v.fechaInicio,
+      fechaFin:        v.fechaFin,
+      horaInicio:      v.horaInicio,
+      horaFin:         v.horaFin,
+      duracionMinutos: Number(v.duracionMinutos),
+      lugarDefecto:    v.lugarDefecto,
+      observaciones:   v.observaciones,
+      idPeriodo:       v.idPeriodo ?? this.opcionesPeriodo[0]?.idPeriodo
+    };
+
+    this.loading.set(true);
+    this.error.set(null);
+    this.ok.set(null);
+
+    this.semanaService.guardarSemana(req).subscribe({
+      next: semana => {
+        this.semanaActual.set(semana);
+        this.ok.set(`✅ Semana de predefensas configurada: ${semana.fechaInicio} al ${semana.fechaFin}. Total de slots: ${semana.totalSlots}`);
+        this.loading.set(false);
+      },
+      error: err => {
+        this.error.set(err?.error?.message ?? 'Error al guardar la semana');
+        this.loading.set(false);
+      }
+    });
+  }
+
+  // ── Resto de métodos sin cambios ──────────────────────────────────────────
 
   asignarDocente(): void {
     const p = this.proyectoSeleccionado();
-    if (!p || this.formDocente.invalid) {
-      this.formDocente.markAllAsTouched();
-      return;
-    }
+    if (!p || this.formDocente.invalid) { this.formDocente.markAllAsTouched(); return; }
     const v = this.formDocente.value;
     this.ejecutar(() =>
       this.dt2.asignarDocenteDt2(p.idProyecto, {
@@ -145,10 +283,7 @@ export class ConfiguracionDt2Component implements OnInit {
 
   asignarDirector(): void {
     const p = this.proyectoSeleccionado();
-    if (!p || this.formDirector.invalid) {
-      this.formDirector.markAllAsTouched();
-      return;
-    }
+    if (!p || this.formDirector.invalid) { this.formDirector.markAllAsTouched(); return; }
     const v = this.formDirector.value;
     this.ejecutar(() =>
       this.dt2.asignarDirector(p.idProyecto, {
@@ -162,12 +297,7 @@ export class ConfiguracionDt2Component implements OnInit {
 
   asignarTribunal(): void {
     const p = this.proyectoSeleccionado();
-    if (!p || this.formTribunal.invalid) {
-      this.formTribunal.markAllAsTouched();
-      return;
-    }
-
-    // Validación extra de seguridad contra duplicados
+    if (!p || this.formTribunal.invalid) { this.formTribunal.markAllAsTouched(); return; }
     const ids = this.miembros.controls
       .map(c => c.get('idDocente')?.value)
       .filter(id => id != null && id > 0);
@@ -175,7 +305,6 @@ export class ConfiguracionDt2Component implements OnInit {
       this.error.set('No se puede repetir el mismo docente en el tribunal.');
       return;
     }
-
     const v = this.formTribunal.value;
     this.ejecutar(() =>
       this.dt2.asignarTribunal(p.idProyecto, {
@@ -188,10 +317,7 @@ export class ConfiguracionDt2Component implements OnInit {
 
   programarPredefensa(): void {
     const p = this.proyectoSeleccionado();
-    if (!p || this.formPredefensa.invalid) {
-      this.formPredefensa.markAllAsTouched();
-      return;
-    }
+    if (!p || this.formPredefensa.invalid) { this.formPredefensa.markAllAsTouched(); return; }
     const v = this.formPredefensa.value;
     const req: ProgramarPredefensaRequest = {
       idRealizadoPor: this.idRealizadoPor,
@@ -207,11 +333,6 @@ export class ConfiguracionDt2Component implements OnInit {
     return this.docentes().find(d => d.idDocente === idDocente)?.director ?? `Docente #${idDocente}`;
   }
 
-  /**
-   * Docentes disponibles para la fila i del tribunal.
-   * Oculta los ya usados en otras filas pero mantiene visible
-   * el docente ya seleccionado en esta fila.
-   */
   getDocentesParaFila(indexFila: number): DirectorCarga[] {
     const seleccionActual = this.miembros.at(indexFila)?.get('idDocente')?.value ?? null;
     const idsSeleccionados = new Set(
@@ -219,7 +340,6 @@ export class ConfiguracionDt2Component implements OnInit {
         .map(c => c.get('idDocente')?.value)
         .filter((id): id is number => id !== null && id !== undefined && id > 0)
     );
-
     return this.docentes().filter(d => {
       if (d?.idDocente == null) return false;
       if (seleccionActual !== null && d.idDocente === seleccionActual) return true;
@@ -227,39 +347,47 @@ export class ConfiguracionDt2Component implements OnInit {
     });
   }
 
-  // ─── Periodos ────────────────────────────────────────────────
+  calcularSlotsPreview(): number {
+    const inicio   = this.formSemana.get('horaInicio')?.value as string;
+    const fin      = this.formSemana.get('horaFin')?.value as string;
+    const duracion = Number(this.formSemana.get('duracionMinutos')?.value);
+    if (!inicio || !fin || !duracion || duracion < 15) return 0;
+    const [hi, mi] = inicio.split(':').map(Number);
+    const [hf, mf] = fin.split(':').map(Number);
+    const totalMin = (hf * 60 + mf) - (hi * 60 + mi);
+    return totalMin > 0 ? Math.floor(totalMin / duracion) : 0;
+  }
+
   private cargarPeriodosActivos(): void {
     this.catalogosBasicosService.listarPeriodosActivos().subscribe({
       next: (data) => {
         this.periodosActivos = data;
         this.opcionesPeriodo = data.map(p => ({
           etiqueta: p.descripcion,
-          valor: this.construirPeriodo(p)
+          valor: this.construirPeriodo(p),
+          idPeriodo: p.idPeriodo
         }));
         const primerValor = this.opcionesPeriodo.length > 0 ? this.opcionesPeriodo[0].valor : '';
+        const primerId    = this.opcionesPeriodo.length > 0 ? this.opcionesPeriodo[0].idPeriodo : null;
         this.formDocente.patchValue({ periodo: primerValor });
         this.formDirector.patchValue({ periodo: primerValor });
         this.formTribunal.patchValue({ periodo: primerValor });
+        this.formSemana.patchValue({ idPeriodo: primerId });
       },
-      error: () => {
-        this.error.set('No se pudo cargar el listado de periodos activos.');
-      }
+      error: () => this.error.set('No se pudo cargar el listado de periodos activos.')
     });
   }
 
   private construirPeriodo(periodo: PeriodoTitulacion): string {
     const descripcionLimpia = (periodo.descripcion ?? '').trim().replace(/\s+/g, ' ');
     if (descripcionLimpia.length <= 20) return descripcionLimpia;
-
     const anioInicio = (periodo.fechaInicio ?? '').toString().slice(0, 4);
     const anioFin = (periodo.fechaFin ?? '').toString().slice(0, 4);
     const etiqueta = anioInicio && anioFin ? `${anioInicio}-${anioFin}` : '';
-
     if (etiqueta && etiqueta.length <= 20) return etiqueta;
     return descripcionLimpia.slice(0, 20);
   }
 
-  // ─── Internos ────────────────────────────────────────────────
   private cargarProyectos(): void {
     this.loading.set(true);
     this.dt2.listarPendientesConfiguracion()
