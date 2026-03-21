@@ -1,3 +1,4 @@
+
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -31,12 +32,13 @@ export class ComplexivoDocenteComponent implements OnInit {
 
   tabPrincipal = signal<TabPrincipal>('propuestas');
 
-  // Propuestas
-  propuestas      = signal<PropuestaComplexivoDto[]>([]);
-  propuestaSelec  = signal<PropuestaComplexivoDto | null>(null);
-  obsDecision     = '';
-  mostrarRechazoP = false;
-  procesandoIdP   = signal<number | null>(null);
+  // Propuestas — variables SEPARADAS para aprobar y rechazar
+  propuestas        = signal<PropuestaComplexivoDto[]>([]);
+  propuestaSelec    = signal<PropuestaComplexivoDto | null>(null);
+  obsAprobacion     = '';   // ← solo para aprobar
+  obsRechazo        = '';   // ← solo para rechazar
+  mostrarRechazoP   = false;
+  procesandoIdP     = signal<number | null>(null);
 
   // Informes
   estudiantes        = signal<EstudianteDeDocenteDto[]>([]);
@@ -67,8 +69,173 @@ export class ComplexivoDocenteComponent implements OnInit {
   // ── Propuestas ─────────────────────────────────────────────────
   seleccionarPropuesta(p: PropuestaComplexivoDto): void {
     this.propuestaSelec.set(p);
-    this.obsDecision = ''; this.mostrarRechazoP = false;
+    this.obsAprobacion = '';
+    this.obsRechazo    = '';
+    this.mostrarRechazoP = false;
     this.error.set(null); this.ok.set(null);
+  }
+
+  descargarPdfPropuesta(): void {
+    const p = this.propuestaSelec();
+    if (!p) return;
+
+    const contenido = `
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Propuesta de Titulación</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: 'Times New Roman', serif; color: #1a1a1a; background: #fff; }
+
+          .portada {
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: center; min-height: 100vh;
+            padding: 60px 80px; text-align: center;
+            border-bottom: 3px solid #0f7a3a;
+          }
+          .portada .logo-text {
+            font-size: 14px; font-weight: bold; color: #0f7a3a;
+            letter-spacing: 3px; text-transform: uppercase; margin-bottom: 8px;
+          }
+          .portada .universidad {
+            font-size: 18px; font-weight: bold; color: #1a1a1a;
+            margin-bottom: 4px;
+          }
+          .portada .facultad {
+            font-size: 14px; color: #555; margin-bottom: 40px;
+          }
+          .portada .linea { width: 80px; height: 3px; background: #0f7a3a; margin: 20px auto; }
+          .portada .tipo-doc {
+            font-size: 13px; letter-spacing: 2px; text-transform: uppercase;
+            color: #0f7a3a; font-weight: 600; margin-bottom: 20px;
+          }
+          .portada .titulo-propuesta {
+            font-size: 22px; font-weight: bold; color: #1a1a1a;
+            line-height: 1.4; max-width: 500px; margin: 0 auto 40px;
+          }
+          .portada .info-tabla { width: 100%; max-width: 420px; margin: 0 auto; }
+          .portada .info-tabla tr td {
+            padding: 6px 12px; font-size: 13px; text-align: left;
+          }
+          .portada .info-tabla .lbl { font-weight: bold; color: #555; width: 130px; }
+          .portada .info-tabla .val { color: #1a1a1a; }
+          .portada .estado-badge {
+            display: inline-block; margin-top: 30px;
+            padding: 6px 20px; border-radius: 20px; font-size: 12px;
+            font-weight: bold; letter-spacing: 1px; text-transform: uppercase;
+          }
+          .estado-EN_REVISION { background: #fef3c7; color: #92400e; border: 1px solid #f59e0b; }
+          .estado-APROBADA    { background: #d1fae5; color: #065f46; border: 1px solid #10b981; }
+          .estado-RECHAZADA   { background: #fee2e2; color: #991b1b; border: 1px solid #ef4444; }
+
+          .contenido { padding: 50px 70px; }
+
+          .seccion-titulo {
+            font-size: 11px; font-weight: bold; color: #0f7a3a;
+            letter-spacing: 2px; text-transform: uppercase;
+            border-bottom: 2px solid #0f7a3a; padding-bottom: 6px;
+            margin: 30px 0 14px;
+          }
+          .seccion-texto {
+            font-size: 13px; color: #2d3748; line-height: 1.8;
+            text-align: justify; white-space: pre-wrap;
+            word-break: break-word;
+          }
+
+          .footer {
+            margin-top: 60px; padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+            display: flex; justify-content: space-between;
+            font-size: 11px; color: #999;
+          }
+
+          @media print {
+            .portada { page-break-after: always; }
+          }
+        </style>
+      </head>
+      <body>
+
+        <!-- PORTADA -->
+        <div class="portada">
+          <div class="logo-text">UTEQ</div>
+          <div class="universidad">Universidad Técnica Estatal de Quevedo</div>
+          <div class="facultad">Facultad de Ciencias de la Ingeniería</div>
+          <div class="linea"></div>
+          <div class="tipo-doc">Propuesta de Titulación — Examen Complexivo</div>
+          <div class="titulo-propuesta">${p.titulo || 'Sin título'}</div>
+          <table class="info-tabla">
+            <tr>
+              <td class="lbl">Estudiante:</td>
+              <td class="val">${p.nombreEstudiante}</td>
+            </tr>
+            <tr>
+              <td class="lbl">Fecha envío:</td>
+              <td class="val">${p.fechaEnvio ? new Date(p.fechaEnvio).toLocaleDateString('es-EC', {day:'2-digit',month:'long',year:'numeric'}) : '—'}</td>
+            </tr>
+            <tr>
+              <td class="lbl">Modalidad:</td>
+              <td class="val">Examen Complexivo</td>
+            </tr>
+          </table>
+          <span class="estado-badge estado-${p.estado}">${p.estado}</span>
+        </div>
+
+        <!-- CONTENIDO -->
+        <div class="contenido">
+
+          ${p.planteamientoProblema ? `
+          <div class="seccion-titulo">I. Planteamiento del Problema</div>
+          <div class="seccion-texto">${p.planteamientoProblema}</div>
+          ` : ''}
+
+          ${p.objetivosGenerales ? `
+          <div class="seccion-titulo">II. Objetivos Generales</div>
+          <div class="seccion-texto">${p.objetivosGenerales}</div>
+          ` : ''}
+
+          ${p.objetivosEspecificos ? `
+          <div class="seccion-titulo">III. Objetivos Específicos</div>
+          <div class="seccion-texto">${p.objetivosEspecificos}</div>
+          ` : ''}
+
+          ${p.metodologia ? `
+          <div class="seccion-titulo">IV. Metodología</div>
+          <div class="seccion-texto">${p.metodologia}</div>
+          ` : ''}
+
+          ${p.resultadosEsperados ? `
+          <div class="seccion-titulo">V. Resultados Esperados</div>
+          <div class="seccion-texto">${p.resultadosEsperados}</div>
+          ` : ''}
+
+          ${p.bibliografia ? `
+          <div class="seccion-titulo">VI. Bibliografía</div>
+          <div class="seccion-texto">${p.bibliografia}</div>
+          ` : ''}
+
+          ${p.observacionesComision ? `
+          <div class="seccion-titulo">Observaciones del Docente</div>
+          <div class="seccion-texto">${p.observacionesComision}</div>
+          ` : ''}
+
+          <div class="footer">
+            <span>UTEQ — Sistema de Gestión de Titulación</span>
+            <span>Generado: ${new Date().toLocaleDateString('es-EC', {day:'2-digit',month:'long',year:'numeric'})}</span>
+          </div>
+        </div>
+
+      </body>
+      </html>
+    `;
+
+    const ventana = window.open('', '_blank', 'width=900,height=700');
+    if (ventana) {
+      ventana.document.write(contenido);
+      ventana.document.close();
+      ventana.onload = () => ventana.print();
+    }
   }
 
   aprobarPropuesta(): void {
@@ -76,13 +243,13 @@ export class ComplexivoDocenteComponent implements OnInit {
     if (!p) return;
     this.procesandoIdP.set(p.idPropuesta);
     this.error.set(null); this.ok.set(null);
-    this.api.decidirPropuesta(this.idDocente, p.idPropuesta, 'APROBADA', this.obsDecision)
+    this.api.decidirPropuesta(this.idDocente, p.idPropuesta, 'APROBADA', this.obsAprobacion)
       .pipe(finalize(() => this.procesandoIdP.set(null)))
       .subscribe({
-        next: (dto) => {
+        next: () => {
           this.ok.set('✅ Propuesta aprobada. El estudiante puede avanzar a Titulación II.');
-          this.propuestaSelec.set(dto);
-          this.obsDecision = '';
+          this.propuestaSelec.set(null);  // ← limpiar panel derecho
+          this.obsAprobacion = '';
           this.cargarPropuestas();
         },
         error: (e) => this.error.set(e?.error?.message ?? 'Error al aprobar.')
@@ -91,19 +258,20 @@ export class ComplexivoDocenteComponent implements OnInit {
 
   rechazarPropuesta(): void {
     const p = this.propuestaSelec();
-    if (!p || !this.obsDecision.trim()) {
+    if (!p || !this.obsRechazo.trim()) {
       this.error.set('Escribe el motivo del rechazo.');
       return;
     }
     this.procesandoIdP.set(p.idPropuesta);
     this.error.set(null); this.ok.set(null);
-    this.api.decidirPropuesta(this.idDocente, p.idPropuesta, 'RECHAZADA', this.obsDecision)
+    this.api.decidirPropuesta(this.idDocente, p.idPropuesta, 'RECHAZADA', this.obsRechazo)
       .pipe(finalize(() => this.procesandoIdP.set(null)))
       .subscribe({
-        next: (dto) => {
+        next: () => {
           this.ok.set('Propuesta rechazada. El estudiante deberá corregirla.');
-          this.propuestaSelec.set(dto);
-          this.obsDecision = ''; this.mostrarRechazoP = false;
+          this.propuestaSelec.set(null);  // ← limpiar panel derecho
+          this.obsRechazo = '';
+          this.mostrarRechazoP = false;
           this.cargarPropuestas();
         },
         error: (e) => this.error.set(e?.error?.message ?? 'Error al rechazar.')
