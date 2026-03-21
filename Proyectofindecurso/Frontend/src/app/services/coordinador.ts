@@ -54,6 +54,11 @@ export interface CatalogoCarrera {
 /** =========================
  *  DT1 - REQUEST/RESPONSE
  *  ========================= */
+export interface AsignarTutorExcelRequest {
+  idUsuario: number;
+  idDocente: number;
+  cedulas: string[];
+}
 export interface Dt1AsignacionCreateRequest {
   idUsuario: number;
   idDocente: number;
@@ -204,5 +209,8 @@ export class CoordinadorService {
     return this.http.get<InformacionAcademicaDt1>(
       `${this.API_URL}/dt1/informacion-academica?idUsuario=${idUsuario}`
     );
+  }
+  asignarTutorExcel(payload: AsignarTutorExcelRequest): Observable<string[]> {
+    return this.http.post<string[]>(`${this.API_URL}/dt1/asignar-tutor-excel`, payload);
   }
 }

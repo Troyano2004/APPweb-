@@ -56,3 +56,17 @@ export interface TutoriaCalendario {
   estudianteNombre: string;
   tituloProyecto: string;
 }
+export interface TutoriaReporteItem {
+  idTutoria: number;
+  fecha: string;
+  hora?: string;
+  modalidad: Modalidad;
+}
+
+export interface ReporteAsistencia {
+  idEstudiante: number;
+  estudiante: string;
+  tituloProyecto: string;
+  totalTutorias: number;
+  tutorias: TutoriaReporteItem[];
+}

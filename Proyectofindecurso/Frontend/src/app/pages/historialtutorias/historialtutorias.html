@@ -1,178 +1,140 @@
 <div class="page">
+  <div class="wrap">
 
-  <div class="layout">
-
-    <!-- PRÓXIMAS TUTORÍAS -->
-    <section class="panel">
-
-      <div class="panel-header">
-        <div>
-          <div class="title">Próximas tutorías</div>
-          <div class="subtitle">
-            Aquí puedes revisar las reuniones programadas.
-          </div>
-        </div>
+    <!-- HERO -->
+    <div class="hero">
+      <div class="hero-left">
+        <h1>📅 Mis Tutorías</h1>
+        <p>Consulta tus tutorías programadas y el historial de sesiones</p>
       </div>
+      <div class="hero-right">
+        <button class="btn btn-secondary" (click)="cargar()" [disabled]="cargando">↻ Refrescar</button>
+      </div>
+    </div>
 
-      <div class="cards">
+    <div class="msg-loading" *ngIf="cargando">Cargando tutorías...</div>
+    <div class="msg-warn" *ngIf="!cargando && mensaje">{{ mensaje }}</div>
 
-        <div class="card pending" *ngFor="let t of pendientes">
+    <div class="layout" *ngIf="!cargando">
 
-          <div class="card-top">
+      <!-- PRÓXIMAS -->
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">🕐 Próximas tutorías</div>
+          <div class="section-sub">Reuniones programadas pendientes</div>
+        </div>
 
-            <div class="card-title">
-              Tutoría #{{ t.idTutoria }}
-              <span class="badge programada">PROGRAMADA</span>
+        <div class="empty-box" *ngIf="!pendientes.length">
+          No tienes tutorías programadas próximamente.
+        </div>
+
+        <div class="tutorias-list" *ngIf="pendientes.length">
+          <div class="tutoria-card proxima"
+               [class.destacada]="t.idTutoria === idTutoriaProxima"
+               *ngFor="let t of pendientes">
+
+            <div class="tutoria-card__top">
+              <div class="tutoria-card__num">Tutoría #{{ t.idTutoria }}</div>
+              <span class="badge badge-programada">PROGRAMADA</span>
             </div>
 
-            <a
-              *ngIf="t.linkReunion"
-              [href]="t.linkReunion"
-              target="_blank"
-              class="btn primary"
-            >
+            <div class="tutoria-card__info">
+              <div class="info-item">
+                <span>👤 Director</span>
+                <strong>{{ t.directorNombre || '-' }}</strong>
+              </div>
+              <div class="info-item">
+                <span>📅 Fecha</span>
+                <strong>{{ t.fecha }}</strong>
+              </div>
+              <div class="info-item">
+                <span>🕐 Hora</span>
+                <strong>{{ t.hora || '-' }}</strong>
+              </div>
+              <div class="info-item">
+                <span>📍 Modalidad</span>
+                <strong>{{ t.modalidad || '-' }}</strong>
+              </div>
+            </div>
+
+            <a *ngIf="t.linkReunion" [href]="t.linkReunion" target="_blank" class="btn btn-zoom">
               Unirse a reunión
             </a>
 
-          </div>
-
-          <div class="meta-grid">
-
-            <div>
-              <span>Director</span>
-              <strong>{{ t.directorNombre || '-' }}</strong>
+            <div class="proxima-tag" *ngIf="t.idTutoria === idTutoriaProxima">
+              Próxima a realizarse
             </div>
 
-            <div>
-              <span>Fecha</span>
-              <strong>{{ t.fecha }}</strong>
-            </div>
-
-            <div>
-              <span>Hora</span>
-              <strong>{{ t.hora || '-' }}</strong>
-            </div>
-
-            <div>
-              <span>Modalidad</span>
-              <strong>{{ t.modalidad || '-' }}</strong>
-            </div>
-
-          </div>
-
-        </div>
-
-      </div>
-
-    </section>
-
-    <!-- HISTORIAL -->
-    <section class="panel">
-
-      <div class="panel-header">
-
-        <div>
-          <div class="title">Historial de tutorías</div>
-          <div class="subtitle">
-            Consulta observaciones registradas en las actas.
           </div>
         </div>
-
-        <button class="btn ghost" (click)="cargar()" [disabled]="cargando">
-          Refrescar
-        </button>
-
       </div>
 
-      <div class="alert warn" *ngIf="cargando">
-        Cargando...
-      </div>
+      <!-- HISTORIAL -->
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">📋 Historial</div>
+          <div class="section-sub">Todas las tutorías registradas</div>
+        </div>
 
-      <div class="alert" *ngIf="!cargando && mensaje">
-        {{ mensaje }}
-      </div>
+        <div class="empty-box" *ngIf="!items.length">
+          No hay tutorías registradas.
+        </div>
 
-      <div class="cards" *ngIf="!cargando && items.length">
+        <div class="tutorias-list" *ngIf="items.length">
+          <div class="tutoria-card" *ngFor="let t of items">
 
-        <div class="card" *ngFor="let t of items">
-
-          <div class="card-top">
-
-            <div class="card-title">
-              Tutoría #{{ t.idTutoria }}
-
-              <span
-                class="badge"
-                [ngClass]="(t.estado || '').toLowerCase()"
-              >
-                {{ t.estado }}
-              </span>
-
+            <div class="tutoria-card__top">
+              <div class="tutoria-card__num">Tutoría #{{ t.idTutoria }}</div>
+              <span class="badge" [ngClass]="(t.estado || '').toLowerCase()">{{ t.estado }}</span>
             </div>
 
-            <button class="btn dark small" (click)="toggle(t)">
-              {{ openId === t.idTutoria ? 'Ocultar' : 'Ver observaciones' }}
+            <div class="tutoria-card__info">
+              <div class="info-item">
+                <span>📅 Fecha</span>
+                <strong>{{ t.fecha }}</strong>
+              </div>
+              <div class="info-item">
+                <span>🕐 Hora</span>
+                <strong>{{ t.hora || '-' }}</strong>
+              </div>
+              <div class="info-item">
+                <span>👤 Director</span>
+                <strong>{{ t.directorNombre || '-' }}</strong>
+              </div>
+              <div class="info-item">
+                <span>📍 Modalidad</span>
+                <strong>{{ t.modalidad || '-' }}</strong>
+              </div>
+            </div>
+
+            <button class="btn btn-toggle" (click)="toggle(t)">
+              {{ openId === t.idTutoria ? '▲ Ocultar acta' : '▼ Ver acta' }}
             </button>
 
-          </div>
-
-          <div class="meta-grid">
-
-            <div>
-              <span>Fecha</span>
-              <strong>{{ t.fecha }}</strong>
-            </div>
-
-            <div>
-              <span>Hora</span>
-              <strong>{{ t.hora || '-' }}</strong>
-            </div>
-
-            <div>
-              <span>Director</span>
-              <strong>{{ t.directorNombre || '-' }}</strong>
-            </div>
-
-            <div>
-              <span>Modalidad</span>
-              <strong>{{ t.modalidad || '-' }}</strong>
-            </div>
-
-          </div>
-
-          <!-- DETALLE ACTA -->
-
-          <div class="detail" *ngIf="openId === t.idTutoria">
-
-            <div class="empty" *ngIf="!t.idActa">
-              Esta tutoría aún no tiene acta.
-            </div>
-
-            <div class="box" *ngIf="t.idActa">
-
-              <div class="k">Cumplimiento</div>
-              <div class="v">{{ t.cumplimiento || '-' }}</div>
-
-              <div class="k mt">Observaciones</div>
-              <div class="v pre">
-                {{ t.observaciones || 'Sin observaciones.' }}
+            <div class="acta-detail" *ngIf="openId === t.idTutoria">
+              <div class="acta-empty" *ngIf="!t.idActa">
+                Esta tutoría aún no tiene acta registrada.
               </div>
-
-              <div class="k mt">Conclusión</div>
-              <div class="v pre">
-                {{ t.conclusion || '-' }}
+              <div class="acta-content" *ngIf="t.idActa">
+                <div class="acta-row">
+                  <span class="acta-label">Cumplimiento</span>
+                  <span class="acta-value">{{ t.cumplimiento || '-' }}</span>
+                </div>
+                <div class="acta-row">
+                  <span class="acta-label">Observaciones</span>
+                  <span class="acta-value pre">{{ t.observaciones || 'Sin observaciones.' }}</span>
+                </div>
+                <div class="acta-row">
+                  <span class="acta-label">Conclusión</span>
+                  <span class="acta-value pre">{{ t.conclusion || '-' }}</span>
+                </div>
               </div>
-
             </div>
 
           </div>
-
         </div>
-
       </div>
 
-    </section>
-
+    </div>
   </div>
-
 </div>

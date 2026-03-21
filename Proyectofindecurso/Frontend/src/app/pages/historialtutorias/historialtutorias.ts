@@ -16,6 +16,7 @@ export class Historialtutorias {
   cargando = false;
   mensaje = '';
   items: TutoriaHistorialResponse[] = [];
+  idTutoriaProxima: number | null = null;
 
   idEstudiante!: number;
   idAnteproyecto!: number;
@@ -51,11 +52,46 @@ export class Historialtutorias {
       .subscribe({
         next: (r) => {
           this.items = r || [];
+          this.calcularProximaTutoria();
           if (!this.items.length) this.mensaje = 'No hay tutorías registradas.';
         },
         error: () => this.mensaje = 'No se pudo cargar el historial.'
       });
   }
+
+  calcularProximaTutoria() {
+    const programadas = this.items.filter(t => t.estado === 'PROGRAMADA');
+
+    if (!programadas.length) {
+      this.idTutoriaProxima = null;
+      return;
+    }
+
+    let proxima = programadas[0];
+
+    for (let t of programadas) {
+      const fechaActual = new Date(`${t.fecha}T${t.hora || '00:00:00'}`);
+      const fechaProxima = new Date(`${proxima.fecha}T${proxima.hora || '00:00:00'}`);
+
+      if (fechaActual < fechaProxima) {
+        proxima = t;
+      }
+    }
+
+    this.idTutoriaProxima = proxima.idTutoria;
+  }
+
+
+
+
+
+
+
+
+
+
+
+
 
   toggle(t: TutoriaHistorialResponse) {
     this.openId = (this.openId === t.idTutoria) ? null : t.idTutoria;

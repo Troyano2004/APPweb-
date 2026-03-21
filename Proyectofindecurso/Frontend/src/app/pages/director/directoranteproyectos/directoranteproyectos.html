@@ -52,7 +52,16 @@
       </div>
 
       <div class="card-actions">
-        <button class="btn primary" (click)="abrir(x)">Ver tutorías</button>
+        <button class="btn primary"
+                *ngIf="(x.estadoAnteproyecto || '').toUpperCase() === 'BORRADOR'"
+                (click)="abrir(x)">
+          Ver tutorías
+        </button>
+        <button class="btn warn"
+                *ngIf="(x.estadoAnteproyecto || '').toUpperCase() === 'EN_REVISION' || (x.estadoAnteproyecto || '').toUpperCase() === 'ENVIADO'"
+                (click)="irRevision(x)">
+          📋 Revisión Final
+        </button>
       </div>
     </div>
 

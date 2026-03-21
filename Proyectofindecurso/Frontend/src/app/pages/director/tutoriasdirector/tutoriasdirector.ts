@@ -19,6 +19,8 @@ export class Tutoriasdirector {
 
   idDocente!: number;
   idAnteproyecto!: number;
+  mesActual = new Date();
+  diasCalendario: { fecha: Date; tieneTutoria: boolean; estado?: string }[] = [];
 
   form: FormGroup;
   tutorias: Tutoria[] = [];
@@ -55,7 +57,11 @@ export class Tutoriasdirector {
     this.api.tutorias(this.idAnteproyecto, this.idDocente)
       .pipe(finalize(() => { this.cargando = false; this.cdr.detectChanges(); }))
       .subscribe({
-        next: (r) => this.tutorias = r,
+        next: (r) =>
+        {
+          this.tutorias = r;
+          this.generarCalendario(); // ← agrega esto
+        },
         error: (e) => this.mensaje = this.err(e)
       });
   }
@@ -96,6 +102,9 @@ export class Tutoriasdirector {
     localStorage.setItem('director_idTutoria', String(t.idTutoria));
     this.router.navigate(['/app/director/acta']);
   }
+  irZoomConfig(): void {
+    this.router.navigate(['/app/docente/zoom-config']);
+  }
 
   volver() {
     this.router.navigate(['/app/director/mis-anteproyectos']);
@@ -105,6 +114,46 @@ export class Tutoriasdirector {
     if (typeof e?.error === 'string') return e.error;
     if (typeof e?.error?.message === 'string') return e.error.message;
     return e?.message || 'Error';
+  }
+  get nombreMes(): string {
+    return this.mesActual.toLocaleDateString('es-EC', { month: 'long', year: 'numeric' });
+  }
+
+  mesAnterior(): void {
+    this.mesActual = new Date(this.mesActual.getFullYear(), this.mesActual.getMonth() - 1, 1);
+    this.generarCalendario();
+    this.cdr.detectChanges();
+  }
+
+  mesSiguiente(): void {
+    this.mesActual = new Date(this.mesActual.getFullYear(), this.mesActual.getMonth() + 1, 1);
+    this.generarCalendario();
+    this.cdr.detectChanges();
+  }
+
+  generarCalendario(): void {
+    const year = this.mesActual.getFullYear();
+    const month = this.mesActual.getMonth();
+    const primerDia = new Date(year, month, 1).getDay();
+    const diasEnMes = new Date(year, month + 1, 0).getDate();
+
+    this.diasCalendario = [];
+
+    // días vacíos antes del primer día
+    for (let i = 0; i < primerDia; i++) {
+      this.diasCalendario.push({ fecha: new Date(0), tieneTutoria: false });
+    }
+
+    for (let d = 1; d <= diasEnMes; d++) {
+      const fecha = new Date(year, month, d);
+      const fechaStr = fecha.toISOString().split('T')[0];
+      const tutoria = this.tutorias.find(t => t.fecha === fechaStr);
+      this.diasCalendario.push({
+        fecha,
+        tieneTutoria: !!tutoria,
+        estado: tutoria?.estado
+      });
+    }
   }
 }
 

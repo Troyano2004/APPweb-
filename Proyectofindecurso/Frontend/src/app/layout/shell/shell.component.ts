@@ -41,6 +41,7 @@ export class ShellComponent implements OnInit, OnDestroy {
   breadcrumb = 'Inicio / Dashboard';
   userName = 'Usuario';
   userRole = 'Sistema';
+  menuUsuarioAbierto = false;
 
   private readonly subscriptions = new Subscription();
 
@@ -93,18 +94,29 @@ export class ShellComponent implements OnInit, OnDestroy {
       ],
     },
     {
-      title: 'Tutorías y Dirección',
-      icon: '👨‍🏫',
+      title: 'Titulacion I',
+      icon: '📄',
       roles: ['DOCENTE', 'ADMIN'],
       items: [
         { label: 'Mis anteproyectos', path: '/app/director/mis-anteproyectos' },
         { label: 'Tutorías', path: '/app/director/tutorias' },
         { label: 'Acta de revisión', path: '/app/director/acta' },
         { label: 'Revisión Final Anteproyecto', path: '/app/dt1/lista' },
+        { label: 'Configuración Zoom', path: '/app/docente/zoom-config', roles: ['DOCENTE'] },
+        { label: 'Reporte de asistencia', path: '/app/director/reporte-asistencia', roles: ['DOCENTE'] },
+      ]
+
+    },
+    {
+      title: 'Tutorías y Dirección',
+      icon: '👨‍🏫',
+      roles: ['DOCENTE', 'ADMIN'],
+      items: [
+
         { label: 'Registrar tutoría', path: '/app/tutorias/nueva' },
         { label: 'Actas de tutoría', path: '/app/tutorias/actas' },
         { label: 'Historial', path: '/app/tutorias/historial', roles: ['ADMIN'] },
-        { label: 'Configuración Zoom', path: '/app/docente/zoom-config', roles: ['DOCENTE'] },
+
       ],
     },
     {
@@ -172,6 +184,7 @@ export class ShellComponent implements OnInit, OnDestroy {
         { label: 'Reportes', path: '/app/coordinador/reportes' },
         { label: 'Comisión formativa', path: '/app/coordinador/comision' },
         { label: 'DT1 - Docentes y Tutores', path: '/app/coordinador/dt1-asignacion' },
+        { label: 'Gestión de estudiantes', path: '/app/coordinador/gestion-estudiantes' },
       ],
     },
     {
@@ -185,6 +198,7 @@ export class ShellComponent implements OnInit, OnDestroy {
         { label: 'Gestión de solicitudes', path: '/app/admin/gestion-solicitudes' },
         { label: 'Configuración de correo', path: '/app/admin/configuracion-correo' },
         { label: 'Gestión de coordinadores', path: '/app/admin/gestion-coordinadores' },
+        { label: 'Gestión de docentes', path: '/app/admin/gestion-docentes' },
       ],
     },
   ];
@@ -260,7 +274,14 @@ export class ShellComponent implements OnInit, OnDestroy {
       }))
       .filter(sec => sec.items.length > 0);
   }
+  toggleMenuUsuario(): void {
+    this.menuUsuarioAbierto = !this.menuUsuarioAbierto;
+  }
 
+  cambiarClave(): void {
+    this.menuUsuarioAbierto = false;
+    this.router.navigate(['/app/cambiar-clave']);
+  }
   private getNormalizedRole(): AppRole | null {
     const user = getSessionUser();
     const raw = String(user?.['rol'] ?? '').trim().toUpperCase();

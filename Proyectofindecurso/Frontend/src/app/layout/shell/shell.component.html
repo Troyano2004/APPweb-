@@ -52,12 +52,25 @@
       </div>
       <div class="topbar-right">
         <button class="icon-button" type="button">🔔</button>
-        <div class="avatar">
-          <span class="avatar-circle">AG</span>
+        <div class="avatar" (click)="toggleMenuUsuario()" style="cursor:pointer; position:relative">
+          <span class="avatar-circle">{{ userName.charAt(0) }}</span>
           <div class="avatar-info">
             <strong>{{ userName }}</strong>
             <span>{{ userRole }}</span>
           </div>
+
+          <!-- DROPDOWN -->
+          <div class="user-dropdown" *ngIf="menuUsuarioAbierto" (click)="$event.stopPropagation()">
+            <button class="user-dropdown-item" (click)="cambiarClave()">
+              🔑 Cambiar contraseña
+            </button>
+          </div>
+        </div>
+
+        <!-- OVERLAY para cerrar dropdown -->
+        <div *ngIf="menuUsuarioAbierto"
+             style="position:fixed;inset:0;z-index:99"
+             (click)="menuUsuarioAbierto = false">
         </div>
         <button class="logout" type="button" (click)="logout()">Cerrar sesión</button>
       </div>

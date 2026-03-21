@@ -27,7 +27,7 @@ export class AsignacionDt1 implements OnInit {
   cargando = false;
   mensaje = '';
   msgType: MsgType = '';
-
+  archivoNombre = '';
   carreraNombre = '---';
   periodoNombre = '---';
 
@@ -37,6 +37,17 @@ export class AsignacionDt1 implements OnInit {
   docentesCarrera: Opcion[] = [];
   docentesDt1: Opcion[] = [];
   estudiantes: Opcion[] = [];
+
+
+
+  // 👇 AGREGA ESTO
+  modoAsignacion: 'manual' | 'excel' = 'manual';
+
+  archivoExcel: File | null = null;
+  cedulasExcel: string[] = [];
+  previsualizacion: { cedula: string }[] = [];
+  advertenciasExcel: string[] = [];
+  mostrarPrevisualizacion = false;
 
   formDocente: FormGroup;
   formTutor: FormGroup;
@@ -58,7 +69,89 @@ export class AsignacionDt1 implements OnInit {
   ngOnInit(): void {
     this.intentarCargarInfo(5);
   }
+  onArchivoSeleccionado(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input.files?.length) return;
+    this.archivoNombre = input.files[0].name;
+    this.archivoExcel = input.files[0];
+    const archivo = input.files[0];
 
+    // Si es CSV lee como texto
+    if (archivo.name.endsWith('.csv')) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const texto = e.target?.result as string;
+        const lineas = texto.split('\n').map(l => l.trim()).filter(l => l);
+        const datos = lineas.slice(1); // salta encabezado
+        this.cedulasExcel = datos.map(l => l.split(',')[0].trim()).filter(c => c);
+        this.previsualizacion = this.cedulasExcel.map(c => ({ cedula: c }));
+        this.mostrarPrevisualizacion = true;
+        this.cdr.detectChanges();
+      };
+      reader.readAsText(archivo);
+    } else {
+      // Si es XLSX usa SheetJS
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        import('xlsx').then(XLSX => {
+          const workbook = XLSX.read(data, { type: 'array' });
+          const sheet = workbook.Sheets[workbook.SheetNames[0]];
+          const rows: any[] = XLSX.utils.sheet_to_json(sheet, {
+            header: 1,
+            raw: false,      // ← lee todo como string
+            defval: ''       // ← celdas vacías como string vacío
+          });
+          console.log('FILAS LEIDAS:', rows);
+          const datos = rows.slice(1).filter((r: any) => r[0]); // salta encabezado
+          this.cedulasExcel = datos
+            .map((r: any) => String(r[0] || '').trim())
+            .filter(c => c.length > 0);
+          console.log('CEDULAS:', this.cedulasExcel);
+          this.previsualizacion = this.cedulasExcel.map(c => ({ cedula: c }));
+          this.mostrarPrevisualizacion = true;
+          this.cdr.detectChanges();
+        });
+      };
+      reader.readAsArrayBuffer(archivo);
+    }
+  }
+  asignarDesdeExcel(): void {
+    if (!this.cedulasExcel.length) {
+      this.mostrarMensaje('No hay cédulas cargadas.', 'error');
+      return;
+    }
+    if (!this.formTutor.get('idDocente')?.value) {
+      this.mostrarMensaje('Selecciona un docente tutor.', 'error');
+      return;
+    }
+
+    const idUsuario = this.getIdUsuarioFromSession();
+    if (!idUsuario) return;
+
+    this.cargando = true;
+    this.api.asignarTutorExcel({
+      idUsuario,
+      idDocente: Number(this.formTutor.value.idDocente),
+      cedulas: this.cedulasExcel
+    }).pipe(finalize(() => { this.cargando = false; this.cdr.detectChanges(); }))
+      .subscribe({
+        next: (advertencias) => {
+          this.advertenciasExcel = advertencias;
+          this.mostrarMensaje(
+            advertencias.length
+              ? `Asignación completada con ${advertencias.length} advertencia(s).`
+              : 'Todos los estudiantes fueron asignados correctamente.',
+            advertencias.length ? 'error' : 'ok',
+            6000
+          );
+          this.mostrarPrevisualizacion = false;
+          this.cedulasExcel = [];
+          this.cargarInformacion();
+        },
+        error: (e) => this.mostrarMensaje(this.errMsg(e), 'error')
+      });
+  }
   private intentarCargarInfo(intentos: number) {
     const idUsuario = this.getIdUsuarioFromSession();
     if (!idUsuario) {

@@ -19,8 +19,8 @@ public class EmailService {
 
     private static final Map<String, String> HOSTS = Map.of(
             "GMAIL",   "smtp.gmail.com",
-            "YAHOO",   "smtp.mail.yahoo.com",
-            "OUTLOOK", "smtp-mail.outlook.com"
+            "YAHOO",   "smtp.mail.yahoo.com"
+
     );
 
     public EmailService(ConfiguracionCorreoRepository configRepo) {

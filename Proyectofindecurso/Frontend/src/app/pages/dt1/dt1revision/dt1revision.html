@@ -1,97 +1,81 @@
-<div class="panel">
+<div class="revision-page">
 
-  <div class="head">
-    <div>
-      <div class="title">Revisión de Anteproyecto DT1</div>
-      <div class="sub">Revise el documento PDF y registre su decisión académica.</div>
+  <div class="revision-toolbar">
+    <div class="revision-toolbar__left">
+      <button class="rbtn rbtn-back" (click)="volver()" [disabled]="cargando">← Volver</button>
+      <div class="revision-toolbar__title">
+        <span class="revision-toolbar__tag">DT1</span>
+        Revisión de Anteproyecto
+      </div>
     </div>
-    <div class="actions">
-      <button class="btn ghost" (click)="volver()" [disabled]="cargando">
-        ← Volver
-      </button>
-      <button class="btn primary-outline" (click)="verPdf()" [disabled]="cargando">
-        📄 Ver PDF
-      </button>
+    <button class="rbtn rbtn-pdf" (click)="verPdf()" [disabled]="cargando">📄 Ver PDF</button>
+  </div>
+
+  <div class="revision-loading" *ngIf="cargando">Cargando información...</div>
+  <div class="revision-warn" *ngIf="!cargando && mensaje">⚠️ {{ mensaje }}</div>
+
+  <div class="revision-body" *ngIf="!cargando && detalle">
+
+    <!-- INFO ESTUDIANTE -->
+    <div class="info-strip">
+      <div class="info-strip__item">
+        <span class="info-strip__label">Estudiante</span>
+        <span class="info-strip__value">{{ detalle.estudiante }}</span>
+      </div>
+      <div class="info-strip__item">
+        <span class="info-strip__label">Período</span>
+        <span class="info-strip__value">{{ detalle.periodo }}</span>
+      </div>
+      <div class="info-strip__item">
+        <span class="info-strip__label">Anteproyecto</span>
+        <span class="info-strip__value">#{{ detalle.idAnteproyecto }}</span>
+      </div>
+      <div class="info-strip__item">
+        <span class="info-strip__label">Versión</span>
+        <span class="info-strip__value">{{ detalle.numeroVersion }}</span>
+      </div>
+      <div class="info-strip__item">
+        <span class="info-strip__label">Fecha envío</span>
+        <span class="info-strip__value">{{ detalle.fechaEnvio ? (detalle.fechaEnvio | date:'dd/MM/yyyy') : '—' }}</span>
+      </div>
+      <div class="info-strip__item">
+        <span class="info-strip__label">Estado</span>
+        <span class="estado-pill">{{ detalle.estadoAnteproyecto }}</span>
+      </div>
     </div>
-  </div>
 
-  <div class="alert info" *ngIf="cargando">
-    Cargando información...
-  </div>
-
-  <div class="alert warn" *ngIf="!cargando && mensaje">
-    {{ mensaje }}
-  </div>
-
-  <div class="body" *ngIf="!cargando && detalle">
-
-    <!-- Datos del anteproyecto -->
-    <section class="section-card">
-      <div class="section-header">
-        <span class="section-title">Datos del Anteproyecto</span>
-        <span class="estado-tag">{{ detalle.estadoAnteproyecto }}</span>
-      </div>
-      <div class="data-grid">
-        <div class="data-item">
-          <span class="data-label">Estudiante</span>
-          <span class="data-value">{{ detalle.estudiante }}</span>
-        </div>
-        <div class="data-item">
-          <span class="data-label">Período Académico</span>
-          <span class="data-value">{{ detalle.periodo }}</span>
-        </div>
-        <div class="data-item">
-          <span class="data-label">N° Anteproyecto</span>
-          <span class="data-value">#{{ detalle.idAnteproyecto }}</span>
-        </div>
-        <div class="data-item">
-          <span class="data-label">Versión</span>
-          <span class="data-value">Versión {{ detalle.numeroVersion }}</span>
-        </div>
-        <div class="data-item">
-          <span class="data-label">Fecha de Envío</span>
-          <span class="data-value">
-            {{ detalle.fechaEnvio ? (detalle.fechaEnvio | date:'dd/MM/yyyy') : '—' }}
-          </span>
-        </div>
-      </div>
-    </section>
-
-    <!-- Formulario decisión -->
-    <section class="section-card">
-      <div class="section-header">
-        <span class="section-title">Registro de Decisión</span>
-      </div>
-
-      <div class="form-body">
-        <div class="form-field">
-          <label class="field-label">Decisión <span class="required">*</span></label>
-          <select class="control" [(ngModel)]="decision">
-            <option value="APROBADO">APROBADO</option>
-            <option value="RECHAZADO">RECHAZADO</option>
-          </select>
-        </div>
-
-        <div class="form-field">
-          <label class="field-label">
-            Observaciones
-            <span class="required" *ngIf="decision === 'RECHAZADO'"> * (obligatorio al rechazar)</span>
+    <!-- FORMULARIO DECISION -->
+    <div class="decision-box">
+      <div class="decision-box__left">
+        <div class="decision-label">Decisión académica</div>
+        <div class="decision-options">
+          <label class="decision-option" [class.selected]="decision === 'APROBADO'" [class.green]="decision === 'APROBADO'">
+            <input type="radio" [(ngModel)]="decision" value="APROBADO" />
+            ✅ Aprobar
           </label>
-          <textarea
-            class="control"
-            rows="6"
-            [(ngModel)]="observacion"
-            placeholder="Ingrese sus observaciones académicas sobre el anteproyecto revisado...">
-          </textarea>
-        </div>
-
-        <div class="form-actions">
-          <button class="btn primary" (click)="guardar()" [disabled]="cargando">
-            Guardar Decisión
-          </button>
+          <label class="decision-option" [class.selected]="decision === 'RECHAZADO'" [class.red]="decision === 'RECHAZADO'">
+            <input type="radio" [(ngModel)]="decision" value="RECHAZADO" />
+            ❌ Rechazar
+          </label>
         </div>
       </div>
-    </section>
+
+      <div class="decision-box__right">
+        <label class="obs-label">
+          Observaciones
+          <span class="required" *ngIf="decision === 'RECHAZADO'">* requerido</span>
+        </label>
+        <textarea class="obs-input" rows="5" [(ngModel)]="observacion"
+                  placeholder="Ingrese sus observaciones académicas...">
+        </textarea>
+      </div>
+    </div>
+
+    <div class="revision-footer">
+      <button class="rbtn rbtn-save" (click)="guardar()" [disabled]="cargando">
+        {{ cargando ? 'Guardando...' : '💾 Guardar decisión' }}
+      </button>
+    </div>
 
   </div>
 </div>

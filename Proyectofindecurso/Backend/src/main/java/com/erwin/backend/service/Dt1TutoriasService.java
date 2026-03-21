@@ -71,8 +71,8 @@ public class Dt1TutoriasService {
 
                 // Anteproyectos BORRADOR del estudiante en ese periodo
                 List<AnteproyectoTitulacion> anteproyectos =
-                        anteRepo.findByEstudiante_IdEstudianteAndEleccion_Periodo_IdPeriodoAndEstadoIgnoreCase(
-                                idEstudiante, idPeriodo, "BORRADOR"
+                        anteRepo.findByEstudiante_IdEstudianteAndEleccion_Periodo_IdPeriodoAndEstadoInIgnoreCase(
+                                idEstudiante, idPeriodo, List.of("BORRADOR", "EN_REVISION", "ENVIADO")
                         );
 
                 for (AnteproyectoTitulacion ap : anteproyectos) {
@@ -233,22 +233,7 @@ public class Dt1TutoriasService {
 
         return mapActa(acta, t);
     }
-    @Scheduled(fixedRate = 60000) // corre cada 1 minuto
-    @Transactional
-    public void cancelarTutoriasVencidas() {
-        LocalDateTime ahora = LocalDateTime.now();
-        List<TutoriaAnteproyecto> tutorias = tutRepo.findByEstado("PROGRAMADA");
-        for (TutoriaAnteproyecto t : tutorias) {
-            LocalTime hora = t.getHora();
-            LocalDateTime fechaHoraTutoria = LocalDateTime.of(t.getFecha(), hora);
 
-            if(fechaHoraTutoria.isBefore(ahora)) {
-                t.setEstado("CANCELADA");
-                tutRepo.save(t);
-            }
-        }
-
-    }
     @Transactional(readOnly = true)
     public List<TutoriaCalendarioResponse> calendarioTutorias(Integer idDocente) {
         validarDocenteExiste(idDocente);
@@ -267,6 +252,41 @@ public class Dt1TutoriasService {
                     return r;
                 })
                 .toList();
+    }
+    @Transactional(readOnly = true)
+    public List<ReporteAsistenciaResponse> reporteAsistencia(Integer idDocente) {
+        validarDocenteExiste(idDocente);
+
+        List<TutoriaAnteproyecto> realizadas = tutRepo
+                .findByDocente_IdDocenteAndEstadoOrderByFechaDesc(idDocente, "REALIZADA");
+
+        Map<Integer, ReporteAsistenciaResponse> mapa = new LinkedHashMap<>();
+
+        for (TutoriaAnteproyecto t : realizadas) {
+            Estudiante est = t.getAnteproyecto().getEstudiante();
+            Integer idEst = est.getIdEstudiante();
+
+            ReporteAsistenciaResponse r = mapa.getOrDefault(idEst, new ReporteAsistenciaResponse());
+            r.setIdEstudiante(idEst);
+            r.setEstudiante(nombreCompletoEstudiante(est));
+            String titulo = "";
+            if (t.getAnteproyecto() != null && t.getAnteproyecto().getPropuesta() != null) {
+                titulo = textoSeguro(t.getAnteproyecto().getPropuesta().getTitulo());
+            }
+            r.setTituloProyecto(titulo);
+            r.setTotalTutorias(r.getTotalTutorias() + 1);
+
+            ReporteAsistenciaResponse.TutoriaItem item = new ReporteAsistenciaResponse.TutoriaItem();
+            item.setIdTutoria(t.getIdTutoria());
+            item.setFecha(t.getFecha());
+            item.setHora(t.getHora());
+            item.setModalidad(t.getModalidad());
+
+            r.getTutorias().add(item);
+            mapa.put(idEst, r);
+        }
+
+        return new ArrayList<>(mapa.values());
     }
 
     // ==========================================================

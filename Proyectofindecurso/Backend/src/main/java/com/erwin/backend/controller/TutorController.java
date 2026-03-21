@@ -74,4 +74,8 @@ public class TutorController {
     public List<TutoriaCalendarioResponse> calendarioTutorias(@PathVariable Integer idDocente) {
         return service.calendarioTutorias(idDocente);
     }
+    @GetMapping("/reporte-asistencia/{idDocente}")
+    public List<ReporteAsistenciaResponse> reporteAsistencia(@PathVariable Integer idDocente) {
+        return service.reporteAsistencia(idDocente);
+    }
 }

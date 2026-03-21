@@ -52,7 +52,7 @@
 
       <!-- MOTIVO DE RECHAZO -->
       <div class="ap-rechazo"
-           *ngIf="anteproyecto?.ultimaVersion?.estadoVersion?.toUpperCase() === 'RECHAZADO'">
+           *ngIf="mostrarRechazo && anteproyecto?.ultimaVersion?.estadoVersion?.toUpperCase() === 'RECHAZADO'">
         <div class="ap-rechazo-icon">⚠️</div>
         <div class="ap-rechazo-content">
           <div class="ap-rechazo-title">Tu anteproyecto fue rechazado</div>

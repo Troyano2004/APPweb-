@@ -15,6 +15,7 @@ import { TitulacionWorkflowComponent } from './pages/titulacion2/workflow/workfl
 import { SeguimientoProyectosComponent } from './pages/coordinador/seguimiento-proyectos/seguimiento-proyectos.component';
 import { DirectoresComponent } from './pages/coordinador/directores/directores.component';
 import { ValidacionComponent } from './pages/coordinador/validacion/validacion.component';
+import { GestionEstudiantesComponent } from './pages/coordinador/gestion-estudiantes/gestion-estudiantes';
 import { TutoriasControlComponent } from './pages/coordinador/tutorias-control/tutorias-control.component';
 import { ObservacionesAdminComponent } from './pages/coordinador/observaciones-admin/observaciones-admin.component';
 import { ReportesCoordinacionComponent } from './pages/coordinador/reportes/reportes.component';
@@ -28,6 +29,7 @@ import { authGuard, loginGuard } from './guards/auth.guard';
 import { SesionesActivas } from './pages/sesiones-activas/sesiones-activas';
 import { GestionCoordinadores } from './pages/gestion-coordinadores/gestion-coordinadores';
 import { ZoomConfigComponent } from './pages/zoom-config/zoom-config';
+import { ReporteAsistenciaComponent } from './pages/director/reporte-asistencia/reporte-asistencia';
 // Catálogos
 import { UniversidadComponent } from './pages/catalogos/universidad/universidad.component';
 import { FacultadComponent } from './pages/catalogos/facultad/facultad.component';
@@ -36,6 +38,7 @@ import { ModalidadCatalogoComponent } from './pages/catalogos/modalidad/modalida
 import { PeriodoComponent } from './pages/catalogos/periodo/periodo.component';
 import { TipoTrabajoComponent } from './pages/catalogos/tipo-trabajo/tipo-trabajo.component';
 import { CarreraModalidadComponent } from './pages/catalogos/carrera-modalidad/carrera-modalidad.component';
+import { CambiarClaveComponent } from './pages/cambiar-clave/cambiar-clave';
 
 // Otros
 import { Historialtutorias } from './pages/historialtutorias/historialtutorias';
@@ -48,7 +51,7 @@ import { DirectorMisAnteproyectosComponent } from './pages/director/directorante
 import { RegistroEstudianteComponent } from './pages/registro-estudiante/registro-estudiante';
 import { GestionSolicitudesComponent } from './pages/gestion-solicitudes/gestion-solicitudes';
 import { ConfiguracionCorreoComponent } from './pages/configuracion-correo/configuracion-correo';
-
+import { GestionDocentes } from './pages/gestion-docentes/gestion-docentes';
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'login' },
   { path: 'login', component: LoginComponent, canActivate: [loginGuard], data: { title: 'Login' } },
@@ -58,6 +61,8 @@ export const routes: Routes = [
     component: ShellComponent,
     canActivate: [authGuard],
     children: [
+      { path: 'cambiar-clave', component: CambiarClaveComponent, data: { title: 'Cambiar Contraseña' } },
+      { path: 'admin/gestion-docentes', component: GestionDocentes, data: { title: 'Gestión de Docentes' } },
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
       { path: 'dashboard', component: DashboardComponent, data: { title: 'Dashboard' } },
 
@@ -67,10 +72,11 @@ export const routes: Routes = [
 
       // Director / DT1
       { path: 'director/mis-anteproyectos', component: DirectorMisAnteproyectosComponent, data: { title: 'Mis anteproyectos' } },
-      { path: 'director/tutorias', component: Tutoriasdirector, data: { title: 'Tutorías (Director)' } },
-      { path: 'director/acta', component: Actadirector, data: { title: 'Acta de revisión (Director)' } },
+      { path: 'director/tutorias', component: Tutoriasdirector, data: { title: 'Tutorías Tutor' } },
+      { path: 'director/acta', component: Actadirector, data: { title: 'Acta de revisión (Tutor)' } },
       { path: 'dt1/lista', component: Dt1EnviadosComponent, data: { title: 'DT1 - Lista' } },
       { path: 'dt1/revision', component: Dt1RevisionComponent, data: { title: 'DT1 - Revisión' } },
+      { path: 'director/reporte-asistencia', component: ReporteAsistenciaComponent, data: { title: 'Reporte de Asistencia' } },
 
       // Estudiantes
       { path: 'estudiantes', component: EstudiantesComponent, data: { title: 'Estudiantes' } },
@@ -148,6 +154,7 @@ export const routes: Routes = [
       { path: 'coordinador/comision', component: ComisionFormativaComponent, data: { title: 'Comisión formativa' } },
       { path: 'coordinador/proyecto', component: VisualizarProyectoComponent, data: { title: 'Visualización de proyecto' } },
       { path: 'coordinador/dt1-asignacion', component: AsignacionDt1, data: { title: 'DT1 - Asignación Docentes y Tutores' } },
+      { path: 'coordinador/gestion-estudiantes', component: GestionEstudiantesComponent, data: { title: 'Gestión de Estudiantes' } },
 
       { path: '**', redirectTo: 'dashboard' }
     ]

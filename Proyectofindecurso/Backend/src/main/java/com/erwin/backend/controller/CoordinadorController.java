@@ -102,7 +102,10 @@ public class CoordinadorController {
     public Dt1AsignarTutorResponse asignarTutorDt1(@RequestBody Dt1AsignarTutorRequest req) {
         return service.asignarTutorDt1(req);
     }
-
+    @PostMapping("/dt1/asignar-tutor-excel")
+    public List<String> asignarTutorExcel(@RequestBody AsignarTutorExcelRequest req) {
+        return service.asignarTutorDesdeExcel(req);
+    }
     @GetMapping("/dt1/informacion-academica")
     public InformacionAcademicaDt1Dto obtenerInformacionAcademica(
             @RequestParam Integer idUsuario) {

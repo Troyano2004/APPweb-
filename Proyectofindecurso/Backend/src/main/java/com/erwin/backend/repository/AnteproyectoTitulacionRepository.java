@@ -19,6 +19,8 @@ public interface AnteproyectoTitulacionRepository extends JpaRepository<Anteproy
             Integer idPeriodo,
             String estado
     );
+    List<AnteproyectoTitulacion> findByEstudiante_IdEstudianteAndEleccion_Periodo_IdPeriodoAndEstadoInIgnoreCase(
+            Integer idEstudiante, Integer idPeriodo, List<String> estados);
 
     List<AnteproyectoTitulacion> findByEstudiante_IdEstudianteAndEleccion_Periodo_IdPeriodoAndEstadoIgnoreCase(
             Integer idEstudiante, Integer idPeriodo, String estado);

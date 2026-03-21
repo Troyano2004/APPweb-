@@ -1,89 +1,124 @@
-<div class="container">
-  <div class="form-card">
-    <div class="form-head">
-      <div class="form-title">Programar Nueva Tutoría</div>
-      <p>Completa los datos para agendar una sesión con el estudiante.</p>
+<div class="page">
+  <div class="wrap">
+
+    <div class="hero">
+      <div class="hero-left">
+        <h1>📅 Tutorías</h1>
+        <p>Programa y gestiona las tutorías del anteproyecto seleccionado</p>
+      </div>
+      <div class="hero-right">
+        <button class="btn btn-ghost" type="button" (click)="irZoomConfig()">⚙️ Configurar Zoom</button>
+        <button class="btn btn-secondary" type="button" (click)="volver()">← Volver</button>
+      </div>
     </div>
 
-    <form [formGroup]="form" (ngSubmit)="crear()" class="grid-form">
-      <div class="field">
-        <label>Fecha *</label>
-        <input type="date" formControlName="fecha" class="input">
+    <div *ngIf="mensaje" class="msg-alert">{{ mensaje }}</div>
+
+    <div class="layout">
+
+      <!-- COLUMNA IZQUIERDA: formulario -->
+      <div class="card">
+        <div class="card-title">
+          <span>➕ Programar tutoría</span>
+        </div>
+        <form [formGroup]="form" (ngSubmit)="crear()" class="form">
+          <div class="field">
+            <label>Fecha *</label>
+            <input type="date" formControlName="fecha" />
+          </div>
+          <div class="field">
+            <label>Hora</label>
+            <input type="time" formControlName="hora" />
+          </div>
+          <div class="field">
+            <label>Modalidad</label>
+            <select formControlName="modalidad">
+              <option value="PRESENCIAL">Presencial</option>
+              <option value="VIRTUAL">Virtual</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary full" [disabled]="cargando">
+            {{ cargando ? 'Guardando...' : 'Programar tutoría' }}
+          </button>
+        </form>
       </div>
 
-      <div class="field">
-        <label>Hora</label>
-        <input type="time" formControlName="hora" class="input">
+      <!-- COLUMNA DERECHA: tabla + calendario -->
+      <div class="col-right">
+
+        <div class="card">
+          <div class="card-title">
+            <span>📋 Tutorías registradas</span>
+            <button class="btn btn-ghost small" (click)="cargar()" [disabled]="cargando">↻ Refrescar</button>
+          </div>
+          <div class="empty" *ngIf="!tutorias?.length">
+            No hay tutorías registradas para este anteproyecto.
+          </div>
+          <div class="table-wrap" *ngIf="tutorias?.length">
+            <table>
+              <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Hora</th>
+                <th>Modalidad</th>
+                <th>Estado</th>
+                <th>Link</th>
+                <th>Acciones</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr *ngFor="let t of tutorias">
+                <td><span class="pill">{{ t.fecha }}</span></td>
+                <td class="mono">{{ t.hora || '-' }}</td>
+                <td>{{ t.modalidad }}</td>
+                <td>
+                  <span class="badge" [ngClass]="(t.estado || '').toLowerCase()">{{ t.estado }}</span>
+                </td>
+                <td>
+                  <a *ngIf="t.linkReunion" [href]="t.linkReunion" target="_blank" class="btn btn-link">🔗 Unirse</a>
+                  <span *ngIf="!t.linkReunion" class="muted">—</span>
+                </td>
+                <td class="actions-cell">
+                  <button class="btn btn-ghost small" (click)="abrirActa(t)">📝 Acta</button>
+                  <button class="btn btn-danger small" (click)="cancelar(t)">✕ Cancelar</button>
+                </td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card mini-cal">
+          <div class="mini-cal__header">
+            <button type="button" class="mini-cal__nav" (click)="mesAnterior()">‹</button>
+            <span class="mini-cal__mes">{{ nombreMes }}</span>
+            <button type="button" class="mini-cal__nav" (click)="mesSiguiente()">›</button>
+          </div>
+          <div class="mini-cal__dias-semana">
+            <span>Do</span><span>Lu</span><span>Ma</span><span>Mi</span>
+            <span>Ju</span><span>Vi</span><span>Sa</span>
+          </div>
+          <div class="mini-cal__grid">
+            <div *ngFor="let d of diasCalendario"
+                 class="mini-cal__dia"
+                 [class.vacio]="d.fecha.getTime() === 0"
+                 [class.tiene-tutoria]="d.tieneTutoria"
+                 [class.programada]="d.estado === 'PROGRAMADA'"
+                 [class.realizada]="d.estado === 'REALIZADA'"
+                 [class.cancelada]="d.estado === 'CANCELADA'"
+                 [title]="d.tieneTutoria ? ('Tutoría ' + d.estado) : ''">
+              {{ d.fecha.getTime() !== 0 ? d.fecha.getDate() : '' }}
+            </div>
+          </div>
+          <div class="mini-cal__leyenda">
+            <span class="leg programada"></span> Programada
+            <span class="leg realizada"></span> Realizada
+            <span class="leg cancelada"></span> Cancelada
+          </div>
+        </div>
+
       </div>
 
-      <div class="field">
-        <label>Modalidad</label>
-        <select formControlName="modalidad" class="input">
-          <option value="PRESENCIAL">Presencial</option>
-          <option value="VIRTUAL">Virtual</option>
-        </select>
-      </div>
-
-      <div class="actions">
-        <button type="submit" class="btn primary" [disabled]="cargando">
-          {{ cargando ? 'Guardando...' : 'Programar Tutoría' }}
-        </button>
-      </div>
-    </form>
-
-    <div *ngIf="mensaje" class="alert">{{ mensaje }}</div>
-  </div>
-
-  <br>
-
-  <div class="list-card">
-    <div class="list-head">
-      <div>
-        <div class="list-title">Listado</div>
-        <div class="list-sub">Tutorías registradas para el anteproyecto seleccionado.</div>
-      </div>
-      <button class="btn ghost" (click)="volver()">Volver</button>
-    </div>
-
-    <div class="empty-mini" *ngIf="!tutorias?.length">
-      No hay tutorías registradas.
-    </div>
-
-    <div class="table-wrap" *ngIf="tutorias?.length">
-      <table class="t">
-        <thead>
-        <tr>
-          <th>Fecha</th>
-          <th>Hora</th>
-          <th>Modalidad</th>
-          <th>Estado</th>
-          <th>Link</th>
-          <th class="right">Acciones</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr *ngFor="let t of tutorias">
-          <td><span class="pill">{{ t.fecha }}</span></td>
-          <td class="mono">{{ t.hora || '-' }}</td>
-          <td>{{ t.modalidad }}</td>
-          <td>
-              <span class="status" [ngClass]="(t.estado || '').toLowerCase()">
-                {{ t.estado }}
-              </span>
-          </td>
-          <td>
-            <a *ngIf="t.linkReunion" [href]="t.linkReunion" target="_blank" class="btn ghost">
-              Unirse
-            </a>
-            <span *ngIf="!t.linkReunion">-</span>
-          </td>
-          <td class="right">
-            <button class="btn ghost" (click)="abrirActa(t)">Acta</button>
-            <button class="btn danger" (click)="cancelar(t)">Cancelar</button>
-          </td>
-        </tr>
-        </tbody>
-      </table>
     </div>
   </div>
 </div>

@@ -20,8 +20,8 @@ public class ConfiguracionCorreoService {
     private final ConfiguracionCorreoRepository repo;
 
     private static Map<String, String> HOSTS = Map.of( "GMAIL",   "smtp.gmail.com",
-            "YAHOO",   "smtp.mail.yahoo.com",
-            "OUTLOOK", "smtp-mail.outlook.com");
+            "YAHOO",   "smtp.mail.yahoo.com"
+            );
 
     public ConfiguracionCorreoService(ConfiguracionCorreoRepository repo, JdbcTemplate jdbcTemplate) {
         this.repo = repo;

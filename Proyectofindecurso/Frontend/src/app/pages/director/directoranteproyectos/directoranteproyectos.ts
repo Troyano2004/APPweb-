@@ -56,6 +56,10 @@ export class DirectorMisAnteproyectosComponent implements OnInit{
       }
     });
   }
+  irRevision(item: AnteDirectorItem) {
+    localStorage.setItem('dt1_idAnteproyecto', String(item.idAnteproyecto));
+    this.router.navigate(['/app/dt1/revision']);
+  }
   abrir(item: AnteDirectorItem) {
     localStorage.setItem('director_idAnteproyecto', String(item.idAnteproyecto));
     this.router.navigate(['/app/director/tutorias']); }

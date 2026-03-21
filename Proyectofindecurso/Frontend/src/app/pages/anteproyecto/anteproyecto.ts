@@ -27,7 +27,8 @@ export class AnteproyectoComponent {
   idEstudiante!: number;
   idAnteproyecto!: number;
   ultimaRevision: {decision: string, observacion: string} | null = null;
-
+  mostrarRechazo = false;
+  private rechazoTimer: any;
 
   nombreEstudiante = '';
 
@@ -79,6 +80,7 @@ export class AnteproyectoComponent {
 
   ngOnDestroy() {
     if (this.timer) clearInterval(this.timer);
+    if (this.rechazoTimer) clearTimeout(this.rechazoTimer);
   }
 
   // ✅ BOTÓN: recarga SOLO la última versión guardada
@@ -200,11 +202,18 @@ export class AnteproyectoComponent {
           if (this.puedeEditar) this.form.enable({ emitEvent: false });
           else this.form.disable({ emitEvent: false });
 
-          if (a.ultimaVersion?.estadoVersion === 'RECHAZADO') {
+          if (a.ultimaVersion?.estadoVersion?.toUpperCase() === 'RECHAZADO') {
+            this.activarMensajeRechazo();
+
             this.api.ultimaRevision(a.idAnteproyecto!).subscribe({
-              next: r => { this.ultimaRevision = r; this.cdr.detectChanges(); },
+              next: r => {
+                this.ultimaRevision = r;
+                this.cdr.detectChanges();
+              },
               error: () => {}
             });
+          } else {
+            this.mostrarRechazo = false;
           }
         },
         error: (e) => {
@@ -269,7 +278,18 @@ export class AnteproyectoComponent {
         error: (e) => this.mensaje = this.err(e)
       });
   }
+  private activarMensajeRechazo() {
+    this.mostrarRechazo = true;
 
+    if (this.rechazoTimer) {
+      clearTimeout(this.rechazoTimer);
+    }
+
+    this.rechazoTimer = setTimeout(() => {
+      this.mostrarRechazo = false;
+      this.cdr.detectChanges();
+    }, 10000);
+  }
   private actualizarFechaHora() {
     const now = new Date();
     const dias = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];

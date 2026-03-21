@@ -29,7 +29,6 @@ export class ConfiguracionCorreoComponent implements OnInit {
 
   proveedores = [
     { value: 'GMAIL',   label: 'Gmail',   icon: '✉',  smtp: 'smtp.gmail.com',       logo: 'https://www.gstatic.com/images/branding/product/1x/gmail_2020q4_32dp.png' },
-    { value: 'OUTLOOK', label: 'Outlook', icon: '📩', smtp: 'smtp.office365.com',   logo: 'https://img.icons8.com/color/32/microsoft-outlook-2019.png' },
     { value: 'YAHOO',   label: 'Yahoo',   icon: '📨', smtp: 'smtp.mail.yahoo.com',  logo: 'https://img.icons8.com/color/32/yahoo.png' }
   ];
 

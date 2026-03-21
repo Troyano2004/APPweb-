@@ -439,7 +439,70 @@ public class CoordinadorService {
         r.setEstado("ASIGNADO");
         return r;
     }
+    @Transactional
+    public List<String> asignarTutorDesdeExcel(AsignarTutorExcelRequest req) {
 
+        Coordinador coordinador = coordinadorRepo.findByUsuario_IdUsuarioAndActivoTrue(req.getIdUsuario())
+                .orElseThrow(() -> new RuntimeException("USUARIO_NO_ES_COORDINADOR"));
+
+        Carrera carrera = coordinador.getCarrera();
+        if (carrera == null) throw new RuntimeException("COORDINADOR_SIN_CARRERA");
+
+        PeriodoTitulacion periodo = periodoRepo.findFirstByActivoTrueOrderByIdPeriodoDesc()
+                .orElseThrow(() -> new RuntimeException("NO_HAY_PERIODO_ACTIVO"));
+
+        boolean docenteEsDeCarrera = docenteCarreraRepo
+                .existsByDocente_IdDocenteAndCarrera_IdCarreraAndActivoTrue(
+                        req.getIdDocente(), carrera.getIdCarrera());
+        if (!docenteEsDeCarrera)
+            throw new RuntimeException("DOCENTE_NO_PERTENECE_A_LA_CARRERA");
+
+        Docente docente = docenteRepo.findById(req.getIdDocente())
+                .orElseThrow(() -> new RuntimeException("DOCENTE_NO_ENCONTRADO"));
+
+        List<String> advertencias = new ArrayList<>();
+
+        for (String cedula : req.getCedulas()) {
+            String ced = cedula.replaceAll("\u0000", "").replaceAll("[^\\d]", "").trim();
+            System.out.println("CEDULA RECIBIDA: [" + ced + "] longitud=" + ced.length());
+            if (ced.isBlank()) continue;
+
+            Optional<Usuario> usuarioOpt = usuarioRepo.findByCedula(ced);
+            if (usuarioOpt.isEmpty()) {
+                advertencias.add("Cédula no encontrada: " + ced);
+                continue;
+            }
+
+            Optional<Estudiante> estudianteOpt = estudianteRepo.findById(usuarioOpt.get().getIdUsuario());
+            if (estudianteOpt.isEmpty()) {
+                advertencias.add("No es estudiante: " + ced);
+                continue;
+            }
+
+            Estudiante estudiante = estudianteOpt.get();
+
+            if (estudiante.getCarrera() == null ||
+                    !estudiante.getCarrera().getIdCarrera().equals(carrera.getIdCarrera())) {
+                advertencias.add("Estudiante no pertenece a la carrera: " + ced);
+                continue;
+            }
+
+            if (dt1TutorRepo.existsByEstudiante_IdEstudianteAndPeriodo_IdPeriodoAndActivoTrue(
+                    estudiante.getIdEstudiante(), periodo.getIdPeriodo())) {
+                advertencias.add("Ya tiene tutor asignado: " + ced);
+                continue;
+            }
+
+            Dt1TutorEstudiante asignacion = new Dt1TutorEstudiante();
+            asignacion.setEstudiante(estudiante);
+            asignacion.setDocente(docente);
+            asignacion.setPeriodo(periodo);
+            asignacion.setActivo(true);
+            dt1TutorRepo.save(asignacion);
+        }
+
+        return advertencias;
+    }
     // ==========================================================
     // ✅ Info académica DT1 - sin cambios (solo lecturas)
     // ==========================================================

@@ -260,7 +260,7 @@ public class SolicitudRegistroService {
         resp.setIdSolicitud(s.getIdSolicitud());
         resp.setCorreo(s.getCorreo());
         resp.setEstado(s.getEstado());
-        resp.setMensaje("SOLICITUD_APROBADA_Y_CREDENCIALES_ENVIADAS");
+        resp.setMensaje("SOLICITUD APROBADA Y CREDENCIALES ENVIADAS");
         return resp;
     }
 

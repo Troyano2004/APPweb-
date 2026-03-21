@@ -34,6 +34,7 @@ public class Dt1Controller {
         return service.detalle(idAnteproyecto, idDocente);
     }
 
+
     @PostMapping("/revisar")
     public void revisar(@RequestBody Dt1RevisionRequest req) {
         service.revisar(req);

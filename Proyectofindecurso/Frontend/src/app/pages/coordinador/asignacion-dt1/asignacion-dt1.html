@@ -28,7 +28,7 @@
     </div>
   </div>
 
-  <!-- TABS -->
+  <!-- TABS PRINCIPALES -->
   <div class="tabs">
     <button type="button" class="tab-btn" (click)="cambiarTab('docentes')" [class.active]="tab === 'docentes'">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -48,7 +48,7 @@
     </button>
   </div>
 
-  <!-- MENSAJE -->
+  <!-- MENSAJE GLOBAL -->
   <div *ngIf="mensaje" class="msg" [class.ok]="msgType==='ok'" [class.err]="msgType==='error'">
     <span class="msg__icon">{{ msgType === 'ok' ? '✅' : '❌' }}</span>
     <span class="msg__text">{{ mensaje }}</span>
@@ -57,7 +57,6 @@
   <!-- TAB 1: HABILITAR DOCENTE DT1 -->
   <div *ngIf="tab === 'docentes'" class="content-grid">
 
-    <!-- Formulario -->
     <div class="card">
       <div class="card__header">
         <div class="card__header-icon card__header-icon--green">
@@ -88,7 +87,6 @@
             Selecciona un docente.
           </small>
         </div>
-
         <button type="button" class="btn btn--primary" (click)="habilitarDocenteDt1()" [disabled]="cargando">
           <svg *ngIf="!cargando" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="20 6 9 17 4 12"/>
@@ -99,7 +97,6 @@
       </form>
     </div>
 
-    <!-- Lista DT1 habilitados -->
     <div class="card">
       <div class="card__header">
         <div class="card__header-icon card__header-icon--slate">
@@ -117,7 +114,6 @@
           <p class="card__subtitle">Docentes activos en el período actual</p>
         </div>
       </div>
-
       <div *ngIf="docentesDt1.length === 0" class="empty-state">
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.5">
           <circle cx="12" cy="8" r="4"/>
@@ -125,9 +121,8 @@
         </svg>
         <p>Aún no hay docentes DT1 habilitados.</p>
       </div>
-
       <ul class="docente-list" *ngIf="docentesDt1.length > 0">
-        <li class="docente-item" *ngFor="let d of docentesDt1; let i = index">
+        <li class="docente-item" *ngFor="let d of docentesDt1">
           <span class="docente-item__avatar">{{ d.nombre.charAt(0) }}</span>
           <span class="docente-item__name">{{ d.nombre }}</span>
           <span class="docente-item__badge">DT1</span>
@@ -150,12 +145,22 @@
       </div>
       <div>
         <h3 class="card__title">Asignar tutor a estudiante</h3>
-        <p class="card__subtitle">Asocia un docente DT1 a un estudiante sin tutor</p>
+        <p class="card__subtitle">Asignación manual o masiva desde Excel</p>
       </div>
     </div>
 
-    <form [formGroup]="formTutor" class="form form--two-col">
+    <!-- SUBTABS -->
+    <div class="subtabs">
+      <button type="button" class="subtab-btn" [class.active]="modoAsignacion === 'manual'" (click)="modoAsignacion = 'manual'">
+        👤 Manual
+      </button>
+      <button type="button" class="subtab-btn" [class.active]="modoAsignacion === 'excel'" (click)="modoAsignacion = 'excel'">
+        📊 Desde Excel
+      </button>
+    </div>
 
+    <!-- MODO MANUAL -->
+    <form [formGroup]="formTutor" class="form form--two-col" *ngIf="modoAsignacion === 'manual'">
       <div class="field">
         <label class="field__label">Estudiante sin tutor</label>
         <div class="select-wrap">
@@ -198,8 +203,74 @@
         </button>
         <p class="hint">El sistema valida que no se repita tutor en el mismo periodo.</p>
       </div>
-
     </form>
+
+    <!-- MODO EXCEL -->
+    <div class="excel-panel" *ngIf="modoAsignacion === 'excel'">
+
+      <div class="excel-step">
+        <div class="excel-step__num">1</div>
+        <div class="excel-step__content">
+          <div class="field__label">Selecciona el docente DT1 tutor</div>
+          <div class="select-wrap" style="max-width:380px; margin-top:6px">
+            <select class="field__select" [formControl]="$any(formTutor.get('idDocente'))">
+              <option [ngValue]="null">— Selecciona un docente DT1 —</option>
+              <option *ngFor="let d of docentesDt1" [ngValue]="d.id">{{ d.nombre }}</option>
+            </select>
+            <svg class="select-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="excel-step">
+        <div class="excel-step__num">2</div>
+        <div class="excel-step__content">
+          <div class="field__label">Sube el Excel con las cédulas</div>
+          <label class="file-btn">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            <span>{{ archivoNombre || 'Seleccionar archivo' }}</span>
+            <input type="file" accept=".csv,.xlsx,.xls" (change)="onArchivoSeleccionado($event)" style="display:none" />
+          </label>
+          <small style="color:#6b7280; font-size:12px; margin-top:4px; display:block">
+            La primera columna debe ser <strong>cedula</strong>.
+          </small>
+        </div>
+      </div>
+
+      <div class="excel-step" *ngIf="mostrarPrevisualizacion">
+        <div class="excel-step__num">3</div>
+        <div class="excel-step__content" style="width:100%">
+          <div class="field__label">Confirma las cédulas encontradas</div>
+          <div class="excel-preview" style="margin-top:8px">
+            <div class="excel-preview__header">
+              <span>📋 {{ cedulasExcel.length }} cédula(s) encontradas</span>
+            </div>
+            <ul class="excel-preview__list">
+              <li *ngFor="let c of previsualizacion">{{ c.cedula }}</li>
+            </ul>
+          </div>
+          <button type="button" class="btn btn--primary" style="margin-top:12px" (click)="asignarDesdeExcel()" [disabled]="cargando">
+            <span class="spinner" *ngIf="cargando"></span>
+            {{ cargando ? 'Asignando...' : '✅ Confirmar y asignar' }}
+          </button>
+        </div>
+      </div>
+
+      <div class="excel-advertencias" *ngIf="advertenciasExcel.length">
+        <strong>⚠️ Advertencias:</strong>
+        <ul>
+          <li *ngFor="let a of advertenciasExcel">{{ a }}</li>
+        </ul>
+      </div>
+
+    </div>
+
   </div>
 
 </section>
