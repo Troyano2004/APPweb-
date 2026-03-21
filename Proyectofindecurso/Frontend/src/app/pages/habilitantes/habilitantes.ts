@@ -41,7 +41,7 @@ export class DocumentosHabilitantesComponent implements OnInit {
   archivoUrl       = signal<string | null>(null);
   archivoNombre    = signal<string | null>(null);
 
-  // ← indica si el estudiante es de modalidad Complexivo
+  // indica si el estudiante es de modalidad Complexivo
   esComplexivo = false;
 
   formSubir!: FormGroup;
@@ -63,7 +63,7 @@ export class DocumentosHabilitantesComponent implements OnInit {
 
   ngOnInit(): void {
     this.buildForms();
-    this.detectarRol();   // cargarDatos() se llama dentro de detectarRol
+    this.detectarRol();
   }
 
   // ── Detectar rol y modalidad ────────────────────────────────
@@ -85,12 +85,10 @@ export class DocumentosHabilitantesComponent implements OnInit {
       // Detectar si es complexivo consultando el endpoint
       this.api.getResumenComplexivo(idEst).subscribe({
         next: () => {
-          // Responde OK → es complexivo
           this.esComplexivo = true;
           this.cargarDatos();
         },
         error: () => {
-          // Error → no es complexivo, usar flujo TIC normal
           this.esComplexivo = false;
           this.cargarDatos();
         }
@@ -108,13 +106,14 @@ export class DocumentosHabilitantesComponent implements OnInit {
   }
 
   private buildForms(): void {
-    this.formSubir = this.fb.group({
-      porcentajeCoincidencia: [null],
-      umbralPermitido: [10.0]
-    });
+    // El estudiante ya NO ingresa el porcentaje de antiplagio
+    this.formSubir = this.fb.group({});
+
+    // El Director SÍ ingresa el porcentaje al momento de validar
     this.formValidar = this.fb.group({
-      decision:   ['APROBADO', Validators.required],
-      comentario: ['']
+      porcentajeCoincidencia: [null],
+      decision:              ['APROBADO', Validators.required],
+      comentario:            ['']
     });
   }
 
@@ -127,7 +126,6 @@ export class DocumentosHabilitantesComponent implements OnInit {
     this.error.set(null);
 
     if (this.esEstudiante()) {
-      // Elegir endpoint según modalidad
       const resumen$ = this.esComplexivo
         ? this.api.getResumenComplexivo(id)
         : this.api.getResumenEstudiante(id);
@@ -156,7 +154,7 @@ export class DocumentosHabilitantesComponent implements OnInit {
     this.docSeleccionado.set(doc);
     this.archivoUrl.set(null);
     this.archivoNombre.set(null);
-    this.formSubir.reset({ porcentajeCoincidencia: null, umbralPermitido: 10.0 });
+    this.formSubir.reset();
     this.ok.set(null);
     this.error.set(null);
     this.modalSubirOpen.set(true);
@@ -213,21 +211,11 @@ export class DocumentosHabilitantesComponent implements OnInit {
       tipoDocumento: doc.tipoDocumento,
       urlArchivo:    url,
       nombreArchivo: nombre ?? 'documento.pdf'
+      // El porcentaje de antiplagio lo registra el Director al validar, NO el estudiante
     };
-
-    if (doc.tipoDocumento === 'CERTIFICADO_ANTIPLAGIO') {
-      const pct = this.formSubir.value.porcentajeCoincidencia;
-      if (pct === null || pct === undefined || pct === '') {
-        this.error.set('Ingrese el porcentaje de coincidencia del reporte COMPILATIO.');
-        return;
-      }
-      req.porcentajeCoincidencia = Number(pct);
-      req.umbralPermitido = Number(this.formSubir.value.umbralPermitido ?? 10);
-    }
 
     this.loading.set(true);
 
-    // Elegir endpoint según modalidad
     const subir$ = this.esComplexivo
       ? this.api.subirDocumentoComplexivo(id, req)
       : this.api.subirDocumento(id, req);
@@ -249,7 +237,7 @@ export class DocumentosHabilitantesComponent implements OnInit {
   // ── Modal validar ───────────────────────────────────────────
   abrirModalValidar(doc: HabilitanteDto): void {
     this.docSeleccionado.set(doc);
-    this.formValidar.reset({ decision: 'APROBADO', comentario: '' });
+    this.formValidar.reset({ porcentajeCoincidencia: null, decision: 'APROBADO', comentario: '' });
     this.ok.set(null);
     this.error.set(null);
     this.modalValidarOpen.set(true);
@@ -263,16 +251,30 @@ export class DocumentosHabilitantesComponent implements OnInit {
   confirmarValidacion(): void {
     const doc = this.docSeleccionado();
     const id  = this.idEntidad();
+
     if (!doc?.id || !id) {
       this.error.set('No se encontró el documento o el usuario.');
       return;
     }
-    if (this.formValidar.invalid) { this.formValidar.markAllAsTouched(); return; }
+    if (this.formValidar.invalid) {
+      this.formValidar.markAllAsTouched();
+      return;
+    }
 
     const req: ValidarHabilitanteRequest = {
       decision:   this.formValidar.value.decision,
       comentario: this.formValidar.value.comentario
     };
+
+    // Solo para antiplagio: el Director registra el porcentaje real del reporte
+    if (doc.tipoDocumento === 'CERTIFICADO_ANTIPLAGIO') {
+      const pct = this.formValidar.value.porcentajeCoincidencia;
+      if (pct === null || pct === undefined || pct === '') {
+        this.error.set('Debe ingresar el porcentaje de coincidencia de COMPILATIO.');
+        return;
+      }
+      req.porcentajeCoincidencia = Number(pct);
+    }
 
     this.loading.set(true);
     this.api.validarDocumento(id, doc.id, req).subscribe({
@@ -294,16 +296,20 @@ export class DocumentosHabilitantesComponent implements OnInit {
 
   badgeClass(estado: string): string {
     const map: Record<string, string> = {
-      APROBADO: 'badge-aprobado', RECHAZADO: 'badge-rechazado',
-      ENVIADO:  'badge-enviado',  PENDIENTE: 'badge-pendiente'
+      APROBADO:  'badge-aprobado',
+      RECHAZADO: 'badge-rechazado',
+      ENVIADO:   'badge-enviado',
+      PENDIENTE: 'badge-pendiente'
     };
     return map[estado] ?? 'badge-pendiente';
   }
 
   badgeLabel(estado: string): string {
     const map: Record<string, string> = {
-      APROBADO: '✓ Aprobado',  RECHAZADO: '✗ Rechazado',
-      ENVIADO:  '⏳ En revisión', PENDIENTE: '○ Pendiente'
+      APROBADO:  '✓ Aprobado',
+      RECHAZADO: '✗ Rechazado',
+      ENVIADO:   '⏳ En revisión',
+      PENDIENTE: '○ Pendiente'
     };
     return map[estado] ?? '○ Pendiente';
   }

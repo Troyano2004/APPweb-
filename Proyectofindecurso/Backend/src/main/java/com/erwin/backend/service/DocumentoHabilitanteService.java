@@ -224,9 +224,29 @@ public class DocumentoHabilitanteService {
         if (!"APROBADO".equals(decision) && !"RECHAZADO".equals(decision))
             throw new RuntimeException("La decisión debe ser APROBADO o RECHAZADO");
 
+        // Si es antiplagio, el director registra el porcentaje real
+        if ("CERTIFICADO_ANTIPLAGIO".equals(doc.getTipoDocumento())) {
+            if (req.getPorcentajeCoincidencia() == null)
+                throw new RuntimeException("Debe ingresar el porcentaje de coincidencia de COMPILATIO");
+            BigDecimal umbral = new BigDecimal("10.00");
+            doc.setPorcentajeCoincidencia(req.getPorcentajeCoincidencia());
+            doc.setUmbralPermitido(umbral);
+            boolean dentroUmbral = req.getPorcentajeCoincidencia().compareTo(umbral) <= 0;
+            doc.setResultadoAntiplagio(dentroUmbral ? "APROBADO" : "RECHAZADO");
+            // Si supera el umbral, se fuerza RECHAZADO sin importar lo que diga el director
+            if (!dentroUmbral) {
+                decision = "RECHAZADO";
+                doc.setComentarioValidacion("Porcentaje (" + req.getPorcentajeCoincidencia()
+                        + "%) supera el umbral del 10% (Art. 57 num.2). " +
+                        (req.getComentario() != null ? req.getComentario() : ""));
+            }
+        }
+
         doc.setEstado(decision);
         doc.setValidadoPor(validador);
-        doc.setComentarioValidacion(req.getComentario());
+        if (doc.getComentarioValidacion() == null) {
+            doc.setComentarioValidacion(req.getComentario());
+        }
         doc.setFechaValidacion(LocalDateTime.now());
 
         habilitanteRepo.save(doc);

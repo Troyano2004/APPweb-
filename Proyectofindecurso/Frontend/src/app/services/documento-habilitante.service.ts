@@ -53,8 +53,8 @@ export interface SubirHabilitanteRequest {
 export interface ValidarHabilitanteRequest {
   decision: 'APROBADO' | 'RECHAZADO';
   comentario?: string;
+  porcentajeCoincidencia?: number;
 }
-
 @Injectable({
   providedIn: 'root'
 })

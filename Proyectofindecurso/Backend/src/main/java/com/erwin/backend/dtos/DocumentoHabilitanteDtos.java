@@ -45,6 +45,7 @@ public class DocumentoHabilitanteDtos {
         /** APROBADO | RECHAZADO */
         private String decision;
         private String comentario;
+        private BigDecimal porcentajeCoincidencia;  // solo para CERTIFICADO_ANTIPLAGIO
     }
 
     // ──────────────────────────────────────────────────────────────
