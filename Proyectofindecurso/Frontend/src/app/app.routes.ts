@@ -25,6 +25,8 @@ import { AdminUsuariosComponent } from './pages/admin-usuario/admin-usuarios';
 import { RolesComponent } from './pages/roles/roles';
 import { AsignacionDt1 } from './pages/coordinador/asignacion-dt1/asignacion-dt1';
 import { authGuard, loginGuard } from './guards/auth.guard';
+import { AsignacionComplexivoDt2Component } from './pages/coordinador/asignacion-complexivo-dt2/asignacion-complexivo-dt2';
+import { ComplexivoDt2Component } from './pages/complexivo/dt2/complexivo-dt2';
 
 // Catálogos
 import { UniversidadComponent } from './pages/catalogos/universidad/universidad.component';
@@ -190,6 +192,11 @@ export const routes: Routes = [
       { path: 'coordinador/proyecto',              component: VisualizarProyectoComponent,   data: { title: 'Visualización de proyecto' } },
       { path: 'coordinador/dt1-asignacion',        component: AsignacionDt1,                data: { title: 'DT1 - Asignación Docentes y Tutores' } },
       { path: 'coordinador/complexivo-asignacion', component: AsignacionComplexivoComponent, data: { title: 'Complexivo - Asignación Docente' } },
+      // En children agrega:
+      { path: 'coordinador/complexivo-dt2-asignacion', component: AsignacionComplexivoDt2Component,
+        data: { title: 'Complexivo - Asignación DT2' } },
+      { path: 'titulacion2/complexivo-informes', component: ComplexivoDt2Component,
+        data: { title: 'Complexivo - Informes Prácticos' } },
 
       // ── Rutas adicionales ─────────────────────────────────────────────────
       { path: 'legal/validacion',        component: PlaceholderPageComponent, data: { title: 'Validación jurídica' } },
@@ -203,3 +210,8 @@ export const routes: Routes = [
   },
   { path: '**', redirectTo: 'login' }
 ];
+
+
+
+
+

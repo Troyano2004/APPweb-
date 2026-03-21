@@ -6,8 +6,16 @@ import java.util.List;
 
 public class ComplexivoDtos {
 
-    // ─── Asignación de docente (Coordinador) ──────────────────────
-    public record AsignarDocenteComplexivoRequest(
+    // ─── Asignación DT1 (Coordinador — Titulación I) ──────────────
+    public record AsignarDt1ComplexivoRequest(
+            Integer idEstudiante,
+            Integer idDocente,
+            Integer idUsuarioCoordinador,
+            String observacion
+    ) {}
+
+    // ─── Asignación DT2 (Coordinador — Titulación II) ─────────────
+    public record AsignarDt2ComplexivoRequest(
             Integer idEstudiante,
             Integer idDocente,
             Integer idUsuarioCoordinador,
@@ -34,6 +42,29 @@ public class ComplexivoDtos {
             String estadoComplexivo
     ) {}
 
+    // ─── Info coordinador DT1 ──────────────────────────────────────
+    public record InfoCoordinadorDt1Dto(
+            Integer idCarrera,
+            String carrera,
+            Integer idPeriodo,
+            String periodo,
+            List<DocenteOpcionDto> docentesDisponibles,
+            List<EstudianteComplexivoSinDocenteDto> estudiantesSinDocente,
+            List<ComplexivoDocenteAsignacionResponse> asignacionesActuales
+    ) {}
+
+    // ─── Info coordinador DT2 ──────────────────────────────────────
+    public record InfoCoordinadorDt2Dto(
+            Integer idCarrera,
+            String carrera,
+            Integer idPeriodo,
+            String periodo,
+            List<DocenteOpcionDto> docentesDisponibles,
+            List<EstudianteComplexivoSinDocenteDto> estudiantesSinDocente,
+            List<ComplexivoDocenteAsignacionResponse> asignacionesActuales
+    ) {}
+
+    // Mantener por compatibilidad con código existente
     public record InfoCoordinadorComplexivoDto(
             Integer idCarrera,
             String carrera,
@@ -87,7 +118,7 @@ public class ComplexivoDtos {
             String nombreDocente
     ) {}
 
-    // ─── Docente complexivo — estudiantes e informes ───────────────
+    // ─── DT2 — estudiantes e informes ──────────────────────────────
     public record EstudianteDeDocenteDto(
             Integer idComplexivo,
             Integer idEstudiante,
@@ -110,7 +141,7 @@ public class ComplexivoDtos {
             String observaciones
     ) {}
 
-    // ─── Propuestas para docente complexivo ───────────────────────
+    // ─── Propuestas (DT1 las aprueba) ─────────────────────────────
     public record PropuestaComplexivoDto(
             Integer idPropuesta,
             Integer idEstudiante,
@@ -130,5 +161,13 @@ public class ComplexivoDtos {
     public record DecisionPropuestaComplexivoRequest(
             String estado,
             String observaciones
+    ) {}
+
+    // ─── Request genérico (compatibilidad) ────────────────────────
+    public record AsignarDocenteComplexivoRequest(
+            Integer idEstudiante,
+            Integer idDocente,
+            Integer idUsuarioCoordinador,
+            String observacion
     ) {}
 }
