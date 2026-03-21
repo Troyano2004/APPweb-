@@ -5,7 +5,11 @@ import com.erwin.backend.entities.ConfiguracionCorreo;
 import com.erwin.backend.repository.ConfiguracionCorreoRepository;
 import com.erwin.backend.security.CryptoUtil;
 import com.erwin.backend.audit.aspect.Auditable;
+import com.erwin.backend.audit.dto.AuditEventDto;
+import com.erwin.backend.audit.service.AuditService;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -17,6 +21,7 @@ import java.util.stream.Collectors;
 public class ConfiguracionCorreoService {
 
     private final ConfiguracionCorreoRepository repo;
+    private final AuditService auditService;
 
     private static final Map<String, String> HOSTS = Map.of(
             "GMAIL",   "smtp.gmail.com",
@@ -24,8 +29,9 @@ public class ConfiguracionCorreoService {
             "OUTLOOK", "smtp.office365.com"
     );
 
-    public ConfiguracionCorreoService(ConfiguracionCorreoRepository repo) {
+    public ConfiguracionCorreoService(ConfiguracionCorreoRepository repo, AuditService auditService) {
         this.repo = repo;
+        this.auditService = auditService;
     }
 
     private ConfiguracionCorreoDto toDto(ConfiguracionCorreo e) {
@@ -61,7 +67,7 @@ public class ConfiguracionCorreoService {
     // Crear nueva configuración
     // Queda activa solo si no hay ninguna activa aún
     // =========================================================
-    @Auditable(entidad = "ConfiguracionCorreo", accion = "CREATE", capturarArgs = false)
+    @Auditable(entidad = "ConfiguracionCorreo", accion = "CREATE", capturarArgs = true)
     public ConfiguracionCorreoDto crear(ConfiguracionCorreoDto dto) {
         validarBase(dto);
 
@@ -82,13 +88,14 @@ public class ConfiguracionCorreoService {
     // =========================================================
     // Editar configuración existente (password opcional)
     // =========================================================
-    @Auditable(entidad = "ConfiguracionCorreo", accion = "UPDATE", capturarArgs = false)
     public ConfiguracionCorreoDto editar(Integer id, ConfiguracionCorreoDto dto) {
         validarBase(dto);
 
         ConfiguracionCorreo config = repo.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "CONFIGURACION_NO_ENCONTRADA"));
+
+        ConfiguracionCorreoDto estadoAnterior = toDtoSinPassword(config);
 
         config.setProveedor(dto.getProveedor().toUpperCase());
         config.setUsuario(dto.getUsuario().trim());
@@ -97,12 +104,27 @@ public class ConfiguracionCorreoService {
             config.setPassword(CryptoUtil.encrypt(dto.getPassword().trim()));
         }
 
-        return toDtoSinPassword(repo.save(config));
+        ConfiguracionCorreoDto resultado = toDtoSinPassword(repo.save(config));
+
+        String username = null;
+        try { Authentication a = SecurityContextHolder.getContext().getAuthentication();
+              if (a != null && a.isAuthenticated()) username = a.getName(); } catch (Exception ignored) {}
+
+        auditService.registrar(AuditEventDto.builder()
+                .entidad("ConfiguracionCorreo").accion("UPDATE")
+                .entidadId(id.toString())
+                .username(username)
+                .estadoAnterior(estadoAnterior)
+                .estadoNuevo(resultado)
+                .build());
+
+        return resultado;
     }
 
     // =========================================================
     // Activar una configuración (desactiva todas las demás)
     // =========================================================
+    @Auditable(entidad = "ConfiguracionCorreo", accion = "ACTIVAR", capturarArgs = false)
     public ConfiguracionCorreoDto activar(Integer id) {
         ConfiguracionCorreo target = repo.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(
@@ -120,6 +142,7 @@ public class ConfiguracionCorreoService {
     // =========================================================
     // Eliminar (no se puede eliminar la activa)
     // =========================================================
+    @Auditable(entidad = "ConfiguracionCorreo", accion = "DELETE", capturarArgs = false)
     public void eliminar(Integer id) {
         ConfiguracionCorreo config = repo.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(

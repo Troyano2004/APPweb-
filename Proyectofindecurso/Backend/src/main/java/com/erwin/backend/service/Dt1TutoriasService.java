@@ -1,5 +1,6 @@
 package com.erwin.backend.service;
 
+import com.erwin.backend.audit.aspect.Auditable;
 import com.erwin.backend.dtos.*;
 import com.erwin.backend.entities.*;
 import com.erwin.backend.repository.*;
@@ -84,6 +85,7 @@ public class Dt1TutoriasService {
     // ==========================
     // 2) Programar tutoría
     // ==========================
+    @Auditable(entidad = "TutoriaAnteproyecto", accion = "CREATE", capturarArgs = false)
     @Transactional
     public TutoriaResponse programarTutoria(Integer idAnteproyecto, Integer idDocente, TutoriaCreateRequest req) {
 
@@ -160,6 +162,7 @@ public class Dt1TutoriasService {
     // ==========================
     // 4) Cancelar tutoría
     // ==========================
+    @Auditable(entidad = "TutoriaAnteproyecto", accion = "CANCELAR", capturarArgs = false)
     @Transactional
     public TutoriaResponse cancelarTutoria(Integer idTutoria, Integer idDocente) {
 
@@ -202,6 +205,7 @@ public class Dt1TutoriasService {
     // ==========================
     // 6) Guardar / editar acta
     // ==========================
+    @Auditable(entidad = "ActaRevisionTutor", accion = "CREATE", capturarArgs = false)
     @Transactional
     public ActaRevisionTutorResponse guardarActa(Integer idTutoria, Integer idDocente, ActaRevisionTutorRequest req) {
 

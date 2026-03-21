@@ -131,6 +131,7 @@ public class SolicitudRegistroService {
     // =========================================================
     // 3) PASO 3: YA VERIFICADO -> datos + carrera -> PENDIENTE_APROBACION
     // =========================================================
+    @Auditable(entidad = "SolicitudRegistro", accion = "CREATE", capturarArgs = true)
     @Transactional
     public SolicitudRegistroResponse enviarDatos(SolicitudRegistroRequest req) {
         if (req == null) {
@@ -192,7 +193,7 @@ public class SolicitudRegistroService {
     // =========================================================
     // ADMIN: aprobar -> usa sp_crear_usuario_v3 (SECURITY DEFINER)
     // =========================================================
-    @Auditable(entidad = "SolicitudRegistro", accion = "UPDATE")
+    @Auditable(entidad = "SolicitudRegistro", accion = "APROBAR", capturarArgs = true)
     @Transactional
     public SolicitudRegistroResponse aprobar(Integer idSolicitud) {
         if (idSolicitud == null) {
@@ -269,7 +270,7 @@ public class SolicitudRegistroService {
     // =========================================================
     // ADMIN: rechazar
     // =========================================================
-    @Auditable(entidad = "SolicitudRegistro", accion = "UPDATE")
+    @Auditable(entidad = "SolicitudRegistro", accion = "RECHAZAR", capturarArgs = true)
     @Transactional
     public SolicitudRegistroResponse rechazar(Integer idSolicitud, String motivo) {
         if (idSolicitud == null) {

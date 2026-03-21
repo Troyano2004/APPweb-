@@ -39,22 +39,45 @@ export interface AuditStats {
   totalHoy: number;
   totalSemana: number;
   eventosCriticos24h: number;
+  totalCriticos: number;
+  ultimoEvento: string | null;
   topEntidades: { entidad: string; total: number }[];
   topAcciones: { accion: string; total: number }[];
   topUsuarios: { username: string; total: number }[];
 }
 
-export const ENTIDADES_SISTEMA = [
-  'Usuario', 'Estudiante', 'Docente', 'Coordinador',
-  'SolicitudRegistro', 'ProyectoTitulacion', 'AnteproyectoTitulacion',
-  'DocumentoTitulacion', 'DocumentoHabilitante',
-  'Dt1Asignacion', 'Dt2Asignacion', 'TribunalProyecto',
-  'TutoriaAnteproyecto', 'Sustentacion', 'ActaRevisionTutor',
-  'PeriodoTitulacion', 'ConfiguracionCorreo', 'RolSistema', 'Login'
-];
-
-export const ACCIONES_SISTEMA = [
-  'CREATE', 'UPDATE', 'DELETE', 'LOGIN'
-];
-
 export const SEVERIDADES = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
+
+export function traducirAccion(accion: string): string {
+  const map: Record<string, string> = {
+    'CREATE':               'Crear',
+    'UPDATE':               'Modificar',
+    'DELETE':               'Eliminar',
+    'LOGIN':                'Inicio de sesión',
+    'LOGOUT':               'Cierre de sesión',
+    'APROBAR':              'Aprobar',
+    'RECHAZAR':             'Rechazar',
+    'DECISION':             'Decisión',
+    'RESTORE':              'Restaurar',
+    'UPLOAD':               'Subir archivo',
+    'CALIFICAR':            'Calificar',
+    'CONSOLIDAR':           'Consolidar',
+    'VALIDAR':              'Validar',
+    'ACTIVAR':              'Activar',
+    'DESACTIVAR':           'Desactivar',
+    'ENVIAR_REVISION':      'Enviar a revisión',
+    'APROBAR_DIRECTOR':     'Aprobar (Director)',
+    'DEVOLVER':             'Devolver con observaciones',
+    'SEGUNDA_OPORTUNIDAD':  'Segunda oportunidad',
+    'ASIGNAR_DIRECTOR':     'Asignar director',
+    'ASIGNAR_PERMISOS':     'Asignar permisos',
+    'CAMBIO_ESTADO':        'Cambiar estado',
+    'CANCELAR':             'Cancelar',
+    'PROGRAMAR':            'Programar',
+    'PROGRAMAR_PREDEFENSA': 'Programar predefensa',
+    'CALIFICAR_PREDEFENSA': 'Calificar predefensa',
+    'SUGERIR':              'Sugerir tema',
+    'BORRADOR':             'Guardar borrador',
+  };
+  return map[accion] ?? accion;
+}

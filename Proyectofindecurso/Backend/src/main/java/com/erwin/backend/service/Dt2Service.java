@@ -194,6 +194,7 @@ public class Dt2Service {
         return new Dt2Dtos.MensajeDto("Docente DT2 asignado correctamente", proyecto.getEstado(), true);
     }
 
+    @Auditable(entidad = "ProyectoTitulacion", accion = "ASIGNAR_DIRECTOR_DT2", capturarArgs = false)
     @Transactional
     public Dt2Dtos.MensajeDto asignarDirector(Dt2Dtos.AsignarDirectorRequest req) {
         ProyectoTitulacion proyecto = getProyecto(req.getIdProyecto());
@@ -460,6 +461,7 @@ public class Dt2Service {
         return resultado;
     }
 
+    @Auditable(entidad = "AsesoriaDirector", accion = "CREATE", capturarArgs = false)
     @Transactional
     public Dt2Dtos.AsesoriaDto registrarAsesoria(Dt2Dtos.RegistrarAsesoriaRequest req) {
         ProyectoTitulacion proyecto = getProyecto(req.getIdProyecto());
@@ -495,6 +497,7 @@ public class Dt2Service {
                 .stream().map(this::mapAsesoria).collect(Collectors.toList());
     }
 
+    @Auditable(entidad = "ActaCorte", accion = "CREATE", capturarArgs = false)
     @Transactional
     public Dt2Dtos.ActaCorteDto cerrarCorte(Dt2Dtos.CerrarCorteRequest req) {
         ProyectoTitulacion proyecto = getProyecto(req.getIdProyecto());
@@ -568,6 +571,7 @@ public class Dt2Service {
      * ✅ REFACTOR: si favorable → documento pasa a ANTIPLAGIO_APROBADO.
      *    El proyecto cambia a PREDEFENSA como efecto secundario.
      */
+    @Auditable(entidad = "AntiplacioIntento", accion = "CREATE", capturarArgs = false)
     @Transactional
     public Dt2Dtos.CertificadoAntiplacioDto registrarAntiplagio(
             Integer idProyecto, Integer idDocenteDt2,
@@ -645,6 +649,7 @@ public class Dt2Service {
      *    (antes validaba estado del proyecto = PREDEFENSA).
      * ✅ El Coordinador es quien programa la fecha.
      */
+    @Auditable(entidad = "Sustentacion", accion = "PROGRAMAR_PREDEFENSA", capturarArgs = false)
     @Transactional
     public Dt2Dtos.MensajeDto programarPredefensa(Dt2Dtos.ProgramarPredefensaRequest req) {
         ProyectoTitulacion proyecto = getProyecto(req.getIdProyecto());
@@ -685,6 +690,7 @@ public class Dt2Service {
      * El docente DT2 registra su calificación de predefensa (60%).
      * ✅ REFACTOR: valida documento.estado = EN_PREDEFENSA
      */
+    @Auditable(entidad = "Sustentacion", accion = "CALIFICAR_PREDEFENSA_DOCENTE", capturarArgs = false)
     @Transactional
     public Dt2Dtos.PredefensaDto calificarPredefensaDocente(Dt2Dtos.CalificarPredefensaDocenteRequest req) {
         ProyectoTitulacion proyecto = getProyecto(req.getIdProyecto());
@@ -726,6 +732,7 @@ public class Dt2Service {
      * ✅ REFACTOR: valida documento.estado = EN_PREDEFENSA
      * ✅ Si solicita correcciones → documento regresa a CORRECCION_REQUERIDA
      */
+    @Auditable(entidad = "Sustentacion", accion = "CALIFICAR_PREDEFENSA_TRIBUNAL", capturarArgs = false)
     @Transactional
     public Dt2Dtos.PredefensaDto calificarPredefensaTribunal(Dt2Dtos.CalificarPredefensaTribunalRequest req) {
         ProyectoTitulacion proyecto = getProyecto(req.getIdProyecto());
@@ -785,6 +792,7 @@ public class Dt2Service {
      * ✅ REFACTOR: valida documento.estado = EN_PREDEFENSA o LISTO_SUSTENTACION
      *    Si completo → documento avanza a LISTO_SUSTENTACION
      */
+    @Auditable(entidad = "DocumentoPrevioSustentacion", accion = "CREATE", capturarArgs = false)
     @Transactional
     public Dt2Dtos.DocumentosPreviosDto registrarDocumentosPrevios(Dt2Dtos.DocumentosPreviosRequest req) {
         ProyectoTitulacion proyecto = getProyecto(req.getIdProyecto());
@@ -835,6 +843,7 @@ public class Dt2Service {
      * Programa la fecha de sustentación final.
      * ✅ REFACTOR: valida documento.estado = LISTO_SUSTENTACION
      */
+    @Auditable(entidad = "Sustentacion", accion = "PROGRAMAR", capturarArgs = false)
     @Transactional
     public Dt2Dtos.MensajeDto programarSustentacion(Dt2Dtos.ProgramarSustentacionRequest req) {
         ProyectoTitulacion proyecto = getProyecto(req.getIdProyecto());
@@ -868,6 +877,7 @@ public class Dt2Service {
         return new Dt2Dtos.MensajeDto("Sustentación final programada para el " + req.getFecha(), proyecto.getEstado(), true);
     }
 
+    @Auditable(entidad = "Sustentacion", accion = "CALIFICAR", capturarArgs = false)
     @Transactional
     public Dt2Dtos.ResultadoSustentacionDto calificarSustentacion(Dt2Dtos.CalificarSustentacionRequest req) {
         ProyectoTitulacion proyecto = getProyecto(req.getIdProyecto());
@@ -918,6 +928,7 @@ public class Dt2Service {
         return buildResultadoSustentacion(req.getIdProyecto(), sus, proyecto);
     }
 
+    @Auditable(entidad = "Sustentacion", accion = "CONSOLIDAR", capturarArgs = false)
     @Transactional
     public Dt2Dtos.ResultadoSustentacionDto consolidarResultado(Integer idProyecto) {
         ProyectoTitulacion proyecto = getProyecto(idProyecto);
@@ -983,6 +994,7 @@ public class Dt2Service {
         return resultado;
     }
 
+    @Auditable(entidad = "Sustentacion", accion = "SEGUNDA_OPORTUNIDAD", capturarArgs = false)
     @Transactional
     public Dt2Dtos.MensajeDto habilitarSegundaOportunidad(Dt2Dtos.SegundaOportunidadRequest req) {
         ProyectoTitulacion proyecto = getProyecto(req.getIdProyecto());

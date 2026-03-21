@@ -14,12 +14,22 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long>, JpaSp
     @Query("SELECT COUNT(l) FROM AuditLog l WHERE l.timestampEvento >= :desde")
     long countDesde(@Param("desde") LocalDateTime desde);
 
+    @Query("SELECT COUNT(l) FROM AuditLog l JOIN l.config c " +
+           "WHERE l.timestampEvento >= :desde AND c.severidad IN ('HIGH','CRITICAL')")
+    long countCriticosDesde(@Param("desde") LocalDateTime desde);
+
+    @Query("SELECT COUNT(l) FROM AuditLog l JOIN l.config c WHERE c.severidad = :severidad")
+    long countBySeveridad(@Param("severidad") String severidad);
+
+    @Query("SELECT MAX(l.timestampEvento) FROM AuditLog l")
+    LocalDateTime findUltimoTimestamp();
+
     @Query("SELECT l.entidad, COUNT(l) FROM AuditLog l WHERE l.timestampEvento >= :desde GROUP BY l.entidad ORDER BY COUNT(l) DESC")
     List<Object[]> topEntidades(@Param("desde") LocalDateTime desde);
 
     @Query("SELECT l.accion, COUNT(l) FROM AuditLog l WHERE l.timestampEvento >= :desde GROUP BY l.accion ORDER BY COUNT(l) DESC")
     List<Object[]> topAcciones(@Param("desde") LocalDateTime desde);
 
-    @Query("SELECT l.username, COUNT(l) FROM AuditLog l WHERE l.timestampEvento >= :desde AND l.username IS NOT NULL GROUP BY l.username ORDER BY COUNT(l) DESC")
+    @Query("SELECT l.username, COUNT(l) FROM AuditLog l WHERE l.timestampEvento >= :desde AND l.username IS NOT NULL AND l.username NOT LIKE 'DB:%' GROUP BY l.username ORDER BY COUNT(l) DESC")
     List<Object[]> topUsuarios(@Param("desde") LocalDateTime desde);
 }

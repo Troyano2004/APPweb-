@@ -1,11 +1,26 @@
 <div class="audit-container">
   <div class="audit-header">
     <h2>Logs de Auditoría</h2>
-    <button (click)="exportar()" class="btn-export">Exportar CSV</button>
+    <div style="display:flex;align-items:center;gap:12px">
+      <button class="btn-live" (click)="toggleEnVivo()" [class.activo]="enVivo">
+        <span class="live-dot" [class.pulsa]="conectado"></span>
+        {{ enVivo ? 'EN VIVO' : 'Activar En Vivo' }}
+      </button>
+      <span
+        class="badge-nuevos"
+        *ngIf="nuevosNoVistos > 0"
+        (click)="cargar()"
+        title="Click para ver los nuevos eventos">
+        +{{ nuevosNoVistos }} nuevo{{ nuevosNoVistos === 1 ? '' : 's' }}
+      </span>
+      <button (click)="exportar()" class="btn-export" [disabled]="exportando">
+        {{ exportando ? 'Exportando...' : 'Exportar CSV' }}
+      </button>
+    </div>
   </div>
   <div class="filtros">
     <select [(ngModel)]="filtros.entidad"><option value="">Todas las entidades</option><option *ngFor="let e of entidades" [value]="e">{{e}}</option></select>
-    <select [(ngModel)]="filtros.accion"><option value="">Todas las acciones</option><option *ngFor="let a of acciones" [value]="a">{{a}}</option></select>
+    <select [(ngModel)]="filtros.accion"><option value="">Todas las acciones</option><option *ngFor="let a of acciones" [value]="a">{{ traducirAccion(a) }}</option></select>
     <input type="date" [(ngModel)]="filtros.desde">
     <input type="date" [(ngModel)]="filtros.hasta">
     <button (click)="aplicarFiltros()">Buscar</button>
@@ -13,22 +28,27 @@
   </div>
   <div class="tabla-wrapper">
     <table>
-      <thead><tr><th>Fecha/Hora</th><th>Entidad</th><th>Acción</th><th>Usuario</th><th>IP</th><th>Severidad</th></tr></thead>
+      <thead><tr><th>Fecha/Hora</th><th>Entidad</th><th>ID</th><th>Acción</th><th>Usuario</th><th>IP</th><th>Severidad</th></tr></thead>
       <tbody>
         <tr *ngIf="loading">
-          <td colspan="6" style="text-align:center;padding:2rem">Cargando...</td>
+          <td colspan="7" style="text-align:center;padding:2rem">Cargando...</td>
         </tr>
         <ng-container *ngIf="!loading">
-          <tr *ngFor="let log of logs" (click)="verDetalle(log)" class="fila-log">
+          <tr
+            *ngFor="let log of logs; let i = index"
+            (click)="verDetalle(log)"
+            class="fila-log"
+            [class.fila-nueva]="i === 0 && conectado">
             <td>{{log.timestampEvento | date:'dd/MM/yyyy HH:mm'}}</td>
             <td>{{log.entidad}}</td>
+            <td>{{log.entidadId ?? '—'}}</td>
             <td>{{log.accion}}</td>
             <td>{{log.username ?? '—'}}</td>
             <td>{{log.ipAddress ?? '—'}}</td>
             <td><span class="badge" [style.background]="colorSeveridad(log.config?.severidad)">{{log.config?.severidad ?? 'N/A'}}</span></td>
           </tr>
           <tr *ngIf="logs.length === 0">
-            <td colspan="6" style="text-align:center;padding:2rem">No hay registros</td>
+            <td colspan="7" style="text-align:center;padding:2rem">No hay registros</td>
           </tr>
         </ng-container>
       </tbody>

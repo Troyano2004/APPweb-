@@ -2,16 +2,20 @@ package com.erwin.backend.audit.controller;
 import com.erwin.backend.audit.dto.AuditStatsDto;
 import com.erwin.backend.audit.entity.*;
 import com.erwin.backend.audit.repository.*;
+import com.erwin.backend.audit.service.AuditSseService;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.time.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -20,9 +24,12 @@ import java.util.stream.Collectors;
 public class AuditController {
     private final AuditLogRepository    logRepo;
     private final AuditConfigRepository configRepo;
+    private final AuditSseService       sseService;
 
-    public AuditController(AuditLogRepository logRepo, AuditConfigRepository configRepo) {
+    public AuditController(AuditLogRepository logRepo, AuditConfigRepository configRepo,
+                           AuditSseService sseService) {
         this.logRepo = logRepo; this.configRepo = configRepo;
+        this.sseService = sseService;
     }
 
     private Specification<AuditLog> buildSpec(String entidad, String accion, Integer idUsuario,
@@ -37,6 +44,44 @@ public class AuditController {
             return cb.and(predicates.toArray(new Predicate[0]));
         };
     }
+
+    // ── Catálogos de filtros ─────────────────────────────────────────────────
+
+    @GetMapping("/entidades")
+    public List<String> getEntidades() {
+        return configRepo.findAll().stream()
+                .map(AuditConfig::getEntidad)
+                .distinct().sorted().toList();
+    }
+
+    @GetMapping("/acciones")
+    public List<String> getAcciones() {
+        return logRepo.findAll().stream()
+                .map(AuditLog::getAccion)
+                .filter(a -> a != null && !a.isBlank())
+                .distinct().sorted().toList();
+    }
+
+    @GetMapping("/acciones-config")
+    public List<String> getAccionesConfig() {
+        return configRepo.findAll().stream()
+                .map(AuditConfig::getAccion)
+                .distinct().sorted().toList();
+    }
+
+    // ── SSE: stream en vivo ──────────────────────────────────────────────────
+
+    @GetMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter stream() {
+        return sseService.registrar();
+    }
+
+    @GetMapping("/stream/clientes")
+    public ResponseEntity<Map<String, Integer>> clientesConectados() {
+        return ResponseEntity.ok(Map.of("conectados", sseService.clientesConectados()));
+    }
+
+    // ── Logs paginados ───────────────────────────────────────────────────────
 
     @GetMapping("/logs")
     public Page<AuditLog> getLogs(
@@ -85,15 +130,15 @@ public class AuditController {
         writer.write("REPORTE DE AUDITORIA - Sistema de Titulacion UTEQ\n");
         writer.write("Fecha de generacion:;" + java.time.LocalDateTime.now().format(
             java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")) + "\n");
-        writer.write("Entidad filtrada:;" + (entidad != null ? entidad : "Todas") + "\n");
-        writer.write("Accion filtrada:;" + (accion != null ? accion : "Todas") + "\n");
-        writer.write("Desde:;" + (desde != null ? desde.format(
-            java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")) : "Sin filtro") + "\n");
-        writer.write("Hasta:;" + (hasta != null ? hasta.format(
-            java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")) : "Sin filtro") + "\n");
-        writer.write("Total de registros:;" + logs.size() + "\n\n");
+        writer.write("Total de registros:;" + logs.size() + "\n");
+        writer.write("Registros CRITICAL:;" +
+            logs.stream().filter(l -> l.getConfig() != null &&
+                "CRITICAL".equals(l.getConfig().getSeveridad())).count() + "\n");
+        writer.write("Registros HIGH:;" +
+            logs.stream().filter(l -> l.getConfig() != null &&
+                "HIGH".equals(l.getConfig().getSeveridad())).count() + "\n\n");
 
-        writer.write("No.;Fecha y Hora;Entidad;ID Registro;Accion;Usuario;Correo;Direccion IP;Severidad;Origen;Estado Anterior;Estado Nuevo\n");
+        writer.write("No.;Fecha y Hora;Entidad;ID;Accion;Usuario;Correo;IP;Severidad;Origen;Estado Anterior;Estado Nuevo\n");
 
         int numero = 1;
         for (AuditLog l : logs) {
@@ -101,19 +146,19 @@ public class AuditController {
             String origen = l.getIpAddress() != null && l.getIpAddress().contains("acceso-directo")
                 ? "Base de Datos" : "Aplicacion Web";
             String usuario = l.getUsername() != null
-                ? l.getUsername().replace("DB:", "") : "—";
+                ? l.getUsername().replace("DB:", "") : "-";
 
             writer.write(
                 numero++ + ";" +
                 escapeCsv(l.getTimestampEvento() != null
                     ? l.getTimestampEvento().format(java.time.format.DateTimeFormatter
-                        .ofPattern("dd/MM/yyyy HH:mm:ss")) : "—") + ";" +
+                        .ofPattern("dd/MM/yyyy HH:mm:ss")) : "-") + ";" +
                 escapeCsv(l.getEntidad()) + ";" +
-                escapeCsv(l.getEntidadId()) + ";" +
+                escapeCsv(l.getEntidadId() != null ? l.getEntidadId() : "-") + ";" +
                 escapeCsv(l.getAccion()) + ";" +
                 escapeCsv(usuario) + ";" +
-                escapeCsv(l.getCorreoUsuario()) + ";" +
-                escapeCsv(l.getIpAddress()) + ";" +
+                escapeCsv(l.getCorreoUsuario() != null ? l.getCorreoUsuario() : "-") + ";" +
+                escapeCsv(l.getIpAddress() != null ? l.getIpAddress() : "-") + ";" +
                 escapeCsv(severidad) + ";" +
                 escapeCsv(origen) + ";" +
                 escapeCsv(resumirJson(l.getEstadoAnterior())) + ";" +
@@ -134,7 +179,7 @@ public class AuditController {
     private String resumirJson(String json) {
         if (json == null || json.isBlank()) return "-";
         String limpio = json.replaceAll("[\"{}]", "")
-                            .replaceAll(",", " | ")
+                            .replaceAll(",", " / ")
                             .replaceAll("\\s+", " ").trim();
         return limpio.length() > 150 ? limpio.substring(0, 150) + "..." : limpio;
     }
@@ -174,13 +219,19 @@ public class AuditController {
 
     @GetMapping("/stats")
     public AuditStatsDto getStats() {
-        LocalDateTime hoy = LocalDate.now().atStartOfDay();
+        LocalDateTime hoy = LocalDate.now(ZoneId.of("America/Guayaquil")).atStartOfDay();
         LocalDateTime sem = LocalDate.now().minusDays(7).atStartOfDay();
         LocalDateTime h24 = LocalDateTime.now().minusHours(24);
+        LocalDateTime ultimo = logRepo.findUltimoTimestamp();
+        String ultimoStr = ultimo != null
+            ? ultimo.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"))
+            : null;
         return AuditStatsDto.builder()
             .totalHoy(logRepo.countDesde(hoy))
             .totalSemana(logRepo.countDesde(sem))
-            .eventosCriticos24h(logRepo.count(buildSpec(null, null, null, h24, null)))
+            .eventosCriticos24h(logRepo.countCriticosDesde(h24))
+            .totalCriticos(logRepo.countBySeveridad("CRITICAL"))
+            .ultimoEvento(ultimoStr)
             .topEntidades(logRepo.topEntidades(sem).stream().limit(5).map(r -> new AuditStatsDto.EntidadCount((String) r[0], (Long) r[1])).collect(Collectors.toList()))
             .topAcciones(logRepo.topAcciones(sem).stream().limit(5).map(r -> new AuditStatsDto.AccionCount((String) r[0], (Long) r[1])).collect(Collectors.toList()))
             .topUsuarios(logRepo.topUsuarios(sem).stream().limit(5).map(r -> new AuditStatsDto.UsuarioCount((String) r[0], (Long) r[1])).collect(Collectors.toList()))

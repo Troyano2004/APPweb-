@@ -10,6 +10,7 @@ import com.erwin.backend.repository.UsuarioRepository;
 import com.erwin.backend.repository.UsuarioSpRepository;
 import com.erwin.backend.security.CryptoUtil;
 import com.erwin.backend.security.JwtService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -38,7 +39,7 @@ public class AuthService {
         this.auditService   = auditService;
     }
 
-    public LoginResponse login(LoginRequest req, HttpSession session) {
+    public LoginResponse login(LoginRequest req, HttpSession session, HttpServletRequest request) {
 
         if (req == null || req.getUsuarioLogin() == null || req.getPassword() == null) {
             throw new RuntimeException("Faltan datos de login");
@@ -108,6 +109,7 @@ public class AuthService {
                 .idUsuario(usuario.getIdUsuario())
                 .username(usernameLogin)
                 .correoUsuario(usuario.getCorreoInstitucional())
+                .ipAddress(com.erwin.backend.audit.service.AuditService.extractIp(request))
                 .build());
         } catch (Exception ignored) {}
 

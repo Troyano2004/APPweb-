@@ -53,13 +53,13 @@ public class PeriodoTitulacionController {
 
     @PutMapping("/{id}/activar")
     public ResponseEntity<PeriodoTitulacionDto> activar(@PathVariable Integer id) {
-        PeriodoTitulacionDto activado = periodoService.cambiarEstado(id, true);
+        PeriodoTitulacionDto activado = periodoService.activar(id);
         return ResponseEntity.ok(activado);
     }
 
     @PutMapping("/{id}/desactivar")
     public ResponseEntity<PeriodoTitulacionDto> desactivar(@PathVariable Integer id) {
-        PeriodoTitulacionDto desactivado = periodoService.cambiarEstado(id, false);
+        PeriodoTitulacionDto desactivado = periodoService.desactivar(id);
         return ResponseEntity.ok(desactivado);
     }
 

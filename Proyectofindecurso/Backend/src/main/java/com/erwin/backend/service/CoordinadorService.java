@@ -142,6 +142,7 @@ public class CoordinadorService {
         return salida;
     }
 
+    @Auditable(entidad = "ProyectoTitulacion", accion = "ASIGNAR_DIRECTOR", capturarArgs = false)
     @Transactional
     public void asignarDirector(AsignarDirectorRequest request) {
         DocumentoTitulacion doc = documentoRepo.findById(request.getIdDocumento())
@@ -166,6 +167,7 @@ public class CoordinadorService {
         }
     }
 
+    @Auditable(entidad = "ProyectoTitulacion", accion = "VALIDAR", capturarArgs = false)
     @Transactional
     public void validarProyecto(Integer idProyecto) {
         ProyectoTitulacion proyecto = proyectoRepo.findById(idProyecto)
@@ -233,6 +235,7 @@ public class CoordinadorService {
         return salida;
     }
 
+    @Auditable(entidad = "ObservacionAdministrativa", accion = "CREATE", capturarArgs = false)
     @Transactional
     public ObservacionAdministrativaDto crearObservacion(CrearObservacionAdministrativaRequest request) {
         ProyectoTitulacion proyecto = proyectoRepo.findById(request.getIdProyecto())
@@ -285,6 +288,7 @@ public class CoordinadorService {
         return salida;
     }
 
+    @Auditable(entidad = "ComisionFormativa", accion = "CREATE", capturarArgs = false)
     @Transactional
     public ComisionFormativaDto crearComision(CrearComisionRequest request) {
         Carrera carrera = carreraRepo.findById(request.getIdCarrera())
@@ -306,6 +310,7 @@ public class CoordinadorService {
         return dto;
     }
 
+    @Auditable(entidad = "ComisionMiembro", accion = "CREATE", capturarArgs = false)
     @Transactional
     public void asignarMiembros(Integer idComision, AsignarMiembrosRequest request) {
         ComisionFormativa comision = comisionRepo.findById(idComision)
@@ -347,6 +352,7 @@ public class CoordinadorService {
         return estado.trim().toUpperCase().equals("INACTIVA") ? "INACTIVA" : "ACTIVA";
     }
 
+    @Auditable(entidad = "ComisionFormativa", accion = "DELETE", capturarArgs = false)
     @Transactional
     public void eliminarComision(Integer idComision) {
         ComisionFormativa comision = comisionRepo.findById(idComision)
@@ -361,6 +367,7 @@ public class CoordinadorService {
         comisionRepo.delete(comision);
     }
 
+    @Auditable(entidad = "ComisionProyecto", accion = "CREATE", capturarArgs = false)
     @Transactional
     public void asignarComisionAProyecto(AsignarComisionProyectoRequest request) {
         ComisionFormativa comision = comisionRepo.findById(request.getIdComision())
@@ -415,7 +422,7 @@ public class CoordinadorService {
         return r;
     }
 
-    @Auditable(entidad = "Dt1Asignacion", accion = "UPDATE")
+    @Auditable(entidad = "Dt1TutorEstudiante", accion = "CREATE", capturarArgs = false)
     public Dt1AsignarTutorResponse asignarTutorDt1(Dt1AsignarTutorRequest req) {
         if (req == null || req.getIdUsuario() == null || req.getIdEstudiante() == null
                 || req.getIdDocente() == null || req.getIdPeriodo() == null) {

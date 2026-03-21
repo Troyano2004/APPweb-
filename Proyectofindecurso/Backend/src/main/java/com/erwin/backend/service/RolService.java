@@ -1,5 +1,6 @@
 package com.erwin.backend.service;
 
+import com.erwin.backend.audit.aspect.Auditable;
 import com.erwin.backend.dtos.*;
 import com.erwin.backend.repository.RolSpRepository;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,7 @@ public class  RolService {
         return rolSpRepository.listarPermisos();
     }
 
+    @Auditable(entidad = "RolApp", accion = "CREATE", capturarArgs = true)
     @Transactional
     public RolDto crear(RolCreateRequest req) {
         validarCreate(req);
@@ -36,6 +38,7 @@ public class  RolService {
         return buscarRolPorId(id);
     }
 
+    @Auditable(entidad = "RolApp", accion = "UPDATE", capturarArgs = true)
     @Transactional
     public RolDto editar(Integer id, RolUpdateRequest req) {
         if (id == null) throw new RuntimeException("Id requerido");
@@ -50,6 +53,7 @@ public class  RolService {
         return buscarRolPorId(id);
     }
 
+    @Auditable(entidad = "RolApp", accion = "CAMBIO_ESTADO", capturarArgs = false)
     @Transactional
     public RolDto cambiarEstado(Integer id, RolEstadoRequest req) {
         if (id == null) throw new RuntimeException("Id requerido");
@@ -62,6 +66,7 @@ public class  RolService {
         return buscarRolPorId(id);
     }
 
+    @Auditable(entidad = "RolApp", accion = "ASIGNAR_PERMISOS", capturarArgs = true)
     @Transactional
     public RolDto asignarPermisos(Integer id, RolPermisosRequest req) {
         if (id == null) throw new RuntimeException("Id requerido");

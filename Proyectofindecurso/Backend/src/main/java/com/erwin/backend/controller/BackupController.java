@@ -1,5 +1,6 @@
 package com.erwin.backend.controller;
 
+import com.erwin.backend.audit.aspect.Auditable;
 import com.erwin.backend.dtos.BackupJobRequest;
 import com.erwin.backend.dtos.BackupTestConexionRequest;
 import com.erwin.backend.dtos.BackupTestDestinoRequest;
@@ -40,6 +41,7 @@ public class BackupController {
         return ResponseEntity.ok(backupService.obtenerJob(id));
     }
 
+    @Auditable(entidad = "Backup", accion = "CREATE", capturarArgs = false)
     @PostMapping("/jobs")
     public ResponseEntity<BackupJob> crearJob(@RequestBody BackupJobRequest req) {
         BackupJob job = backupService.crearJob(req);
@@ -55,6 +57,7 @@ public class BackupController {
         return ResponseEntity.ok(job);
     }
 
+    @Auditable(entidad = "Backup", accion = "DELETE", capturarArgs = false)
     @DeleteMapping("/jobs/{id}")
     public ResponseEntity<Void> eliminarJob(@PathVariable Long id) {
         schedulerService.cancelarJob(id);
@@ -78,6 +81,7 @@ public class BackupController {
 
     // ── Ejecutar ahora ─────────────────────────────────────────────────────────
 
+    @Auditable(entidad = "Backup", accion = "CREATE", capturarArgs = false)
     @PostMapping("/jobs/{id}/run")
     public ResponseEntity<BackupExecution> ejecutarAhora(@PathVariable Long id) {
         return ResponseEntity.ok(backupService.ejecutarJob(id, true));

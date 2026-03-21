@@ -1,13 +1,17 @@
-import { Injectable } from '@angular/core';
+import { Injectable, NgZone } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { AuditFiltros, AuditConfig, AuditStats } from './model';
+import { Observable, Subject } from 'rxjs';
+import { AuditFiltros, AuditConfig, AuditStats, AuditLog } from './model';
 
 @Injectable({ providedIn: 'root' })
 export class AuditoriaService {
   private base = 'http://localhost:8080/api/auditoria';
+  private eventSource: EventSource | null = null;
 
-  constructor(private http: HttpClient) {}
+  // Subject que emite cada nuevo log recibido en tiempo real
+  private nuevoLog$ = new Subject<AuditLog>();
+
+  constructor(private http: HttpClient, private ngZone: NgZone) {}
 
   getLogs(f: AuditFiltros): Observable<any> {
     let p = new HttpParams()
@@ -52,5 +56,65 @@ export class AuditoriaService {
 
   getStats(): Observable<AuditStats> {
     return this.http.get<AuditStats>(`${this.base}/stats`);
+  }
+
+  getEntidades(): Observable<string[]> {
+    return this.http.get<string[]>(`${this.base}/entidades`);
+  }
+
+  getAcciones(): Observable<string[]> {
+    return this.http.get<string[]>(`${this.base}/acciones`);
+  }
+
+  getAccionesConfig(): Observable<string[]> {
+    return this.http.get<string[]>(`${this.base}/acciones-config`);
+  }
+
+  /**
+   * Conecta al stream SSE del backend.
+   * Retorna un Observable que emite cada AuditLog nuevo en tiempo real.
+   * NgZone es necesario para que la detección de cambios de Angular
+   * funcione con eventos que llegan fuera del ciclo de Angular.
+   */
+  conectarStream(): Observable<AuditLog> {
+    this.desconectarStream();
+
+    this.eventSource = new EventSource(`${this.base}/stream`, {
+      withCredentials: true  // necesario para sesiones con cookies
+    });
+
+    this.eventSource.addEventListener('nuevo-log', (event: MessageEvent) => {
+      this.ngZone.run(() => {
+        try {
+          const log: AuditLog = JSON.parse(event.data);
+          this.nuevoLog$.next(log);
+        } catch (e) {
+          console.error('[SSE] Error parseando log:', e);
+        }
+      });
+    });
+
+    this.eventSource.addEventListener('connected', () => {
+      console.log('[SSE] Conexión en vivo establecida con el servidor');
+    });
+
+    this.eventSource.onerror = () => {
+      console.warn('[SSE] Reconectando...');
+      // EventSource reconecta automáticamente al perder conexión
+    };
+
+    return this.nuevoLog$.asObservable();
+  }
+
+  /** Cierra la conexión SSE */
+  desconectarStream(): void {
+    if (this.eventSource) {
+      this.eventSource.close();
+      this.eventSource = null;
+    }
+  }
+
+  get estaConectado(): boolean {
+    return this.eventSource?.readyState === EventSource.OPEN;
   }
 }

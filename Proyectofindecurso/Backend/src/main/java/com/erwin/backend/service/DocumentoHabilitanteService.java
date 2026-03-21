@@ -1,5 +1,6 @@
 package com.erwin.backend.service;
 
+import com.erwin.backend.audit.aspect.Auditable;
 import com.erwin.backend.dtos.DocumentoHabilitanteDtos;
 import com.erwin.backend.entities.*;
 import com.erwin.backend.repository.*;
@@ -84,6 +85,7 @@ public class DocumentoHabilitanteService {
     // ESTUDIANTE: subir / actualizar un documento
     // ────────────────────────────────────────────────────────────────────────────
 
+    @Auditable(entidad = "DocumentoHabilitante", accion = "CREATE", capturarArgs = false)
     @Transactional
     public DocumentoHabilitanteDtos.HabilitanteDto subirDocumento(
             Integer idEstudiante,
@@ -146,6 +148,7 @@ public class DocumentoHabilitanteService {
     // DIRECTOR / COORDINADOR: validar un documento
     // ────────────────────────────────────────────────────────────────────────────
 
+    @Auditable(entidad = "DocumentoHabilitante", accion = "VALIDAR", capturarArgs = false)
     @Transactional
     public DocumentoHabilitanteDtos.HabilitanteDto validarDocumento(
             Integer idDocente,

@@ -1,6 +1,7 @@
 // Proyectofindecurso/Backend/src/main/java/com/erwin/backend/service/ProyectoTitulacionService.java
 package com.erwin.backend.service;
 
+import com.erwin.backend.audit.aspect.Auditable;
 import com.erwin.backend.dtos.ProyectoTitulacionCreateRequest;
 import com.erwin.backend.entities.*;
 import com.erwin.backend.repository.*;
@@ -31,6 +32,7 @@ public class ProyectoTitulacionService {
         this.eleccionRepo = eleccionRepo;
     }
 
+    @Auditable(entidad = "ProyectoTitulacion", accion = "CREATE", capturarArgs = false)
     @Transactional
     public ProyectoTitulacion crearProyecto(ProyectoTitulacionCreateRequest req) {
         if (req.getIdPropuesta() == null || req.getIdPeriodo() == null || req.getIdTipoTrabajo() == null

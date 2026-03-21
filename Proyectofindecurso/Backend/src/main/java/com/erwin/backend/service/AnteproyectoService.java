@@ -1,5 +1,6 @@
 package com.erwin.backend.service;
 
+import com.erwin.backend.audit.aspect.Auditable;
 import com.erwin.backend.dtos.*;
 import com.erwin.backend.entities.*;
 import com.erwin.backend.repository.*;
@@ -142,6 +143,7 @@ public class AnteproyectoService {
      * - crea nueva version BORRADOR
      * - actualiza estado anteproyecto BORRADOR
      */
+    @Auditable(entidad = "AnteproyectoVersion", accion = "BORRADOR", capturarArgs = false)
     @Transactional
     public AnteproyectoVersionResponse guardarBorrador(Integer idAnteproyecto, AnteproyectoVersionRequest req) {
 
@@ -168,6 +170,7 @@ public class AnteproyectoService {
      * - crea nueva version ENVIADO
      * - actualiza estado anteproyecto EN_REVISION
      */
+    @Auditable(entidad = "AnteproyectoVersion", accion = "ENVIAR_REVISION", capturarArgs = false)
     @Transactional
     public AnteproyectoVersionResponse enviarRevision(Integer idAnteproyecto, AnteproyectoVersionRequest req) {
 

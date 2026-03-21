@@ -10,6 +10,7 @@ import com.erwin.backend.entities.Loginaplicativo;
 import com.erwin.backend.entities.Loginbd;
 import com.erwin.backend.repository.LoginAplicativoRepository;
 import com.erwin.backend.repository.LoginBdRepository;
+import com.erwin.backend.audit.aspect.Auditable;
 import com.erwin.backend.repository.RolesSistemaRepository;
 import com.erwin.backend.repository.UsuarioRepository;
 import org.springframework.http.HttpStatus;
@@ -61,6 +62,7 @@ public class EstudianteController {
     }
 
     @PostMapping
+    @Auditable(entidad = "Estudiante", accion = "CREATE", capturarArgs = true)
     public Estudiante crear(@RequestBody Estudiante estudiante) {
         return estudianteRepository.save(estudiante);
     }
@@ -87,6 +89,7 @@ public class EstudianteController {
      */
     @PostMapping("/crear-demo")
     @Transactional
+    @Auditable(entidad = "Estudiante", accion = "CREATE_DEMO", capturarArgs = false)
     public Estudiante crearEstudianteDemo(@RequestBody(required = false) CrearDemoEstudianteRequest req) {
         CrearDemoEstudianteRequest request = req == null ? new CrearDemoEstudianteRequest() : req;
         RolSistema rolEstudiante = resolverOCrearRolEstudiante();

@@ -10,6 +10,10 @@ import com.erwin.backend.repository.UsuarioSpRepository;
 import com.erwin.backend.security.CryptoUtil;
 
 import com.erwin.backend.audit.aspect.Auditable;
+import com.erwin.backend.audit.dto.AuditEventDto;
+import com.erwin.backend.audit.service.AuditService;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +27,7 @@ public class AdminUsuarioService {
     private final UsuarioRepository usuarioRepo;
     private final UsuarioSpRepository usuarioSpRepo;
     private final PasswordEncoder passwordEncoder;
+    private final AuditService auditService;
 
     //---------------------------------------------------
     // CONSTRUCTOR
@@ -30,11 +35,13 @@ public class AdminUsuarioService {
     public AdminUsuarioService(
             UsuarioRepository usuarioRepo,
             UsuarioSpRepository usuarioSpRepo,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder,
+            AuditService auditService) {
 
         this.usuarioRepo = usuarioRepo;
         this.usuarioSpRepo = usuarioSpRepo;
         this.passwordEncoder = passwordEncoder;
+        this.auditService = auditService;
     }
 
     //---------------------------------------------------
@@ -47,7 +54,7 @@ public class AdminUsuarioService {
     //---------------------------------------------------
     // CREAR USUARIO
     //---------------------------------------------------
-    @Auditable(entidad = "Usuario", accion = "CREATE")
+    @Auditable(entidad = "Usuario", accion = "CREATE", capturarArgs = true)
     @Transactional
     public UsuarioAdminDto crear(UsuarioCreateRequest req) {
 
@@ -115,12 +122,13 @@ public class AdminUsuarioService {
     //---------------------------------------------------
     // EDITAR
     //---------------------------------------------------
-    @Auditable(entidad = "Usuario", accion = "UPDATE")
     @Transactional
     public UsuarioAdminDto editar(Integer id, UsuarioUpdateRequest req) {
 
         if (req == null)
             throw new RuntimeException("Body requerido");
+
+        UsuarioAdminDto estadoAnterior = usuarioSpRepo.obtenerPorId(id);
 
         String nombres =
                 req.getNombres() != null ? req.getNombres().trim() : null;
@@ -148,19 +156,31 @@ public class AdminUsuarioService {
                 idsRolApp
         );
 
-        UsuarioAdminDto dto =
+        UsuarioAdminDto resultado =
                 usuarioSpRepo.obtenerPorId(id);
 
-        if (dto == null)
+        if (resultado == null)
             throw new RuntimeException("Usuario no existe");
 
-        return dto;
+        String username = null;
+        try { Authentication a = SecurityContextHolder.getContext().getAuthentication();
+              if (a != null && a.isAuthenticated()) username = a.getName(); } catch (Exception ignored) {}
+
+        auditService.registrar(AuditEventDto.builder()
+                .entidad("Usuario").accion("UPDATE")
+                .entidadId(id.toString())
+                .username(username)
+                .estadoAnterior(estadoAnterior)
+                .estadoNuevo(resultado)
+                .build());
+
+        return resultado;
     }
 
     //---------------------------------------------------
     // CAMBIAR ESTADO
     //---------------------------------------------------
-    @Auditable(entidad = "Usuario", accion = "DELETE")
+    @Auditable(entidad = "Usuario", accion = "CAMBIO_ESTADO", capturarArgs = true)
     @Transactional
     public UsuarioAdminDto cambiarEstado(
             Integer id,

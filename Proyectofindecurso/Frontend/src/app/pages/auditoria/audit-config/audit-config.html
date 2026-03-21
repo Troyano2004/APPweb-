@@ -1,5 +1,6 @@
 <div class="cc">
   <div class="hdr"><h2>Configuración de Auditorías</h2><button (click)="abrirNuevo()" class="bn">+ Nueva</button></div>
+  <div class="alerta-error" *ngIf="mensajeError">✗ {{ mensajeError }}</div>
   <table><thead><tr><th>Entidad</th><th>Acción</th><th>Activo</th><th>Email</th><th>Severidad</th><th>Descripción</th><th></th></tr></thead>
   <tbody>
     <tr *ngFor="let c of configs">
@@ -15,7 +16,7 @@
     <div class="fp" (click)="$event.stopPropagation()">
       <h3>{{modoEdicion?'Editar':'Nueva'}} configuración</h3>
       <label>Entidad<select [(ngModel)]="formulario.entidad"><option *ngFor="let e of entidades" [value]="e">{{e}}</option></select></label>
-      <label>Acción<select [(ngModel)]="formulario.accion"><option *ngFor="let a of acciones" [value]="a">{{a}}</option></select></label>
+      <label>Acción<select [(ngModel)]="formulario.accion"><option *ngFor="let a of acciones" [value]="a">{{ traducirAccion(a) }}</option></select></label>
       <label>Severidad<select [(ngModel)]="formulario.severidad"><option *ngFor="let s of severidades" [value]="s">{{s}}</option></select></label>
       <label>Descripción<input [(ngModel)]="formulario.descripcion"></label>
       <label class="chk"><input type="checkbox" [(ngModel)]="formulario.activo"> Activo</label>
