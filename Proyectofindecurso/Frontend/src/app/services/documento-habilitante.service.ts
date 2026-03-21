@@ -109,4 +109,19 @@ export class DocumentoHabilitanteService {
       formData
     );
   }
+  getResumenComplexivo(idEstudiante: number): Observable<ResumenHabilitacionDto> {
+    return this.http.get<ResumenHabilitacionDto>(
+      `${this.base}/estudiante/${idEstudiante}/resumen-complexivo`
+    );
+  }
+
+  subirDocumentoComplexivo(
+    idEstudiante: number,
+    req: SubirHabilitanteRequest
+  ): Observable<HabilitanteDto> {
+    return this.http.post<HabilitanteDto>(
+      `${this.base}/estudiante/${idEstudiante}/subir-complexivo`,
+      req
+    );
+  }
 }

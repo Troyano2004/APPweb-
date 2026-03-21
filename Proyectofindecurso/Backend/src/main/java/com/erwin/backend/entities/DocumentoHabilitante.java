@@ -1,3 +1,4 @@
+
 package com.erwin.backend.entities;
 
 import jakarta.persistence.*;
@@ -6,15 +7,6 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-/**
- * Documentos habilitantes para la sustentación del Trabajo de Integración Curricular.
- * Arts. 10, 11, 57 num.2 y 59 del Reglamento UIC-UTEQ (sept-2024).
- *
- * ✅ NO necesitas SQL manual.
- *    Hibernate crea/actualiza esta tabla automáticamente al arrancar
- *    porque tienes: spring.jpa.hibernate.ddl-auto=update
- *    Solo copia esta entidad a tu carpeta entities/ y levanta el backend.
- */
 @Setter
 @Getter
 @NoArgsConstructor
@@ -22,10 +14,12 @@ import java.time.LocalDateTime;
 @Entity
 @Table(
         name = "documentos_habilitantes",
-        uniqueConstraints = @UniqueConstraint(
-                name = "uq_proyecto_tipo",
-                columnNames = {"id_proyecto", "tipo_documento"}
-        )
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uq_proyecto_tipo",
+                        columnNames = {"id_proyecto", "tipo_documento"}),
+                @UniqueConstraint(name = "uq_complexivo_tipo",
+                        columnNames = {"id_complexivo", "tipo_documento"})
+        }
 )
 public class DocumentoHabilitante {
 
@@ -34,55 +28,51 @@ public class DocumentoHabilitante {
     @Column(name = "id")
     private Integer id;
 
-    // ── Relaciones ─────────────────────────────────────────────────────────────
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "id_proyecto", nullable = false)
+    // ── Relaciones ─────────────────────────────────────────────
+    /** Para estudiantes de Integración Curricular (TIC) */
+    @ManyToOne(optional = true)
+    @JoinColumn(name = "id_proyecto", nullable = true)
     private ProyectoTitulacion proyecto;
+
+    /** Para estudiantes de Examen Complexivo */
+    @ManyToOne(optional = true)
+    @JoinColumn(name = "id_complexivo", nullable = true)
+    private ComplexivoTitulacion complexivo;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "id_estudiante", nullable = false)
     private Estudiante estudiante;
 
-    /** Docente que valida (Director del TIC para INFORME_DIRECTOR) */
+    /** Docente que valida */
     @ManyToOne
     @JoinColumn(name = "id_validado_por")
     private Docente validadoPor;
 
-    // ── Tipo ──────────────────────────────────────────────────────────────────
-    /**
-     * Catálogo fijo según reglamento:
-     * INFORME_DIRECTOR, CERTIFICADO_ANTIPLAGIO, TRABAJO_FINAL_PDF,
-     * CERTIFICADO_PENSUM, CERTIFICADO_DEUDAS, CERTIFICADO_IDIOMA, CERTIFICADO_PRACTICAS
-     */
+    // ── Tipo ───────────────────────────────────────────────────
     @Column(name = "tipo_documento", length = 60, nullable = false)
     private String tipoDocumento;
 
-    // ── Archivo ───────────────────────────────────────────────────────────────
+    // ── Archivo ────────────────────────────────────────────────
     @Column(name = "nombre_archivo", length = 255)
     private String nombreArchivo;
 
-    /** URL pública en Azure Blob Storage */
     @Column(name = "url_archivo", length = 500)
     private String urlArchivo;
 
     @Column(name = "formato", length = 10)
     private String formato = "PDF";
 
-    // ── Antiplagio (solo para CERTIFICADO_ANTIPLAGIO) ─────────────────────────
-    /** Porcentaje de coincidencia reportado por COMPILATIO */
+    // ── Antiplagio ─────────────────────────────────────────────
     @Column(name = "porcentaje_coincidencia", precision = 5, scale = 2)
     private BigDecimal porcentajeCoincidencia;
 
-    /** Umbral permitido por reglamento: 10% (Art. 57 num.2) */
     @Column(name = "umbral_permitido", precision = 5, scale = 2)
     private BigDecimal umbralPermitido = new BigDecimal("10.00");
 
-    /** APROBADO si porcentaje ≤ umbral, RECHAZADO si supera */
     @Column(name = "resultado_antiplagio", length = 20)
     private String resultadoAntiplagio;
 
-    // ── Flujo ─────────────────────────────────────────────────────────────────
-    /** PENDIENTE → ENVIADO → APROBADO | RECHAZADO */
+    // ── Flujo ──────────────────────────────────────────────────
     @Column(name = "estado", length = 30, nullable = false)
     private String estado = "PENDIENTE";
 
@@ -92,7 +82,7 @@ public class DocumentoHabilitante {
     @Column(name = "fecha_validacion")
     private LocalDateTime fechaValidacion;
 
-    // ── Auditoría ─────────────────────────────────────────────────────────────
+    // ── Auditoría ──────────────────────────────────────────────
     @Column(name = "fecha_subida", nullable = false)
     private LocalDateTime fechaSubida;
 

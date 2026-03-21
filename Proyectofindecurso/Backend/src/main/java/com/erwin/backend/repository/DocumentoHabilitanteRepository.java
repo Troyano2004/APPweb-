@@ -9,60 +9,59 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 import java.util.Optional;
 
-public interface DocumentoHabilitanteRepository extends JpaRepository<DocumentoHabilitante, Integer> {
+public interface DocumentoHabilitanteRepository
+        extends JpaRepository<DocumentoHabilitante, Integer> {
 
-    /** Todos los habilitantes de un proyecto */
+    // ── TIC (por proyecto) ─────────────────────────────────────
     List<DocumentoHabilitante> findByProyecto_IdProyecto(Integer idProyecto);
 
-    /** Todos los habilitantes de un estudiante */
-    List<DocumentoHabilitante> findByEstudiante_IdEstudiante(Integer idEstudiante);
-
-    /** Un tipo específico dentro de un proyecto (unicidad por constraint) */
     Optional<DocumentoHabilitante> findByProyecto_IdProyectoAndTipoDocumento(
             Integer idProyecto, String tipoDocumento);
 
-    /** Verificar si todos los habilitantes obligatorios están APROBADOS */
+    List<DocumentoHabilitante> findByProyecto_IdProyectoAndEstado(
+            Integer idProyecto, String estado);
+
+    // ── COMPLEXIVO (por complexivo_titulacion) ─────────────────
+    List<DocumentoHabilitante> findByComplexivo_IdComplexivo(Integer idComplexivo);
+
+    Optional<DocumentoHabilitante> findByComplexivo_IdComplexivoAndTipoDocumento(
+            Integer idComplexivo, String tipoDocumento);
+
+    // ── Por estudiante ─────────────────────────────────────────
+    List<DocumentoHabilitante> findByEstudiante_IdEstudiante(Integer idEstudiante);
+
+    List<DocumentoHabilitante> findByValidadoPor_IdDocenteAndEstado(
+            Integer idDocente, String estado);
+
+    // ── Verificar aprobados TIC ────────────────────────────────
     @Query("""
         SELECT COUNT(d) = 0
         FROM DocumentoHabilitante d
         WHERE d.proyecto.idProyecto = :idProyecto
           AND d.tipoDocumento IN (
-              'INFORME_DIRECTOR',
-              'CERTIFICADO_ANTIPLAGIO',
-              'TRABAJO_FINAL_PDF',
-              'CERTIFICADO_PENSUM',
-              'CERTIFICADO_DEUDAS',
-              'CERTIFICADO_IDIOMA',
+              'INFORME_DIRECTOR','CERTIFICADO_ANTIPLAGIO','TRABAJO_FINAL_PDF',
+              'CERTIFICADO_PENSUM','CERTIFICADO_DEUDAS','CERTIFICADO_IDIOMA',
               'CERTIFICADO_PRACTICAS'
           )
           AND d.estado != 'APROBADO'
     """)
     boolean todosAprobados(@Param("idProyecto") Integer idProyecto);
 
-    /**
-     * ✅ FIX PRINCIPAL: Documentos ENVIADO donde el docente es Director del proyecto.
-     *
-     * ANTES (BUGGY): buscaba por validadoPor.idDocente, pero ese campo es NULL
-     * hasta que alguien valide — por eso el docente nunca veía nada.
-     *
-     * AHORA: busca documentos en estado ENVIADO cuyos proyectos tienen
-     * al docente como director (proyecto.director.idDocente = idDocente).
-     */
+    // ── Pendientes director TIC ────────────────────────────────
     @Query("""
         SELECT d FROM DocumentoHabilitante d
         WHERE d.estado = 'ENVIADO'
+          AND d.proyecto IS NOT NULL
           AND d.proyecto.director.idDocente = :idDocente
     """)
-    List<DocumentoHabilitante> findPendientesPorDirector(@Param("idDocente") Integer idDocente);
+    List<DocumentoHabilitante> findPendientesPorDirector(
+            @Param("idDocente") Integer idDocente);
 
-    /**
-     * Habilitantes ya validados por un docente (historial).
-     * Este sí usa validadoPor porque ya fueron procesados.
-     */
-    List<DocumentoHabilitante> findByValidadoPor_IdDocenteAndEstado(
-            Integer idDocente, String estado);
-
-    /** Habilitantes de un proyecto filtrados por estado */
-    List<DocumentoHabilitante> findByProyecto_IdProyectoAndEstado(
-            Integer idProyecto, String estado);
+    // ── Pendientes DT2 Complexivo ──────────────────────────────
+    @Query("""
+        SELECT d FROM DocumentoHabilitante d
+        WHERE d.estado = 'ENVIADO'
+          AND d.complexivo IS NOT NULL
+    """)
+    List<DocumentoHabilitante> findPendientesComplexivo();
 }

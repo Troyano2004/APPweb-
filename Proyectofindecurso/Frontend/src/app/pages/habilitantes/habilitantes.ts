@@ -24,7 +24,7 @@ type RolView = 'estudiante' | 'director' | 'coordinador';
 })
 export class DocumentosHabilitantesComponent implements OnInit {
 
-  readonly rol = signal<RolView>('estudiante');
+  readonly rol       = signal<RolView>('estudiante');
   readonly idEntidad = signal<number | null>(null);
 
   loading  = signal(false);
@@ -40,6 +40,9 @@ export class DocumentosHabilitantesComponent implements OnInit {
   uploadingFile    = signal(false);
   archivoUrl       = signal<string | null>(null);
   archivoNombre    = signal<string | null>(null);
+
+  // ← indica si el estudiante es de modalidad Complexivo
+  esComplexivo = false;
 
   formSubir!: FormGroup;
   formValidar!: FormGroup;
@@ -59,29 +62,48 @@ export class DocumentosHabilitantesComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.detectarRol();
     this.buildForms();
-    this.cargarDatos();
+    this.detectarRol();   // cargarDatos() se llama dentro de detectarRol
   }
 
+  // ── Detectar rol y modalidad ────────────────────────────────
   private detectarRol(): void {
-    const user = getSessionUser();
+    const user   = getSessionUser();
     const rolRaw = String(user?.['rol'] ?? '')
-      .replace('ROLE_', '')
-      .trim()
-      .toUpperCase();
+      .replace('ROLE_', '').trim().toUpperCase();
 
     if (rolRaw === 'ESTUDIANTE') {
       this.rol.set('estudiante');
-      this.idEntidad.set(getSessionEntityId(user, 'estudiante'));
-    } else if (rolRaw === 'DOCENTE') {
+      const idEst = getSessionEntityId(user, 'estudiante');
+      this.idEntidad.set(idEst);
+
+      if (!idEst) {
+        this.error.set('No se identificó al estudiante.');
+        return;
+      }
+
+      // Detectar si es complexivo consultando el endpoint
+      this.api.getResumenComplexivo(idEst).subscribe({
+        next: () => {
+          // Responde OK → es complexivo
+          this.esComplexivo = true;
+          this.cargarDatos();
+        },
+        error: () => {
+          // Error → no es complexivo, usar flujo TIC normal
+          this.esComplexivo = false;
+          this.cargarDatos();
+        }
+      });
+
+    } else if (rolRaw === 'DOCENTE' || rolRaw === 'DOCENTE_TITULADO') {
       this.rol.set('director');
       this.idEntidad.set(getSessionEntityId(user, 'docente'));
+      this.cargarDatos();
     } else {
-      // COORDINADOR / ADMIN: no tienen kind propio en getSessionEntityId,
-      // pero su id viene en idDocente o idUsuario (mismas keys que 'docente')
       this.rol.set('coordinador');
       this.idEntidad.set(getSessionEntityId(user, 'docente'));
+      this.cargarDatos();
     }
   }
 
@@ -90,13 +112,13 @@ export class DocumentosHabilitantesComponent implements OnInit {
       porcentajeCoincidencia: [null],
       umbralPermitido: [10.0]
     });
-
     this.formValidar = this.fb.group({
       decision:   ['APROBADO', Validators.required],
       comentario: ['']
     });
   }
 
+  // ── Cargar datos ────────────────────────────────────────────
   cargarDatos(): void {
     const id = this.idEntidad();
     if (!id) { this.error.set('No se identificó al usuario.'); return; }
@@ -105,18 +127,31 @@ export class DocumentosHabilitantesComponent implements OnInit {
     this.error.set(null);
 
     if (this.esEstudiante()) {
-      this.api.getResumenEstudiante(id).subscribe({
-        next: (r) => { this.resumen.set(r); this.loading.set(false); },
-        error: (e) => { this.error.set(e?.error?.message ?? 'Error cargando datos'); this.loading.set(false); }
+      // Elegir endpoint según modalidad
+      const resumen$ = this.esComplexivo
+        ? this.api.getResumenComplexivo(id)
+        : this.api.getResumenEstudiante(id);
+
+      resumen$.subscribe({
+        next:  (r) => { this.resumen.set(r); this.loading.set(false); },
+        error: (e) => {
+          this.error.set(e?.error?.message ?? 'Error cargando datos');
+          this.loading.set(false);
+        }
       });
+
     } else {
       this.api.getPendientesDirector(id).subscribe({
-        next: (p) => { this.pendientes.set(p); this.loading.set(false); },
-        error: (e) => { this.error.set(e?.error?.message ?? 'Error cargando pendientes'); this.loading.set(false); }
+        next:  (p) => { this.pendientes.set(p); this.loading.set(false); },
+        error: (e) => {
+          this.error.set(e?.error?.message ?? 'Error cargando pendientes');
+          this.loading.set(false);
+        }
       });
     }
   }
 
+  // ── Modal subir ─────────────────────────────────────────────
   abrirModalSubir(doc: HabilitanteDto): void {
     this.docSeleccionado.set(doc);
     this.archivoUrl.set(null);
@@ -137,8 +172,14 @@ export class DocumentosHabilitantesComponent implements OnInit {
     const file  = input.files?.[0];
     if (!file) return;
 
-    if (file.type !== 'application/pdf') { this.error.set('Solo se permiten archivos PDF.'); return; }
-    if (file.size > 20 * 1024 * 1024)   { this.error.set('El archivo no debe superar 20 MB.'); return; }
+    if (file.type !== 'application/pdf') {
+      this.error.set('Solo se permiten archivos PDF.');
+      return;
+    }
+    if (file.size > 20 * 1024 * 1024) {
+      this.error.set('El archivo no debe superar 20 MB.');
+      return;
+    }
 
     this.uploadingFile.set(true);
     this.error.set(null);
@@ -162,11 +203,13 @@ export class DocumentosHabilitantesComponent implements OnInit {
     const url    = this.archivoUrl();
     const nombre = this.archivoNombre();
 
-    if (!doc || !id || !url) { this.error.set('Debe seleccionar y subir un archivo PDF primero.'); return; }
-    if (!doc.idProyecto)     { this.error.set('El documento no tiene idProyecto.'); return; }
+    if (!doc || !id || !url) {
+      this.error.set('Debe seleccionar y subir un archivo PDF primero.');
+      return;
+    }
 
     const req: SubirHabilitanteRequest = {
-      idProyecto:    doc.idProyecto,
+      idProyecto:    doc.idProyecto!,
       tipoDocumento: doc.tipoDocumento,
       urlArchivo:    url,
       nombreArchivo: nombre ?? 'documento.pdf'
@@ -183,7 +226,13 @@ export class DocumentosHabilitantesComponent implements OnInit {
     }
 
     this.loading.set(true);
-    this.api.subirDocumento(id, req).subscribe({
+
+    // Elegir endpoint según modalidad
+    const subir$ = this.esComplexivo
+      ? this.api.subirDocumentoComplexivo(id, req)
+      : this.api.subirDocumento(id, req);
+
+    subir$.subscribe({
       next: () => {
         this.loading.set(false);
         this.ok.set('Documento enviado correctamente.');
@@ -197,6 +246,7 @@ export class DocumentosHabilitantesComponent implements OnInit {
     });
   }
 
+  // ── Modal validar ───────────────────────────────────────────
   abrirModalValidar(doc: HabilitanteDto): void {
     this.docSeleccionado.set(doc);
     this.formValidar.reset({ decision: 'APROBADO', comentario: '' });
@@ -213,7 +263,10 @@ export class DocumentosHabilitantesComponent implements OnInit {
   confirmarValidacion(): void {
     const doc = this.docSeleccionado();
     const id  = this.idEntidad();
-    if (!doc?.id || !id) { this.error.set('No se encontró el documento o el usuario.'); return; }
+    if (!doc?.id || !id) {
+      this.error.set('No se encontró el documento o el usuario.');
+      return;
+    }
     if (this.formValidar.invalid) { this.formValidar.markAllAsTouched(); return; }
 
     const req: ValidarHabilitanteRequest = {
@@ -236,6 +289,7 @@ export class DocumentosHabilitantesComponent implements OnInit {
     });
   }
 
+  // ── Helpers ─────────────────────────────────────────────────
   esAntiplagio(tipo: string): boolean { return tipo === 'CERTIFICADO_ANTIPLAGIO'; }
 
   badgeClass(estado: string): string {
@@ -248,7 +302,7 @@ export class DocumentosHabilitantesComponent implements OnInit {
 
   badgeLabel(estado: string): string {
     const map: Record<string, string> = {
-      APROBADO: '✓ Aprobado', RECHAZADO: '✗ Rechazado',
+      APROBADO: '✓ Aprobado',  RECHAZADO: '✗ Rechazado',
       ENVIADO:  '⏳ En revisión', PENDIENTE: '○ Pendiente'
     };
     return map[estado] ?? '○ Pendiente';
