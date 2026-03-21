@@ -27,22 +27,109 @@
     h3 { margin: 0 0 12px; font-size: 1rem; }
   }
 
+  // ── Filtros de lista (Todos / Pendientes / Completos) ──────────────────────
+  .lista-filtros {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 10px;
+  }
+
+  .lista-filtro-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 5px 6px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 6px;
+    background: #f7fafc;
+    font-size: .75rem;
+    font-weight: 600;
+    cursor: pointer;
+    color: #718096;
+    transition: all .15s;
+
+    &:hover { border-color: #3182ce; color: #3182ce; }
+
+    &.active {
+      background: #3182ce;
+      border-color: #3182ce;
+      color: #fff;
+      .filtro-num { background: rgba(255,255,255,.25); color: #fff; }
+    }
+
+    &.pendiente.active { background: #d97706; border-color: #d97706; }
+    &.completo.active  { background: #38a169; border-color: #38a169; }
+  }
+
+  .filtro-num {
+    background: rgba(0,0,0,.1);
+    border-radius: 10px;
+    padding: 0 5px;
+    font-size: .7rem;
+  }
+
+  // ── Separadores y encabezados de sección ──────────────────────────────────
+  .seccion-header {
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    padding: 5px 4px 3px;
+    margin-top: 4px;
+    &.pendiente-header { color: #d97706; }
+    &.completo-header  { color: #38a169; }
+  }
+
+  .seccion-sep {
+    height: 1px;
+    background: #e2e8f0;
+    margin: 8px 0;
+  }
+
+  // ── Cards de proyecto ──────────────────────────────────────────────────────
   .proyecto-card {
     padding: 12px; border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 8px;
     cursor: pointer; transition: background .15s; position: relative;
     &:hover  { background: #f7fafc; }
     &.activo { background: #ebf8ff; border-color: #3182ce; }
+
+    // Proyecto con configuración completa
+    &.card-completo {
+      border-color: #c6f6d5;
+      background: #f0fff4;
+      &.activo { background: #c6f6d5; border-color: #38a169; }
+      &:hover  { background: #e6ffed; }
+    }
   }
 
   .proyecto-titulo { font-weight: 600; font-size: .9rem; }
   .proyecto-meta   { font-size: .8rem; color: #666; margin: 2px 0 6px; }
 
+  // ── Badge de estado del proyecto ──────────────────────────────────────────
+  .estado-proyecto-badge {
+    display: inline-block;
+    font-size: .68rem;
+    font-weight: 700;
+    padding: 1px 7px;
+    border-radius: 10px;
+    margin-bottom: 4px;
+
+    &.estado-pendiente    { background: #fef3c7; color: #92400e; }
+    &.estado-desarrollo   { background: #dbeafe; color: #1e40af; }
+    &.estado-predefensa   { background: #e9d8fd; color: #553c9a; }
+    &.estado-sustentacion { background: #fed7aa; color: #7c2d12; }
+    &.estado-finalizado   { background: #dcfce7; color: #166534; }
+    &.estado-reprobado    { background: #fee2e2; color: #991b1b; }
+  }
+
   .proyecto-checks {
     display: flex; gap: 8px;
     .check {
       font-size: .75rem; padding: 2px 6px; border-radius: 4px;
-      &.ok       { background: #c6f6d5; color: #276749; }
-      &.pendiente{ background: #fed7d7; color: #c53030; }
+      &.ok        { background: #c6f6d5; color: #276749; }
+      &.pendiente { background: #fed7d7; color: #c53030; }
     }
   }
 
@@ -53,7 +140,7 @@
 
   .empty { color: #999; font-size: .9rem; text-align: center; padding: 20px 0; }
 
-  // Acceso rápido a semana desde el panel lista
+  // Acceso rápido a semana
   .semana-acceso {
     display: flex;
     align-items: center;
@@ -67,24 +154,42 @@
     color: #3182ce;
     cursor: pointer;
     transition: all .15s;
-
     &:hover { background: #ebf8ff; border-color: #3182ce; }
 
     .semana-badge {
-      background: #38a169;
-      color: #fff;
-      font-size: .7rem;
-      padding: 2px 6px;
-      border-radius: 10px;
+      background: #38a169; color: #fff;
+      font-size: .7rem; padding: 2px 6px; border-radius: 10px;
     }
   }
 
-  // ── Panel detalle ────────────────────────────────────────────────────────────
+  // ── Panel detalle ──────────────────────────────────────────────────────────
   .panel-detalle {
     background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px;
     &.empty-panel { display: flex; align-items: center; justify-content: center; min-height: 200px; color: #999; }
     h3 { margin: 0 0 4px; }
     p  { color: #666; margin: 0 0 16px; font-size: .9rem; }
+  }
+
+  // Header del proyecto en detalle con badge de estado
+  .proyecto-header-detalle {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 12px;
+    h3 { margin: 0 0 4px; }
+    p  { margin: 0; color: #666; font-size: .9rem; }
+  }
+
+  // Banner para proyectos ya completos
+  .banner-completo {
+    background: #f0fff4;
+    border: 1.5px solid #9ae6b4;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: .83rem;
+    color: #276749;
+    margin-bottom: 12px;
   }
 
   .config-actual {
@@ -101,7 +206,7 @@
     padding: 2px 6px; font-size: .8rem; margin: 2px;
   }
 
-  // ── Tabs ─────────────────────────────────────────────────────────────────────
+  // ── Tabs ───────────────────────────────────────────────────────────────────
   .tabs {
     display: flex; gap: 4px; margin-bottom: 16px; flex-wrap: wrap;
     button {
@@ -117,7 +222,7 @@
     }
   }
 
-  // ── Formularios ───────────────────────────────────────────────────────────────
+  // ── Formularios ────────────────────────────────────────────────────────────
   form {
     .form-row {
       margin-bottom: 12px;
@@ -129,7 +234,7 @@
       }
       textarea { resize: vertical; }
       small { color: #999; }
-      .field-error { color: #e53e3e; font-size: .78rem; display: block; margin-top: 3px; }
+      .field-error  { color: #e53e3e; font-size: .78rem; display: block; margin-top: 3px; }
       .hint-inline  { color: #718096; font-weight: 400; font-size: .78rem; }
     }
 
@@ -154,7 +259,7 @@
     .btn-remove { background: none; border: 1px solid #e53e3e; color: #e53e3e; border-radius: 4px; cursor: pointer; padding: 4px 8px; }
   }
 
-  // ── Bitácora ──────────────────────────────────────────────────────────────────
+  // ── Bitácora ───────────────────────────────────────────────────────────────
   .bitacora {
     margin-top: 24px; border-top: 1px solid #e2e8f0; padding-top: 16px;
     h4 { margin: 0 0 10px; font-size: .95rem; }
@@ -171,9 +276,7 @@
   // SEMANA PREDEFENSAS
   // ══════════════════════════════════════════════════
 
-  .semana-predefensa-tab {
-    animation: fadeIn .2s ease;
-  }
+  .semana-predefensa-tab { animation: fadeIn .2s ease; }
 
   @keyframes fadeIn {
     from { opacity: 0; transform: translateY(4px); }
@@ -217,12 +320,7 @@
     margin-bottom: .75rem;
     animation: fadeIn .2s ease;
 
-    h5 {
-      margin: 0 0 .75rem;
-      font-size: .88rem;
-      color: #744210;
-      font-weight: 700;
-    }
+    h5 { margin: 0 0 .75rem; font-size: .88rem; color: #744210; font-weight: 700; }
   }
 
   .form-extender-info {
@@ -285,9 +383,7 @@
     .preview-label { font-weight: 700; }
   }
 
-  .form-actions {
-    display: flex; justify-content: flex-end;
-  }
+  .form-actions { display: flex; justify-content: flex-end; gap: 8px; }
 
   .btn-guardar-semana {
     background: #0f7a3a; color: #fff; border: none;
@@ -315,18 +411,49 @@
 
   .panel-lista { background: #1e293b; border-color: #334155; h3 { color: #f1f5f9; } }
 
+  // Filtros dark
+  .lista-filtro-btn {
+    background: #0f172a; border-color: #334155; color: #94a3b8;
+    &:hover { border-color: #60a5fa; color: #60a5fa; }
+    &.active { background: #3182ce; border-color: #3182ce; color: #fff; }
+    &.pendiente.active { background: #d97706; border-color: #d97706; }
+    &.completo.active  { background: #38a169; border-color: #38a169; }
+  }
+
+  .seccion-sep { background: #334155; }
+  .seccion-header {
+    &.pendiente-header { color: #fcd34d; }
+    &.completo-header  { color: #4ade80; }
+  }
+
   .proyecto-card {
     border-color: #334155;
     &:hover  { background: #263448; }
     &.activo { background: #0f2a3d; border-color: #3182ce; }
+
+    &.card-completo {
+      background: #052e16; border-color: #166534;
+      &.activo { background: #065f46; border-color: #4ade80; }
+      &:hover  { background: #064e3b; }
+    }
   }
+
   .proyecto-titulo { color: #e2e8f0; }
   .proyecto-meta   { color: #94a3b8; }
   .empty           { color: #64748b; }
 
+  .estado-proyecto-badge {
+    &.estado-pendiente    { background: #2a1f0a; color: #fcd34d; }
+    &.estado-desarrollo   { background: #0f2a3d; color: #60a5fa; }
+    &.estado-predefensa   { background: #2d1b4e; color: #c4b5fd; }
+    &.estado-sustentacion { background: #2a1200; color: #fb923c; }
+    &.estado-finalizado   { background: #052e16; color: #4ade80; }
+    &.estado-reprobado    { background: #2d1b1b; color: #fca5a5; }
+  }
+
   .proyecto-checks .check {
-    &.ok       { background: #052e16; color: #86efac; }
-    &.pendiente{ background: #2d1b1b; color: #fca5a5; }
+    &.ok        { background: #052e16; color: #86efac; }
+    &.pendiente { background: #2d1b1b; color: #fca5a5; }
   }
 
   .semana-acceso {
@@ -341,9 +468,15 @@
     p  { color: #94a3b8; }
   }
 
-  .config-actual { background: #0f172a; }
-  .config-item { color: #e2e8f0; .label { color: #94a3b8; } }
-  .miembro-tag { background: #334155; color: #e2e8f0; }
+  .proyecto-header-detalle {
+    h3 { color: #f1f5f9; }
+    p  { color: #94a3b8; }
+  }
+
+  .banner-completo { background: #052e16; border-color: #166534; color: #4ade80; }
+  .config-actual   { background: #0f172a; }
+  .config-item     { color: #e2e8f0; .label { color: #94a3b8; } }
+  .miembro-tag     { background: #334155; color: #e2e8f0; }
 
   .tabs button {
     background: #0f172a; border-color: #334155; color: #94a3b8;
@@ -352,8 +485,8 @@
 
   form {
     .form-row {
-      label { color: #94a3b8; }
-      small { color: #64748b; }
+      label        { color: #94a3b8; }
+      small        { color: #64748b; }
       .hint-inline { color: #64748b; }
       input, select, textarea {
         background: #0f172a; color: #e2e8f0; border-color: #334155;
@@ -367,16 +500,15 @@
   }
 
   .tribunal-header { color: #e2e8f0; button { background: #0f2a3d; border-color: #3182ce; color: #60a5fa; } }
-  .miembro-row { select { background: #0f172a; color: #e2e8f0; border-color: #334155; } .btn-remove { border-color: #e53e3e; color: #fca5a5; } }
-  .bitacora { border-top-color: #334155; }
-  .bitacora-row { border-bottom-color: #334155; color: #e2e8f0; .tipo { background: #334155; color: #e2e8f0; } .fecha { color: #64748b; } }
+  .miembro-row     { select { background: #0f172a; color: #e2e8f0; border-color: #334155; } .btn-remove { border-color: #e53e3e; color: #fca5a5; } }
+  .bitacora        { border-top-color: #334155; }
+  .bitacora-row    { border-bottom-color: #334155; color: #e2e8f0; .tipo { background: #334155; color: #e2e8f0; } .fecha { color: #64748b; } }
 
   .btn-extender-toggle    { border-color: #166534; color: #4ade80; &:hover { background: #166534; color: #fff; } }
   .form-extender          { background: #2a1f0a; border-color: #d69e2e; h5 { color: #fcd34d; } }
   .form-extender-info     { background: #2a1f0a; border-color: #92400e; color: #fcd34d; }
   .btn-cancelar-extender  { border-color: #334155; color: #94a3b8; &:hover { background: #0f172a; } }
 
-  // Semana dark mode
   .semana-actual          { background: #052e16; border-color: #166534; }
   .semana-actual-badge    { color: #4ade80; }
   .semana-stat-label      { color: #94a3b8; }

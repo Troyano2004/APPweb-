@@ -35,6 +35,15 @@ public class BackupExecution {
     @Column(name = "tipo_backup", nullable = false, length = 20)
     private TipoBackup tipoBackup = TipoBackup.FULL;
 
+    // ── Diferencial: referencia al FULL padre ──────────────────
+    // Null si este es FULL. Apunta al id_execution del FULL base.
+    @Column(name = "id_backup_padre")
+    private Long idBackupPadre;
+
+    // Tablas exportadas en este diferencial (CSV con nombres de tabla)
+    @Column(name = "tablas_incluidas", columnDefinition = "TEXT")
+    private String tablasIncluidas;
+
     @Column(name = "database_nombre", length = 200)
     private String databaseNombre;
 

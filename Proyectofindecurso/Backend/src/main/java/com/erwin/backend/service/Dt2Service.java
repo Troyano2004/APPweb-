@@ -18,22 +18,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * Servicio principal de Titulación II — 5 módulos:
- * M1: Configuración inicial (asignar DT2, Director, Tribunal)
- * M2: Seguimiento de avances (asesorías y actas de corte)
- * M3: Certificación antiplagio
- * M4: Predefensa (60% DT2 + 40% Tribunal)
- * M5: Sustentación final (4 criterios, nota de grado)
- *
- * ✅ REFACTOR: Las validaciones de módulos M3, M4 y M5 ahora se basan
- *    en el estado del DOCUMENTO (no del proyecto). El proyecto puede
- *    cambiar de estado como efecto secundario pero no es la fuente de verdad.
- *
- * Flujo de estados del documento:
- *   BORRADOR → EN_REVISION → CORRECCION_REQUERIDA → APROBADO_POR_DIRECTOR
- *   → ANTIPLAGIO_APROBADO → EN_PREDEFENSA → LISTO_SUSTENTACION
- */
 @Service
 public class Dt2Service {
 
@@ -78,23 +62,23 @@ public class Dt2Service {
                       ActaGradoRepository actaGradoRepo,
                       DocumentStorageService storageService,
                       EmailService emailService) {
-        this.proyectoRepo = proyectoRepo;
-        this.anteproyectoRepo = anteproyectoRepo;
-        this.documentoRepo = documentoRepo;
-        this.docenteRepo = docenteRepo;
-        this.usuarioRepo = usuarioRepo;
+        this.proyectoRepo      = proyectoRepo;
+        this.anteproyectoRepo  = anteproyectoRepo;
+        this.documentoRepo     = documentoRepo;
+        this.docenteRepo       = docenteRepo;
+        this.usuarioRepo       = usuarioRepo;
         this.dt2AsignacionRepo = dt2AsignacionRepo;
-        this.bitacoraRepo = bitacoraRepo;
-        this.tribunalRepo = tribunalRepo;
-        this.asesoriaRepo = asesoriaRepo;
-        this.actaCorteRepo = actaCorteRepo;
-        this.antiplacioRepo = antiplacioRepo;
-        this.sustentacionRepo = sustentacionRepo;
-        this.evaluacionRepo = evaluacionRepo;
-        this.docPrevioRepo = docPrevioRepo;
-        this.actaGradoRepo = actaGradoRepo;
-        this.storageService = storageService;
-        this.emailService = emailService;
+        this.bitacoraRepo      = bitacoraRepo;
+        this.tribunalRepo      = tribunalRepo;
+        this.asesoriaRepo      = asesoriaRepo;
+        this.actaCorteRepo     = actaCorteRepo;
+        this.antiplacioRepo    = antiplacioRepo;
+        this.sustentacionRepo  = sustentacionRepo;
+        this.evaluacionRepo    = evaluacionRepo;
+        this.docPrevioRepo     = docPrevioRepo;
+        this.actaGradoRepo     = actaGradoRepo;
+        this.storageService    = storageService;
+        this.emailService      = emailService;
     }
 
     // =========================================================
@@ -102,8 +86,8 @@ public class Dt2Service {
     // =========================================================
 
     /**
-     * Lista proyectos con anteproyecto APROBADO que aún no tienen configuración DT2 completa.
-     * ✅ FIX: incluye ANTEPROYECTO, BORRADOR y DESARROLLO
+     * Lista proyectos con anteproyecto APROBADO que aún NO tienen
+     * configuración DT2 completa (pendientes).
      */
     @Transactional
     public List<Dt2Dtos.ProyectoPendienteConfiguracionDto> listarProyectosPendientesConfiguracion() {
@@ -115,35 +99,72 @@ public class Dt2Service {
                     AnteproyectoTitulacion ante = anteproyectoRepo
                             .findByPropuesta_IdPropuesta(p.getPropuesta().getIdPropuesta())
                             .orElse(null);
-                    // Mostrar si tiene anteproyecto aprobado O si ya está en DESARROLLO
                     return (ante != null && "APROBADO".equalsIgnoreCase(ante.getEstado()))
                             || "DESARROLLO".equalsIgnoreCase(p.getEstado());
                 })
                 .filter(p -> {
-                    boolean tieneDt2 = dt2AsignacionRepo.findByProyecto_IdProyectoAndActivoTrue(p.getIdProyecto()).isPresent();
+                    boolean tieneDt2      = dt2AsignacionRepo.findByProyecto_IdProyectoAndActivoTrue(p.getIdProyecto()).isPresent();
                     boolean tieneDirector = p.getDirector() != null;
                     boolean tieneTribunal = tribunalRepo.countByProyecto_IdProyecto(p.getIdProyecto()) >= MIN_MIEMBROS_TRIBUNAL;
                     return !(tieneDt2 && tieneDirector && tieneTribunal);
                 })
-                .map(p -> {
-                    boolean tieneDt2 = dt2AsignacionRepo.findByProyecto_IdProyectoAndActivoTrue(p.getIdProyecto()).isPresent();
-                    boolean tieneDirector = p.getDirector() != null;
-                    boolean tieneTribunal = tribunalRepo.countByProyecto_IdProyecto(p.getIdProyecto()) >= MIN_MIEMBROS_TRIBUNAL;
+                .map(p -> toProyectoDto(p))
+                .collect(Collectors.toList());
+    }
 
-                    Dt2Dtos.ProyectoPendienteConfiguracionDto dto = new Dt2Dtos.ProyectoPendienteConfiguracionDto();
-                    dto.setIdProyecto(p.getIdProyecto());
-                    dto.setTitulo(p.getTitulo());
-                    dto.setEstudiante(fullName(p.getPropuesta().getEstudiante().getUsuario()));
-                    dto.setCarrera(p.getPropuesta().getCarrera().getNombre());
-                    dto.setPeriodo(p.getPeriodo().getDescripcion());
-                    dto.setEstadoProyecto(p.getEstado());
-                    dto.setTieneDocenteDt2(tieneDt2);
-                    dto.setTieneDirector(tieneDirector);
-                    dto.setTieneTribunal(tieneTribunal);
-                    dto.setConfiguracionCompleta(tieneDt2 && tieneDirector && tieneTribunal);
-                    return dto;
+    /**
+     * Lista TODOS los proyectos con anteproyecto aprobado, sin filtrar
+     * por configuración completa. Incluye pendientes Y completos.
+     * Los pendientes aparecen primero, luego los completos.
+     */
+    @Transactional
+    public List<Dt2Dtos.ProyectoPendienteConfiguracionDto> listarTodosProyectosConfiguracion() {
+        return proyectoRepo.findAll().stream()
+                .filter(p -> "ANTEPROYECTO".equalsIgnoreCase(p.getEstado())
+                        || "BORRADOR".equalsIgnoreCase(p.getEstado())
+                        || "DESARROLLO".equalsIgnoreCase(p.getEstado())
+                        || "PREDEFENSA".equalsIgnoreCase(p.getEstado())
+                        || "SUSTENTACION".equalsIgnoreCase(p.getEstado())
+                        || "FINALIZADO".equalsIgnoreCase(p.getEstado()))
+                .filter(p -> {
+                    AnteproyectoTitulacion ante = anteproyectoRepo
+                            .findByPropuesta_IdPropuesta(p.getPropuesta().getIdPropuesta())
+                            .orElse(null);
+                    return (ante != null && "APROBADO".equalsIgnoreCase(ante.getEstado()))
+                            || "DESARROLLO".equalsIgnoreCase(p.getEstado())
+                            || "PREDEFENSA".equalsIgnoreCase(p.getEstado())
+                            || "SUSTENTACION".equalsIgnoreCase(p.getEstado())
+                            || "FINALIZADO".equalsIgnoreCase(p.getEstado());
+                })
+                .map(p -> toProyectoDto(p))
+                .sorted((a, b) -> {
+                    // Pendientes primero, completos al final
+                    boolean ac = Boolean.TRUE.equals(a.getConfiguracionCompleta());
+                    boolean bc = Boolean.TRUE.equals(b.getConfiguracionCompleta());
+                    if (ac == bc) return 0;
+                    return ac ? 1 : -1;
                 })
                 .collect(Collectors.toList());
+    }
+
+    /** Helper compartido para mapear un proyecto a su DTO de configuración */
+    private Dt2Dtos.ProyectoPendienteConfiguracionDto toProyectoDto(ProyectoTitulacion p) {
+        boolean tieneDt2      = dt2AsignacionRepo.findByProyecto_IdProyectoAndActivoTrue(p.getIdProyecto()).isPresent();
+        boolean tieneDirector = p.getDirector() != null;
+        boolean tieneTribunal = tribunalRepo.countByProyecto_IdProyecto(p.getIdProyecto()) >= MIN_MIEMBROS_TRIBUNAL;
+
+        Dt2Dtos.ProyectoPendienteConfiguracionDto dto = new Dt2Dtos.ProyectoPendienteConfiguracionDto();
+        dto.setIdProyecto(p.getIdProyecto());
+        dto.setTitulo(p.getTitulo());
+        dto.setEstudiante(fullName(p.getPropuesta().getEstudiante().getUsuario()));
+        dto.setCarrera(p.getPropuesta().getCarrera().getNombre());
+        dto.setPeriodo(p.getPeriodo().getDescripcion());
+        dto.setEstadoProyecto(p.getEstado());
+        dto.setTieneDocenteDt2(tieneDt2);
+        dto.setTieneDirector(tieneDirector);
+        dto.setTieneTribunal(tieneTribunal);
+        dto.setConfiguracionCompleta(tieneDt2 && tieneDirector && tieneTribunal);
+        return dto;
     }
 
     @Auditable(entidad = "Dt2Asignacion", accion = "CREATE")
@@ -153,14 +174,11 @@ public class Dt2Service {
         validarEstadoProyecto(proyecto, "ANTEPROYECTO", "DESARROLLO");
         validarAnteproyectoAprobado(proyecto);
 
-        Docente docente = getDocente(req.getIdDocenteDt2());
+        Docente docente      = getDocente(req.getIdDocenteDt2());
         Usuario realizadoPor = getUsuario(req.getIdRealizadoPor());
 
         dt2AsignacionRepo.findByProyecto_IdProyectoAndActivoTrue(req.getIdProyecto())
-                .ifPresent(a -> {
-                    a.setActivo(false);
-                    dt2AsignacionRepo.save(a);
-                });
+                .ifPresent(a -> { a.setActivo(false); dt2AsignacionRepo.save(a); });
 
         Dt2Asignacion asignacion = new Dt2Asignacion();
         asignacion.setProyecto(proyecto);
@@ -177,18 +195,12 @@ public class Dt2Service {
 
         intentarTransicionDesarrollo(proyecto);
 
-        // ✅ Notificación por correo al docente DT2
         String emailDocente = docente.getUsuario() != null ? docente.getUsuario().getCorreoInstitucional() : null;
         if (emailDocente != null && !emailDocente.isBlank()) {
             String estudiante = fullName(proyecto.getPropuesta().getEstudiante().getUsuario());
             String periodo    = proyecto.getPeriodo() != null ? proyecto.getPeriodo().getDescripcion() : req.getPeriodo();
-            emailService.notificarAsignacionDocenteDt2(
-                    emailDocente,
-                    fullName(docente.getUsuario()),
-                    proyecto.getTitulo(),
-                    estudiante,
-                    periodo
-            );
+            emailService.notificarAsignacionDocenteDt2(emailDocente, fullName(docente.getUsuario()),
+                    proyecto.getTitulo(), estudiante, periodo);
         }
 
         return new Dt2Dtos.MensajeDto("Docente DT2 asignado correctamente", proyecto.getEstado(), true);
@@ -200,24 +212,20 @@ public class Dt2Service {
         validarEstadoProyecto(proyecto, "ANTEPROYECTO", "DESARROLLO");
         validarAnteproyectoAprobado(proyecto);
 
-        // ✅ FIX: solo pide motivo si YA tiene director asignado (campo no nulo)
         if (proyecto.getDirector() != null
                 && (req.getMotivo() == null || req.getMotivo().isBlank())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Para cambiar el Director debe ingresar un motivo justificado");
         }
 
-        Docente director = getDocente(req.getIdDirector());
+        Docente director     = getDocente(req.getIdDirector());
         Usuario realizadoPor = getUsuario(req.getIdRealizadoPor());
 
         proyecto.setDirector(director);
         proyectoRepo.save(proyecto);
 
         documentoRepo.findByProyecto_IdProyecto(proyecto.getIdProyecto())
-                .ifPresent(doc -> {
-                    doc.setDirector(director);
-                    documentoRepo.save(doc);
-                });
+                .ifPresent(doc -> { doc.setDirector(director); documentoRepo.save(doc); });
 
         registrarBitacora(proyecto, "DIRECTOR", director.getIdDocente(),
                 fullName(director.getUsuario()), null, realizadoPor,
@@ -225,18 +233,12 @@ public class Dt2Service {
 
         intentarTransicionDesarrollo(proyecto);
 
-        // ✅ Notificación por correo al director
         String emailDirector = director.getUsuario() != null ? director.getUsuario().getCorreoInstitucional() : null;
         if (emailDirector != null && !emailDirector.isBlank()) {
             String estudiante = fullName(proyecto.getPropuesta().getEstudiante().getUsuario());
             String periodo    = proyecto.getPeriodo() != null ? proyecto.getPeriodo().getDescripcion() : req.getPeriodo();
-            emailService.notificarAsignacionDirector(
-                    emailDirector,
-                    fullName(director.getUsuario()),
-                    proyecto.getTitulo(),
-                    estudiante,
-                    periodo
-            );
+            emailService.notificarAsignacionDirector(emailDirector, fullName(director.getUsuario()),
+                    proyecto.getTitulo(), estudiante, periodo);
         }
 
         return new Dt2Dtos.MensajeDto("Director asignado correctamente", proyecto.getEstado(), true);
@@ -269,19 +271,12 @@ public class Dt2Service {
                     fullName(docente.getUsuario()), tp.getCargo(), realizadoPor,
                     req.getPeriodo(), null);
 
-            // ✅ Notificación por correo a cada miembro del tribunal
             String emailTribunal = docente.getUsuario() != null ? docente.getUsuario().getCorreoInstitucional() : null;
             if (emailTribunal != null && !emailTribunal.isBlank()) {
                 String estudiante = fullName(proyecto.getPropuesta().getEstudiante().getUsuario());
                 String periodo    = proyecto.getPeriodo() != null ? proyecto.getPeriodo().getDescripcion() : req.getPeriodo();
-                emailService.notificarAsignacionTribunal(
-                        emailTribunal,
-                        fullName(docente.getUsuario()),
-                        tp.getCargo(),
-                        proyecto.getTitulo(),
-                        estudiante,
-                        periodo
-                );
+                emailService.notificarAsignacionTribunal(emailTribunal, fullName(docente.getUsuario()),
+                        tp.getCargo(), proyecto.getTitulo(), estudiante, periodo);
             }
         }
 
@@ -303,8 +298,8 @@ public class Dt2Service {
             dto.setIdDocenteDt2(a.getDocenteDt2().getIdDocente());
         });
 
-        DocumentoTitulacion doc = documentoRepo.findByProyecto_IdProyecto(idProyecto).orElse(null);
-        Docente director = doc != null && doc.getDirector() != null ? doc.getDirector() : proyecto.getDirector();
+        DocumentoTitulacion doc     = documentoRepo.findByProyecto_IdProyecto(idProyecto).orElse(null);
+        Docente             director = doc != null && doc.getDirector() != null ? doc.getDirector() : proyecto.getDirector();
         if (director != null) {
             dto.setDirector(fullName(director.getUsuario()));
             dto.setIdDirector(director.getIdDocente());
@@ -346,11 +341,6 @@ public class Dt2Service {
     // MÓDULO 2 — Seguimiento de avances
     // =========================================================
 
-
-    /**
-     * ✅ NUEVO: Lista todos los proyectos en estado PREDEFENSA.
-     * Usado por el coordinador en la vista de predefensa.
-     */
     @Transactional
     public List<Dt2Dtos.ProyectoPendienteConfiguracionDto> listarProyectosEnPredefensa() {
         return proyectoRepo.findAll().stream()
@@ -388,14 +378,6 @@ public class Dt2Service {
                 }).collect(Collectors.toList());
     }
 
-
-    /**
-     * ✅ NUEVO: proyectos donde el docente está asignado como DT2
-     * y el documento está en APROBADO_POR_DIRECTOR (listos para subir antiplagio).
-     */
-    /**
-     * ✅ NUEVO: Lista proyectos en PREDEFENSA donde el docente es miembro del tribunal.
-     */
     @Transactional
     public List<Dt2Dtos.ProyectoPendienteConfiguracionDto> listarProyectosTribunal(Integer idDocente) {
         return tribunalRepo.findByDocente_IdDocente(idDocente).stream()
@@ -429,7 +411,6 @@ public class Dt2Service {
             ProyectoTitulacion proyecto = asignacion.getProyecto();
             if (proyecto == null) continue;
 
-            // Proyectos con documento en APROBADO_POR_DIRECTOR o estados posteriores
             boolean listo = documentoRepo.findByProyecto_IdProyecto(proyecto.getIdProyecto())
                     .map(doc -> doc.getEstado() == EstadoDocumento.APROBADO_POR_DIRECTOR
                             || doc.getEstado() == EstadoDocumento.ANTIPLAGIO_APROBADO
@@ -442,18 +423,14 @@ public class Dt2Service {
             dto.setIdProyecto(proyecto.getIdProyecto());
             dto.setTitulo(proyecto.getTitulo());
             dto.setEstadoProyecto(proyecto.getEstado());
-
             if (proyecto.getPropuesta() != null) {
-                if (proyecto.getPropuesta().getEstudiante() != null) {
+                if (proyecto.getPropuesta().getEstudiante() != null)
                     dto.setEstudiante(fullName(proyecto.getPropuesta().getEstudiante().getUsuario()));
-                }
-                if (proyecto.getPropuesta().getCarrera() != null) {
+                if (proyecto.getPropuesta().getCarrera() != null)
                     dto.setCarrera(proyecto.getPropuesta().getCarrera().getNombre());
-                }
             }
-            if (proyecto.getPeriodo() != null) {
+            if (proyecto.getPeriodo() != null)
                 dto.setPeriodo(proyecto.getPeriodo().getDescripcion());
-            }
 
             resultado.add(dto);
         }
@@ -505,10 +482,9 @@ public class Dt2Service {
                     "Ya existe un acta para el corte " + req.getNumeroCorte());
         }
 
-        Docente director = getDocente(req.getIdDirector());
-        long totalAsesorias = asesoriaRepo.countByProyecto_IdProyectoAndNumeroCorte(
-                req.getIdProyecto(), req.getNumeroCorte());
-        boolean suficientes = totalAsesorias >= MIN_ASESORIAS_CORTE;
+        Docente director      = getDocente(req.getIdDirector());
+        long totalAsesorias   = asesoriaRepo.countByProyecto_IdProyectoAndNumeroCorte(req.getIdProyecto(), req.getNumeroCorte());
+        boolean suficientes   = totalAsesorias >= MIN_ASESORIAS_CORTE;
 
         ActaCorte acta = new ActaCorte();
         acta.setProyecto(proyecto);
@@ -559,15 +535,6 @@ public class Dt2Service {
     // MÓDULO 3 — Certificación antiplagio
     // =========================================================
 
-    /**
-     * Sube el informe COMPILATIO y registra el intento.
-     *
-     * ✅ REFACTOR: ahora valida documento.estado = APROBADO_POR_DIRECTOR
-     *    (antes validaba estado del proyecto).
-     * ✅ REFACTOR: quien sube el antiplagio es el Docente DT2 (no el director).
-     * ✅ REFACTOR: si favorable → documento pasa a ANTIPLAGIO_APROBADO.
-     *    El proyecto cambia a PREDEFENSA como efecto secundario.
-     */
     @Transactional
     public Dt2Dtos.CertificadoAntiplacioDto registrarAntiplagio(
             Integer idProyecto, Integer idDocenteDt2,
@@ -576,18 +543,15 @@ public class Dt2Service {
 
         ProyectoTitulacion proyecto = getProyecto(idProyecto);
 
-        // ✅ Validar estado del DOCUMENTO (fuente de verdad)
         DocumentoTitulacion documento = documentoRepo.findByProyecto_IdProyecto(idProyecto)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         "No existe documento de titulación para este proyecto"));
 
         if (documento.getEstado() != EstadoDocumento.APROBADO_POR_DIRECTOR) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "El documento debe estar en estado APROBADO_POR_DIRECTOR para registrar el antiplagio. " +
-                            "Estado actual: " + documento.getEstado());
+                    "El documento debe estar en APROBADO_POR_DIRECTOR. Estado actual: " + documento.getEstado());
         }
 
-        // ✅ Quien sube es el Docente DT2
         Dt2Asignacion dt2 = dt2AsignacionRepo.findByProyecto_IdProyectoAndActivoTrue(idProyecto)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         "No hay docente DT2 asignado al proyecto"));
@@ -597,30 +561,26 @@ public class Dt2Service {
                     "Solo el Docente DT2 asignado puede subir el informe antiplagio");
         }
 
-        Docente docenteDt2 = dt2.getDocenteDt2();
-        String urlInforme = storageService.storeDocument(archivoPdf);
-        boolean favorable = porcentajeCoincidencia.compareTo(UMBRAL_ANTIPLAGIO) < 0;
+        Docente docenteDt2  = dt2.getDocenteDt2();
+        String  urlInforme  = storageService.storeDocument(archivoPdf);
+        boolean favorable   = porcentajeCoincidencia.compareTo(UMBRAL_ANTIPLAGIO) < 0;
 
         AntiplacioIntento intento = new AntiplacioIntento();
         intento.setProyecto(proyecto);
-        intento.setDirector(docenteDt2);  // campo director reutilizado para DT2
+        intento.setDirector(docenteDt2);
         intento.setPorcentajeCoincidencia(porcentajeCoincidencia);
         intento.setUrlInforme(urlInforme);
         intento.setFavorable(favorable);
         intento.setObservaciones(observaciones);
         antiplacioRepo.save(intento);
 
-        // Actualizar campos del proyecto (solo informativos)
         proyecto.setPorcentajeAntiplagio(porcentajeCoincidencia);
         proyecto.setFechaVerificacionAntiplagio(LocalDate.now());
         proyecto.setUrlInformeAntiplagio(urlInforme);
 
         if (favorable) {
-            // ✅ Estado del DOCUMENTO avanza a ANTIPLAGIO_APROBADO
             documento.setEstado(EstadoDocumento.ANTIPLAGIO_APROBADO);
             documentoRepo.save(documento);
-
-            // Estado del proyecto como efecto secundario
             proyecto.setEstado("PREDEFENSA");
         }
         proyectoRepo.save(proyecto);
@@ -638,26 +598,17 @@ public class Dt2Service {
     // MÓDULO 4 — Predefensa
     // =========================================================
 
-    /**
-     * Programa la fecha de predefensa.
-     *
-     * ✅ REFACTOR: valida documento.estado = ANTIPLAGIO_APROBADO
-     *    (antes validaba estado del proyecto = PREDEFENSA).
-     * ✅ El Coordinador es quien programa la fecha.
-     */
     @Transactional
     public Dt2Dtos.MensajeDto programarPredefensa(Dt2Dtos.ProgramarPredefensaRequest req) {
         ProyectoTitulacion proyecto = getProyecto(req.getIdProyecto());
 
-        // ✅ Validar estado del DOCUMENTO
         DocumentoTitulacion documento = documentoRepo.findByProyecto_IdProyecto(req.getIdProyecto())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         "No existe documento de titulación para este proyecto"));
 
         if (documento.getEstado() != EstadoDocumento.ANTIPLAGIO_APROBADO) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "El documento debe tener antiplagio aprobado para programar la predefensa. " +
-                            "Estado actual: " + documento.getEstado());
+                    "El documento debe tener antiplagio aprobado. Estado actual: " + documento.getEstado());
         }
 
         List<Sustentacion> existentes = sustentacionRepo
@@ -674,17 +625,12 @@ public class Dt2Service {
         sustentacion.setObservaciones(req.getObservaciones());
         sustentacionRepo.save(sustentacion);
 
-        // ✅ Documento avanza a EN_PREDEFENSA
         documento.setEstado(EstadoDocumento.EN_PREDEFENSA);
         documentoRepo.save(documento);
 
         return new Dt2Dtos.MensajeDto("Predefensa programada para el " + req.getFecha(), proyecto.getEstado(), true);
     }
 
-    /**
-     * El docente DT2 registra su calificación de predefensa (60%).
-     * ✅ REFACTOR: valida documento.estado = EN_PREDEFENSA
-     */
     @Transactional
     public Dt2Dtos.PredefensaDto calificarPredefensaDocente(Dt2Dtos.CalificarPredefensaDocenteRequest req) {
         ProyectoTitulacion proyecto = getProyecto(req.getIdProyecto());
@@ -703,8 +649,8 @@ public class Dt2Service {
 
         validarNota(req.getNota(), "nota del docente DT2");
 
-        Sustentacion sus = getPredefensa(req.getIdProyecto());
-        Docente docente = getDocente(req.getIdDocenteDt2());
+        Sustentacion sus    = getPredefensa(req.getIdProyecto());
+        Docente      docente = getDocente(req.getIdDocenteDt2());
 
         EvaluacionSustentacion eval = evaluacionRepo
                 .findBySustentacion_IdSustentacionAndDocente_IdDocenteAndTipo(
@@ -721,11 +667,6 @@ public class Dt2Service {
         return buildPredefensaDto(req.getIdProyecto(), sus);
     }
 
-    /**
-     * Un miembro del tribunal registra su calificación de predefensa (40%).
-     * ✅ REFACTOR: valida documento.estado = EN_PREDEFENSA
-     * ✅ Si solicita correcciones → documento regresa a CORRECCION_REQUERIDA
-     */
     @Transactional
     public Dt2Dtos.PredefensaDto calificarPredefensaTribunal(Dt2Dtos.CalificarPredefensaTribunalRequest req) {
         ProyectoTitulacion proyecto = getProyecto(req.getIdProyecto());
@@ -733,16 +674,15 @@ public class Dt2Service {
         DocumentoTitulacion documento = getDocumentoRequerido(req.getIdProyecto());
         validarEstadoDocumento(documento, EstadoDocumento.EN_PREDEFENSA);
 
-        if (!tribunalRepo.existsByProyecto_IdProyectoAndDocente_IdDocente(
-                req.getIdProyecto(), req.getIdDocente())) {
+        if (!tribunalRepo.existsByProyecto_IdProyectoAndDocente_IdDocente(req.getIdProyecto(), req.getIdDocente())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "El docente no pertenece al tribunal de este proyecto");
         }
 
         validarNota(req.getNota(), "nota del tribunal");
 
-        Sustentacion sus = getPredefensa(req.getIdProyecto());
-        Docente docente = getDocente(req.getIdDocente());
+        Sustentacion sus    = getPredefensa(req.getIdProyecto());
+        Docente      docente = getDocente(req.getIdDocente());
 
         EvaluacionSustentacion eval = evaluacionRepo
                 .findBySustentacion_IdSustentacionAndDocente_IdDocenteAndTipo(
@@ -758,7 +698,6 @@ public class Dt2Service {
 
         Dt2Dtos.PredefensaDto dto = buildPredefensaDto(req.getIdProyecto(), sus);
 
-        // ✅ Si pide correcciones → documento regresa a CORRECCION_REQUERIDA
         if (Boolean.TRUE.equals(req.getSolicitudCorrecciones())) {
             documento.setEstado(EstadoDocumento.CORRECCION_REQUERIDA);
             documentoRepo.save(documento);
@@ -780,11 +719,6 @@ public class Dt2Service {
     // MÓDULO 5 — Sustentación final
     // =========================================================
 
-    /**
-     * Registra/actualiza el checklist de documentos previos.
-     * ✅ REFACTOR: valida documento.estado = EN_PREDEFENSA o LISTO_SUSTENTACION
-     *    Si completo → documento avanza a LISTO_SUSTENTACION
-     */
     @Transactional
     public Dt2Dtos.DocumentosPreviosDto registrarDocumentosPrevios(Dt2Dtos.DocumentosPreviosRequest req) {
         ProyectoTitulacion proyecto = getProyecto(req.getIdProyecto());
@@ -793,8 +727,7 @@ public class Dt2Service {
         if (documento.getEstado() != EstadoDocumento.EN_PREDEFENSA
                 && documento.getEstado() != EstadoDocumento.LISTO_SUSTENTACION) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "El documento debe estar en EN_PREDEFENSA o LISTO_SUSTENTACION. " +
-                            "Estado actual: " + documento.getEstado());
+                    "El documento debe estar en EN_PREDEFENSA o LISTO_SUSTENTACION. Estado actual: " + documento.getEstado());
         }
 
         Usuario registradoPor = getUsuario(req.getIdRealizadoPor());
@@ -811,12 +744,9 @@ public class Dt2Service {
         docPrevio.setRegistradoPor(registradoPor);
         docPrevioRepo.save(docPrevio);
 
-        // ✅ Si todos los documentos están completos → documento avanza a LISTO_SUSTENTACION
         if (docPrevio.getCompleto() && documento.getEstado() == EstadoDocumento.EN_PREDEFENSA) {
             documento.setEstado(EstadoDocumento.LISTO_SUSTENTACION);
             documentoRepo.save(documento);
-
-            // Proyecto como efecto secundario
             proyecto.setEstado("SUSTENTACION");
             proyectoRepo.save(proyecto);
         }
@@ -831,10 +761,6 @@ public class Dt2Service {
                 .orElse(new Dt2Dtos.DocumentosPreviosDto(false, false, false, false, false, null));
     }
 
-    /**
-     * Programa la fecha de sustentación final.
-     * ✅ REFACTOR: valida documento.estado = LISTO_SUSTENTACION
-     */
     @Transactional
     public Dt2Dtos.MensajeDto programarSustentacion(Dt2Dtos.ProgramarSustentacionRequest req) {
         ProyectoTitulacion proyecto = getProyecto(req.getIdProyecto());
@@ -842,8 +768,7 @@ public class Dt2Service {
         DocumentoTitulacion documento = getDocumentoRequerido(req.getIdProyecto());
         if (documento.getEstado() != EstadoDocumento.LISTO_SUSTENTACION) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "El documento debe estar en LISTO_SUSTENTACION para programar la sustentación. " +
-                            "Estado actual: " + documento.getEstado());
+                    "El documento debe estar en LISTO_SUSTENTACION. Estado actual: " + documento.getEstado());
         }
 
         if (!predefensaAprobada(req.getIdProyecto())) {
@@ -875,20 +800,18 @@ public class Dt2Service {
         DocumentoTitulacion documento = getDocumentoRequerido(req.getIdProyecto());
         if (documento.getEstado() != EstadoDocumento.LISTO_SUSTENTACION) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "El documento debe estar en LISTO_SUSTENTACION para calificar la sustentación. " +
-                            "Estado actual: " + documento.getEstado());
+                    "El documento debe estar en LISTO_SUSTENTACION. Estado actual: " + documento.getEstado());
         }
 
-        if (!tribunalRepo.existsByProyecto_IdProyectoAndDocente_IdDocente(
-                req.getIdProyecto(), req.getIdDocente())) {
+        if (!tribunalRepo.existsByProyecto_IdProyectoAndDocente_IdDocente(req.getIdProyecto(), req.getIdDocente())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "El docente no pertenece al tribunal de este proyecto");
         }
 
         validarNota(req.getCalidadTrabajo(), "calidad del trabajo");
-        validarNota(req.getOriginalidad(), "originalidad");
-        validarNota(req.getDominioTema(), "dominio del tema");
-        validarNota(req.getPreguntas(), "pertinencia de respuestas");
+        validarNota(req.getOriginalidad(),   "originalidad");
+        validarNota(req.getDominioTema(),    "dominio del tema");
+        validarNota(req.getPreguntas(),      "pertinencia de respuestas");
 
         BigDecimal notaFinal = req.getCalidadTrabajo().multiply(new BigDecimal("0.20"))
                 .add(req.getOriginalidad().multiply(new BigDecimal("0.20")))
@@ -896,8 +819,8 @@ public class Dt2Service {
                 .add(req.getPreguntas().multiply(new BigDecimal("0.30")))
                 .setScale(2, RoundingMode.HALF_UP);
 
-        Sustentacion sus = getDefensaFinal(req.getIdProyecto());
-        Docente docente = getDocente(req.getIdDocente());
+        Sustentacion sus    = getDefensaFinal(req.getIdProyecto());
+        Docente      docente = getDocente(req.getIdDocente());
 
         EvaluacionSustentacion eval = evaluacionRepo
                 .findBySustentacion_IdSustentacionAndDocente_IdDocenteAndTipo(
@@ -925,12 +848,12 @@ public class Dt2Service {
         DocumentoTitulacion documento = getDocumentoRequerido(idProyecto);
         if (documento.getEstado() != EstadoDocumento.LISTO_SUSTENTACION) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "El documento debe estar en LISTO_SUSTENTACION para consolidar el resultado.");
+                    "El documento debe estar en LISTO_SUSTENTACION para consolidar.");
         }
 
-        Sustentacion sus = getDefensaFinal(idProyecto);
-        long totalMiembros = tribunalRepo.countByProyecto_IdProyecto(idProyecto);
-        long miembrosCalificaron = evaluacionRepo.countBySustentacion_IdSustentacionAndTipo(
+        Sustentacion sus          = getDefensaFinal(idProyecto);
+        long totalMiembros        = tribunalRepo.countByProyecto_IdProyecto(idProyecto);
+        long miembrosCalificaron  = evaluacionRepo.countBySustentacion_IdSustentacionAndTipo(
                 sus.getIdSustentacion(), "SUSTENTACION");
 
         if (miembrosCalificaron < totalMiembros) {
@@ -941,9 +864,9 @@ public class Dt2Service {
         Dt2Dtos.ResultadoSustentacionDto resultado = buildResultadoSustentacion(idProyecto, sus, proyecto);
 
         BigDecimal notaSustentacion = resultado.getPromedioTribunal();
-        boolean aprobado = notaSustentacion.compareTo(NOTA_APROBATORIA_SUSTENTACION) >= 0;
+        boolean    aprobado         = notaSustentacion.compareTo(NOTA_APROBATORIA_SUSTENTACION) >= 0;
 
-        Estudiante estudiante = proyecto.getPropuesta().getEstudiante();
+        Estudiante estudiante    = proyecto.getPropuesta().getEstudiante();
         BigDecimal promedioRecord = estudiante.getPromedioRecord80() != null
                 ? estudiante.getPromedioRecord80() : BigDecimal.ZERO;
         BigDecimal notaGrado = promedioRecord.multiply(new BigDecimal("0.80"))
@@ -960,11 +883,9 @@ public class Dt2Service {
         acta.setNotaFinal(notaGrado);
         actaGradoRepo.save(acta);
 
-        // ✅ Estado del proyecto como efecto secundario
         proyecto.setEstado(aprobado ? "FINALIZADO" : "REPROBADO");
         proyectoRepo.save(proyecto);
 
-        // ✅ Estado del documento al final del proceso
         documento.setEstado(aprobado
                 ? EstadoDocumento.CERRADO_APROBADO
                 : EstadoDocumento.CERRADO_REPROBADO);
@@ -997,7 +918,6 @@ public class Dt2Service {
         sus2.setObservaciones("SEGUNDA OPORTUNIDAD — " + (req.getObservaciones() != null ? req.getObservaciones() : ""));
         sustentacionRepo.save(sus2);
 
-        // ✅ Documento regresa a LISTO_SUSTENTACION para segunda oportunidad
         documentoRepo.findByProyecto_IdProyecto(req.getIdProyecto()).ifPresent(doc -> {
             doc.setEstado(EstadoDocumento.LISTO_SUSTENTACION);
             documentoRepo.save(doc);
@@ -1033,19 +953,17 @@ public class Dt2Service {
                         "Usuario no encontrado: " + idUsuario));
     }
 
-    /** Obtiene el documento de titulación o lanza excepción si no existe. */
     private DocumentoTitulacion getDocumentoRequerido(Integer idProyecto) {
         return documentoRepo.findByProyecto_IdProyecto(idProyecto)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         "No existe documento de titulación para el proyecto: " + idProyecto));
     }
 
-    /** Valida que el documento esté en el estado esperado. */
     private void validarEstadoDocumento(DocumentoTitulacion documento, EstadoDocumento estadoEsperado) {
         if (documento.getEstado() != estadoEsperado) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "El documento debe estar en estado " + estadoEsperado +
-                            ". Estado actual: " + documento.getEstado());
+                    "El documento debe estar en estado " + estadoEsperado
+                            + ". Estado actual: " + documento.getEstado());
         }
     }
 
@@ -1059,7 +977,6 @@ public class Dt2Service {
     }
 
     private void validarAnteproyectoAprobado(ProyectoTitulacion proyecto) {
-        // Si ya está en DESARROLLO, el anteproyecto ya fue aprobado en su momento
         if ("DESARROLLO".equalsIgnoreCase(proyecto.getEstado())) return;
 
         AnteproyectoTitulacion ante = anteproyectoRepo
@@ -1068,14 +985,14 @@ public class Dt2Service {
                         "El proyecto no tiene anteproyecto registrado"));
         if (!"APROBADO".equalsIgnoreCase(ante.getEstado())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "El anteproyecto debe estar APROBADO para configurar DT2. Estado actual: " + ante.getEstado());
+                    "El anteproyecto debe estar APROBADO. Estado actual: " + ante.getEstado());
         }
     }
 
     private void intentarTransicionDesarrollo(ProyectoTitulacion proyecto) {
         if (!"ANTEPROYECTO".equalsIgnoreCase(proyecto.getEstado())) return;
 
-        boolean tieneDt2 = dt2AsignacionRepo.existsByProyecto_IdProyecto(proyecto.getIdProyecto());
+        boolean tieneDt2      = dt2AsignacionRepo.existsByProyecto_IdProyecto(proyecto.getIdProyecto());
         boolean tieneDirector = proyecto.getDirector() != null;
         boolean tieneTribunal = tribunalRepo.countByProyecto_IdProyecto(proyecto.getIdProyecto()) >= MIN_MIEMBROS_TRIBUNAL;
 
@@ -1093,25 +1010,22 @@ public class Dt2Service {
                 return documentoRepo.save(doc);
             });
 
-            // ✅ Notificar al estudiante que su equipo quedó completo
             try {
-                Estudiante est = proyecto.getPropuesta().getEstudiante();
-                String emailEst = est != null && est.getUsuario() != null
+                Estudiante est       = proyecto.getPropuesta().getEstudiante();
+                String     emailEst  = est != null && est.getUsuario() != null
                         ? est.getUsuario().getCorreoInstitucional() : null;
                 if (emailEst != null && !emailEst.isBlank()) {
-                    String nombreEst = fullName(est.getUsuario());
-                    String periodo = proyecto.getPeriodo() != null
-                            ? proyecto.getPeriodo().getDescripcion() : "";
+                    String nombreEst    = fullName(est.getUsuario());
+                    String periodo      = proyecto.getPeriodo() != null ? proyecto.getPeriodo().getDescripcion() : "";
                     String nombreDirector = proyecto.getDirector() != null
                             ? fullName(proyecto.getDirector().getUsuario()) : null;
-                    String nombreDt2 = dt2AsignacionRepo
+                    String nombreDt2  = dt2AsignacionRepo
                             .findByProyecto_IdProyectoAndActivoTrue(proyecto.getIdProyecto())
                             .map(a -> fullName(a.getDocenteDt2().getUsuario()))
                             .orElse(null);
                     emailService.notificarAsignacionEquipo(
                             emailEst, nombreEst, proyecto.getTitulo(),
-                            nombreDirector, nombreDt2, periodo
-                    );
+                            nombreDirector, nombreDt2, periodo);
                 }
             } catch (Exception e) {
                 System.err.println("Error al notificar asignacion equipo: " + e.getMessage());
@@ -1136,7 +1050,7 @@ public class Dt2Service {
 
     private String fullName(Usuario u) {
         if (u == null) return "";
-        return ((u.getNombres() != null ? u.getNombres() : "") + " "
+        return ((u.getNombres()   != null ? u.getNombres()   : "") + " "
                 + (u.getApellidos() != null ? u.getApellidos() : "")).trim();
     }
 
@@ -1172,8 +1086,7 @@ public class Dt2Service {
     private boolean predefensaAprobada(Integer idProyecto) {
         Sustentacion sus = getPredefensaSafe(idProyecto);
         if (sus == null) return false;
-        Dt2Dtos.PredefensaDto dto = buildPredefensaDto(idProyecto, sus);
-        return "APROBADA".equalsIgnoreCase(dto.getEstado());
+        return "APROBADA".equalsIgnoreCase(buildPredefensaDto(idProyecto, sus).getEstado());
     }
 
     private Dt2Dtos.PredefensaDto buildPredefensaDto(Integer idProyecto, Sustentacion sus) {
@@ -1217,7 +1130,7 @@ public class Dt2Service {
                 dto.setNotaFinalPonderada(ponderada);
 
                 boolean todasCalificaron = evalsDto.size() >= totalMiembros;
-                boolean hayCorrecciones = evalsDto.stream()
+                boolean hayCorrecciones  = evalsDto.stream()
                         .anyMatch(e -> Boolean.TRUE.equals(e.getSolicitudCorrecciones()));
 
                 if (hayCorrecciones) {
@@ -1269,7 +1182,6 @@ public class Dt2Service {
         dto.setPromedioTribunal(promedio);
         dto.setEvaluaciones(evalsDto);
         dto.setResultado("PENDIENTE_CONSOLIDACION");
-
         return dto;
     }
 
@@ -1277,8 +1189,8 @@ public class Dt2Service {
         List<AntiplacioIntento> historial = antiplacioRepo
                 .findByProyecto_IdProyectoOrderByFechaIntentoDesc(idProyecto);
 
-        boolean favorable = historial.stream().anyMatch(AntiplacioIntento::getFavorable);
-        AntiplacioIntento ultimo = historial.isEmpty() ? null : historial.get(0);
+        boolean           favorable = historial.stream().anyMatch(AntiplacioIntento::getFavorable);
+        AntiplacioIntento ultimo    = historial.isEmpty() ? null : historial.get(0);
 
         List<Dt2Dtos.AntiplacioIntentoDto> historialDto = historial.stream().map(i -> {
             Dt2Dtos.AntiplacioIntentoDto d = new Dt2Dtos.AntiplacioIntentoDto();

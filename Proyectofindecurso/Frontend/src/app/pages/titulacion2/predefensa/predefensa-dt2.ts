@@ -44,7 +44,6 @@ export class PredefensaDt2Component implements OnInit {
   private idDocente = 0;
   private idProyectoActual = 0;
 
-  // Calendario
   calendario = signal<CalendarioSemanaDto | null>(null);
   cargandoCalendario = false;
   slotSeleccionado = signal<SlotDto | null>(null);
@@ -116,8 +115,6 @@ export class PredefensaDt2Component implements OnInit {
     }
   }
 
-  // ── Calendario de slots ─────────────────────────────────────────────────────
-
   cargarCalendario(): void {
     this.cargandoCalendario = true;
     this.semanaService.obtenerCalendario().subscribe({
@@ -168,8 +165,6 @@ export class PredefensaDt2Component implements OnInit {
     });
   }
 
-  // ── Formulario manual (fallback si no hay semana configurada) ───────────────
-
   programar(): void {
     if (this.formProgramar.invalid) { this.formProgramar.markAllAsTouched(); return; }
     const v = this.formProgramar.value;
@@ -204,8 +199,6 @@ export class PredefensaDt2Component implements OnInit {
     }));
   }
 
-  // ── Helpers ────────────────────────────────────────────────────────────────
-
   formatHora(hora: string): string {
     return hora ? hora.substring(0, 5) : '';
   }
@@ -221,16 +214,19 @@ export class PredefensaDt2Component implements OnInit {
     return Math.round((dia.ocupados / dia.totalSlots) * 100);
   }
 
-  // ── Privados ───────────────────────────────────────────────────────────────
-
+  // ✅ CORRECCIÓN: detecta ambos roles de forma independiente
   private detectarRolEnProyecto(idProyecto: number): void {
     this.dt2.getConfiguracion(idProyecto).subscribe({
       next: (config: ConfiguracionProyectoDto) => {
+        // Ambas asignaciones son independientes — un docente puede tener los dos roles
         this.esDocenteDt2 = config.idDocenteDt2 === this.idDocente;
         this.esTribunal   = config.tribunal?.some(m => m.idDocente === this.idDocente) ?? false;
-        if (this.esDocenteDt2)       this.tab.set('calificar-dt2');
-        else if (this.esTribunal)    this.tab.set('calificar-tribunal');
-        else                         this.tab.set('estado');
+
+        // Solo define qué tab se abre por defecto.
+        // Ambos tabs quedan visibles en el HTML si el usuario tiene los dos roles.
+        if (this.esDocenteDt2)    this.tab.set('calificar-dt2');
+        else if (this.esTribunal) this.tab.set('calificar-tribunal');
+        else                      this.tab.set('estado');
       },
       error: () => this.tab.set('estado')
     });

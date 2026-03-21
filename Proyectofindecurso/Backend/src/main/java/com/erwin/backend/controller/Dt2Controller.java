@@ -31,6 +31,16 @@ public class Dt2Controller {
         return service.listarProyectosPendientesConfiguracion();
     }
 
+    /**
+     * GET /api/dt2/proyectos/todos-configuracion
+     * Devuelve TODOS los proyectos (pendientes Y completos) para el coordinador.
+     * Útil para ver el estado global sin filtrar por configuración incompleta.
+     */
+    @GetMapping("/proyectos/todos-configuracion")
+    public List<Dt2Dtos.ProyectoPendienteConfiguracionDto> listarTodosConfiguracion() {
+        return service.listarTodosProyectosConfiguracion();
+    }
+
     @GetMapping("/proyectos/{idProyecto}/configuracion")
     public Dt2Dtos.ConfiguracionProyectoDto getConfiguracion(@PathVariable Integer idProyecto) {
         return service.getConfiguracion(idProyecto);
@@ -60,11 +70,6 @@ public class Dt2Controller {
         return service.asignarTribunal(req);
     }
 
-
-    /**
-     * GET /api/dt2/proyectos/en-predefensa
-     * ✅ NUEVO: proyectos en estado PREDEFENSA para el coordinador
-     */
     @GetMapping("/proyectos/en-predefensa")
     public List<Dt2Dtos.ProyectoPendienteConfiguracionDto> proyectosEnPredefensa() {
         return service.listarProyectosEnPredefensa();
@@ -79,20 +84,11 @@ public class Dt2Controller {
         return service.listarProyectosDirector(idDirector);
     }
 
-    /**
-     * GET /api/dt2/docente-dt2/{idDocenteDt2}/proyectos
-     * ✅ NUEVO: proyectos donde el docente está asignado como DT2
-     * y el documento está en APROBADO_POR_DIRECTOR (listos para antiplagio)
-     */
     @GetMapping("/docente-dt2/{idDocenteDt2}/proyectos")
     public List<Dt2Dtos.ProyectoPendienteConfiguracionDto> proyectosDocenteDt2(@PathVariable Integer idDocenteDt2) {
         return service.listarProyectosDocenteDt2(idDocenteDt2);
     }
 
-    /**
-     * GET /api/dt2/tribunal/{idDocente}/proyectos
-     * ✅ NUEVO: proyectos en PREDEFENSA donde el docente es miembro del tribunal
-     */
     @GetMapping("/tribunal/{idDocente}/proyectos")
     public List<Dt2Dtos.ProyectoPendienteConfiguracionDto> proyectosTribunal(@PathVariable Integer idDocente) {
         return service.listarProyectosTribunal(idDocente);
@@ -128,12 +124,6 @@ public class Dt2Controller {
     // MÓDULO 3 — Certificación antiplagio
     // =========================================================
 
-    /**
-     * POST /api/dt2/proyectos/{idProyecto}/antiplagio
-     * ✅ CAMBIO: parámetro idDirector → idDocenteDt2
-     * Requiere documento.estado = APROBADO_POR_DIRECTOR
-     * Si favorable → documento pasa a ANTIPLAGIO_APROBADO
-     */
     @PostMapping(value = "/proyectos/{idProyecto}/antiplagio", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public Dt2Dtos.CertificadoAntiplacioDto registrarAntiplagio(
             @PathVariable Integer idProyecto,
@@ -153,11 +143,6 @@ public class Dt2Controller {
     // MÓDULO 4 — Predefensa
     // =========================================================
 
-    /**
-     * POST /api/dt2/proyectos/{idProyecto}/predefensa/programar
-     * Requiere documento.estado = ANTIPLAGIO_APROBADO
-     * Al programar → documento pasa a EN_PREDEFENSA
-     */
     @PostMapping("/proyectos/{idProyecto}/predefensa/programar")
     public Dt2Dtos.MensajeDto programarPredefensa(
             @PathVariable Integer idProyecto,
@@ -228,12 +213,12 @@ public class Dt2Controller {
     @GetMapping("/proyectos/{idProyecto}/sustentacion/resultado")
     public ResponseEntity<Map<String, Object>> getResultado(@PathVariable Integer idProyecto) {
         Dt2Dtos.CertificadoAntiplacioDto antiplagio = service.getCertificadoAntiplagio(idProyecto);
-        Dt2Dtos.DocumentosPreviosDto docs = service.getDocumentosPrevios(idProyecto);
-        Dt2Dtos.PredefensaDto predefensa = service.getPredefensaDto(idProyecto);
+        Dt2Dtos.DocumentosPreviosDto     docs       = service.getDocumentosPrevios(idProyecto);
+        Dt2Dtos.PredefensaDto            predefensa = service.getPredefensaDto(idProyecto);
         return ResponseEntity.ok(Map.of(
-                "antiplagio", antiplagio,
+                "antiplagio",        antiplagio,
                 "documentosPrevios", docs,
-                "predefensa", predefensa
+                "predefensa",        predefensa
         ));
     }
 

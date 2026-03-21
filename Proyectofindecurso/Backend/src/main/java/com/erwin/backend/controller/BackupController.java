@@ -3,12 +3,14 @@ package com.erwin.backend.controller;
 import com.erwin.backend.dtos.BackupJobRequest;
 import com.erwin.backend.dtos.BackupTestConexionRequest;
 import com.erwin.backend.dtos.BackupTestDestinoRequest;
+import com.erwin.backend.dtos.BackupTimelineDtos.TimelineResponseDto;
 import com.erwin.backend.entities.BackupExecution;
 import com.erwin.backend.entities.BackupJob;
 import com.erwin.backend.service.BackupNotificationService;
 import com.erwin.backend.service.BackupSchedulerService;
 import com.erwin.backend.service.BackupService;
 import com.erwin.backend.service.BackupStorageService;
+import com.erwin.backend.service.BackupTimelineService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -27,6 +29,7 @@ public class BackupController {
     private final BackupSchedulerService    schedulerService;
     private final BackupStorageService      storageService;
     private final BackupNotificationService notificationService;
+    private final BackupTimelineService     timelineService;
 
     // ── Jobs ───────────────────────────────────────────────────────────────────
 
@@ -76,11 +79,23 @@ public class BackupController {
         return ResponseEntity.ok(job);
     }
 
-    // ── Ejecutar ahora ─────────────────────────────────────────────────────────
+    // ── Ejecutar ───────────────────────────────────────────────────────────────
 
     @PostMapping("/jobs/{id}/run")
     public ResponseEntity<BackupExecution> ejecutarAhora(@PathVariable Long id) {
         return ResponseEntity.ok(backupService.ejecutarJob(id, true));
+    }
+
+    @PostMapping("/jobs/{id}/ejecutar-diferencial")
+    public ResponseEntity<BackupExecution> ejecutarDiferencial(@PathVariable Long id) {
+        return ResponseEntity.ok(backupService.ejecutarDiferencialManual(id));
+    }
+
+    // ── Timeline ───────────────────────────────────────────────────────────────
+
+    @GetMapping("/jobs/{id}/timeline")
+    public ResponseEntity<TimelineResponseDto> timeline(@PathVariable Long id) {
+        return ResponseEntity.ok(timelineService.obtenerTimeline(id));
     }
 
     // ── Historial ──────────────────────────────────────────────────────────────
@@ -108,13 +123,12 @@ public class BackupController {
 
     @PostMapping("/test/postgres")
     public ResponseEntity<Map<String, Object>> probarPostgres(@RequestBody BackupTestConexionRequest req) {
-        boolean ok = backupService.probarConexionPg(req.getHost(), req.getPort(), req.getUsuario(), req.getPassword());
+        boolean ok = backupService.probarConexionPg(
+                req.getHost(), req.getPort(), req.getUsuario(), req.getPassword());
         return ResponseEntity.ok(Map.of(
                 "exitoso", ok,
                 "mensaje", ok ? "Conexión exitosa" : "No se pudo conectar al servidor PostgreSQL"));
     }
-
-    // ── Listar bases de datos del servidor PG ─────────────────────────────────
 
     @PostMapping("/test/databases")
     public ResponseEntity<Map<String, Object>> listarDatabases(@RequestBody BackupTestConexionRequest req) {

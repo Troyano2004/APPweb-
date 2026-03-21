@@ -37,184 +37,312 @@
       </div>
     </div>
 
-    <!-- ══ PANEL CENTRAL — Calendario ══ -->
-    <div class="calendar-panel" *ngIf="jobSeleccionado">
+    <!-- ══ COLUMNA DERECHA — Calendario + Timeline ══ -->
+    <div class="right-column" *ngIf="jobSeleccionado">
 
-      <div class="panel-title">
-        Calendario de Backups — {{ jobSeleccionado.nombre }}
-        <span class="calendar-legend">
-          <span class="legend-dot exito"></span> Exitoso
-          <span class="legend-dot fallo"></span> Fallido
-          <span class="legend-dot ambos"></span> Ambos
-        </span>
-      </div>
-
-      <div class="loading-inline" *ngIf="cargando">
-        <span class="spinner"></span> Cargando historial...
-      </div>
-
-      <div class="calendarios-grid" *ngIf="!cargando">
-
-        <!-- Mes a mes -->
-        <div class="mes-card" *ngFor="let cal of calendarios">
-          <div class="mes-header">
-            <span class="mes-nombre">{{ MESES[cal.month] }} {{ cal.year }}</span>
-            <span class="mes-count" *ngIf="contarBackupsMes(cal) > 0">
-              {{ contarBackupsMes(cal) }} días
-            </span>
-          </div>
-
-          <!-- Cabecera días semana -->
-          <div class="cal-grid">
-            <div class="cal-dow" *ngFor="let d of DIAS_SEMANA">{{ d }}</div>
-
-            <!-- Días -->
-            <div class="cal-day"
-                 *ngFor="let dia of cal.days"
-                 [class.other-month]="dia.isOtherMonth"
-                 [class.has-backup]="dia.hasBackup && !dia.isOtherMonth"
-                 [class.exito]="dia.hasExito && !dia.hasFallo && !dia.isOtherMonth"
-                 [class.fallo]="dia.hasFallo && !dia.hasExito && !dia.isOtherMonth"
-                 [class.ambos]="dia.hasExito && dia.hasFallo && !dia.isOtherMonth"
-                 [class.today]="dia.isToday"
-                 [class.selected]="diaSeleccionado === dia"
-                 [class.clickable]="dia.hasBackup && !dia.isOtherMonth"
-                 (click)="seleccionarDia(dia)"
-                 [title]="dia.hasBackup && !dia.isOtherMonth ? dia.backups.length + ' backup(s)' : ''">
-              <span class="cal-day-num">{{ dia.isOtherMonth ? '' : dia.date.getDate() }}</span>
-              <span class="cal-dot" *ngIf="dia.hasBackup && !dia.isOtherMonth"></span>
-            </div>
-          </div>
+      <!-- ── CALENDARIO ─────────────────────────────────────────── -->
+      <div class="calendar-panel">
+        <div class="panel-title">
+          Calendario de Backups — {{ jobSeleccionado.nombre }}
+          <span class="calendar-legend">
+            <span class="legend-dot exito"></span> Exitoso
+            <span class="legend-dot fallo"></span> Fallido
+            <span class="legend-dot ambos"></span> Ambos
+          </span>
         </div>
 
-        <div class="calendar-empty" *ngIf="calendarios.length === 0 && !cargando">
-          <span>📭</span>
-          <p>No hay backups registrados para este job</p>
+        <div class="loading-inline" *ngIf="cargando">
+          <span class="spinner"></span> Cargando historial...
         </div>
-      </div>
-    </div>
 
-    <!-- ══ PANEL DERECHO — Backups del día seleccionado ══ -->
-    <div class="detail-panel" *ngIf="diaSeleccionado">
+        <div class="calendarios-grid" *ngIf="!cargando">
 
-      <div class="panel-title">
-        📅 {{
-          ('0' + diaSeleccionado.date.getDate()).slice(-2) + '/' +
-          ('0' + (diaSeleccionado.date.getMonth()+1)).slice(-2) + '/' +
-          diaSeleccionado.date.getFullYear()
-        }}
-        <span class="detail-count">{{ diaSeleccionado.backups.length }} backup(s)</span>
-      </div>
-
-      <div class="backups-list">
-        <div class="backup-item"
-             *ngFor="let b of diaSeleccionado.backups"
-             [class.selected]="backupSeleccionado === b"
-             [class.no-disponible]="!b.archivoDisponible"
-             (click)="seleccionarBackup(b)">
-
-          <div class="backup-item-top">
-            <span class="backup-hora">🕐 {{ formatearHora(b.iniciadoEn) }}</span>
-            <span class="badge" [ngClass]="badgeClase(b.estado)">{{ b.estado }}</span>
-          </div>
-
-          <div class="backup-item-info">
-            <span>🗄️ {{ b.databaseNombre }}</span>
-            <span>📦 {{ formatearTamano(b.tamanoBytes) }}</span>
-          </div>
-
-          <div class="backup-item-archivo" *ngIf="b.archivoNombre">
-            <span class="archivo-nombre" [title]="b.archivoRuta ?? ''">
-              {{ b.archivoNombre }}
-            </span>
-          </div>
-
-          <div class="backup-disponibilidad">
-            <span class="disponible" *ngIf="b.archivoDisponible">✅ Archivo disponible</span>
-            <span class="no-disponible-tag" *ngIf="!b.archivoDisponible">
-              ⚠️ Archivo no encontrado
-            </span>
-          </div>
-
-          <!-- Verificar integridad -->
-          <div class="backup-integridad" *ngIf="b.archivoDisponible">
-            <button class="btn-verificar"
-                    (click)="verificarIntegridad(b); $event.stopPropagation()"
-                    [disabled]="verificando[b.idExecution]">
-              {{ verificando[b.idExecution] ? '⏳ Verificando...' : '🔍 Verificar' }}
-            </button>
-            <div class="integridad-result"
-                 *ngIf="resultadoIntegridad[b.idExecution] as ri"
-                 [class.valido]="ri.valido"
-                 [class.invalido]="!ri.valido">
-              {{ ri.valido ? '✅' : '❌' }} {{ ri.mensaje }}
-              <span *ngIf="ri.objetosEncontrados > 0">
-                ({{ ri.objetosEncontrados }} objetos)
+          <div class="mes-card" *ngFor="let cal of calendarios">
+            <div class="mes-header">
+              <span class="mes-nombre">{{ MESES[cal.month] }} {{ cal.year }}</span>
+              <span class="mes-count" *ngIf="contarBackupsMes(cal) > 0">
+                {{ contarBackupsMes(cal) }} días
               </span>
             </div>
+
+            <div class="cal-grid">
+              <div class="cal-dow" *ngFor="let d of DIAS_SEMANA">{{ d }}</div>
+              <div class="cal-day"
+                   *ngFor="let dia of cal.days"
+                   [class.other-month]="dia.isOtherMonth"
+                   [class.has-backup]="dia.hasBackup && !dia.isOtherMonth"
+                   [class.exito]="dia.hasExito && !dia.hasFallo && !dia.isOtherMonth"
+                   [class.fallo]="dia.hasFallo && !dia.hasExito && !dia.isOtherMonth"
+                   [class.ambos]="dia.hasExito && dia.hasFallo && !dia.isOtherMonth"
+                   [class.today]="dia.isToday"
+                   [class.selected]="diaSeleccionado === dia"
+                   [class.clickable]="dia.hasBackup && !dia.isOtherMonth"
+                   (click)="seleccionarDia(dia)"
+                   [title]="dia.hasBackup && !dia.isOtherMonth ? dia.backups.length + ' backup(s)' : ''">
+                <span class="cal-day-num">{{ dia.isOtherMonth ? '' : dia.date.getDate() }}</span>
+                <span class="cal-dot" *ngIf="dia.hasBackup && !dia.isOtherMonth"></span>
+              </div>
+            </div>
           </div>
 
+          <div class="calendar-empty" *ngIf="calendarios.length === 0 && !cargando">
+            <span>📭</span>
+            <p>No hay backups registrados para este job</p>
+          </div>
         </div>
       </div>
 
-      <!-- Botón restaurar -->
-      <div class="restore-action" *ngIf="backupSeleccionado?.archivoDisponible">
-        <button class="btn btn-restore" (click)="abrirModal()">
-          🔄 Restaurar este backup
-        </button>
-        <div class="restore-selection-info">
-          <span>{{ formatearFecha(backupSeleccionado!.iniciadoEn) }}</span>
-          <span>{{ backupSeleccionado!.databaseNombre }}</span>
-          <span>{{ formatearTamano(backupSeleccionado!.tamanoBytes) }}</span>
+      <!-- ── DETALLE DÍA SELECCIONADO (del calendario) ──────────── -->
+      <div class="detail-panel" *ngIf="diaSeleccionado">
+        <div class="panel-title">
+          📅 {{
+            ('0' + diaSeleccionado.date.getDate()).slice(-2) + '/' +
+            ('0' + (diaSeleccionado.date.getMonth()+1)).slice(-2) + '/' +
+            diaSeleccionado.date.getFullYear()
+          }}
+          <span class="detail-count">{{ diaSeleccionado.backups.length }} backup(s)</span>
+        </div>
+
+        <div class="backups-list">
+          <div class="backup-item"
+               *ngFor="let b of diaSeleccionado.backups"
+               [class.selected]="backupSeleccionado === b"
+               [class.no-disponible]="!b.archivoDisponible"
+               (click)="seleccionarBackup(b)">
+
+            <div class="backup-item-top">
+              <span class="backup-hora">🕐 {{ formatearHora(b.iniciadoEn) }}</span>
+              <span class="badge" [ngClass]="badgeClase(b.estado)">{{ b.estado }}</span>
+            </div>
+
+            <div class="backup-item-info">
+              <span>🗄️ {{ b.databaseNombre }}</span>
+              <span>📦 {{ formatearTamano(b.tamanoBytes) }}</span>
+            </div>
+
+            <div class="backup-item-archivo" *ngIf="b.archivoNombre">
+              <span class="archivo-nombre" [title]="b.archivoRuta ?? ''">
+                {{ b.archivoNombre }}
+              </span>
+            </div>
+
+            <div class="backup-disponibilidad">
+              <span class="disponible"        *ngIf="b.archivoDisponible">✅ Archivo disponible</span>
+              <span class="no-disponible-tag" *ngIf="!b.archivoDisponible">⚠️ Archivo no encontrado</span>
+            </div>
+
+            <div class="backup-integridad" *ngIf="b.archivoDisponible">
+              <button class="btn-verificar"
+                      (click)="verificarIntegridad(b); $event.stopPropagation()"
+                      [disabled]="verificando[b.idExecution]">
+                {{ verificando[b.idExecution] ? '⏳ Verificando...' : '🔍 Verificar' }}
+              </button>
+              <div class="integridad-result"
+                   *ngIf="resultadoIntegridad[b.idExecution] as ri"
+                   [class.valido]="ri.valido"
+                   [class.invalido]="!ri.valido">
+                {{ ri.valido ? '✅' : '❌' }} {{ ri.mensaje }}
+                <span *ngIf="ri.objetosEncontrados > 0">({{ ri.objetosEncontrados }} objetos)</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="restore-action" *ngIf="backupSeleccionado?.archivoDisponible">
+          <button class="btn btn-restore" (click)="abrirModal()">
+            🔄 Restaurar este backup
+          </button>
+          <div class="restore-selection-info">
+            <span>{{ formatearFecha(backupSeleccionado!.iniciadoEn) }}</span>
+            <span>{{ backupSeleccionado!.databaseNombre }}</span>
+            <span>{{ formatearTamano(backupSeleccionado!.tamanoBytes) }}</span>
+          </div>
         </div>
       </div>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           LÍNEA DE TIEMPO GIT-LOG
+           ═══════════════════════════════════════════════════════════ -->
+      <div class="timeline-panel">
+
+        <div class="panel-title">
+          Línea de tiempo — FULL → Diferenciales
+          <div class="tl-header-actions">
+            <button class="btn-tl-refresh" (click)="cargarTimeline(jobSeleccionado!.idJob)">↻ Actualizar</button>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="tl-stats" *ngIf="timeline">
+          <div class="tl-stat">
+            <span class="tl-stat-val">{{ timeline.totalFull }}</span>
+            <span class="tl-stat-lbl">FULL</span>
+          </div>
+          <div class="tl-stat">
+            <span class="tl-stat-val">{{ timeline.totalDiferenciales }}</span>
+            <span class="tl-stat-lbl">Diferenciales</span>
+          </div>
+          <div class="tl-stat">
+            <span class="tl-stat-val">{{ formatBytes(timeline.tamanoTotalBytes) }}</span>
+            <span class="tl-stat-lbl">Total</span>
+          </div>
+        </div>
+
+        <!-- Loading timeline -->
+        <div class="loading-inline" *ngIf="cargandoTL">
+          <span class="spinner"></span> Cargando línea de tiempo...
+        </div>
+
+        <!-- Sin cadenas -->
+        <div class="calendar-empty" *ngIf="!cargandoTL && timeline?.cadenas?.length === 0">
+          <span>🗄️</span>
+          <p>No hay backups exitosos registrados aún</p>
+        </div>
+
+        <!-- ── Git-log ── -->
+        <div class="git-log" *ngIf="!cargandoTL && timeline?.cadenas?.length">
+
+          <div class="git-cadena" *ngFor="let c of timeline!.cadenas; let last = last">
+
+            <!-- Nodo FULL -->
+            <div class="git-row git-row-full">
+              <div class="git-gutter">
+                <div class="git-dot git-dot-full">●</div>
+                <div class="git-vline" *ngIf="c.totalDiferenciales > 0 && estaExpandida(c.full.idExecution)"></div>
+              </div>
+
+              <div class="git-card git-card-full"
+                   [class.git-card-seleccionado]="nodoTLSeleccionado?.idExecution === c.full.idExecution">
+                <div class="git-card-top">
+                  <span class="git-badge git-badge-full">FULL</span>
+                  <span class="git-badge git-badge-manual" *ngIf="c.full.manual">Manual</span>
+                  <span class="git-fecha">{{ formatearFecha(c.full.iniciadoEn) }}</span>
+                  <span class="git-spacer"></span>
+                  <span class="git-tamano">{{ formatBytes(c.full.tamanoBytes) }}</span>
+                  <span class="git-dur">⏱ {{ formatDuracion(c.full.duracionSegundos) }}</span>
+
+                  <button class="btn-toggle-dif"
+                          *ngIf="c.totalDiferenciales > 0"
+                          (click)="toggleCadena(c.full.idExecution)">
+                    {{ estaExpandida(c.full.idExecution) ? '▲' : '▼' }}
+                    {{ c.totalDiferenciales }} dif.
+                  </button>
+
+                  <button class="btn-git-restore btn-git-restore-full"
+                          *ngIf="c.full.archivoDisponible"
+                          (click)="seleccionarNodoTL(c.full, c)">
+                    ↩ Restaurar
+                  </button>
+                  <span class="git-no-archivo" *ngIf="!c.full.archivoDisponible">Sin archivo</span>
+                </div>
+
+                <div class="git-card-bottom">
+                  <span class="git-db">🗄 {{ c.full.databaseNombre }}</span>
+                  <span class="git-destino" *ngIf="c.full.destinoTipo">📦 {{ c.full.destinoTipo }}</span>
+                  <span class="git-archivo">{{ c.full.archivoNombre }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Nodos DIFERENCIAL (desplegables) -->
+            <ng-container *ngIf="estaExpandida(c.full.idExecution)">
+              <div class="git-row git-row-dif"
+                   *ngFor="let dif of c.diferenciales; let lastDif = last">
+                <div class="git-gutter git-gutter-dif">
+                  <div class="git-branch"></div>
+                  <div class="git-dot git-dot-dif">◉</div>
+                  <div class="git-vline-dif" *ngIf="!lastDif"></div>
+                </div>
+
+                <div class="git-card git-card-dif"
+                     [class.git-card-seleccionado]="nodoTLSeleccionado?.idExecution === dif.idExecution">
+                  <div class="git-card-top">
+                    <span class="git-badge git-badge-dif">DIFE</span>
+                    <span class="git-badge git-badge-manual" *ngIf="dif.manual">Manual</span>
+                    <span class="git-fecha">{{ formatearFecha(dif.iniciadoEn) }}</span>
+                    <span class="git-spacer"></span>
+                    <span class="git-tamano">{{ formatBytes(dif.tamanoBytes) }}</span>
+                    <span class="git-dur">⏱ {{ formatDuracion(dif.duracionSegundos) }}</span>
+
+                    <button class="btn-git-restore btn-git-restore-dif"
+                            *ngIf="dif.archivoDisponible"
+                            (click)="seleccionarNodoTL(dif, c)">
+                      ↩ Restaurar
+                    </button>
+                    <span class="git-no-archivo" *ngIf="!dif.archivoDisponible">Sin archivo</span>
+                  </div>
+
+                  <!-- Tablas modificadas -->
+                  <div class="git-tablas"
+                       *ngIf="dif.tablasIncluidas && dif.tablasIncluidas !== '(sin cambios)'">
+                    <span class="git-tablas-lbl">Tablas:</span>
+                    <span class="git-tabla-pill" *ngFor="let t of tablasList(dif.tablasIncluidas)">{{ t }}</span>
+                    <span class="git-tabla-mas" *ngIf="hayMasTablas(dif.tablasIncluidas)">
+                      +{{ masTablas(dif.tablasIncluidas) }} más
+                    </span>
+                  </div>
+                  <div class="git-tablas git-sin-cambios"
+                       *ngIf="dif.tablasIncluidas === '(sin cambios)'">
+                    <span class="git-tablas-lbl">Sin cambios detectados</span>
+                  </div>
+
+                  <div class="git-card-bottom">
+                    <span class="git-db">🗄 {{ dif.databaseNombre }}</span>
+                    <span class="git-padre">↖ Base: FULL #{{ dif.idBackupPadre }}</span>
+                  </div>
+                </div>
+              </div>
+            </ng-container>
+
+            <!-- Separador entre cadenas -->
+            <div class="git-cadena-sep" *ngIf="!last"></div>
+
+          </div>
+        </div>
+
+      </div>
+      <!-- fin timeline-panel -->
 
     </div>
+    <!-- fin right-column -->
 
   </div>
+  <!-- fin restore-layout -->
 
 </div>
 
 <!-- ══════════════════════════════════════════════
-     MODAL DE CONFIRMACIÓN
+     MODAL — desde calendario
 ══════════════════════════════════════════════ -->
-<div class="modal-overlay" *ngIf="mostrarModal" (click)="cerrarModal()">
+<div class="modal-overlay" *ngIf="mostrarModal && !esRestoreDesdeTimeline" (click)="cerrarModal()">
   <div class="modal-box" (click)="$event.stopPropagation()">
 
-    <!-- Resultado final -->
     <div class="restore-resultado" *ngIf="resultado">
-      <div class="resultado-icon" [class.ok]="resultado.exitoso" [class.error]="!resultado.exitoso">
-        {{ resultado.exitoso ? '✅' : '❌' }}
-      </div>
+      <div class="resultado-icon">{{ resultado.exitoso ? '✅' : '❌' }}</div>
       <h3>{{ resultado.exitoso ? 'Restauración Exitosa' : 'Error en la Restauración' }}</h3>
       <p class="resultado-mensaje">{{ resultado.mensaje }}</p>
-
       <div class="resultado-meta" *ngIf="resultado.exitoso">
         <span>🗄️ BD restaurada: <strong>{{ resultado.bdRestaurada }}</strong></span>
         <span>⏱️ Duración: <strong>{{ resultado.duracionSegundos }}s</strong></span>
       </div>
-
       <div class="resultado-log" *ngIf="resultado.log">
         <button class="btn-log-toggle" (click)="mostrarLog = !mostrarLog">
           {{ mostrarLog ? '▲ Ocultar log' : '▼ Ver log técnico' }}
         </button>
         <pre class="log-content" *ngIf="mostrarLog">{{ resultado.log }}</pre>
       </div>
-
       <div class="modal-footer">
         <button class="btn btn-primary" (click)="cerrarModal()">Cerrar</button>
       </div>
     </div>
 
-    <!-- Formulario de confirmación -->
     <div class="restore-form" *ngIf="!resultado">
-
       <div class="modal-header">
         <h3>🔄 Confirmar Restauración</h3>
         <button class="btn-close" (click)="cerrarModal()" [disabled]="cargandoRestore">✕</button>
       </div>
 
-      <!-- Info del backup seleccionado -->
       <div class="restore-info-card">
         <div class="info-row">
           <span class="info-label">Backup</span>
@@ -234,64 +362,175 @@
         </div>
       </div>
 
-      <!-- Selector de modo -->
       <div class="modo-selector">
-        <label class="modo-option" [class.active]="modo === 'REEMPLAZAR'"
-               (click)="modo = 'REEMPLAZAR'">
+        <label class="modo-option" [class.active]="modo === 'REEMPLAZAR'" (click)="modo = 'REEMPLAZAR'">
           <input type="radio" name="modo" value="REEMPLAZAR" [(ngModel)]="modo" />
           <div class="modo-content">
             <span class="modo-icon">♻️</span>
             <div>
               <span class="modo-title">Reemplazar BD actual</span>
-              <span class="modo-desc">Sobreescribe <strong>{{ backupSeleccionado!.databaseNombre }}</strong> con el backup</span>
+              <span class="modo-desc">Sobreescribe <strong>{{ backupSeleccionado!.databaseNombre }}</strong></span>
             </div>
           </div>
         </label>
-
-        <label class="modo-option" [class.active]="modo === 'NUEVA_BD'"
-               (click)="modo = 'NUEVA_BD'">
+        <label class="modo-option" [class.active]="modo === 'NUEVA_BD'" (click)="modo = 'NUEVA_BD'">
           <input type="radio" name="modo" value="NUEVA_BD" [(ngModel)]="modo" />
           <div class="modo-content">
             <span class="modo-icon">🆕</span>
             <div>
               <span class="modo-title">Restaurar en BD nueva</span>
-              <span class="modo-desc">Crea una base de datos nueva con el contenido del backup</span>
+              <span class="modo-desc">Crea una base de datos nueva con el backup</span>
             </div>
           </div>
         </label>
       </div>
 
-      <!-- Input nombre BD nueva -->
       <div class="nueva-bd-input" *ngIf="modo === 'NUEVA_BD'">
         <label>Nombre de la nueva base de datos *</label>
         <input type="text" [(ngModel)]="nombreBdNueva"
                placeholder="Ej: {{ backupSeleccionado!.databaseNombre }}_restaurada" />
       </div>
 
-      <!-- Advertencia -->
       <div class="advertencia" *ngIf="modo === 'REEMPLAZAR'">
         ⚠️ <strong>Atención:</strong> Esta acción reemplazará todos los datos actuales de
-        <strong>{{ backupSeleccionado!.databaseNombre }}</strong>. Esta operación no se puede deshacer.
+        <strong>{{ backupSeleccionado!.databaseNombre }}</strong>. No se puede deshacer.
       </div>
 
-      <!-- Barra de progreso -->
       <div class="progress-bar" *ngIf="cargandoRestore">
-        <div class="progress-track">
-          <div class="progress-fill"></div>
-        </div>
+        <div class="progress-track"><div class="progress-fill"></div></div>
         <span>Restaurando... esto puede tardar varios minutos</span>
       </div>
 
-      <!-- Botones -->
       <div class="modal-footer" *ngIf="!cargandoRestore">
         <button class="btn btn-secondary" (click)="cerrarModal()">Cancelar</button>
-        <button class="btn btn-restore"
-                (click)="confirmarRestore()"
+        <button class="btn btn-restore" (click)="confirmarRestore()"
                 [disabled]="modo === 'NUEVA_BD' && !nombreBdNueva.trim()">
           🔄 Confirmar restauración
         </button>
       </div>
-
     </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     MODAL — desde timeline (FULL o DIFERENCIAL)
+══════════════════════════════════════════════ -->
+<div class="modal-overlay" *ngIf="mostrarModal && esRestoreDesdeTimeline" (click)="cerrarModal()">
+  <div class="modal-box" (click)="$event.stopPropagation()">
+
+    <div class="restore-resultado" *ngIf="resultado">
+      <div class="resultado-icon">{{ resultado.exitoso ? '✅' : '❌' }}</div>
+      <h3>{{ resultado.exitoso ? 'Restauración Exitosa' : 'Error en la Restauración' }}</h3>
+      <p class="resultado-mensaje">{{ resultado.mensaje }}</p>
+      <div class="resultado-meta" *ngIf="resultado.exitoso">
+        <span>🗄️ BD restaurada: <strong>{{ resultado.bdRestaurada }}</strong></span>
+        <span>⏱️ Duración: <strong>{{ resultado.duracionSegundos }}s</strong></span>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" (click)="cerrarModal()">Cerrar</button>
+      </div>
+    </div>
+
+    <div class="restore-form" *ngIf="!resultado">
+      <div class="modal-header">
+        <h3>🔄 Confirmar Restauración</h3>
+        <button class="btn-close" (click)="cerrarModal()" [disabled]="cargandoRestore">✕</button>
+      </div>
+
+      <!-- Info del nodo timeline -->
+      <div class="restore-info-card">
+        <div class="info-row">
+          <span class="info-label">Tipo</span>
+          <span class="info-value">
+            <span class="git-badge" [class.git-badge-full]="nodoTLSeleccionado!.tipo === 'FULL'"
+                  [class.git-badge-dif]="nodoTLSeleccionado!.tipo === 'DIFERENCIAL'">
+              {{ nodoTLSeleccionado!.tipo }}
+            </span>
+          </span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Fecha</span>
+          <span class="info-value">{{ formatearFecha(nodoTLSeleccionado!.iniciadoEn) }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Base de datos</span>
+          <span class="info-value">{{ nodoTLSeleccionado!.databaseNombre }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Tamaño</span>
+          <span class="info-value">{{ formatBytes(nodoTLSeleccionado!.tamanoBytes) }}</span>
+        </div>
+        <div class="info-row" *ngIf="nodoTLSeleccionado!.archivoNombre">
+          <span class="info-label">Archivo</span>
+          <span class="info-value file">{{ nodoTLSeleccionado!.archivoNombre }}</span>
+        </div>
+      </div>
+
+      <!-- Aviso especial si es diferencial -->
+      <div class="advertencia advertencia-dif" *ngIf="nodoTLSeleccionado!.tipo === 'DIFERENCIAL'">
+        ⚠️ <strong>Restauración diferencial:</strong> Este backup contiene solo las tablas
+        modificadas desde el FULL base
+        ({{ fullPadreTL ? formatearFecha(fullPadreTL.iniciadoEn) : '' }}).
+        Las demás tablas <strong>no se modificarán</strong>.
+        Asegúrate de que la BD ya tiene el estado del FULL padre.
+        <div class="git-tablas" style="margin-top: .5rem"
+             *ngIf="nodoTLSeleccionado!.tablasIncluidas && nodoTLSeleccionado!.tablasIncluidas !== '(sin cambios)'">
+          <span class="git-tablas-lbl">Se restaurarán:</span>
+          <span class="git-tabla-pill" *ngFor="let t of tablasList(nodoTLSeleccionado!.tablasIncluidas)">{{ t }}</span>
+          <span class="git-tabla-mas" *ngIf="hayMasTablas(nodoTLSeleccionado!.tablasIncluidas)">
+            +{{ masTablas(nodoTLSeleccionado!.tablasIncluidas) }} más
+          </span>
+        </div>
+      </div>
+
+      <div class="modo-selector">
+        <label class="modo-option" [class.active]="modo === 'REEMPLAZAR'" (click)="modo = 'REEMPLAZAR'">
+          <input type="radio" name="modo2" value="REEMPLAZAR" [(ngModel)]="modo" />
+          <div class="modo-content">
+            <span class="modo-icon">♻️</span>
+            <div>
+              <span class="modo-title">Reemplazar BD actual</span>
+              <span class="modo-desc">Sobreescribe <strong>{{ nodoTLSeleccionado!.databaseNombre }}</strong></span>
+            </div>
+          </div>
+        </label>
+        <label class="modo-option" [class.active]="modo === 'NUEVA_BD'" (click)="modo = 'NUEVA_BD'">
+          <input type="radio" name="modo2" value="NUEVA_BD" [(ngModel)]="modo" />
+          <div class="modo-content">
+            <span class="modo-icon">🆕</span>
+            <div>
+              <span class="modo-title">Restaurar en BD nueva</span>
+              <span class="modo-desc">Crea una base de datos nueva con el backup</span>
+            </div>
+          </div>
+        </label>
+      </div>
+
+      <div class="nueva-bd-input" *ngIf="modo === 'NUEVA_BD'">
+        <label>Nombre de la nueva base de datos *</label>
+        <input type="text" [(ngModel)]="nombreBdNueva"
+               placeholder="Ej: {{ nodoTLSeleccionado!.databaseNombre }}_restaurada" />
+      </div>
+
+      <div class="advertencia" *ngIf="modo === 'REEMPLAZAR' && nodoTLSeleccionado!.tipo === 'FULL'">
+        ⚠️ <strong>Atención:</strong> Esta acción reemplazará todos los datos actuales de
+        <strong>{{ nodoTLSeleccionado!.databaseNombre }}</strong>. No se puede deshacer.
+      </div>
+
+      <div class="progress-bar" *ngIf="cargandoRestore">
+        <div class="progress-track"><div class="progress-fill"></div></div>
+        <span>Restaurando... esto puede tardar varios minutos</span>
+      </div>
+
+      <div class="modal-footer" *ngIf="!cargandoRestore">
+        <button class="btn btn-secondary" (click)="cerrarModal()">Cancelar</button>
+        <button class="btn btn-restore" (click)="confirmarRestore()"
+                [disabled]="modo === 'NUEVA_BD' && !nombreBdNueva.trim()">
+          🔄 Confirmar restauración
+        </button>
+      </div>
+    </div>
+
   </div>
 </div>

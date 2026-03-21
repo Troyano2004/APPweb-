@@ -18,15 +18,19 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Map;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -36,12 +40,12 @@ public class BackupService {
     private static final DateTimeFormatter FMT      = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
     private static final String            TEMP_DIR = System.getProperty("java.io.tmpdir") + "/backups_tmp/";
 
-    private final BackupJobRepository       jobRepo;
-    private final BackupExecutionRepository execRepo;
-    private final BackupEncryptionUtil        encryption;
-    private final BackupStorageService        storageService;
-    private final BackupNotificationService   notificationService;      // email
-    private final BackupSseNotificationService sseService;              // SSE tiempo real
+    private final BackupJobRepository          jobRepo;
+    private final BackupExecutionRepository    execRepo;
+    private final BackupEncryptionUtil         encryption;
+    private final BackupStorageService         storageService;
+    private final BackupNotificationService    notificationService;
+    private final BackupSseNotificationService sseService;
 
     // ── CRUD ───────────────────────────────────────────────────
 
@@ -74,7 +78,7 @@ public class BackupService {
                 .orElseThrow(() -> new RuntimeException("Job no encontrado: " + id));
     }
 
-    // ── Ejecución ──────────────────────────────────────────────
+    // ── Ejecución manual ───────────────────────────────────────
 
     @Transactional
     public BackupExecution ejecutarJob(Long jobId, boolean manual) {
@@ -82,14 +86,22 @@ public class BackupService {
         return ejecutarConReintento(job, TipoBackup.FULL, manual);
     }
 
+    /**
+     * Ejecuta un diferencial manual para el job dado.
+     * Busca el último FULL exitoso y exporta solo tablas modificadas.
+     */
+    @Transactional
+    public BackupExecution ejecutarDiferencialManual(Long jobId) {
+        BackupJob job = obtenerJob(jobId);
+        return ejecutarConReintento(job, TipoBackup.DIFERENCIAL, true);
+    }
+
+    // ── Ejecución con reintento ────────────────────────────────
+
     @Transactional
     public BackupExecution ejecutarConReintento(BackupJob job, TipoBackup tipo, boolean manual) {
-        // Recargar el job dentro de la transacción para que Hibernate
-        // pueda hacer lazy loading de destinos sin LazyInitializationException
         BackupJob jobFresh = jobRepo.findById(job.getIdJob())
                 .orElseThrow(() -> new RuntimeException("Job no encontrado: " + job.getIdJob()));
-
-        // Forzar carga de destinos dentro de la sesión activa
         jobFresh.getDestinos().size();
 
         int maxIntentos = jobFresh.getMaxReintentos() != null ? jobFresh.getMaxReintentos() : 1;
@@ -108,7 +120,6 @@ public class BackupService {
         jobRepo.save(jobFresh);
         notificationService.notificar(jobFresh, lastExec);
 
-        // Emitir notificación SSE en tiempo real
         if (lastExec != null) {
             sseService.notificarBackupCompletado(lastExec, lastExec.getEstado());
         }
@@ -132,7 +143,12 @@ public class BackupService {
 
             Path archivoBackup = null;
             try {
-                archivoBackup = runPgDump(job, dbName.trim());
+                if (tipo == TipoBackup.DIFERENCIAL) {
+                    archivoBackup = runPgDumpDiferencial(job, dbName.trim(), exec);
+                } else {
+                    archivoBackup = runPgDump(job, dbName.trim());
+                }
+
                 exec.setArchivoNombre(archivoBackup.getFileName().toString());
                 exec.setArchivoRuta(archivoBackup.toString());
                 exec.setTamanoBytes(Files.size(archivoBackup));
@@ -144,12 +160,12 @@ public class BackupService {
                     }
                 }
                 exec.setEstado(EstadoEjecucion.EXITOSO);
-                log.info("Backup exitoso: job={} db={}", job.getIdJob(), dbName);
+                log.info("Backup {} exitoso: job={} db={}", tipo, job.getIdJob(), dbName);
 
             } catch (Exception e) {
                 exec.setEstado(EstadoEjecucion.FALLIDO);
                 exec.setErrorMensaje(e.getMessage());
-                log.error("Backup fallido: job={} db={}", job.getIdJob(), dbName, e);
+                log.error("Backup {} fallido: job={} db={}", tipo, job.getIdJob(), dbName, e);
             } finally {
                 exec.setFinalizadoEn(LocalDateTime.now());
                 if (exec.getIniciadoEn() != null) {
@@ -165,34 +181,168 @@ public class BackupService {
         return exec;
     }
 
+    // ── FULL backup ────────────────────────────────────────────
+
     private Path runPgDump(BackupJob job, String dbName) throws Exception {
         Files.createDirectories(Paths.get(TEMP_DIR));
 
-        boolean comprimir = Boolean.TRUE.equals(job.getComprimir());
-        String  ext       = comprimir ? ".zip" : ".dump";
-        String  fileName  = String.format("backup_%s_%s%s", dbName, LocalDateTime.now().format(FMT), ext);
-        Path    dumpPath  = Paths.get(TEMP_DIR, fileName.replace(".zip", ".dump"));
+        boolean comprimir  = Boolean.TRUE.equals(job.getComprimir());
+        String  ext        = comprimir ? ".zip" : ".dump";
+        String  fileName   = String.format("backup_full_%s_%s%s", dbName, LocalDateTime.now().format(FMT), ext);
+        Path    dumpPath   = Paths.get(TEMP_DIR, fileName.replace(".zip", ".dump"));
         Path    outputPath = Paths.get(TEMP_DIR, fileName);
-        String  password  = encryption.decrypt(job.getPgPasswordEnc());
+        String  password   = encryption.decrypt(job.getPgPasswordEnc());
 
         String pgDumpCmd = (job.getPgDumpPath() != null && !job.getPgDumpPath().isBlank())
-                ? job.getPgDumpPath().trim()
-                : "pg_dump";
+                ? job.getPgDumpPath().trim() : "pg_dump";
 
-        // Siempre genera .dump primero
         ProcessBuilder pb = new ProcessBuilder(
-                pgDumpCmd,
-                "-h", job.getPgHost(),
-                "-p", String.valueOf(job.getPgPort()),
-                "-U", job.getPgUsuario(),
-                "-d", dbName,
-                "-F", "c",
-                "-f", dumpPath.toString()
+                pgDumpCmd, "-h", job.getPgHost(), "-p", String.valueOf(job.getPgPort()),
+                "-U", job.getPgUsuario(), "-d", dbName, "-F", "c", "-f", dumpPath.toString()
         );
-
         pb.environment().put("PGPASSWORD", password);
         pb.redirectErrorStream(true);
 
+        return ejecutarPgDump(pb, dumpPath, outputPath, comprimir);
+    }
+
+    // ── DIFERENCIAL backup ──────────────────────────────────────
+
+    /**
+     * Backup diferencial lógico:
+     * 1. Busca el último FULL exitoso de este job para esta BD
+     * 2. Consulta pg_stat_user_tables para detectar tablas con actividad DML
+     *    desde la fecha del último FULL
+     * 3. Exporta solo esas tablas con pg_dump --table=...
+     * 4. Guarda idBackupPadre y tablasIncluidas en la ejecución
+     */
+    private Path runPgDumpDiferencial(BackupJob job, String dbName, BackupExecution exec) throws Exception {
+        Files.createDirectories(Paths.get(TEMP_DIR));
+
+        // 1. Buscar último FULL exitoso
+        BackupExecution ultimoFull = execRepo
+                .findTopByJob_IdJobAndDatabaseNombreAndTipoBackupAndEstadoOrderByIniciadoEnDesc(
+                        job.getIdJob(), dbName, TipoBackup.FULL, EstadoEjecucion.EXITOSO)
+                .orElseThrow(() -> new RuntimeException(
+                        "No existe backup FULL exitoso para '" + dbName +
+                                "'. Ejecuta primero un backup FULL antes del diferencial."));
+
+        exec.setIdBackupPadre(ultimoFull.getIdExecution());
+        LocalDateTime fechaFull = ultimoFull.getIniciadoEn();
+        log.info("Diferencial basado en FULL id={} fecha={}", ultimoFull.getIdExecution(), fechaFull);
+
+        // 2. Detectar tablas modificadas desde el último FULL
+        String password = encryption.decrypt(job.getPgPasswordEnc());
+        List<String> tablasModificadas = detectarTablasModificadas(
+                job.getPgHost(), job.getPgPort(), job.getPgUsuario(), password, dbName, fechaFull);
+
+        if (tablasModificadas.isEmpty()) {
+            log.info("No hay tablas modificadas desde el FULL id={} — generando diferencial vacío marcado", ultimoFull.getIdExecution());
+            exec.setTablasIncluidas("(sin cambios)");
+            exec.setLogDetalle("No se detectaron tablas modificadas desde el último FULL. " +
+                    "El diferencial está vacío pero se registra como exitoso.");
+
+            // Crear archivo vacío con metadatos para mantener la cadena
+            Path vacioPath = Paths.get(TEMP_DIR,
+                    String.format("backup_dif_%s_%s_empty.dump", dbName, LocalDateTime.now().format(FMT)));
+            Files.writeString(vacioPath, "-- DIFERENCIAL SIN CAMBIOS: " + fechaFull);
+            return vacioPath;
+        }
+
+        exec.setTablasIncluidas(String.join(",", tablasModificadas));
+        log.info("Tablas modificadas para diferencial: {}", tablasModificadas);
+
+        // 3. Ejecutar pg_dump solo con las tablas detectadas
+        boolean comprimir  = Boolean.TRUE.equals(job.getComprimir());
+        String  ext        = comprimir ? ".zip" : ".dump";
+        String  fileName   = String.format("backup_dif_%s_%s%s", dbName, LocalDateTime.now().format(FMT), ext);
+        Path    dumpPath   = Paths.get(TEMP_DIR, fileName.replace(".zip", ".dump"));
+        Path    outputPath = Paths.get(TEMP_DIR, fileName);
+
+        String pgDumpCmd = (job.getPgDumpPath() != null && !job.getPgDumpPath().isBlank())
+                ? job.getPgDumpPath().trim() : "pg_dump";
+
+        // Construir comando con --table por cada tabla modificada
+        List<String> cmd = new ArrayList<>();
+        cmd.add(pgDumpCmd);
+        cmd.addAll(List.of("-h", job.getPgHost(), "-p", String.valueOf(job.getPgPort()),
+                "-U", job.getPgUsuario(), "-d", dbName, "-F", "c", "-f", dumpPath.toString()));
+
+        for (String tabla : tablasModificadas) {
+            cmd.add("--table=" + tabla);
+        }
+
+        ProcessBuilder pb = new ProcessBuilder(cmd);
+        pb.environment().put("PGPASSWORD", password);
+        pb.redirectErrorStream(true);
+
+        return ejecutarPgDump(pb, dumpPath, outputPath, comprimir);
+    }
+
+    /**
+     * Consulta pg_stat_user_tables para detectar tablas con actividad DML
+     * (inserts, updates, deletes) desde la fecha del último FULL.
+     *
+     * Estrategia:
+     * - n_tup_ins + n_tup_upd + n_tup_del > 0 indica actividad reciente
+     * - last_autovacuum / last_autoanalyze como indicadores secundarios
+     * - Si last_autovacuum > fechaFull → la tabla tuvo suficiente actividad
+     *   para que PostgreSQL la procesara automáticamente
+     */
+    private List<String> detectarTablasModificadas(String host, int port, String usuario,
+                                                   String password, String dbName,
+                                                   LocalDateTime fechaFull) {
+        String url = String.format("jdbc:postgresql://%s:%d/%s", host, port, dbName);
+        List<String> tablas = new ArrayList<>();
+
+        String sql = """
+                SELECT schemaname, relname,
+                       n_tup_ins, n_tup_upd, n_tup_del,
+                       last_autovacuum, last_autoanalyze,
+                       last_analyze
+                FROM pg_stat_user_tables
+                WHERE schemaname = 'public'
+                  AND (
+                      -- Tabla con actividad DML registrada
+                      (n_tup_ins + n_tup_upd + n_tup_del) > 0
+                      OR
+                      -- Tabla procesada por autovacuum después del FULL
+                      last_autovacuum > ?
+                      OR
+                      -- Tabla analizada después del FULL (indica cambios)
+                      last_autoanalyze > ?
+                  )
+                ORDER BY (n_tup_ins + n_tup_upd + n_tup_del) DESC
+                """;
+
+        try (Connection conn = DriverManager.getConnection(url, usuario, password);
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setObject(1, fechaFull);
+            ps.setObject(2, fechaFull);
+
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                String schema = rs.getString("schemaname");
+                String nombre = rs.getString("relname");
+                long   total  = rs.getLong("n_tup_ins") + rs.getLong("n_tup_upd") + rs.getLong("n_tup_del");
+
+                // Incluir tabla si tiene actividad o si fue procesada post-FULL
+                tablas.add(schema + "." + nombre);
+                log.debug("Tabla modificada: {}.{} ops={}", schema, nombre, total);
+            }
+
+        } catch (Exception e) {
+            log.error("Error consultando pg_stat_user_tables: {}", e.getMessage());
+            throw new RuntimeException("No se pudo detectar tablas modificadas: " + e.getMessage());
+        }
+
+        return tablas;
+    }
+
+    // ── Helper compartido para ejecutar pg_dump y comprimir ────
+
+    private Path ejecutarPgDump(ProcessBuilder pb, Path dumpPath, Path outputPath, boolean comprimir) throws Exception {
         Process process  = pb.start();
         String  output   = new String(process.getInputStream().readAllBytes());
         boolean finished = process.waitFor(10, TimeUnit.MINUTES);
@@ -201,7 +351,6 @@ public class BackupService {
         if (process.exitValue() != 0) throw new RuntimeException("pg_dump falló: " + output);
         if (!Files.exists(dumpPath) || Files.size(dumpPath) == 0) throw new RuntimeException("pg_dump generó archivo vacío");
 
-        // Si comprimir está activado, empaquetar en ZIP
         if (comprimir) {
             try (java.util.zip.ZipOutputStream zos = new java.util.zip.ZipOutputStream(
                     new java.io.FileOutputStream(outputPath.toFile()))) {
@@ -212,11 +361,11 @@ public class BackupService {
             Files.deleteIfExists(dumpPath);
             return outputPath;
         }
-
         return dumpPath;
     }
 
-    // Usa JDBC directamente — funciona en Windows y Linux sin necesitar pg_isready en el PATH
+    // ── Prueba de conexión y listado de DBs ────────────────────
+
     public boolean probarConexionPg(String host, int port, String usuario, String password) {
         String url = String.format("jdbc:postgresql://%s:%d/postgres", host, port);
         try (Connection conn = DriverManager.getConnection(url, usuario, password)) {
@@ -228,20 +377,17 @@ public class BackupService {
         }
     }
 
-    // Lista todas las bases de datos del servidor (excluye las de sistema)
     public List<String> listarDatabases(String host, int port, String usuario, String password) {
         String url = String.format("jdbc:postgresql://%s:%d/postgres", host, port);
-        List<String> result = new java.util.ArrayList<>();
+        List<String> result = new ArrayList<>();
         try (Connection conn = DriverManager.getConnection(url, usuario, password);
-             java.sql.PreparedStatement ps = conn.prepareStatement(
+             PreparedStatement ps = conn.prepareStatement(
                      "SELECT datname FROM pg_database " +
                              "WHERE datistemplate = false " +
                              "AND datname NOT IN ('postgres','template0','template1') " +
                              "ORDER BY datname")) {
-            java.sql.ResultSet rs = ps.executeQuery();
-            while (rs.next()) {
-                result.add(rs.getString("datname"));
-            }
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) result.add(rs.getString("datname"));
         } catch (Exception e) {
             log.error("Error listando databases: {}", e.getMessage());
             throw new RuntimeException("No se pudo listar las bases de datos: " + e.getMessage());
@@ -253,6 +399,8 @@ public class BackupService {
         BackupJob job = obtenerJob(jobId);
         return execRepo.findByJobOrderByIniciadoEnDesc(job, PageRequest.of(0, 100)).getContent();
     }
+
+    // ── Mapper request → entidad ───────────────────────────────
 
     private void mapRequestToJob(BackupJobRequest req, BackupJob job) {
         job.setNombre(req.getNombre());
@@ -276,16 +424,11 @@ public class BackupService {
         job.setEmailFallo(req.getEmailFallo());
         job.setActivo(req.getActivo() != null ? req.getActivo() : Boolean.TRUE);
 
-        // Mapear destinos
         if (req.getDestinos() != null) {
-            // Guardar los destinos existentes ANTES del clear para preservar tokens cifrados
-            Map<Long, BackupDestination> existentes = new java.util.HashMap<>();
+            Map<Long, BackupDestination> existentes = new HashMap<>();
             for (BackupDestination ex : job.getDestinos()) {
-                if (ex.getIdDestination() != null) {
-                    existentes.put(ex.getIdDestination(), ex);
-                }
+                if (ex.getIdDestination() != null) existentes.put(ex.getIdDestination(), ex);
             }
-
             job.getDestinos().clear();
 
             for (BackupDestinationRequest dr : req.getDestinos()) {
@@ -294,15 +437,10 @@ public class BackupService {
                 d.setTipo(dr.getTipo());
                 d.setActivo(dr.getActivo() != null ? dr.getActivo() : Boolean.TRUE);
 
-                // Destino existente para recuperar campos cifrados
                 BackupDestination existente = dr.getIdDestination() != null
-                        ? existentes.get(dr.getIdDestination())
-                        : null;
+                        ? existentes.get(dr.getIdDestination()) : null;
 
-                // LOCAL
                 d.setRutaLocal(dr.getRutaLocal());
-
-                // AZURE
                 d.setAzureAccount(dr.getAzureAccount());
                 d.setAzureContainer(dr.getAzureContainer());
                 if (dr.getAzureKey() != null && !dr.getAzureKey().isBlank()) {
@@ -311,32 +449,27 @@ public class BackupService {
                     d.setAzureKeyEnc(existente.getAzureKeyEnc());
                 }
 
-                // GOOGLE DRIVE — preservar refresh token cifrado siempre
                 d.setGdriveCuenta(dr.getGdriveCuenta() != null ? dr.getGdriveCuenta()
                         : (existente != null ? existente.getGdriveCuenta() : null));
                 d.setGdriveFolderNombre(dr.getGdriveFolderNombre());
 
-                // Si el nombre de carpeta cambió, limpiar el folderId para forzar nueva búsqueda
-                String nombreNuevo    = dr.getGdriveFolderNombre();
+                String nombreNuevo     = dr.getGdriveFolderNombre();
                 String nombreExistente = existente != null ? existente.getGdriveFolderNombre() : null;
                 boolean nombreCambiado = nombreNuevo != null && !nombreNuevo.isBlank()
                         && !nombreNuevo.equals(nombreExistente);
 
                 if (nombreCambiado) {
-                    d.setGdriveFolderId(null); // forzar búsqueda/creación con nuevo nombre
-                    log.info("Nombre carpeta Drive cambió '{}' -> '{}', limpiando folderId",
-                            nombreExistente, nombreNuevo);
+                    d.setGdriveFolderId(null);
+                    log.info("Nombre carpeta Drive cambió '{}' -> '{}', limpiando folderId", nombreExistente, nombreNuevo);
                 } else {
                     d.setGdriveFolderId(dr.getGdriveFolderId() != null ? dr.getGdriveFolderId()
                             : (existente != null ? existente.getGdriveFolderId() : null));
                 }
 
-                // Nunca sobreescribir el refresh token desde el request — solo se guarda via OAuth
                 if (existente != null && existente.getGdriveRefreshTokenEnc() != null) {
                     d.setGdriveRefreshTokenEnc(existente.getGdriveRefreshTokenEnc());
                 }
 
-                // S3
                 d.setS3Bucket(dr.getS3Bucket());
                 d.setS3Region(dr.getS3Region());
                 d.setS3AccessKey(dr.getS3AccessKey());
@@ -346,7 +479,6 @@ public class BackupService {
                     d.setS3SecretKeyEnc(existente.getS3SecretKeyEnc());
                 }
 
-                // Retención
                 d.setRetencionMeses(dr.getRetencionMeses() != null ? dr.getRetencionMeses() : 0);
                 d.setRetencionDias(dr.getRetencionDias()   != null ? dr.getRetencionDias()   : 0);
                 d.setMaxBackups(dr.getMaxBackups()         != null ? dr.getMaxBackups()       : 0);

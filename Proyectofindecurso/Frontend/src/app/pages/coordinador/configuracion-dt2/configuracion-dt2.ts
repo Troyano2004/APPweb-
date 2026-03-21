@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs/operators';
@@ -25,6 +25,8 @@ interface OpcionPeriodo {
   idPeriodo?: number;
 }
 
+type FiltroLista = 'todos' | 'pendientes' | 'completos';
+
 @Component({
   selector: 'app-configuracion-dt2',
   standalone: true,
@@ -33,55 +35,73 @@ interface OpcionPeriodo {
   styleUrl: './configuracion-dt2.scss'
 })
 export class ConfiguracionDt2Component implements OnInit {
-  loading = signal(false);
-  error = signal<string | null>(null);
-  ok = signal<string | null>(null);
+  loading    = signal(false);
+  error      = signal<string | null>(null);
+  ok         = signal<string | null>(null);
 
-  proyectos = signal<ProyectoPendienteConfiguracionDto[]>([]);
-  docentes = signal<DirectorCarga[]>([]);
+  // ── Proyectos — ahora carga TODOS ────────────────────────────────────────
+  todosLosProyectos = signal<ProyectoPendienteConfiguracionDto[]>([]);
+  filtroLista       = signal<FiltroLista>('todos');
 
-  proyectoSeleccionado = signal<ProyectoPendienteConfiguracionDto | null>(null);
-  configuracion = signal<ConfiguracionProyectoDto | null>(null);
+  // Proyectos filtrados según pestaña activa
+  proyectosFiltrados = computed(() => {
+    const todos = this.todosLosProyectos();
+    switch (this.filtroLista()) {
+      case 'pendientes': return todos.filter(p => !p.configuracionCompleta);
+      case 'completos':  return todos.filter(p =>  p.configuracionCompleta);
+      default:           return todos;
+    }
+  });
 
-  tab = signal<'docente' | 'director' | 'tribunal' | 'predefensa' | 'semana'>('docente');
+  get totalPendientes(): number {
+    return this.todosLosProyectos().filter(p => !p.configuracionCompleta).length;
+  }
+  get totalCompletos(): number {
+    return this.todosLosProyectos().filter(p => p.configuracionCompleta).length;
+  }
+
+  docentes               = signal<DirectorCarga[]>([]);
+  proyectoSeleccionado   = signal<ProyectoPendienteConfiguracionDto | null>(null);
+  configuracion          = signal<ConfiguracionProyectoDto | null>(null);
+  tab                    = signal<'docente' | 'director' | 'tribunal' | 'predefensa' | 'semana'>('docente');
 
   // Periodos
   periodosActivos: PeriodoTitulacion[] = [];
-  opcionesPeriodo: OpcionPeriodo[] = [];
+  opcionesPeriodo: OpcionPeriodo[]     = [];
 
   predefensaActual = signal<PredefensaDto | null>(null);
 
   // Semana predefensas
-  semanaActual = signal<SemanaPredefensaDto | null>(null);
-  cargandoSemana = false;
+  semanaActual        = signal<SemanaPredefensaDto | null>(null);
+  cargandoSemana      = false;
   mostrarFormExtender = false;
 
-  formDocente: FormGroup;
+  formDocente:   FormGroup;
   formPredefensa: FormGroup;
-  formDirector: FormGroup;
-  formTribunal: FormGroup;
-  formSemana: FormGroup;
-  formExtender: FormGroup;
+  formDirector:  FormGroup;
+  formTribunal:  FormGroup;
+  formSemana:    FormGroup;
+  formExtender:  FormGroup;
 
   private idRealizadoPor = 0;
 
   constructor(
-    private dt2: Dt2Service,
-    private coordinadorApi: CoordinadorService,
+    private dt2:                   Dt2Service,
+    private coordinadorApi:        CoordinadorService,
     private catalogosBasicosService: CatalogosBasicosService,
-    private semanaService: SemanaPredefensaService,
-    private fb: FormBuilder
+    private semanaService:          SemanaPredefensaService,
+    private fb:                    FormBuilder
   ) {
     this.formDocente = this.fb.group({
       idDocenteDt2: [null, [Validators.required, Validators.min(1)]],
-      periodo: ['', Validators.required],
-      observacion: ['']
+      periodo:      ['', Validators.required],
+      observacion:  ['']
     });
 
     this.formDirector = this.fb.group({
       idDirector: [null, [Validators.required, Validators.min(1)]],
-      periodo: ['', Validators.required],
-      motivo: ['']
+      periodo:    ['', Validators.required],
+      motivo:     ['']
     });
 
     this.formPredefensa = this.fb.group({
@@ -92,7 +112,7 @@ export class ConfiguracionDt2Component implements OnInit {
     });
 
     this.formTribunal = this.fb.group({
-      periodo: ['', Validators.required],
+      periodo:  ['', Validators.required],
       miembros: this.fb.array([
         this.crearMiembro(),
         this.crearMiembro(),
@@ -125,13 +145,31 @@ export class ConfiguracionDt2Component implements OnInit {
     const user = getSessionUser();
     this.idRealizadoPor = getSessionEntityId(user, 'docente') ?? 0;
     this.cargarPeriodosActivos();
-    this.cargarProyectos();
+    this.cargarTodosProyectos();   // ← carga TODOS en vez de solo pendientes
     this.cargarDocentes();
     this.cargarSemanaActual();
   }
 
   get miembros(): FormArray {
     return this.formTribunal.get('miembros') as FormArray;
+  }
+
+  // ── Filtro de lista ────────────────────────────────────────────────────────
+
+  setFiltroLista(f: FiltroLista): void {
+    this.filtroLista.set(f);
+  }
+
+  // ── Carga de proyectos ─────────────────────────────────────────────────────
+
+  private cargarTodosProyectos(): void {
+    this.loading.set(true);
+    this.dt2.listarTodosConfiguracion()
+      .pipe(finalize(() => this.loading.set(false)))
+      .subscribe({
+        next:  data  => this.todosLosProyectos.set(data),
+        error: ()    => this.error.set('Error al cargar proyectos')
+      });
   }
 
   addMiembro(): void {
@@ -154,6 +192,8 @@ export class ConfiguracionDt2Component implements OnInit {
     this.ok.set(null);
     this.cargarConfiguracion(p.idProyecto);
     this.cargarPredefensa(p.idProyecto);
+    // Si el proyecto ya está completo, ir directamente a docente para editar
+    this.tab.set('docente');
   }
 
   setTab(t: 'docente' | 'director' | 'tribunal' | 'predefensa' | 'semana'): void {
@@ -220,7 +260,7 @@ export class ConfiguracionDt2Component implements OnInit {
       next: semana => {
         this.semanaActual.set(semana);
         this.mostrarFormExtender = false;
-        this.ok.set(`✅ Semana actualizada: ${semana.fechaInicio} al ${semana.fechaFin} · ${semana.duracionMinutos} min/defensa`);
+        this.ok.set(`✅ Semana actualizada: ${semana.fechaInicio} al ${semana.fechaFin}`);
         this.loading.set(false);
       },
       error: err => {
@@ -255,7 +295,7 @@ export class ConfiguracionDt2Component implements OnInit {
     this.semanaService.guardarSemana(req).subscribe({
       next: semana => {
         this.semanaActual.set(semana);
-        this.ok.set(`✅ Semana de predefensas configurada: ${semana.fechaInicio} al ${semana.fechaFin}. Total de slots: ${semana.totalSlots}`);
+        this.ok.set(`✅ Semana configurada: ${semana.fechaInicio} al ${semana.fechaFin}. Total: ${semana.totalSlots} slots`);
         this.loading.set(false);
       },
       error: err => {
@@ -265,7 +305,7 @@ export class ConfiguracionDt2Component implements OnInit {
     });
   }
 
-  // ── Resto de métodos sin cambios ──────────────────────────────────────────
+  // ── Acciones de configuración ─────────────────────────────────────────────
 
   asignarDocente(): void {
     const p = this.proyectoSeleccionado();
@@ -322,7 +362,7 @@ export class ConfiguracionDt2Component implements OnInit {
     const req: ProgramarPredefensaRequest = {
       idRealizadoPor: this.idRealizadoPor,
       fecha: v.fecha,
-      hora: v.hora + ':00',
+      hora:  v.hora + ':00',
       lugar: v.lugar,
       observaciones: v.observaciones
     };
@@ -358,16 +398,46 @@ export class ConfiguracionDt2Component implements OnInit {
     return totalMin > 0 ? Math.floor(totalMin / duracion) : 0;
   }
 
+  // ── Etiqueta visual del estado del proyecto ────────────────────────────────
+
+  etiquetaEstado(estado: string): string {
+    const map: Record<string, string> = {
+      ANTEPROYECTO: 'Anteproyecto',
+      BORRADOR:     'Borrador',
+      DESARROLLO:   'En desarrollo',
+      PREDEFENSA:   'En predefensa',
+      SUSTENTACION: 'Sustentación',
+      FINALIZADO:   'Finalizado',
+      REPROBADO:    'Reprobado'
+    };
+    return map[estado?.toUpperCase()] ?? estado;
+  }
+
+  claseEstado(estado: string): string {
+    const map: Record<string, string> = {
+      ANTEPROYECTO: 'estado-pendiente',
+      BORRADOR:     'estado-pendiente',
+      DESARROLLO:   'estado-desarrollo',
+      PREDEFENSA:   'estado-predefensa',
+      SUSTENTACION: 'estado-sustentacion',
+      FINALIZADO:   'estado-finalizado',
+      REPROBADO:    'estado-reprobado'
+    };
+    return map[estado?.toUpperCase()] ?? '';
+  }
+
+  // ── Privados ──────────────────────────────────────────────────────────────
+
   private cargarPeriodosActivos(): void {
     this.catalogosBasicosService.listarPeriodosActivos().subscribe({
-      next: (data) => {
+      next: data => {
         this.periodosActivos = data;
         this.opcionesPeriodo = data.map(p => ({
-          etiqueta: p.descripcion,
-          valor: this.construirPeriodo(p),
+          etiqueta:  p.descripcion,
+          valor:     this.construirPeriodo(p),
           idPeriodo: p.idPeriodo
         }));
-        const primerValor = this.opcionesPeriodo.length > 0 ? this.opcionesPeriodo[0].valor : '';
+        const primerValor = this.opcionesPeriodo.length > 0 ? this.opcionesPeriodo[0].valor     : '';
         const primerId    = this.opcionesPeriodo.length > 0 ? this.opcionesPeriodo[0].idPeriodo : null;
         this.formDocente.patchValue({ periodo: primerValor });
         this.formDirector.patchValue({ periodo: primerValor });
@@ -382,40 +452,30 @@ export class ConfiguracionDt2Component implements OnInit {
     const descripcionLimpia = (periodo.descripcion ?? '').trim().replace(/\s+/g, ' ');
     if (descripcionLimpia.length <= 20) return descripcionLimpia;
     const anioInicio = (periodo.fechaInicio ?? '').toString().slice(0, 4);
-    const anioFin = (periodo.fechaFin ?? '').toString().slice(0, 4);
-    const etiqueta = anioInicio && anioFin ? `${anioInicio}-${anioFin}` : '';
+    const anioFin    = (periodo.fechaFin    ?? '').toString().slice(0, 4);
+    const etiqueta   = anioInicio && anioFin ? `${anioInicio}-${anioFin}` : '';
     if (etiqueta && etiqueta.length <= 20) return etiqueta;
     return descripcionLimpia.slice(0, 20);
   }
 
-  private cargarProyectos(): void {
-    this.loading.set(true);
-    this.dt2.listarPendientesConfiguracion()
-      .pipe(finalize(() => this.loading.set(false)))
-      .subscribe({
-        next: data => this.proyectos.set(data),
-        error: () => this.error.set('Error al cargar proyectos pendientes')
-      });
-  }
-
   private cargarDocentes(): void {
     this.coordinadorApi.getCargaDirectores().subscribe({
-      next: data => this.docentes.set(data),
-      error: () => {}
+      next:  data => this.docentes.set(data),
+      error: ()   => {}
     });
   }
 
   private cargarConfiguracion(idProyecto: number): void {
     this.dt2.getConfiguracion(idProyecto).subscribe({
-      next: data => this.configuracion.set(data),
-      error: () => {}
+      next:  data => this.configuracion.set(data),
+      error: ()   => {}
     });
   }
 
   private cargarPredefensa(idProyecto: number): void {
     this.dt2.getPredefensa(idProyecto).subscribe({
-      next: data => this.predefensaActual.set(data),
-      error: () => this.predefensaActual.set(null)
+      next:  data => this.predefensaActual.set(data),
+      error: ()   => this.predefensaActual.set(null)
     });
   }
 
@@ -429,7 +489,7 @@ export class ConfiguracionDt2Component implements OnInit {
         this.ok.set(res?.mensaje ?? 'Operación completada');
         const p = this.proyectoSeleccionado();
         if (p) this.cargarConfiguracion(p.idProyecto);
-        this.cargarProyectos();
+        this.cargarTodosProyectos();  // recarga todos para actualizar contadores
       },
       error: (err: any) => {
         this.loading.set(false);
@@ -441,7 +501,7 @@ export class ConfiguracionDt2Component implements OnInit {
   private crearMiembro(): FormGroup {
     return this.fb.group({
       idDocente: [null, [Validators.required, Validators.min(1)]],
-      cargo: ['VOCAL', Validators.required]
+      cargo:     ['VOCAL', Validators.required]
     });
   }
 }

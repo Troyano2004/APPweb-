@@ -260,6 +260,11 @@ export class Dt2Service {
   listarPendientesConfiguracion(): Observable<ProyectoPendienteConfiguracionDto[]> {
     return this.http.get<ProyectoPendienteConfiguracionDto[]>(`${this.base}/proyectos/pendientes-configuracion`);
   }
+  listarTodosConfiguracion(): Observable<ProyectoPendienteConfiguracionDto[]> {
+    return this.http.get<ProyectoPendienteConfiguracionDto[]>(
+      `${this.base}/proyectos/todos-configuracion`
+    );
+  }
 
   getConfiguracion(idProyecto: number): Observable<ConfiguracionProyectoDto> {
     return this.http.get<ConfiguracionProyectoDto>(`${this.base}/proyectos/${idProyecto}/configuracion`);

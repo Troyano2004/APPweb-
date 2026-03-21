@@ -44,6 +44,7 @@
       <div class="job-meta">
         <span class="meta-item">🖥️ {{ job.pgHost }}:{{ job.pgPort }}</span>
         <span class="meta-item">⏰ {{ job.cronFull }}</span>
+        <span class="meta-item" *ngIf="job.diferencialActivo">📋 Dif activo</span>
         <span class="meta-item" *ngIf="job.comprimir">🗜️ ZIP</span>
         <span class="meta-item" *ngIf="job.proximaEjecucion">
           📅 Próxima: {{ job.proximaEjecucion | date:'dd/MM/yy HH:mm' }}
@@ -73,8 +74,8 @@
 
       <!-- Acciones -->
       <div class="job-actions">
-        <button class="btn btn-run" (click)="ejecutarAhora(job)" [disabled]="cargandoRun" title="Ejecutar ahora">
-          ▶ Run Now
+        <button class="btn btn-run" (click)="ejecutarAhora(job)" [disabled]="cargandoRun" title="Ejecutar FULL ahora">
+          ▶ Run Full
         </button>
         <button class="btn btn-secondary" (click)="verHistorial(job)" title="Ver historial">
           📋 Historial
@@ -137,7 +138,6 @@
         </div>
         <div class="form-grid">
 
-          <!-- Ruta pg_dump -->
           <div class="form-group full">
             <label>Ruta de pg_dump *
               <span class="hint">Ej: C:\Program Files\PostgreSQL\17\bin\pg_dump.exe</span>
@@ -152,19 +152,15 @@
               <div class="folder-actions">
                 <label class="btn btn-primary folder-browse-btn">
                   🗂️ Explorar
-                  <input type="file"
-                         style="display:none"
+                  <input type="file" style="display:none"
                          accept=".exe,application/octet-stream"
                          (change)="onPgDumpSeleccionado($event)" />
                 </label>
-                <button class="btn btn-secondary"
-                        *ngIf="form.pgDumpPath"
-                        (click)="form.pgDumpPath = ''"
-                        title="Limpiar">✕</button>
+                <button class="btn btn-secondary" *ngIf="form.pgDumpPath"
+                        (click)="form.pgDumpPath = ''" title="Limpiar">✕</button>
               </div>
             </div>
-            <input type="text"
-                   [(ngModel)]="form.pgDumpPath"
+            <input type="text" [(ngModel)]="form.pgDumpPath"
                    placeholder="C:\Program Files\PostgreSQL\17\bin\pg_dump.exe" />
           </div>
 
@@ -184,10 +180,10 @@
             <label>Contraseña {{ modoEdicion ? '(dejar vacío para no cambiar)' : '*' }}</label>
             <input type="password" [(ngModel)]="form.pgPassword" placeholder="••••••••" />
           </div>
+
           <div class="form-group full">
             <label>Bases de datos *</label>
             <div class="db-selector">
-              <!-- Botón cargar -->
               <div class="db-load-row">
                 <button class="btn btn-test" type="button"
                         (click)="cargarDatabases()" [disabled]="cargandoDatabases">
@@ -195,29 +191,18 @@
                 </button>
                 <span class="hint">Completa host, usuario y contraseña antes</span>
               </div>
-
-              <!-- Error al cargar -->
-              <div class="db-error" *ngIf="errorDatabases">
-                ⚠️ {{ errorDatabases }}
-              </div>
-
-              <!-- Lista de checkboxes -->
+              <div class="db-error" *ngIf="errorDatabases">⚠️ {{ errorDatabases }}</div>
               <div class="db-list" *ngIf="databasesDisponibles.length > 0">
                 <label class="db-item" *ngFor="let db of databasesDisponibles"
                        [class.selected]="isDatabaseSeleccionada(db)">
-                  <input type="checkbox"
-                         [checked]="isDatabaseSeleccionada(db)"
+                  <input type="checkbox" [checked]="isDatabaseSeleccionada(db)"
                          (change)="toggleDatabase(db)" />
                   <span class="db-name">🗄️ {{ db }}</span>
                 </label>
               </div>
-
-              <!-- Resumen selección -->
               <div class="db-resumen" *ngIf="databasesSeleccionadas.length > 0">
                 ✅ Seleccionadas: <strong>{{ databasesSeleccionadas.join(', ') }}</strong>
               </div>
-
-              <!-- Sin selección -->
               <div class="db-empty" *ngIf="databasesDisponibles.length === 0 && !cargandoDatabases && !errorDatabases">
                 Haz clic en "Cargar bases de datos" para ver las disponibles
               </div>
@@ -226,156 +211,155 @@
         </div>
       </div>
 
-      <!-- ── Sección 3: Programación ── -->
+      <!-- ══════════════════════════════════════════════════════════════
+           SECCIÓN 3: PROGRAMACIÓN (modelo FULL → DIFERENCIALES)
+           ══════════════════════════════════════════════════════════════ -->
       <div class="form-section">
         <h4>⏰ Programación de respaldos</h4>
 
         <div class="schedule-grid">
 
-          <!-- COLUMNA IZQUIERDA -->
+          <!-- ── COLUMNA IZQUIERDA ── -->
           <div class="schedule-left">
 
-            <!-- Selector tipo frecuencia -->
-            <div class="freq-tabs">
-              <button type="button" class="freq-tab"
-                      [class.active]="tipoFrecuencia === 'horas'"
-                      (click)="tipoFrecuencia = 'horas'; recalcularCron()">
-                Cada horas
-              </button>
-              <button type="button" class="freq-tab"
-                      [class.active]="tipoFrecuencia === 'dias'"
-                      (click)="tipoFrecuencia = 'dias'; recalcularCron()">
-                Cada días
-              </button>
-              <button type="button" class="freq-tab"
-                      [class.active]="tipoFrecuencia === 'semanas'"
-                      (click)="tipoFrecuencia = 'semanas'; recalcularCron()">
-                Semanal
-              </button>
-              <button type="button" class="freq-tab"
-                      [class.active]="tipoFrecuencia === 'meses'"
-                      (click)="tipoFrecuencia = 'meses'; recalcularCron()">
-                Mensual
-              </button>
-              <button type="button" class="freq-tab"
-                      [class.active]="tipoFrecuencia === 'anual'"
-                      (click)="tipoFrecuencia = 'anual'; recalcularCron()">
-                Anual
-              </button>
-            </div>
+            <!-- Bloque FULL -->
+            <div class="schedule-block">
+              <div class="schedule-block-header">
+                <span class="schedule-label-main">🗄️ Backup FULL (base)</span>
+              </div>
 
-            <!-- HORAS -->
-            <div class="schedule-block" *ngIf="tipoFrecuencia === 'horas'">
-              <span class="schedule-label-main">Full backup</span>
-              <div class="schedule-row">
+              <div class="freq-tabs">
+                <button type="button" class="freq-tab"
+                        [class.active]="tipoFrecuenciaFull === 'dias'"
+                        (click)="tipoFrecuenciaFull = 'dias'; recalcularCron()">
+                  Cada días
+                </button>
+                <button type="button" class="freq-tab"
+                        [class.active]="tipoFrecuenciaFull === 'semanas'"
+                        (click)="tipoFrecuenciaFull = 'semanas'; recalcularCron()">
+                  Semanal
+                </button>
+                <button type="button" class="freq-tab"
+                        [class.active]="tipoFrecuenciaFull === 'meses'"
+                        (click)="tipoFrecuenciaFull = 'meses'; recalcularCron()">
+                  Mensual
+                </button>
+                <button type="button" class="freq-tab"
+                        [class.active]="tipoFrecuenciaFull === 'anual'"
+                        (click)="tipoFrecuenciaFull = 'anual'; recalcularCron()">
+                  Anual
+                </button>
+              </div>
+
+              <!-- Cada N días -->
+              <div class="schedule-row" *ngIf="tipoFrecuenciaFull === 'dias'">
                 <span class="schedule-text">Cada</span>
                 <input type="number" class="sched-num"
-                       [(ngModel)]="schedFullHoras" min="1" max="23"
+                       [(ngModel)]="schedFullCadaDias" min="1" max="30"
                        (ngModelChange)="recalcularCron()" />
-                <span class="schedule-text">horas</span>
-                <input type="number" class="sched-num"
-                       [(ngModel)]="schedFullMinutos" min="0" max="59"
-                       (ngModelChange)="recalcularCron()" />
-                <span class="schedule-text">min</span>
-              </div>
-              <div class="schedule-row">
-                <span class="schedule-text">Hora inicio</span>
+                <span class="schedule-text">{{ schedFullCadaDias === 1 ? 'día' : 'días' }} a las</span>
                 <input type="time" class="sched-time"
                        [(ngModel)]="schedFullHoraInicio"
                        (ngModelChange)="recalcularCron()" />
               </div>
-            </div>
 
-            <!-- DIAS -->
-            <div class="schedule-block" *ngIf="tipoFrecuencia === 'dias'">
-              <span class="schedule-label-main">Full backup</span>
-              <div class="schedule-row">
+              <!-- Semanal -->
+              <ng-container *ngIf="tipoFrecuenciaFull === 'semanas'">
+                <div class="schedule-row">
+                  <span class="schedule-text">Cada</span>
+                  <input type="number" class="sched-num"
+                         [(ngModel)]="schedFullCadaSemanas" min="1" max="52"
+                         (ngModelChange)="recalcularCron()" />
+                  <span class="schedule-text">{{ schedFullCadaSemanas === 1 ? 'semana' : 'semanas' }}, los</span>
+                </div>
+                <div class="days-row">
+                  <label class="day-btn"
+                         *ngFor="let d of diasSemana"
+                         [class.active]="schedFullDiaSemana === d.value"
+                         (click)="schedFullDiaSemana = d.value; recalcularCron()">
+                    {{ d.label }}
+                  </label>
+                </div>
+                <div class="schedule-row">
+                  <span class="schedule-text">a las</span>
+                  <input type="time" class="sched-time"
+                         [(ngModel)]="schedFullHoraInicio"
+                         (ngModelChange)="recalcularCron()" />
+                </div>
+              </ng-container>
+
+              <!-- Mensual -->
+              <div class="schedule-row" *ngIf="tipoFrecuenciaFull === 'meses'">
                 <span class="schedule-text">Cada</span>
                 <input type="number" class="sched-num"
-                       [(ngModel)]="schedFullDiasSemana" min="1" max="30"
+                       [(ngModel)]="schedFullCadaMeses" min="1" max="12"
                        (ngModelChange)="recalcularCron()" />
-                <span class="schedule-text">{{ schedFullDiasSemana === 1 ? 'día' : 'días' }}</span>
-                <span class="schedule-text">a las</span>
-                <input type="time" class="sched-time"
-                       [(ngModel)]="schedFullHoraInicio"
-                       (ngModelChange)="recalcularCron()" />
-              </div>
-            </div>
-
-            <!-- SEMANAS -->
-            <div class="schedule-block" *ngIf="tipoFrecuencia === 'semanas'">
-              <span class="schedule-label-main">Full backup</span>
-              <div class="schedule-row">
-                <span class="schedule-text">Cada</span>
+                <span class="schedule-text">{{ schedFullCadaMeses === 1 ? 'mes' : 'meses' }}, el día</span>
                 <input type="number" class="sched-num"
-                       [(ngModel)]="schedFullSemanas" min="1" max="52"
-                       (ngModelChange)="recalcularCron()" />
-                <span class="schedule-text">{{ schedFullSemanas === 1 ? 'semana' : 'semanas' }}</span>
-                <span class="schedule-text">a las</span>
-                <input type="time" class="sched-time"
-                       [(ngModel)]="schedFullHoraInicio"
-                       (ngModelChange)="recalcularCron()" />
-              </div>
-            </div>
-
-            <!-- MESES -->
-            <div class="schedule-block" *ngIf="tipoFrecuencia === 'meses'">
-              <span class="schedule-label-main">Full backup</span>
-              <div class="schedule-row">
-                <span class="schedule-text">Cada</span>
-                <input type="number" class="sched-num"
-                       [(ngModel)]="schedFullMeses" min="1" max="12"
-                       (ngModelChange)="recalcularCron()" />
-                <span class="schedule-text">{{ schedFullMeses === 1 ? 'mes' : 'meses' }}</span>
-                <span class="schedule-text">el día</span>
-                <input type="number" class="sched-num"
-                       [(ngModel)]="schedDiaMes" min="1" max="28"
+                       [(ngModel)]="schedFullDiaMes" min="1" max="28"
                        (ngModelChange)="recalcularCron()" />
                 <span class="schedule-text">a las</span>
                 <input type="time" class="sched-time"
                        [(ngModel)]="schedFullHoraInicio"
                        (ngModelChange)="recalcularCron()" />
               </div>
-              <span class="schedule-hint">Máximo día 28 para evitar problemas en febrero</span>
-            </div>
 
-            <!-- ANUAL -->
-            <div class="schedule-block" *ngIf="tipoFrecuencia === 'anual'">
-              <span class="schedule-label-main">Full backup anual</span>
-              <div class="schedule-row">
+              <!-- Anual -->
+              <div class="schedule-row" *ngIf="tipoFrecuenciaFull === 'anual'">
                 <span class="schedule-text">El 1 de enero, día</span>
                 <input type="number" class="sched-num"
-                       [(ngModel)]="schedDiaMes" min="1" max="28"
+                       [(ngModel)]="schedFullDiaMes" min="1" max="28"
                        (ngModelChange)="recalcularCron()" />
                 <span class="schedule-text">a las</span>
                 <input type="time" class="sched-time"
                        [(ngModel)]="schedFullHoraInicio"
                        (ngModelChange)="recalcularCron()" />
               </div>
+
+              <span class="schedule-hint"
+                    *ngIf="tipoFrecuenciaFull === 'meses' || tipoFrecuenciaFull === 'anual'">
+                Máximo día 28 para evitar problemas en febrero
+              </span>
             </div>
 
-            <!-- Días de semana (solo horas y semanas) -->
-            <div class="schedule-block"
-                 *ngIf="tipoFrecuencia === 'horas' || tipoFrecuencia === 'semanas'">
-              <span class="schedule-label-main">Ejecutar los días</span>
-              <div class="days-row">
-                <label class="day-btn"
-                       *ngFor="let d of diasSemana"
-                       [class.active]="isDiaActivo(d.value)"
-                       (click)="toggleDia(d.value)">
-                  {{ d.label }}
+            <!-- Bloque DIFERENCIAL -->
+            <div class="schedule-block schedule-block-dif">
+              <div class="schedule-block-header">
+                <label class="schedule-check">
+                  <input type="checkbox"
+                         [(ngModel)]="form.diferencialActivo"
+                         (ngModelChange)="recalcularCron()" />
+                  <span class="schedule-label-main">📋 Backups diferenciales</span>
                 </label>
+              </div>
+
+              <ng-container *ngIf="form.diferencialActivo">
+                <div class="schedule-row">
+                  <span class="schedule-text">Cada</span>
+                  <input type="number" class="sched-num"
+                         [(ngModel)]="schedDifCadaDias" min="1" max="6"
+                         (ngModelChange)="recalcularCron()" />
+                  <span class="schedule-text">
+                    {{ schedDifCadaDias === 1 ? 'día' : 'días' }} desde el último FULL
+                  </span>
+                </div>
+                <div class="cadena-desc">{{ descripcionCadena }}</div>
+              </ng-container>
+
+              <div class="cadena-desc muted" *ngIf="!form.diferencialActivo">
+                Solo se harán backups FULL. Activa esta opción para agregar diferenciales entre FULLs.
               </div>
             </div>
 
             <!-- Ventana de exclusión -->
             <div class="schedule-block">
-              <label class="schedule-check">
-                <input type="checkbox"
-                       [(ngModel)]="ventanaActiva"
-                       (ngModelChange)="recalcularCron()" />
-                <span class="schedule-label-main">No ejecutar entre</span>
-              </label>
+              <div class="schedule-block-header">
+                <label class="schedule-check">
+                  <input type="checkbox" [(ngModel)]="ventanaActiva"
+                         (ngModelChange)="recalcularCron()" />
+                  <span class="schedule-label-main">🚫 No ejecutar entre</span>
+                </label>
+              </div>
               <div class="schedule-row" *ngIf="ventanaActiva">
                 <input type="time" class="sched-time"
                        [(ngModel)]="form.ventanaExcluirInicio"
@@ -384,23 +368,6 @@
                 <input type="time" class="sched-time"
                        [(ngModel)]="form.ventanaExcluirFin"
                        (ngModelChange)="recalcularCron()" />
-              </div>
-            </div>
-
-            <!-- Diferencial -->
-            <div class="schedule-block">
-              <label class="schedule-check">
-                <input type="checkbox"
-                       [(ngModel)]="form.diferencialActivo"
-                       (ngModelChange)="recalcularCron()" />
-                <span class="schedule-label-main">Backup diferencial (entre full backups)</span>
-              </label>
-              <div class="schedule-row" *ngIf="form.diferencialActivo">
-                <span class="schedule-text">Cada</span>
-                <input type="number" class="sched-num"
-                       [(ngModel)]="schedDifHoras" min="1" max="23"
-                       (ngModelChange)="recalcularCron()" />
-                <span class="schedule-text">horas</span>
               </div>
             </div>
 
@@ -422,11 +389,14 @@
 
           </div>
 
-          <!-- COLUMNA DERECHA: preview -->
+          <!-- ── COLUMNA DERECHA: preview ── -->
           <div class="schedule-right">
             <div class="preview-header">
               <span class="preview-title">📅 Próximas ejecuciones</span>
               <span class="preview-cron">{{ form.cronFull }}</span>
+              <span class="preview-cron" *ngIf="form.diferencialActivo && form.cronDiferencial">
+                {{ form.cronDiferencial }} (Dif)
+              </span>
             </div>
             <div class="preview-list">
               <div class="preview-item" *ngFor="let e of proximasEjecuciones">
@@ -450,23 +420,22 @@
       <div class="form-section">
         <h4>📦 Destinos de almacenamiento</h4>
 
-        <!-- Tabs destinos -->
         <div class="destino-tabs">
-          <button class="destino-tab" [class.active]="destinoActivo === 'LOCAL'"  (click)="setDestinoActivo('LOCAL')">
-            📁 Local
-            <span class="tab-badge" *ngIf="destinoLocal.activo">✓</span>
+          <button class="destino-tab" [class.active]="destinoActivo === 'LOCAL'"
+                  (click)="setDestinoActivo('LOCAL')">
+            📁 Local <span class="tab-badge" *ngIf="destinoLocal.activo">✓</span>
           </button>
-          <button class="destino-tab" [class.active]="destinoActivo === 'AZURE'"  (click)="setDestinoActivo('AZURE')">
-            ☁️ Azure
-            <span class="tab-badge" *ngIf="destinoAzure.activo">✓</span>
+          <button class="destino-tab" [class.active]="destinoActivo === 'AZURE'"
+                  (click)="setDestinoActivo('AZURE')">
+            ☁️ Azure <span class="tab-badge" *ngIf="destinoAzure.activo">✓</span>
           </button>
-          <button class="destino-tab" [class.active]="destinoActivo === 'S3'"     (click)="setDestinoActivo('S3')">
-            🪣 AWS S3
-            <span class="tab-badge" *ngIf="destinoS3.activo">✓</span>
+          <button class="destino-tab" [class.active]="destinoActivo === 'S3'"
+                  (click)="setDestinoActivo('S3')">
+            🪣 AWS S3 <span class="tab-badge" *ngIf="destinoS3.activo">✓</span>
           </button>
-          <button class="destino-tab" [class.active]="destinoActivo === 'GOOGLE_DRIVE'" (click)="setDestinoActivo('GOOGLE_DRIVE')">
-            🔵 Google Drive
-            <span class="tab-badge" *ngIf="destinoDrive.activo">✓</span>
+          <button class="destino-tab" [class.active]="destinoActivo === 'GOOGLE_DRIVE'"
+                  (click)="setDestinoActivo('GOOGLE_DRIVE')">
+            🔵 Google Drive <span class="tab-badge" *ngIf="destinoDrive.activo">✓</span>
           </button>
         </div>
 
@@ -476,11 +445,8 @@
             <input type="checkbox" [(ngModel)]="destinoLocal.activo" /> Habilitar destino local
           </label>
           <div class="form-grid" *ngIf="destinoLocal.activo">
-
             <div class="form-group full">
               <label>Carpeta de destino *</label>
-
-              <!-- Selector nativo de carpeta -->
               <div class="folder-picker">
                 <div class="folder-selected" [class.empty]="!destinoLocal.rutaLocal">
                   <span class="folder-icon">📁</span>
@@ -489,38 +455,25 @@
                   </span>
                 </div>
                 <div class="folder-actions">
-                  <label class="btn btn-primary folder-browse-btn" title="Abrir explorador de carpetas">
+                  <label class="btn btn-primary folder-browse-btn">
                     🗂️ Explorar
-                    <input type="file"
-                           #folderInput
-                           style="display:none"
-                           webkitdirectory
-                           multiple
+                    <input type="file" #folderInput style="display:none"
+                           webkitdirectory multiple
                            (change)="onCarpetaSeleccionada($event)" />
                   </label>
-                  <button class="btn btn-secondary"
-                          *ngIf="destinoLocal.rutaLocal"
-                          (click)="destinoLocal.rutaLocal = ''"
-                          title="Limpiar selección">
-                    ✕
-                  </button>
+                  <button class="btn btn-secondary" *ngIf="destinoLocal.rutaLocal"
+                          (click)="destinoLocal.rutaLocal = ''" title="Limpiar">✕</button>
                 </div>
               </div>
-
-              <!-- Nota informativa -->
               <span class="folder-note">
-                💡 Se abrirá el explorador del OS. Selecciona cualquier archivo dentro de la carpeta destino — el sistema tomará la ruta de la carpeta automáticamente.
+                💡 Selecciona cualquier archivo dentro de la carpeta destino — el sistema tomará la ruta de la carpeta.
               </span>
-
-              <!-- También permite escribir manualmente -->
               <div class="folder-manual">
                 <span class="folder-manual-label">O escribe la ruta manualmente:</span>
-                <input type="text"
-                       [(ngModel)]="destinoLocal.rutaLocal"
+                <input type="text" [(ngModel)]="destinoLocal.rutaLocal"
                        placeholder="C:\Respaldos  o  /var/backups" />
               </div>
             </div>
-
             <div class="form-group small">
               <label>Retención (meses)</label>
               <input type="number" [(ngModel)]="destinoLocal.retencionMeses" min="0" />
@@ -619,7 +572,8 @@
         </div>
 
         <!-- Mensaje test destino -->
-        <div class="test-result" *ngIf="mensajeTest" [class.ok]="exitoTest" [class.error]="!exitoTest">
+        <div class="test-result" *ngIf="mensajeTest"
+             [class.ok]="exitoTest" [class.error]="!exitoTest">
           {{ exitoTest ? '✅' : '❌' }} {{ mensajeTest }}
         </div>
 
@@ -638,9 +592,7 @@
                     <span class="gdrive-email" *ngIf="destinoDrive.gdriveConectado">
                       {{ destinoDrive.gdriveCuenta }}
                     </span>
-                    <span class="gdrive-email" *ngIf="!destinoDrive.gdriveConectado">
-                      No conectado
-                    </span>
+                    <span class="gdrive-email" *ngIf="!destinoDrive.gdriveConectado">No conectado</span>
                     <span class="gdrive-hint">
                       {{ destinoDrive.gdriveConectado
                       ? 'Cuenta conectada correctamente'
@@ -650,9 +602,9 @@
                 </div>
                 <div class="gdrive-actions">
                   <button class="btn btn-primary" type="button"
-                          (click)="conectarGoogleDrive()"
-                          [disabled]="cargandoOAuth">
-                    {{ cargandoOAuth ? '⏳ Conectando...' : (destinoDrive.gdriveConectado ? '🔄 Reconectar' : '🔗 Conectar cuenta') }}
+                          (click)="conectarGoogleDrive()" [disabled]="cargandoOAuth">
+                    {{ cargandoOAuth ? '⏳ Conectando...'
+                    : (destinoDrive.gdriveConectado ? '🔄 Reconectar' : '🔗 Conectar cuenta') }}
                   </button>
                   <button class="btn btn-danger" type="button"
                           *ngIf="destinoDrive.gdriveConectado"
@@ -662,10 +614,9 @@
                 </div>
               </div>
             </div>
+
             <div class="form-group full" *ngIf="destinoDrive.gdriveConectado">
               <label>Carpeta en Drive</label>
-
-              <!-- Carpeta seleccionada -->
               <div class="folder-picker" *ngIf="!mostrarSelectorCarpetas">
                 <div class="folder-selected" [class.empty]="!destinoDrive.gdriveFolderNombre">
                   <span class="folder-icon">📁</span>
@@ -675,8 +626,7 @@
                 </div>
                 <div class="folder-actions">
                   <button class="btn btn-primary" type="button"
-                          (click)="cargarCarpetasDrive()"
-                          [disabled]="cargandoCarpetas">
+                          (click)="cargarCarpetasDrive()" [disabled]="cargandoCarpetas">
                     {{ cargandoCarpetas ? '⏳ Cargando...' : '📂 Elegir carpeta' }}
                   </button>
                   <button class="btn btn-secondary" type="button"
@@ -687,7 +637,6 @@
                 </div>
               </div>
 
-              <!-- Lista de carpetas del Drive -->
               <div class="drive-folder-list" *ngIf="mostrarSelectorCarpetas">
                 <div class="drive-folder-list-header">
                   <span>Selecciona una carpeta de tu Google Drive</span>
@@ -711,8 +660,8 @@
                   </div>
                 </div>
               </div>
-
             </div>
+
             <div class="form-group small" *ngIf="destinoDrive.gdriveConectado">
               <label>Retención (meses)</label>
               <input type="number" [(ngModel)]="destinoDrive.retencionMeses" min="0" />
@@ -723,8 +672,7 @@
             </div>
             <div class="form-group" *ngIf="destinoDrive.gdriveConectado">
               <button class="btn btn-test" type="button"
-                      (click)="probarGoogleDrive()"
-                      [disabled]="cargandoTest">
+                      (click)="probarGoogleDrive()" [disabled]="cargandoTest">
                 🔌 Probar Drive
               </button>
             </div>
@@ -748,7 +696,8 @@
           </div>
           <div class="form-group full">
             <label>Email fallo <span class="hint">(separar varios con coma)</span></label>
-            <input type="text" [(ngModel)]="form.emailFallo" placeholder="admin@empresa.com, sysops@empresa.com" />
+            <input type="text" [(ngModel)]="form.emailFallo"
+                   placeholder="admin@empresa.com, sysops@empresa.com" />
           </div>
         </div>
       </div>
@@ -757,7 +706,8 @@
 
     <!-- Footer formulario -->
     <div class="form-footer">
-      <div class="test-result" *ngIf="mensajeTest && destinoActivo === 'LOCAL'" [class.ok]="exitoTest" [class.error]="!exitoTest">
+      <div class="test-result" *ngIf="mensajeTest && destinoActivo === 'LOCAL'"
+           [class.ok]="exitoTest" [class.error]="!exitoTest">
         {{ exitoTest ? '✅' : '❌' }} {{ mensajeTest }}
       </div>
       <div class="form-actions">
@@ -799,7 +749,13 @@
         <tr *ngFor="let e of historial">
           <td>{{ e.iniciadoEn | date:'dd/MM/yy HH:mm' }}</td>
           <td>{{ e.databaseNombre }}</td>
-          <td><span class="badge badge-info">{{ e.tipoBackup }}</span></td>
+          <td>
+              <span class="badge"
+                    [class.badge-info]="e.tipoBackup === 'FULL'"
+                    [class.badge-warning]="e.tipoBackup === 'DIFERENCIAL'">
+                {{ e.tipoBackup }}
+              </span>
+          </td>
           <td><span class="badge" [ngClass]="badgeEstado(e.estado)">{{ e.estado }}</span></td>
           <td>{{ formatearTamano(e.tamanoBytes) }}</td>
           <td>{{ e.duracionSegundos ? e.duracionSegundos + 's' : '-' }}</td>

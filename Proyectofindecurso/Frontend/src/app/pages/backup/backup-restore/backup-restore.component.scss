@@ -6,6 +6,8 @@ $red:         #dc2626;
 $red-light:   #fee2e2;
 $yellow:      #d97706;
 $yellow-light:#fef3c7;
+$blue:        #3182ce;
+$blue-light:  #ebf8ff;
 $border:      #e5e7eb;
 $bg:          #f9fafb;
 $text:        #1f2937;
@@ -27,20 +29,27 @@ $radius:      10px;
   justify-content: space-between;
   margin-bottom: 1.5rem;
 
-  h2 { margin: 0; font-size: 1.5rem; color: $green; }
+  h2    { margin: 0; font-size: 1.5rem; color: $green; }
   .subtitle { font-size: 0.85rem; color: $text-muted; display: block; margin-top: 0.2rem; }
 }
 
-// ── Layout 3 columnas ────────────────────────────────────────────────────────
+// ── Layout 2 columnas: jobs | contenido ──────────────────────────────────────
 .restore-layout {
   display: grid;
-  grid-template-columns: 240px 1fr 320px;
+  grid-template-columns: 240px 1fr;
   gap: 1.25rem;
   align-items: start;
 }
 
+// Columna derecha: stack vertical
+.right-column {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
 // ── Panel genérico ───────────────────────────────────────────────────────────
-.jobs-panel, .calendar-panel, .detail-panel {
+.jobs-panel, .calendar-panel, .detail-panel, .timeline-panel {
   background: $white;
   border: 1px solid $border;
   border-radius: $radius;
@@ -75,16 +84,15 @@ $radius:      10px;
   transition: background 0.15s;
 
   &:hover { background: $green-light; }
-
   &.active {
     background: $green;
     .job-item-name, .job-item-db, .job-item-arrow { color: $white; }
   }
 
-  .job-item-icon { font-size: 1.1rem; }
-  .job-item-info { flex: 1; min-width: 0; }
-  .job-item-name { font-size: 0.85rem; font-weight: 600; color: $text; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .job-item-db   { font-size: 0.75rem; color: $text-muted; display: block; }
+  .job-item-icon  { font-size: 1.1rem; }
+  .job-item-info  { flex: 1; min-width: 0; }
+  .job-item-name  { font-size: 0.85rem; font-weight: 600; color: $text; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .job-item-db    { font-size: 0.75rem; color: $text-muted; display: block; }
   .job-item-arrow { color: $text-muted; font-size: 1.1rem; }
 }
 
@@ -166,21 +174,16 @@ $radius:      10px;
   color: $text;
   transition: all 0.15s;
 
-  &.other-month { opacity: 0; pointer-events: none; }
-
-  &.clickable { cursor: pointer; }
+  &.other-month  { opacity: 0; pointer-events: none; }
+  &.clickable    { cursor: pointer; }
   &.clickable:hover { background: $green-light; }
 
-  &.today .cal-day-num {
-    font-weight: 800;
-    color: $green;
-    text-decoration: underline;
-  }
+  &.today .cal-day-num { font-weight: 800; color: $green; text-decoration: underline; }
 
   &.selected {
     background: $green !important;
     .cal-day-num { color: $white !important; }
-    .cal-dot { background: $white !important; }
+    .cal-dot     { background: $white !important; }
   }
 
   &.exito { background: lighten(#1a7a4a, 58%); }
@@ -188,16 +191,14 @@ $radius:      10px;
   &.ambos { background: lighten(#d97706, 48%); }
 
   .cal-day-num { font-size: 0.72rem; line-height: 1; }
-
   .cal-dot {
     width: 4px; height: 4px;
     border-radius: 50%;
     background: $green;
     margin-top: 1px;
+    &.fallo { background: $red; }
+    &.ambos { background: $yellow; }
   }
-
-  &.fallo .cal-dot  { background: $red; }
-  &.ambos .cal-dot  { background: $yellow; }
 }
 
 .calendar-empty {
@@ -206,7 +207,7 @@ $radius:      10px;
   color: $text-muted;
   grid-column: 1/-1;
   span { font-size: 2rem; display: block; margin-bottom: 0.5rem; }
-  p { margin: 0; font-size: 0.88rem; }
+  p    { margin: 0; font-size: 0.88rem; }
 }
 
 .loading-inline {
@@ -219,12 +220,7 @@ $radius:      10px;
 }
 
 // ── Panel detalle día ────────────────────────────────────────────────────────
-.detail-count {
-  font-size: 0.75rem;
-  color: $text-muted;
-  font-weight: 400;
-}
-
+.detail-count { font-size: 0.75rem; color: $text-muted; font-weight: 400; }
 .backups-list { padding: 0.5rem; max-height: 400px; overflow-y: auto; }
 
 .backup-item {
@@ -236,43 +232,21 @@ $radius:      10px;
   transition: all 0.15s;
 
   &:hover:not(.no-disponible) { border-color: $green; background: $green-light; }
-  &.selected { border-color: $green; background: $green-light; }
+  &.selected     { border-color: $green; background: $green-light; }
   &.no-disponible { opacity: 0.55; cursor: not-allowed; }
 
-  .backup-item-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.4rem;
-  }
-  .backup-hora { font-size: 0.82rem; font-weight: 700; color: $text; }
-  .backup-item-info {
-    display: flex;
-    gap: 0.75rem;
-    font-size: 0.78rem;
-    color: $text-muted;
-    margin-bottom: 0.3rem;
-  }
-  .backup-item-archivo {
-    font-size: 0.72rem;
-    color: $text-muted;
-    margin-bottom: 0.3rem;
-  }
-  .archivo-nombre {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    display: block;
-    max-width: 100%;
-  }
+  .backup-item-top    { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; }
+  .backup-hora        { font-size: 0.82rem; font-weight: 700; color: $text; }
+  .backup-item-info   { display: flex; gap: 0.75rem; font-size: 0.78rem; color: $text-muted; margin-bottom: 0.3rem; }
+  .backup-item-archivo { font-size: 0.72rem; color: $text-muted; margin-bottom: 0.3rem; }
+  .archivo-nombre     { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; max-width: 100%; }
   .backup-disponibilidad {
     font-size: 0.75rem;
-    .disponible       { color: $green; }
+    .disponible        { color: $green; }
     .no-disponible-tag { color: $yellow; }
   }
 }
 
-// ── Botón restaurar ──────────────────────────────────────────────────────────
 .restore-action {
   padding: 0.75rem;
   border-top: 1px solid $border;
@@ -301,7 +275,7 @@ $radius:      10px;
   }
 }
 
-// ── Badges ───────────────────────────────────────────────────────────────────
+// ── Badges genéricos ─────────────────────────────────────────────────────────
 .badge {
   display: inline-block;
   padding: 0.15rem 0.5rem;
@@ -309,14 +283,13 @@ $radius:      10px;
   font-size: 0.7rem;
   font-weight: 700;
   text-transform: uppercase;
-
   &.badge-ok      { background: $green-light; color: $green; }
   &.badge-error   { background: $red-light;   color: $red; }
   &.badge-warning { background: $yellow-light; color: $yellow; }
   &.badge-info    { background: #e0f2fe; color: #0369a1; }
 }
 
-// ── Loading spinner ──────────────────────────────────────────────────────────
+// ── Spinner ───────────────────────────────────────────────────────────────────
 .loading {
   display: flex;
   align-items: center;
@@ -335,6 +308,263 @@ $radius:      10px;
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }
+
+// ══════════════════════════════════════════════
+// TIMELINE GIT-LOG
+// ══════════════════════════════════════════════
+
+.timeline-panel {
+  .panel-title { gap: .75rem; }
+}
+
+.tl-header-actions {
+  display: flex;
+  gap: .5rem;
+  align-items: center;
+}
+
+.btn-tl-refresh {
+  background: none;
+  border: 1px solid $border;
+  border-radius: 6px;
+  padding: .2rem .6rem;
+  font-size: .75rem;
+  cursor: pointer;
+  color: $text-muted;
+  &:hover { background: $bg; color: $text; }
+}
+
+// Stats
+.tl-stats {
+  display: flex;
+  gap: 1.5rem;
+  padding: .6rem 1rem;
+  background: $bg;
+  border-bottom: 1px solid $border;
+}
+
+.tl-stat {
+  display: flex;
+  flex-direction: column;
+  .tl-stat-val { font-size: 1.05rem; font-weight: 700; color: $text; }
+  .tl-stat-lbl { font-size: .7rem; color: $text-muted; text-transform: uppercase; letter-spacing: .04em; }
+}
+
+// Git-log contenedor
+.git-log {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.git-cadena { display: flex; flex-direction: column; }
+
+.git-cadena-sep {
+  height: 1.25rem;
+  margin-left: 11px;
+  border-left: 2px dashed #d1d5db;
+}
+
+// ── Fila ─────────────────────────────────────────────────────────────────────
+.git-row {
+  display: flex;
+  align-items: flex-start;
+  gap: .75rem;
+  margin-bottom: .3rem;
+
+  &.git-row-dif { margin-left: 1.25rem; }
+}
+
+// Gutter
+.git-gutter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 22px;
+  flex-shrink: 0;
+}
+
+.git-dot {
+  line-height: 1;
+  z-index: 1;
+  &.git-dot-full { color: $green; font-size: 1rem; }
+  &.git-dot-dif  { color: $blue;  font-size: .82rem; }
+}
+
+.git-vline {
+  width: 2px;
+  flex: 1;
+  min-height: 16px;
+  background: #d1d5db;
+  margin-top: 2px;
+}
+
+.git-gutter-dif {
+  width: 22px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.git-branch {
+  position: absolute;
+  left: 50%;
+  top: -6px;
+  width: 16px;
+  height: 16px;
+  border-left: 2px solid #d1d5db;
+  border-bottom: 2px solid #d1d5db;
+  border-radius: 0 0 0 5px;
+  transform: translateX(-100%);
+}
+
+.git-vline-dif {
+  width: 2px;
+  flex: 1;
+  min-height: 10px;
+  background: #d1d5db;
+  margin-top: 2px;
+}
+
+// ── Cards ─────────────────────────────────────────────────────────────────────
+.git-card {
+  flex: 1;
+  border: 1.5px solid $border;
+  border-radius: 8px;
+  padding: .55rem .85rem;
+  background: $white;
+  transition: all .15s;
+
+  &.git-card-seleccionado { border-color: $blue; background: $blue-light; }
+  &.git-card-full  { border-left: 3px solid $green; }
+  &.git-card-dif   { border-left: 3px solid $blue;  background: #f8faff; }
+}
+
+.git-card-top {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  flex-wrap: wrap;
+}
+
+// Badges de tipo
+.git-badge {
+  font-size: .68rem;
+  font-weight: 800;
+  padding: 1px 7px;
+  border-radius: 10px;
+  letter-spacing: .04em;
+  display: inline-block;
+
+  &.git-badge-full   { background: $green-light; color: $green; }
+  &.git-badge-dif    { background: $blue-light;  color: $blue; }
+  &.git-badge-manual { background: $yellow-light; color: $yellow; }
+}
+
+.git-fecha   { font-size: .8rem; font-weight: 600; color: $text; }
+.git-spacer  { flex: 1; }
+.git-tamano  { font-size: .75rem; color: $text-muted; }
+.git-dur     { font-size: .72rem; color: $text-muted; }
+
+.btn-toggle-dif {
+  background: none;
+  border: 1px solid $border;
+  border-radius: 6px;
+  padding: 2px 7px;
+  font-size: .7rem;
+  cursor: pointer;
+  color: $text-muted;
+  white-space: nowrap;
+  &:hover { background: $bg; color: $text; }
+}
+
+.btn-git-restore {
+  border: none;
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-size: .75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .15s;
+
+  &.btn-git-restore-full {
+    background: $green; color: $white;
+    &:hover { background: $green-hover; }
+  }
+  &.btn-git-restore-dif {
+    background: $blue; color: $white;
+    &:hover { background: darken($blue, 10%); }
+  }
+}
+
+.git-no-archivo {
+  font-size: .7rem;
+  padding: 1px 7px;
+  border-radius: 8px;
+  background: $red-light;
+  color: $red;
+}
+
+.git-card-bottom {
+  display: flex;
+  gap: .75rem;
+  align-items: center;
+  margin-top: .25rem;
+  flex-wrap: wrap;
+}
+
+.git-db      { font-size: .73rem; color: $text-muted; }
+.git-destino { font-size: .7rem;  color: $text-muted; }
+.git-archivo { font-size: .68rem; color: #a0aec0; font-family: monospace; }
+.git-padre   { font-size: .68rem; color: $blue; }
+
+// Tablas del diferencial
+.git-tablas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .25rem;
+  align-items: center;
+  margin-top: .3rem;
+
+  &.git-sin-cambios .git-tablas-lbl { color: #a0aec0; }
+}
+
+.git-tablas-lbl  { font-size: .7rem; color: $text-muted; font-weight: 600; margin-right: .2rem; }
+.git-tabla-pill  { font-size: .65rem; padding: 1px 6px; border-radius: 8px; background: #e9d8fd; color: #553c9a; font-family: monospace; }
+.git-tabla-mas   { font-size: .67rem; color: $text-muted; font-style: italic; }
+
+// ── Verificación de integridad ─────────────────────────────────────────────
+.backup-integridad {
+  margin-top: 0.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.btn-verificar {
+  background: none;
+  border: 1px solid $border;
+  border-radius: 6px;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.72rem;
+  cursor: pointer;
+  color: $text-muted;
+  transition: all 0.15s;
+  align-self: flex-start;
+
+  &:hover:not(:disabled) { background: $bg; border-color: $green; color: $green; }
+  &:disabled             { opacity: 0.6; cursor: not-allowed; }
+}
+
+.integridad-result {
+  font-size: 0.72rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 5px;
+  &.valido   { background: $green-light; color: $green; }
+  &.invalido { background: $red-light;   color: $red; }
+}
 
 // ── Modal ────────────────────────────────────────────────────────────────────
 .modal-overlay {
@@ -367,18 +597,13 @@ $radius:      10px;
   h3 { margin: 0; font-size: 1.1rem; color: $text; }
 
   .btn-close {
-    background: none;
-    border: none;
-    font-size: 1.1rem;
-    cursor: pointer;
-    color: $text-muted;
-    padding: 0.25rem;
+    background: none; border: none; font-size: 1.1rem;
+    cursor: pointer; color: $text-muted; padding: 0.25rem;
     &:hover { color: $text; }
     &:disabled { opacity: 0.4; cursor: not-allowed; }
   }
 }
 
-// ── Info card dentro del modal ───────────────────────────────────────────────
 .restore-info-card {
   margin: 1rem 1.5rem;
   background: $bg;
@@ -397,11 +622,9 @@ $radius:      10px;
     &:last-child { border-bottom: none; }
   }
   .info-label { color: $text-muted; white-space: nowrap; }
-  .info-value { font-weight: 600; color: $text; text-align: right; }
-  .info-value.file { font-family: monospace; font-size: 0.75rem; word-break: break-all; }
+  .info-value { font-weight: 600; color: $text; text-align: right; &.file { font-family: monospace; font-size: 0.75rem; word-break: break-all; } }
 }
 
-// ── Selector modo ────────────────────────────────────────────────────────────
 .modo-selector {
   padding: 0 1.5rem;
   display: flex;
@@ -423,35 +646,22 @@ $radius:      10px;
   &:hover:not(.active) { border-color: lighten($green, 30%); }
 
   input[type=radio] { display: none; }
-
-  .modo-content {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.6rem;
-  }
-  .modo-icon  { font-size: 1.3rem; margin-top: 0.1rem; }
-  .modo-title { font-weight: 700; font-size: 0.88rem; color: $text; display: block; }
-  .modo-desc  { font-size: 0.78rem; color: $text-muted; display: block; margin-top: 0.2rem; }
+  .modo-content { display: flex; align-items: flex-start; gap: 0.6rem; }
+  .modo-icon    { font-size: 1.3rem; margin-top: 0.1rem; }
+  .modo-title   { font-weight: 700; font-size: 0.88rem; color: $text; display: block; }
+  .modo-desc    { font-size: 0.78rem; color: $text-muted; display: block; margin-top: 0.2rem; }
 }
 
-// ── Input nueva BD ───────────────────────────────────────────────────────────
 .nueva-bd-input {
   padding: 0.75rem 1.5rem 0;
-
   label { font-size: 0.82rem; font-weight: 600; color: $text; display: block; margin-bottom: 0.4rem; }
   input {
-    width: 100%;
-    border: 1.5px solid $border;
-    border-radius: 8px;
-    padding: 0.6rem 0.85rem;
-    font-size: 0.88rem;
-    color: $text;
-    box-sizing: border-box;
+    width: 100%; border: 1.5px solid $border; border-radius: 8px;
+    padding: 0.6rem 0.85rem; font-size: 0.88rem; color: $text; box-sizing: border-box;
     &:focus { outline: none; border-color: $green; }
   }
 }
 
-// ── Advertencia ──────────────────────────────────────────────────────────────
 .advertencia {
   margin: 0.75rem 1.5rem 0;
   background: $red-light;
@@ -461,27 +671,21 @@ $radius:      10px;
   font-size: 0.82rem;
   color: $red;
   line-height: 1.5;
+
+  // Variante diferencial — amarillo
+  &.advertencia-dif {
+    background: $yellow-light;
+    border-color: lighten($yellow, 20%);
+    color: darken($yellow, 15%);
+  }
 }
 
-// ── Progress bar ─────────────────────────────────────────────────────────────
 .progress-bar {
   padding: 1.25rem 1.5rem;
   text-align: center;
-
-  .progress-track {
-    height: 6px;
-    background: $border;
-    border-radius: 10px;
-    overflow: hidden;
-    margin-bottom: 0.6rem;
-  }
-  .progress-fill {
-    height: 100%;
-    background: $green;
-    border-radius: 10px;
-    animation: progress 1.5s ease-in-out infinite alternate;
-  }
-  span { font-size: 0.82rem; color: $text-muted; }
+  .progress-track { height: 6px; background: $border; border-radius: 10px; overflow: hidden; margin-bottom: 0.6rem; }
+  .progress-fill  { height: 100%; background: $green; border-radius: 10px; animation: progress 1.5s ease-in-out infinite alternate; }
+  span            { font-size: 0.82rem; color: $text-muted; }
 }
 
 @keyframes progress {
@@ -489,7 +693,6 @@ $radius:      10px;
   to   { width: 60%; margin-left: 30%; }
 }
 
-// ── Modal footer ─────────────────────────────────────────────────────────────
 .modal-footer {
   padding: 1rem 1.5rem 1.25rem;
   display: flex;
@@ -511,96 +714,35 @@ $radius:      10px;
   }
 }
 
-// ── Resultado ─────────────────────────────────────────────────────────────────
 .restore-resultado {
   padding: 2rem 1.5rem 1.5rem;
   text-align: center;
-
-  .resultado-icon { font-size: 3rem; display: block; margin-bottom: 0.75rem; }
-  h3 { margin: 0 0 0.5rem; font-size: 1.15rem; color: $text; }
+  .resultado-icon    { font-size: 3rem; display: block; margin-bottom: 0.75rem; }
+  h3                 { margin: 0 0 0.5rem; font-size: 1.15rem; color: $text; }
   .resultado-mensaje { color: $text-muted; font-size: 0.88rem; margin: 0 0 1rem; line-height: 1.5; }
-
-  .resultado-meta {
-    display: flex;
-    flex-direction: column;
-    gap: 0.3rem;
-    background: $green-light;
-    border-radius: 8px;
-    padding: 0.75rem 1rem;
-    text-align: left;
-    font-size: 0.85rem;
-    color: $text;
-    margin-bottom: 1rem;
-  }
+  .resultado-meta    { display: flex; flex-direction: column; gap: 0.3rem; background: $green-light; border-radius: 8px; padding: 0.75rem 1rem; text-align: left; font-size: 0.85rem; color: $text; margin-bottom: 1rem; }
 }
 
 .btn-log-toggle {
-  background: none;
-  border: 1px solid $border;
-  border-radius: 6px;
-  padding: 0.4rem 0.75rem;
-  font-size: 0.78rem;
-  cursor: pointer;
-  color: $text-muted;
-  margin-bottom: 0.5rem;
+  background: none; border: 1px solid $border; border-radius: 6px;
+  padding: 0.4rem 0.75rem; font-size: 0.78rem; cursor: pointer;
+  color: $text-muted; margin-bottom: 0.5rem;
   &:hover { background: $bg; }
 }
 
 .log-content {
-  background: #1e1e2e;
-  color: #a6e3a1;
-  border-radius: 8px;
-  padding: 1rem;
-  font-size: 0.72rem;
-  text-align: left;
-  white-space: pre-wrap;
-  word-break: break-word;
-  max-height: 250px;
-  overflow-y: auto;
-  margin: 0;
+  background: #1e1e2e; color: #a6e3a1; border-radius: 8px; padding: 1rem;
+  font-size: 0.72rem; text-align: left; white-space: pre-wrap;
+  word-break: break-word; max-height: 250px; overflow-y: auto; margin: 0;
 }
 
 // ── Responsive ────────────────────────────────────────────────────────────────
-@media (max-width: 1100px) {
-  .restore-layout {
-    grid-template-columns: 200px 1fr;
-    .detail-panel { grid-column: 1 / -1; }
-  }
-}
-
-@media (max-width: 700px) {
+@media (max-width: 900px) {
   .restore-layout { grid-template-columns: 1fr; }
   .calendarios-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
 }
 
-// ── Verificación de integridad ─────────────────────────────────────────────
-.backup-integridad {
-  margin-top: 0.4rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.btn-verificar {
-  background: none;
-  border: 1px solid $border;
-  border-radius: 6px;
-  padding: 0.25rem 0.6rem;
-  font-size: 0.72rem;
-  cursor: pointer;
-  color: $text-muted;
-  transition: all 0.15s;
-  align-self: flex-start;
-
-  &:hover:not(:disabled) { background: $bg; border-color: $green; color: $green; }
-  &:disabled { opacity: 0.6; cursor: not-allowed; }
-}
-
-.integridad-result {
-  font-size: 0.72rem;
-  padding: 0.2rem 0.5rem;
-  border-radius: 5px;
-
-  &.valido   { background: $green-light; color: $green; }
-  &.invalido { background: $red-light;   color: $red; }
+@media (max-width: 600px) {
+  .git-row.git-row-dif { margin-left: .5rem; }
+  .git-card-top { gap: .25rem; }
 }
