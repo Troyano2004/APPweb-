@@ -1,0 +1,91 @@
+<section class="module-page">
+  <header class="module-header">
+    <div>
+      <h1>Informe Práctico — Examen Complexivo</h1>
+      <p>Desarrolla tu caso práctico de titulación para la modalidad Examen Complexivo.</p>
+    </div>
+    <div class="header-actions" *ngIf="informe() as inf">
+      <span class="badge" [ngClass]="badgeClass(inf.estado)">{{ inf.estado ?? 'BORRADOR' }}</span>
+      <span class="docente-badge" *ngIf="inf.nombreDocente">
+        👨‍🏫 Docente: <strong>{{ inf.nombreDocente }}</strong>
+      </span>
+      <span class="docente-badge warn" *ngIf="!inf.nombreDocente">
+        ⚠️ Sin docente asignado aún
+      </span>
+    </div>
+  </header>
+
+  <div class="alert error" *ngIf="error()">{{ error() }}</div>
+  <div class="alert ok"    *ngIf="ok()">{{ ok() }}</div>
+  <div class="loading-bar" *ngIf="loading()">Cargando informe...</div>
+
+  <div class="card" *ngIf="!loading()">
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <button class="btn primary" (click)="guardar()" [disabled]="saving() || !puedeEditar()">
+        {{ saving() ? 'Guardando...' : '✔ Guardar' }}
+      </button>
+      <button class="btn outline" (click)="enviar()"
+              [disabled]="saving() || !puedeEditar() || informe()?.estado === 'ENTREGADO'">
+        → Enviar a revisión
+      </button>
+    </div>
+
+    <!-- Observaciones del docente -->
+    <div class="alert warn" *ngIf="informe()?.observaciones">
+      <strong>Observaciones del docente:</strong> {{ informe()?.observaciones }}
+    </div>
+
+    <!-- Tabs -->
+    <nav class="tabs">
+      <button [class.active]="activeTab()==='portada'"    (click)="setTab('portada')">Portada / Problema</button>
+      <button [class.active]="activeTab()==='marco'"      (click)="setTab('marco')">Marco / Metodología</button>
+      <button [class.active]="activeTab()==='resultados'" (click)="setTab('resultados')">Resultados</button>
+      <button [class.active]="activeTab()==='conclusiones'" (click)="setTab('conclusiones')">Conclusiones / Bibliografía</button>
+    </nav>
+
+    <!-- Tab: Portada -->
+    <div class="tab-content" *ngIf="activeTab()==='portada'">
+      <h3>Título del caso práctico</h3>
+      <textarea [(ngModel)]="form.titulo" rows="2" [disabled]="!puedeEditar()"
+                placeholder="Ingresa el título de tu informe práctico..."></textarea>
+
+      <h3>Planteamiento del Problema</h3>
+      <textarea [(ngModel)]="form.planteamientoProblema" rows="6" [disabled]="!puedeEditar()"
+                placeholder="Describe el problema que vas a resolver..."></textarea>
+
+      <h3>Objetivos</h3>
+      <textarea [(ngModel)]="form.objetivos" rows="5" [disabled]="!puedeEditar()"
+                placeholder="Objetivo general y específicos..."></textarea>
+    </div>
+
+    <!-- Tab: Marco / Metodología -->
+    <div class="tab-content" *ngIf="activeTab()==='marco'">
+      <h3>Marco Teórico</h3>
+      <textarea [(ngModel)]="form.marcoTeorico" rows="8" [disabled]="!puedeEditar()"
+                placeholder="Fundamentos teóricos del caso..."></textarea>
+
+      <h3>Metodología</h3>
+      <textarea [(ngModel)]="form.metodologia" rows="8" [disabled]="!puedeEditar()"
+                placeholder="Métodos y herramientas utilizados..."></textarea>
+    </div>
+
+    <!-- Tab: Resultados -->
+    <div class="tab-content" *ngIf="activeTab()==='resultados'">
+      <h3>Resultados y Discusión</h3>
+      <textarea [(ngModel)]="form.resultados" rows="12" [disabled]="!puedeEditar()"
+                placeholder="Presenta los resultados obtenidos y su análisis..."></textarea>
+    </div>
+
+    <!-- Tab: Conclusiones -->
+    <div class="tab-content" *ngIf="activeTab()==='conclusiones'">
+      <h3>Conclusiones</h3>
+      <textarea [(ngModel)]="form.conclusiones" rows="6" [disabled]="!puedeEditar()"
+                placeholder="Conclusiones del caso práctico..."></textarea>
+
+      <h3>Bibliografía</h3>
+      <textarea [(ngModel)]="form.bibliografia" rows="5" [disabled]="!puedeEditar()"
+                placeholder="Referencias bibliográficas..."></textarea>
+    </div>
+  </div>
+</section>

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CoordinadorService, ObservacionAdministrativa } from '../../../services/coordinador';
@@ -159,15 +159,17 @@ export class ObservacionesAdminComponent implements OnInit {
     detalle: ''
   };
 
-  constructor(private coordinadorService: CoordinadorService) {}
+  constructor(private coordinadorService: CoordinadorService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.cargarObservaciones();
   }
 
+  // Método cargarObservaciones():
   cargarObservaciones(): void {
     this.coordinadorService.getObservaciones().subscribe((data) => {
       this.observaciones = data;
+      this.cdr.detectChanges();
     });
   }
 

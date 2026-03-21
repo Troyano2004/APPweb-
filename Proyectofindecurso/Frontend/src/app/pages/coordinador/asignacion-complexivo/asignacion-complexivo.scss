@@ -1,0 +1,175 @@
+
+.complexivo-config {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+
+  h2 { margin: 0 0 4px; font-size: 1.4rem; }
+  .subtitle { color: #666; margin: 0 0 16px; }
+
+  .alert {
+    padding: 10px 16px; border-radius: 6px; margin-bottom: 16px; font-size: .9rem;
+    &.error { background: #fff0f0; border-left: 4px solid #e53e3e; color: #c53030; }
+    &.ok    { background: #f0fff4; border-left: 4px solid #38a169; color: #276749; }
+  }
+
+  .meta-band {
+    display: flex; gap: 24px; font-size: .88rem;
+    color: #555; margin-bottom: 20px; flex-wrap: wrap;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+
+  // ── Panel lista ─────────────────────────────────────
+  .panel-lista {
+    background: #fff; border: 1px solid #e2e8f0;
+    border-radius: 8px; padding: 16px;
+    h3 { margin: 0 0 10px; font-size: 1rem; }
+    .h3-asignados { margin-top: 20px; }
+  }
+
+  .estudiante-card {
+    padding: 12px; border: 1px solid #e2e8f0;
+    border-radius: 6px; margin-bottom: 8px;
+    cursor: pointer; transition: background .15s; position: relative;
+    &:hover  { background: #f7fafc; }
+    &.activo { background: #ebf8ff; border-color: #3182ce; }
+    &.asignado { opacity: .85; }
+  }
+
+  .est-nombre { font-weight: 600; font-size: .9rem; }
+  .est-meta   { font-size: .8rem; color: #666; margin: 2px 0 6px; }
+
+  .check {
+    font-size: .75rem; padding: 2px 8px; border-radius: 4px; display: inline-block;
+    &.ok       { background: #c6f6d5; color: #276749; }
+    &.pendiente{ background: #fed7d7; color: #c53030; }
+  }
+
+  .empty {
+    color: #999; font-size: .88rem;
+    text-align: center; padding: 16px 0;
+  }
+
+  // ── Panel detalle ────────────────────────────────────
+  .panel-detalle {
+    background: #fff; border: 1px solid #e2e8f0;
+    border-radius: 8px; padding: 20px;
+    &.empty-panel {
+      display: flex; align-items: center;
+      justify-content: center; min-height: 200px;
+      color: #999;
+    }
+    h3 { margin: 0 0 4px; }
+    p  { color: #666; margin: 0 0 16px; font-size: .9rem; }
+  }
+
+  .config-actual {
+    background: #f7fafc; border-radius: 6px;
+    padding: 12px; margin-bottom: 20px;
+  }
+
+  .config-item {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 6px; font-size: .9rem;
+    .label { font-weight: 600; min-width: 140px; color: #4a5568; }
+  }
+
+  // ── Formulario ───────────────────────────────────────
+  form {
+    .form-row {
+      margin-bottom: 14px;
+      label {
+        display: block; font-size: .85rem;
+        font-weight: 600; color: #4a5568; margin-bottom: 4px;
+      }
+      input, select {
+        width: 100%; padding: 8px 12px;
+        border: 1px solid #e2e8f0; border-radius: 6px;
+        font-size: .9rem; box-sizing: border-box;
+        &:focus { outline: none; border-color: #3182ce; }
+      }
+      small { color: #999; font-size: .8rem; }
+      .warn-inline { color: #c53030; }
+    }
+
+    button[type=submit] {
+      background: #0f7a3a; color: #fff;
+      border: none; padding: 10px 28px;
+      border-radius: 6px; cursor: pointer; font-size: .9rem;
+      &:disabled { opacity: .55; cursor: not-allowed; }
+      &:hover:not(:disabled) { filter: brightness(1.1); }
+    }
+  }
+
+  .loading-full {
+    text-align: center; padding: 3rem;
+    color: #999; font-size: .95rem;
+  }
+}
+
+// ── Modo oscuro ──────────────────────────────────────────────
+:host-context(body.dark-mode) .complexivo-config {
+
+  h2, h3 { color: #f1f5f9; }
+  .subtitle, .meta-band { color: #94a3b8; }
+
+  .alert {
+    &.error { background: #2d1b1b; border-left-color: #e53e3e; color: #fca5a5; }
+    &.ok    { background: #052e16; border-left-color: #38a169; color: #86efac; }
+  }
+
+  .panel-lista {
+    background: #1e293b; border-color: #334155;
+    h3 { color: #f1f5f9; }
+  }
+
+  .estudiante-card {
+    border-color: #334155;
+    &:hover  { background: #263448; }
+    &.activo { background: #0f2a3d; border-color: #3182ce; }
+  }
+
+  .est-nombre { color: #e2e8f0; }
+  .est-meta   { color: #94a3b8; }
+  .empty      { color: #64748b; }
+
+  .check {
+    &.ok       { background: #052e16; color: #86efac; }
+    &.pendiente{ background: #2d1b1b; color: #fca5a5; }
+  }
+
+  .panel-detalle {
+    background: #1e293b; border-color: #334155;
+    &.empty-panel { color: #64748b; }
+    h3 { color: #f1f5f9; }
+    p  { color: #94a3b8; }
+  }
+
+  .config-actual { background: #0f172a; }
+  .config-item {
+    color: #e2e8f0;
+    .label { color: #94a3b8; }
+  }
+
+  form {
+    .form-row {
+      label { color: #94a3b8; }
+      small { color: #64748b; }
+      input, select {
+        background: #0f172a; color: #e2e8f0;
+        border-color: #334155;
+        &:focus { border-color: #3182ce; }
+      }
+    }
+    button[type=submit] {
+      background: #0f7a3a !important; color: #fff !important;
+      &:disabled { opacity: .55 !important; }
+    }
+  }
+}

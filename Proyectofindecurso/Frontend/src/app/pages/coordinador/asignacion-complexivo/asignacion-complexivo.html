@@ -1,0 +1,124 @@
+
+<div class="complexivo-config">
+  <h2>Complexivo — Asignación de Docente</h2>
+  <p class="subtitle">Asigna el docente que acompañará a cada estudiante en la modalidad Examen Complexivo.</p>
+
+  <div class="alert error" *ngIf="error()">{{ error() }}</div>
+  <div class="alert ok"    *ngIf="ok()">{{ ok() }}</div>
+
+  <div class="meta-band" *ngIf="info()">
+    <span>📚 Carrera: <strong>{{ info()!.carrera }}</strong></span>
+    <span>📅 Período: <strong>{{ info()!.periodo }}</strong></span>
+  </div>
+
+  <div class="layout" *ngIf="!loading() || info()">
+
+    <!-- ── Panel izquierdo ── -->
+    <div class="panel-lista">
+
+      <!-- Sin docente -->
+      <h3>Sin docente asignado ({{ sinDocente.length }})</h3>
+      <div *ngIf="sinDocente.length === 0" class="empty">
+        ✅ Todos los estudiantes Complexivo tienen docente asignado.
+      </div>
+      <div
+        class="estudiante-card"
+        *ngFor="let est of sinDocente"
+        [class.activo]="estudianteSeleccionado()?.idEstudiante === est.idEstudiante"
+        (click)="seleccionarEstudiante(est)">
+        <div class="est-nombre">{{ est.nombre }}</div>
+        <div class="est-meta">{{ est.carrera }}</div>
+        <span class="check pendiente">Sin docente ○</span>
+      </div>
+
+      <!-- Ya asignados -->
+      <h3 class="h3-asignados">Con docente asignado ({{ conDocente.length }})</h3>
+      <div *ngIf="conDocente.length === 0" class="empty">No hay asignaciones aún.</div>
+      <div
+        class="estudiante-card asignado"
+        *ngFor="let asig of conDocente"
+        [class.activo]="asignacionExistente()?.idAsignacion === asig.idAsignacion"
+        (click)="seleccionarAsignado(asig)">
+        <div class="est-nombre">{{ asig.nombreEstudiante }}</div>
+        <div class="est-meta">{{ asig.nombreDocente }}</div>
+        <span class="check ok">Asignado ✓</span>
+      </div>
+    </div>
+
+    <!-- ── Panel derecho ── -->
+    <div class="panel-detalle" *ngIf="estudianteSeleccionado(); else verAsignacion">
+
+      <h3>{{ estudianteSeleccionado()!.nombre }}</h3>
+      <p>{{ estudianteSeleccionado()!.carrera }} · {{ estudianteSeleccionado()!.modalidad }}</p>
+
+      <!-- Estado actual -->
+      <div class="config-actual">
+        <div class="config-item">
+          <span class="label">Estado Complexivo:</span>
+          <span>{{ estudianteSeleccionado()!.estadoComplexivo }}</span>
+        </div>
+        <div class="config-item">
+          <span class="label">Docente:</span>
+          <span>— Sin asignar —</span>
+        </div>
+      </div>
+
+      <!-- Formulario asignación -->
+      <form [formGroup]="formAsignar" (ngSubmit)="asignar()">
+        <div class="form-row">
+          <label>Docente asignado</label>
+          <select formControlName="idDocente">
+            <option [value]="null" disabled>Selecciona docente</option>
+            <option *ngFor="let d of docentesDisponibles" [value]="d.idDocente">
+              {{ d.nombre }}
+            </option>
+          </select>
+          <small *ngIf="docentesDisponibles.length === 0" class="warn-inline">
+            No hay docentes disponibles para esta carrera.
+          </small>
+        </div>
+
+        <div class="form-row">
+          <label>Observación <small>(opcional)</small></label>
+          <input formControlName="observacion" placeholder="Comentario adicional..." />
+        </div>
+
+        <button type="submit" [disabled]="loading() || docentesDisponibles.length === 0">
+          {{ loading() ? 'Guardando...' : 'Asignar Docente' }}
+        </button>
+      </form>
+    </div>
+
+    <!-- ── Panel derecho: ver asignación existente ── -->
+    <ng-template #verAsignacion>
+      <div class="panel-detalle" *ngIf="asignacionExistente(); else sinSeleccion">
+        <h3>{{ asignacionExistente()!.nombreEstudiante }}</h3>
+        <p>Período: {{ asignacionExistente()!.periodo }}</p>
+
+        <div class="config-actual">
+          <div class="config-item">
+            <span class="label">Docente asignado:</span>
+            <span><strong>{{ asignacionExistente()!.nombreDocente }}</strong></span>
+          </div>
+          <div class="config-item">
+            <span class="label">Fecha asignación:</span>
+            <span>{{ asignacionExistente()!.fechaAsignacion | date:'dd/MM/yyyy HH:mm' }}</span>
+          </div>
+          <div class="config-item">
+            <span class="label">Estado:</span>
+            <span class="check ok">Activo ✓</span>
+          </div>
+        </div>
+      </div>
+
+      <ng-template #sinSeleccion>
+        <div class="panel-detalle empty-panel">
+          <p>Selecciona un estudiante de la lista para asignar su docente.</p>
+        </div>
+      </ng-template>
+    </ng-template>
+
+  </div>
+
+  <div class="loading-full" *ngIf="loading() && !info()">Cargando información...</div>
+</div>
