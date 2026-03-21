@@ -5,6 +5,8 @@ import com.erwin.backend.repository.AnteproyectoTitulacionRepository;
 import com.erwin.backend.enums.EstadoDocumento;
 import com.erwin.backend.repository.*;
 import com.erwin.backend.service.EmailService;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
@@ -35,6 +37,10 @@ public class ComisionTemasController {
     private final AnteproyectoTitulacionRepository anteproyectoTitulacionRepository;
     private final ComplexivoDocenteAsignacionRepository complexivoAsignacionRepository;
     private final EmailService emailService;
+
+    // ✅ EntityManager para limpiar el caché de Hibernate después del stored procedure
+    @PersistenceContext
+    private EntityManager entityManager;
 
     public ComisionTemasController(BancoTemasRepository bancoTemasRepository,
                                    PropuestaTitulacionRepository propuestaRepository,
@@ -197,8 +203,8 @@ public class ComisionTemasController {
                 .map(this::toPropuestaDto).toList();
     }
 
-    // ✅ @Transactional garantiza que proyecto, anteproyecto y documento
-    //    se crean en la misma transacción y el ID del proyecto está disponible
+    // ✅ @Transactional + entityManager.flush/clear después del stored procedure
+    //    para que Hibernate vea el estado actualizado en BD y no el cacheado
     @Transactional
     @PostMapping("/docente/{idDocente}/propuestas/{idPropuesta}/decision")
     public PropuestaDto decidirPropuesta(@PathVariable Integer idDocente,
@@ -206,13 +212,14 @@ public class ComisionTemasController {
                                          @RequestBody DecisionPropuestaRequest req) {
         validarMiembroComision(idDocente);
 
+        if (!propuestaRepository.existsById(idPropuesta))
+            throw new RuntimeException("Propuesta no encontrada");
+
         PropuestaTitulacion propuesta = propuestaRepository.findById(idPropuesta)
                 .orElseThrow(() -> new RuntimeException("Propuesta no encontrada"));
 
         if (esModalidadComplexivo(propuesta))
-            throw new RuntimeException(
-                    "Esta propuesta es de Examen Complexivo. "
-                            + "Debe revisarla el docente complexivo asignado.");
+            throw new RuntimeException("Esta propuesta es de Examen Complexivo.");
 
         String estado = req.estado == null ? "" : req.estado.trim().toUpperCase();
         if (!estado.equals("APROBADA") && !estado.equals("RECHAZADA"))
@@ -221,35 +228,46 @@ public class ComisionTemasController {
         Integer actualizado = propuestaRepository.registrarDecisionStored(
                 idPropuesta, estado, req.observaciones, LocalDate.now());
 
+        System.out.println(">>> actualizado=" + actualizado);
+
         if (actualizado == null || actualizado == 0)
-            throw new RuntimeException(
-                    "No se pudo registrar la decisión de la propuesta");
+            throw new RuntimeException("No se pudo registrar la decisión");
+
+        entityManager.flush();
+        entityManager.clear();
 
         PropuestaTitulacion propuestaActualizada = propuestaRepository
                 .findById(idPropuesta)
                 .orElseThrow(() -> new RuntimeException("Propuesta no encontrada"));
 
+        System.out.println(">>> estado después del stored: " + propuestaActualizada.getEstado());
+        System.out.println(">>> eleccion: " + propuestaActualizada.getEleccion());
+        System.out.println(">>> modalidad: " + (propuestaActualizada.getEleccion() != null
+                ? propuestaActualizada.getEleccion().getModalidad() : "NULL"));
+
         if ("APROBADA".equals(propuestaActualizada.getEstado())) {
+            System.out.println(">>> Entrando a crear proyecto...");
             try {
                 ProyectoTitulacion proyecto =
                         crearProyectoTitulacionDesdePropuesta(propuestaActualizada);
+                System.out.println(">>> Proyecto creado con ID: " + proyecto.getIdProyecto());
                 crearAnteproyectoAprobadoDesdePropuesta(propuestaActualizada, proyecto);
+                System.out.println(">>> Anteproyecto creado");
                 crearDocumentoTitulacionDesdeProyecto(proyecto, propuestaActualizada);
+                System.out.println(">>> Documento creado");
             } catch (Exception e) {
-                System.err.println(
-                        "[ComisionTemas] Error al crear proyecto/anteproyecto/documento: "
-                                + e.getMessage());
+                System.err.println(">>> ERROR: " + e.getMessage());
                 e.printStackTrace();
-                throw new RuntimeException(
-                        "Propuesta aprobada pero no se pudo crear el proyecto: "
-                                + e.getMessage());
+                throw new RuntimeException("Error al crear proyecto: " + e.getMessage());
             }
             notificarPropuestaAprobada(propuestaActualizada);
+        } else {
+            System.out.println(">>> No entra al bloque APROBADA — estado actual: "
+                    + propuestaActualizada.getEstado());
         }
 
         return toPropuestaDto(propuestaActualizada);
     }
-
     // ════════════════════════════════════════════════════════════════════════
     // PROPUESTAS COMPLEXIVO — DOCENTE COMPLEXIVO
     // ════════════════════════════════════════════════════════════════════════
@@ -278,7 +296,7 @@ public class ComisionTemasController {
                 .map(this::toPropuestaDto).toList();
     }
 
-    // ✅ @Transactional igual que en decidirPropuesta
+    // ✅ Mismo patrón que decidirPropuesta
     @Transactional
     @PostMapping("/docente/{idDocente}/propuestas-complexivo/{idPropuesta}/decision")
     public PropuestaDto decidirPropuestaComplexivo(@PathVariable Integer idDocente,
@@ -315,25 +333,19 @@ public class ComisionTemasController {
         if (actualizado == null || actualizado == 0)
             throw new RuntimeException("No se pudo registrar la decisión");
 
+        // ✅ Limpiar caché igual que en decidirPropuesta
+        entityManager.flush();
+        entityManager.clear();
+
         PropuestaTitulacion propuestaActualizada = propuestaRepository
                 .findById(idPropuesta)
                 .orElseThrow(() -> new RuntimeException("Propuesta no encontrada"));
 
         if ("APROBADA".equals(propuestaActualizada.getEstado())) {
-            try {
-                ProyectoTitulacion proyecto =
-                        crearProyectoTitulacionDesdePropuesta(propuestaActualizada);
-                crearAnteproyectoAprobadoDesdePropuesta(propuestaActualizada, proyecto);
-                crearDocumentoTitulacionDesdeProyecto(proyecto, propuestaActualizada);
-            } catch (Exception e) {
-                System.err.println(
-                        "[ComisionTemas] Error al crear proyecto complexivo: "
-                                + e.getMessage());
-                e.printStackTrace();
-                throw new RuntimeException(
-                        "Propuesta aprobada pero no se pudo crear el proyecto: "
-                                + e.getMessage());
-            }
+            ProyectoTitulacion proyecto =
+                    crearProyectoTitulacionDesdePropuesta(propuestaActualizada);
+            crearAnteproyectoAprobadoDesdePropuesta(propuestaActualizada, proyecto);
+            crearDocumentoTitulacionDesdeProyecto(proyecto, propuestaActualizada);
             notificarPropuestaAprobada(propuestaActualizada);
         }
 
@@ -512,8 +524,7 @@ public class ComisionTemasController {
     @GetMapping("/estudiante/{idEstudiante}/temas-aprobados")
     public List<TemaDto> temasAprobadosEstudiante(@PathVariable Integer idEstudiante) {
         estudianteRepository.findById(idEstudiante)
-                .orElseThrow(() -> new RuntimeException(
-                        "Estudiante no encontrado"));
+                .orElseThrow(() -> new RuntimeException("Estudiante no encontrado"));
         return bancoTemasRepository.findAll().stream()
                 .filter(t -> "PROPUESTO".equals(t.getEstado()))
                 .filter(t -> t.getEstudianteSugerente() != null
@@ -583,15 +594,15 @@ public class ComisionTemasController {
         }
     }
 
+    // ✅ director null permitido — campo optional en la entidad
     private Docente resolverDirectorInicial(PropuestaTitulacion propuesta) {
         if (propuesta.getTema() != null
                 && propuesta.getTema().getDocenteProponente() != null)
             return propuesta.getTema().getDocenteProponente();
-        // Sin tema del banco → director null, se asigna manualmente después
         return null;
     }
 
-    // ✅ saveAndFlush garantiza que el ID se genera antes de usarlo en DocumentoTitulacion
+    // ✅ saveAndFlush garantiza ID generado antes de usarlo en DocumentoTitulacion
     private ProyectoTitulacion crearProyectoTitulacionDesdePropuesta(
             PropuestaTitulacion propuesta) {
 
@@ -605,8 +616,7 @@ public class ComisionTemasController {
                     "La propuesta no tiene elección de titulación asociada");
         if (eleccion.getModalidad() == null
                 || eleccion.getModalidad().getIdModalidad() == null)
-            throw new RuntimeException(
-                    "La elección no tiene modalidad asociada");
+            throw new RuntimeException("La elección no tiene modalidad asociada");
 
         PeriodoTitulacion periodo = eleccion.getPeriodo();
         if (periodo == null)
@@ -631,24 +641,12 @@ public class ComisionTemasController {
         proyecto.setTitulo(propuesta.getTitulo());
         proyecto.setEstado("ANTEPROYECTO");
 
-        // ✅ saveAndFlush: fuerza INSERT inmediato y retorna entidad con ID generado
-        ProyectoTitulacion guardado =
-                proyectoTitulacionRepository.saveAndFlush(proyecto);
-
-        if (guardado.getIdProyecto() == null)
-            throw new RuntimeException(
-                    "El proyecto fue guardado pero no se generó el ID — revisar BD");
-
-        return guardado;
+        // ✅ saveAndFlush: genera el ID inmediatamente en BD
+        return proyectoTitulacionRepository.saveAndFlush(proyecto);
     }
 
     private void crearDocumentoTitulacionDesdeProyecto(ProyectoTitulacion proyecto,
                                                        PropuestaTitulacion propuesta) {
-        if (proyecto == null)
-            throw new RuntimeException(
-                    "No se puede crear el documento: el proyecto es null");
-
-        // ✅ Guard: si ya existe documento para este proyecto, no duplicar
         if (documentoTitulacionRepository
                 .findByProyecto_IdProyecto(proyecto.getIdProyecto()).isPresent())
             return;
@@ -663,8 +661,7 @@ public class ComisionTemasController {
     }
 
     private void crearAnteproyectoAprobadoDesdePropuesta(
-            PropuestaTitulacion propuesta,
-            ProyectoTitulacion proyecto) {
+            PropuestaTitulacion propuesta, ProyectoTitulacion proyecto) {
 
         if (anteproyectoTitulacionRepository
                 .findByPropuesta_IdPropuesta(propuesta.getIdPropuesta()).isPresent())
@@ -689,8 +686,7 @@ public class ComisionTemasController {
         if (tema.getDocenteProponente() != null
                 && tema.getDocenteProponente().getUsuario() != null)
             docente = tema.getDocenteProponente().getUsuario().getNombres()
-                    + " "
-                    + tema.getDocenteProponente().getUsuario().getApellidos();
+                    + " " + tema.getDocenteProponente().getUsuario().getApellidos();
 
         String carrera = tema.getCarrera() != null
                 ? tema.getCarrera().getNombre() : "Sin carrera";
@@ -707,8 +703,7 @@ public class ComisionTemasController {
         if (propuesta.getEstudiante() != null
                 && propuesta.getEstudiante().getUsuario() != null)
             estudiante = propuesta.getEstudiante().getUsuario().getNombres()
-                    + " "
-                    + propuesta.getEstudiante().getUsuario().getApellidos();
+                    + " " + propuesta.getEstudiante().getUsuario().getApellidos();
 
         String carrera = propuesta.getCarrera() != null
                 ? propuesta.getCarrera().getNombre() : "Sin carrera";
