@@ -47,7 +47,7 @@ public class UsuarioSpRepository {
 
             // ✅ AHORA 11 ?
             String sql =
-                    "SELECT public.sp_crear_usuario_v3(?,?,?,?,?,?,?,?,?,?,?)";
+                    "SELECT public.sp_crear_usuario_v5(?,?,?,?,?,?,?,?,?,?,?)";
 
             return jdbc.queryForObject(
                     sql,
