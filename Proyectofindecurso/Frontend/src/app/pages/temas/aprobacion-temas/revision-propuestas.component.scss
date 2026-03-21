@@ -461,3 +461,22 @@ $radius-lg:  14px;
   .modal-footer  { border-color: #334155; }
   .btn-secondary { background: #1e293b; border-color: #334155; color: #e2e8f0; &:hover { background: #263448; border-color: #475569; } }
 }
+
+.col-acciones {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.btn-pdf {
+  padding: 5px 12px;
+  background: #1d4ed8;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: .78rem;
+  white-space: nowrap;
+  &:hover { background: #1e40af; }
+}

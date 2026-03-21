@@ -87,6 +87,13 @@ export class ComplexivoService {
       `${this.BASE}/estudiante/${idEstudiante}/informe/enviar`, {});
   }
 
+  iniciarComplexivo(idEstudiante: number): Observable<EstadoComplexivoEstudianteDto> {
+    return this.http.post<EstadoComplexivoEstudianteDto>(
+      `${this.BASE}/estudiante/${idEstudiante}/iniciar`, {});
+  }
+
+  // ── Coordinador DT1
+
   // ── Coordinador DT1 ────────────────────────────────────────────
   getInfoCoordinadorDt1(idUsuario: number): Observable<InfoCoordinadorDt1Dto> {
     return this.http.get<InfoCoordinadorDt1Dto>(

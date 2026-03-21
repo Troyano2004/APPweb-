@@ -32,9 +32,18 @@
 
     <!-- ───────── DETALLE ───────── -->
     <div class="panel-detalle" *ngIf="estudSeleccionado(); else sinSeleccion">
-
-      <h3>{{ estudSeleccionado()!.nombreEstudiante }}</h3>
-      <p>{{ estudSeleccionado()!.carrera }}</p>
+      <div class="det-header">
+        <div>
+          <h3>{{ estudSeleccionado()!.nombreEstudiante }}</h3>
+          <p>{{ estudSeleccionado()!.carrera }}</p>
+        </div>
+        <button class="btn-pdf-informe"
+                (click)="verPdfInforme()"
+                *ngIf="informe()"
+                title="Ver PDF del informe">
+          📄 Ver PDF
+        </button>
+      </div>
 
       <!-- TABS INTERNOS -->
       <div class="tabs">

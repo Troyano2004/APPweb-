@@ -618,20 +618,20 @@ public class ComisionTemasController {
 
     private PropuestaDto toPropuestaDto(PropuestaTitulacion propuesta) {
         String estudiante = "Sin estudiante";
-        if (propuesta.getEstudiante() != null && propuesta.getEstudiante().getUsuario() != null) {
-            estudiante = propuesta.getEstudiante().getUsuario().getNombres() + " "
-                    + propuesta.getEstudiante().getUsuario().getApellidos();
+        if (propuesta.getEstudiante() != null
+                && propuesta.getEstudiante().getUsuario() != null) {
+            estudiante = propuesta.getEstudiante().getUsuario().getNombres()
+                    + " " + propuesta.getEstudiante().getUsuario().getApellidos();
         }
 
-        String carrera = propuesta.getCarrera() != null ? propuesta.getCarrera().getNombre() : "Sin carrera";
+        String carrera = propuesta.getCarrera() != null
+                ? propuesta.getCarrera().getNombre() : "Sin carrera";
         String tema = propuesta.getTema() != null
                 ? propuesta.getTema().getTitulo()
                 : propuesta.getTemaInvestigacion();
-
         String modalidad = (propuesta.getEleccion() != null
                 && propuesta.getEleccion().getModalidad() != null)
-                ? propuesta.getEleccion().getModalidad().getNombre()
-                : null;
+                ? propuesta.getEleccion().getModalidad().getNombre() : null;
 
         return new PropuestaDto(
                 propuesta.getIdPropuesta(),
@@ -642,7 +642,14 @@ public class ComisionTemasController {
                 propuesta.getEstado(),
                 propuesta.getFechaEnvio(),
                 propuesta.getObservacionesComision(),
-                modalidad
+                modalidad,
+                propuesta.getPlanteamientoProblema(),
+                propuesta.getObjetivosGenerales(),
+                propuesta.getObjetivosEspecificos(),
+                propuesta.getMarcoTeorico(),
+                propuesta.getMetodologia(),
+                propuesta.getResultadosEsperados(),
+                propuesta.getBibliografia()
         );
     }
 
@@ -782,7 +789,15 @@ public class ComisionTemasController {
             String estado,
             LocalDate fechaEnvio,
             String observaciones,
-            String modalidad
+            String modalidad,
+            // ── campos completos para PDF ──
+            String planteamientoProblema,
+            String objetivosGenerales,
+            String objetivosEspecificos,
+            String marcoTeorico,
+            String metodologia,
+            String resultadosEsperados,
+            String bibliografia
     ) {}
 
     public record ModalidadSimpleDto(Integer idModalidad, String nombre) {}

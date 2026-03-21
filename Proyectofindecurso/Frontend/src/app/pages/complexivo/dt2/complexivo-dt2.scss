@@ -231,3 +231,27 @@
   .btn-pdf { background: #1d4ed8; }
   .fecha-envio { color: #64748b; }
 }
+.det-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+  h3 { margin: 0 0 4px; }
+  p  { margin: 0; }
+}
+
+.btn-pdf-informe {
+  padding: 7px 16px;
+  background: #1d4ed8;
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: .82rem;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background .15s;
+  &:hover { background: #1e40af; }
+}

@@ -31,6 +31,7 @@ interface MenuItem {
   path: string;
   roles?: AppRole[];
   soloComplexivo?: boolean;
+  soloNoComplexivo?: boolean;
 }
 
 interface MenuSection {
@@ -38,6 +39,7 @@ interface MenuSection {
   icon: string;
   roles?: AppRole[];
   soloComplexivo?: boolean;
+  soloNoComplexivo?: boolean;
   items: MenuItem[];
 }
 
@@ -154,7 +156,7 @@ export class ShellComponent implements OnInit, OnDestroy {
       icon: '🧐',
       roles: ['DOCENTE', 'DOCENTE_TITULADO', 'ESTUDIANTE', 'ADMIN'],
       items: [
-        { label: 'Documento de titulación', path: '/app/titulacion2/documento', roles: ['ESTUDIANTE'] },
+        { label: 'Documento de titulación', path: '/app/titulacion2/documento', roles: ['ESTUDIANTE'], soloNoComplexivo: true },
         { label: 'Documentos pendientes', path: '/app/titulacion2/revisar', roles: ['DOCENTE', 'DOCENTE_TITULADO'] },
         { label: 'Workflow Proceso', path: '/app/titulacion2/workflow', roles: ['ADMIN', 'DOCENTE', 'DOCENTE_TITULADO'] },
         { label: 'Seguimiento DT2', path: '/app/director/seguimiento-dt2', roles: ['DOCENTE', 'DOCENTE_TITULADO', 'ADMIN'] },
@@ -446,11 +448,16 @@ export class ShellComponent implements OnInit, OnDestroy {
       .filter(sec => {
         if (sec.roles && !sec.roles.some(r => userRoles.includes(r))) return false;
         if (sec.soloComplexivo && !this.esComplexivo()) return false;
+        if (sec.soloNoComplexivo && this.esComplexivo()) return false;
         return true;
       })
       .map(sec => ({
         ...sec,
-        items: sec.items.filter(it => !it.roles || it.roles.some(r => userRoles.includes(r))),
+        items: sec.items.filter(it => {
+          if (it.roles && !it.roles.some(r => userRoles.includes(r))) return false;
+          if (it.soloNoComplexivo && this.esComplexivo()) return false;
+          return true;
+        }),
       }))
       .filter(sec => sec.items.length > 0);
   }

@@ -79,6 +79,12 @@ public class ComplexivoController {
         return service.enviarInforme(idEstudiante);
     }
 
+    @PostMapping("/estudiante/{idEstudiante}/iniciar")
+    public EstadoComplexivoEstudianteDto iniciarComplexivo(
+            @PathVariable Integer idEstudiante) {
+        return service.iniciarComplexivoDesdeEleccion(idEstudiante);
+    }
+
     // ── DT1 — propuestas ─────────────────────────────────────────────
     @GetMapping("/dt1/{idDocente}/propuestas")
     public List<PropuestaComplexivoDto> propuestasDeDocenteDt1(

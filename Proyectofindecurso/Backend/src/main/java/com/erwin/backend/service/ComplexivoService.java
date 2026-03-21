@@ -100,31 +100,81 @@ public class ComplexivoService {
         Carrera carrera = getCarreraCoordinador(idUsuario);
         List<DocenteOpcionDto> docentes = getTodosDocentes();
 
-        // Solo mostrar estudiantes cuya propuesta fue APROBADA (tienen complexivo_titulacion)
+        // Mostrar TODOS los estudiantes del periodo con propuesta aprobada
+        // sin filtrar por carrera (puede haber inconsistencias en el campo carrera)
         List<EstudianteComplexivoSinDocenteDto> sinDocente = complexivoRepo
                 .findAll().stream()
                 .filter(ct -> ct.getPeriodo().getIdPeriodo().equals(periodo.getIdPeriodo())
-                        && ct.getCarrera().getIdCarrera().equals(carrera.getIdCarrera())
                         && !dt2Repo.existsByEstudiante_IdEstudianteAndPeriodo_IdPeriodoAndActivoTrue(
                         ct.getEstudiante().getIdEstudiante(), periodo.getIdPeriodo()))
                 .map(ct -> {
                     Estudiante est = ct.getEstudiante();
                     String nombre = est.getUsuario().getNombres()
                             + " " + est.getUsuario().getApellidos();
+                    String nombreCarrera = ct.getCarrera() != null
+                            ? ct.getCarrera().getNombre()
+                            : (est.getCarrera() != null ? est.getCarrera().getNombre() : "Sin carrera");
                     return new EstudianteComplexivoSinDocenteDto(
                             est.getIdEstudiante(), nombre,
-                            carrera.getNombre(), NOMBRE_MODALIDAD_COMPLEXIVO,
+                            nombreCarrera, NOMBRE_MODALIDAD_COMPLEXIVO,
                             ct.getEstado());
                 }).toList();
 
+        // Para los ya asignados también mostrar todos del periodo
         List<ComplexivoDocenteAsignacionResponse> actuales = dt2Repo
-                .findByCarreraAndPeriodoActivo(carrera.getIdCarrera(), periodo.getIdPeriodo())
+                .findByPeriodo_IdPeriodoAndActivoTrue(periodo.getIdPeriodo())
                 .stream().map(this::toDt2AsignacionResponse).toList();
 
         return new InfoCoordinadorDt2Dto(
                 carrera.getIdCarrera(), carrera.getNombre(),
                 periodo.getIdPeriodo(), periodo.getDescripcion(),
                 docentes, sinDocente, actuales);
+    }
+    // ═══════════════════════════════════════════════════════════════
+// ESTUDIANTE — crear registro complexivo si no existe (failsafe)
+// ═══════════════════════════════════════════════════════════════
+    @Transactional
+    public EstadoComplexivoEstudianteDto iniciarComplexivoDesdeEleccion(Integer idEstudiante) {
+        PeriodoTitulacion periodo = getPeriodoActivo();
+
+        // Si ya existe no hacer nada
+        if (complexivoRepo.findByEstudiante_IdEstudianteAndPeriodo_IdPeriodo(
+                idEstudiante, periodo.getIdPeriodo()).isPresent()) {
+            return estadoEstudiante(idEstudiante);
+        }
+
+        Estudiante estudiante = estudianteRepo.findById(idEstudiante)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "ESTUDIANTE_NO_ENCONTRADO"));
+
+        // Buscar carrera desde eleccion o directamente del estudiante
+        Carrera carrera;
+        EleccionTitulacion eleccion = null;
+        var eleccionOpt = eleccionRepo
+                .findByEstudiante_IdEstudianteAndPeriodo_IdPeriodo(
+                        idEstudiante, periodo.getIdPeriodo());
+
+        if (eleccionOpt.isPresent()) {
+            eleccion = eleccionOpt.get();
+            carrera = eleccion.getCarrera();
+        } else {
+            carrera = estudiante.getCarrera();
+        }
+
+        if (carrera == null)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "ESTUDIANTE_SIN_CARRERA");
+
+        ComplexivoTitulacion ct = new ComplexivoTitulacion();
+        ct.setEstudiante(estudiante);
+        ct.setCarrera(carrera);
+        ct.setPeriodo(periodo);
+        ct.setEleccion(eleccion);
+        ct.setEstado("EN_CURSO");
+        ct.setFechaInscripcion(java.time.LocalDate.now());
+        complexivoRepo.save(ct);
+
+        return estadoEstudiante(idEstudiante);
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -309,9 +359,15 @@ public class ComplexivoService {
                     return n;
                 });
 
-        if (!"BORRADOR".equals(informe.getEstado()))
+        if (!"BORRADOR".equals(informe.getEstado()) && !"RECHAZADO".equals(informe.getEstado()))
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "INFORME_NO_EDITABLE_EN_ESTADO_" + informe.getEstado());
+
+// Si venía RECHAZADO, volvemos a BORRADOR al guardar
+        if ("RECHAZADO".equals(informe.getEstado())) {
+            informe.setEstado("BORRADOR");
+            informe.setObservaciones(null); // limpia la obs anterior al corregir
+        }
 
         informe.setTitulo(req.titulo());
         informe.setPlanteamientoProblema(req.planteamientoProblema());

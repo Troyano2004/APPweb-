@@ -22,7 +22,15 @@ export interface PropuestaTemaDto {
   estado: string;
   fechaEnvio: string | null;
   observaciones: string | null;
-  modalidad: string | null; // ← nuevo: distingue Complexivo de TIC
+  modalidad: string | null;
+  // Campos completos para PDF
+  planteamientoProblema: string | null;
+  objetivosGenerales: string | null;
+  objetivosEspecificos: string | null;
+  marcoTeorico: string | null;
+  metodologia: string | null;
+  resultadosEsperados: string | null;
+  bibliografia: string | null;
 }
 
 export interface CrearTemaRequest {
