@@ -1,4 +1,3 @@
-
 import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -8,6 +7,7 @@ import {
   HabilitanteDto,
   ResumenHabilitacionDto,
   SubirHabilitanteRequest,
+  SubirAntiplagioPorDirectorRequest,
   ValidarHabilitanteRequest
 } from '../../services/documento-habilitante.service';
 
@@ -40,6 +40,14 @@ export class DocumentosHabilitantesComponent implements OnInit {
   uploadingFile    = signal(false);
   archivoUrl       = signal<string | null>(null);
   archivoNombre    = signal<string | null>(null);
+
+  // Modal antiplagio — exclusivo del Director (Art. 57 num.2)
+  modalAntiplagio     = signal(false);
+  antiplagioPct       = signal<number | null>(null);
+  antiplagioUrl       = signal<string | null>(null);
+  antiplagioNombre    = signal<string | null>(null);
+  antiplagioProyecto  = signal<number | null>(null);
+  uploadingAntiplagio = signal(false);
 
   // indica si el estudiante es de modalidad Complexivo
   esComplexivo = false;
@@ -106,14 +114,15 @@ export class DocumentosHabilitantesComponent implements OnInit {
   }
 
   private buildForms(): void {
-    // El estudiante ya NO ingresa el porcentaje de antiplagio
+    // Estudiante: formulario vacío, no hay campos extra
     this.formSubir = this.fb.group({});
 
-    // El Director SÍ ingresa el porcentaje al momento de validar
+    // Director: validar otros documentos habilitantes
+    // porcentajeCoincidencia se eliminó porque el antiplagio
+    // ya tiene su propio modal independiente (abrirModalAntiplagio)
     this.formValidar = this.fb.group({
-      porcentajeCoincidencia: [null],
-      decision:              ['APROBADO', Validators.required],
-      comentario:            ['']
+      decision:   ['APROBADO', Validators.required],
+      comentario: ['']
     });
   }
 
@@ -149,7 +158,7 @@ export class DocumentosHabilitantesComponent implements OnInit {
     }
   }
 
-  // ── Modal subir ─────────────────────────────────────────────
+  // ── Modal subir (Estudiante) ────────────────────────────────
   abrirModalSubir(doc: HabilitanteDto): void {
     this.docSeleccionado.set(doc);
     this.archivoUrl.set(null);
@@ -211,7 +220,6 @@ export class DocumentosHabilitantesComponent implements OnInit {
       tipoDocumento: doc.tipoDocumento,
       urlArchivo:    url,
       nombreArchivo: nombre ?? 'documento.pdf'
-      // El porcentaje de antiplagio lo registra el Director al validar, NO el estudiante
     };
 
     this.loading.set(true);
@@ -234,10 +242,10 @@ export class DocumentosHabilitantesComponent implements OnInit {
     });
   }
 
-  // ── Modal validar ───────────────────────────────────────────
+  // ── Modal validar (Director — documentos que NO son antiplagio) ──
   abrirModalValidar(doc: HabilitanteDto): void {
     this.docSeleccionado.set(doc);
-    this.formValidar.reset({ porcentajeCoincidencia: null, decision: 'APROBADO', comentario: '' });
+    this.formValidar.reset({ decision: 'APROBADO', comentario: '' });
     this.ok.set(null);
     this.error.set(null);
     this.modalValidarOpen.set(true);
@@ -266,16 +274,6 @@ export class DocumentosHabilitantesComponent implements OnInit {
       comentario: this.formValidar.value.comentario
     };
 
-    // Solo para antiplagio: el Director registra el porcentaje real del reporte
-    if (doc.tipoDocumento === 'CERTIFICADO_ANTIPLAGIO') {
-      const pct = this.formValidar.value.porcentajeCoincidencia;
-      if (pct === null || pct === undefined || pct === '') {
-        this.error.set('Debe ingresar el porcentaje de coincidencia de COMPILATIO.');
-        return;
-      }
-      req.porcentajeCoincidencia = Number(pct);
-    }
-
     this.loading.set(true);
     this.api.validarDocumento(id, doc.id, req).subscribe({
       next: () => {
@@ -287,6 +285,89 @@ export class DocumentosHabilitantesComponent implements OnInit {
       error: (e) => {
         this.loading.set(false);
         this.error.set(e?.error?.message ?? 'Error al validar.');
+      }
+    });
+  }
+
+  // ── Modal antiplagio (Director — Art. 57 num.2) ─────────────
+  // El Director corre COMPILATIO, emite el certificado firmado
+  // y lo registra aquí directamente. El estudiante no interviene.
+  abrirModalAntiplagio(idProyecto: number): void {
+    this.antiplagioProyecto.set(idProyecto);
+    this.antiplagioPct.set(null);
+    this.antiplagioUrl.set(null);
+    this.antiplagioNombre.set(null);
+    this.ok.set(null);
+    this.error.set(null);
+    this.modalAntiplagio.set(true);
+  }
+
+  cerrarModalAntiplagio(): void {
+    this.modalAntiplagio.set(false);
+    this.antiplagioProyecto.set(null);
+  }
+
+  onFileAntiplagio(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file  = input.files?.[0];
+    if (!file) return;
+    if (file.type !== 'application/pdf') {
+      this.error.set('Solo se permiten archivos PDF.');
+      return;
+    }
+    if (file.size > 20 * 1024 * 1024) {
+      this.error.set('El archivo no debe superar 20 MB.');
+      return;
+    }
+
+    this.uploadingAntiplagio.set(true);
+    this.error.set(null);
+    this.api.uploadArchivo(file).subscribe({
+      next: (res) => {
+        this.antiplagioUrl.set(res.url);
+        this.antiplagioNombre.set(file.name);
+        this.uploadingAntiplagio.set(false);
+      },
+      error: (e) => {
+        this.error.set(e?.error?.message ?? 'Error subiendo archivo');
+        this.uploadingAntiplagio.set(false);
+      }
+    });
+  }
+
+  confirmarAntiplagio(): void {
+    const id     = this.idEntidad();
+    const idProy = this.antiplagioProyecto();
+    const url    = this.antiplagioUrl();
+    const nombre = this.antiplagioNombre();
+    const pct    = this.antiplagioPct();
+
+    if (!id || !idProy || !url) {
+      this.error.set('Debe subir el PDF del certificado primero.');
+      return;
+    }
+    if (pct === null || pct === undefined) {
+      this.error.set('Debe ingresar el porcentaje de coincidencia.');
+      return;
+    }
+
+    const req: SubirAntiplagioPorDirectorRequest = {
+      urlArchivo:             url,
+      nombreArchivo:          nombre ?? 'certificado_antiplagio.pdf',
+      porcentajeCoincidencia: Number(pct)
+    };
+
+    this.loading.set(true);
+    this.api.subirCertificadoAntiplagio(id, idProy, req).subscribe({
+      next: () => {
+        this.loading.set(false);
+        this.ok.set('Certificado antiplagio registrado correctamente.');
+        this.cerrarModalAntiplagio();
+        this.cargarDatos();
+      },
+      error: (e) => {
+        this.loading.set(false);
+        this.error.set(e?.error?.message ?? 'Error al registrar el certificado.');
       }
     });
   }

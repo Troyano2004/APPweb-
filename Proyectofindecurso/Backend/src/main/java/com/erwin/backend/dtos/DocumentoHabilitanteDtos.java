@@ -95,4 +95,16 @@ public class DocumentoHabilitanteDtos {
         private int     rechazados;
         private java.util.List<HabilitanteDto> documentos;
     }
+    // ──────────────────────────────────────────────────────────────
+    // REQUEST: Director sube certificado antiplagio (Art. 57 num.2)
+    // ──────────────────────────────────────────────────────────────
+    @Data
+    public static class SubirAntiplagioPorDirectorRequest {
+        /** URL del certificado PDF ya subido a Azure */
+        private String urlArchivo;
+        /** Nombre del archivo para mostrar en UI */
+        private String nombreArchivo;
+        /** Porcentaje real que indica el reporte COMPILATIO */
+        private BigDecimal porcentajeCoincidencia;
+    }
 }

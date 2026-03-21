@@ -14,24 +14,25 @@ import java.util.*;
 @Service
 public class DocumentoHabilitanteService {
 
-    /** Catálogo TIC (7 documentos — Arts. 10, 11, 57, 59) */
+    /**
+     * Catálogo ESTUDIANTE TIC (6 documentos — Arts. 10, 11, 59).
+     * CERTIFICADO_ANTIPLAGIO se eliminó del flujo del estudiante:
+     * el Director lo emite y sube directamente (Art. 57 num.2).
+     */
     private static final List<TipoMeta> CATALOGO = List.of(
             new TipoMeta("INFORME_DIRECTOR", 1, "Informe del Director",
                     "Art. 59a: Informe favorable emitido por el/la Director(a) del TIC una vez finalizado el trabajo.", true),
-            new TipoMeta("CERTIFICADO_ANTIPLAGIO", 2, "Certificado Anti-plagio (COMPILATIO)",
-                    "Art. 57 num.2: Reporte de COMPILATIO con coincidencia máxima del 10%.", true),
-            new TipoMeta("TRABAJO_FINAL_PDF", 3, "Trabajo Final (PDF para Biblioteca)",
+            new TipoMeta("TRABAJO_FINAL_PDF", 2, "Trabajo Final (PDF para Biblioteca)",
                     "Art. 59a: Copia digital del trabajo final empastado que será remitida a la biblioteca.", true),
-            new TipoMeta("CERTIFICADO_PENSUM", 4, "Certificado Pensum Completo (SGA)",
+            new TipoMeta("CERTIFICADO_PENSUM", 3, "Certificado Pensum Completo (SGA)",
                     "Art. 10: Certificado del SGA que acredita haber aprobado la totalidad del pensum.", true),
-            new TipoMeta("CERTIFICADO_DEUDAS", 5, "Certificado Sin Deudas Administrativas (SGA)",
+            new TipoMeta("CERTIFICADO_DEUDAS", 4, "Certificado Sin Deudas Administrativas (SGA)",
                     "Art. 11: Certificado del SGA de no tener deudas con ninguna instancia de la UTEQ.", true),
-            new TipoMeta("CERTIFICADO_IDIOMA", 6, "Certificado Idioma Extranjero",
+            new TipoMeta("CERTIFICADO_IDIOMA", 5, "Certificado Idioma Extranjero",
                     "Art. 18a: Certificado de haber aprobado el idioma extranjero.", true),
-            new TipoMeta("CERTIFICADO_PRACTICAS", 7, "Certificado Prácticas y Servicio Comunitario",
+            new TipoMeta("CERTIFICADO_PRACTICAS", 6, "Certificado Prácticas y Servicio Comunitario",
                     "Art. 18b: Certificado de horas de Prácticas Laborales y Servicio Comunitario.", true)
     );
-
     /** Catálogo COMPLEXIVO (4 documentos — Arts. 10, 11, 18a, 18b)
      *  El informe práctico ya se gestiona en ComplexivoInformePractico.
      *  No aplica COMPILATIO, Informe Director ni Trabajo Final PDF (son del TIC). */
@@ -252,6 +253,85 @@ public class DocumentoHabilitanteService {
         habilitanteRepo.save(doc);
         return toDto(doc);
     }
+
+
+
+
+
+
+
+    // ══════════════════════════════════════════════════════════
+// DIRECTOR — subir certificado antiplagio (Art. 57 num.2)
+// El Director corre COMPILATIO, emite el certificado firmado
+// y lo sube directamente al sistema. El estudiante no interviene.
+// ══════════════════════════════════════════════════════════
+    @Transactional
+    public DocumentoHabilitanteDtos.HabilitanteDto subirCertificadoAntiplagio(
+            Integer idDocente,
+            Integer idProyecto,
+            DocumentoHabilitanteDtos.SubirAntiplagioPorDirectorRequest req) {
+
+        ProyectoTitulacion proyecto = proyectoRepo.findById(idProyecto)
+                .orElseThrow(() -> new RuntimeException("Proyecto no encontrado: " + idProyecto));
+
+        // Verificar que el docente es el director de este proyecto
+        if (proyecto.getDirector() == null ||
+                !proyecto.getDirector().getIdDocente().equals(idDocente))
+            throw new RuntimeException(
+                    "Solo el Director del proyecto puede subir el certificado antiplagio");
+
+        Docente director = docenteRepo.findById(idDocente)
+                .orElseThrow(() -> new RuntimeException("Docente no encontrado"));
+
+        // Buscar el estudiante del proyecto
+        Estudiante estudiante = proyecto.getEleccion().getEstudiante();
+
+        // Upsert: si ya existe lo reemplazamos
+        DocumentoHabilitante doc = habilitanteRepo
+                .findByProyecto_IdProyectoAndTipoDocumento(idProyecto, "CERTIFICADO_ANTIPLAGIO")
+                .orElse(new DocumentoHabilitante());
+
+        if (req.getPorcentajeCoincidencia() == null)
+            throw new RuntimeException(
+                    "Debe ingresar el porcentaje de coincidencia del reporte COMPILATIO");
+
+        BigDecimal umbral = new BigDecimal("10.00");
+        boolean dentroUmbral = req.getPorcentajeCoincidencia().compareTo(umbral) <= 0;
+
+        doc.setProyecto(proyecto);
+        doc.setEstudiante(estudiante);
+        doc.setTipoDocumento("CERTIFICADO_ANTIPLAGIO");
+        doc.setNombreArchivo(req.getNombreArchivo());
+        doc.setUrlArchivo(req.getUrlArchivo());
+        doc.setFormato("PDF");
+        doc.setPorcentajeCoincidencia(req.getPorcentajeCoincidencia());
+        doc.setUmbralPermitido(umbral);
+        doc.setResultadoAntiplagio(dentroUmbral ? "APROBADO" : "RECHAZADO");
+        doc.setValidadoPor(director);
+        doc.setFechaValidacion(LocalDateTime.now());
+
+        if (dentroUmbral) {
+            doc.setEstado("APROBADO");
+            doc.setComentarioValidacion(
+                    "Certificado emitido por el Director. Coincidencia: "
+                            + req.getPorcentajeCoincidencia() + "% (dentro del umbral del 10%, Art. 57 num.2).");
+        } else {
+            doc.setEstado("RECHAZADO");
+            doc.setComentarioValidacion(
+                    "Porcentaje (" + req.getPorcentajeCoincidencia()
+                            + "%) supera el umbral del 10% (Art. 57 num.2). El trabajo debe ser corregido.");
+        }
+
+        habilitanteRepo.save(doc);
+        return toDto(doc);
+    }
+
+
+
+
+
+
+
 
     // ══════════════════════════════════════════════════════════
     // DIRECTOR — pendientes

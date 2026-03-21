@@ -1,4 +1,3 @@
-
 <!-- ================================================================
      MÓDULO: Documentos Habilitantes — DT2 / Sustentación
      Reglamento UIC-UTEQ Arts. 10, 11, 57, 59
@@ -334,6 +333,23 @@
           </ul>
         </div>
 
+        <!-- Registrar antiplagio COMPILATIO -->
+        <div class="hab-sidebar-card">
+          <h3 class="hab-sidebar-card__title">🔍 Antiplagio COMPILATIO</h3>
+          <p style="font-size:0.85rem;color:#6b7280;margin-bottom:10px;">
+            Art. 57 num.2 — Como Director, usted corre COMPILATIO y registra el certificado aquí directamente.
+          </p>
+          @for (doc of pendientes(); track doc.id) {
+            @if (doc.idProyecto) {
+              <button class="hab-btn hab-btn--primary"
+                      style="width:100%;margin-bottom:6px;font-size:0.82rem;"
+                      (click)="abrirModalAntiplagio(doc.idProyecto!)">
+                Registrar antiplagio — {{ doc.nombreEstudiante }}
+              </button>
+            }
+          }
+        </div>
+
         <!-- Aviso importante -->
         <div class="hab-sidebar-card hab-sidebar-card--tip">
           <span class="hab-tip-icon">⚠️</span>
@@ -484,6 +500,70 @@
         <button class="hab-btn hab-btn--primary" (click)="confirmarValidacion()"
                 [disabled]="loading()">
           {{ loading() ? 'Guardando...' : 'Confirmar decisión' }}
+        </button>
+      </div>
+
+    </div>
+  </div>
+}
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODAL: Director registra certificado antiplagio (Art. 57 num.2)
+══════════════════════════════════════════════════════════════ -->
+@if (modalAntiplagio()) {
+  <div class="hab-overlay" (click)="cerrarModalAntiplagio()">
+    <div class="hab-modal" (click)="$event.stopPropagation()">
+
+      <div class="hab-modal__header">
+        <h2>🔍 Registrar certificado antiplagio</h2>
+        <button class="hab-modal__close" (click)="cerrarModalAntiplagio()">✕</button>
+      </div>
+
+      <div class="hab-modal__tipo-info">
+        <strong>Certificado Anti-plagio (COMPILATIO)</strong>
+        <p>Art. 57 num.2: Usted como Director corrió COMPILATIO, verificó el resultado y emite este certificado. El porcentaje debe ser menor o igual al 10%.</p>
+      </div>
+
+      <div class="hab-upload-area">
+        <label class="hab-upload-label">
+          <input type="file" accept="application/pdf" (change)="onFileAntiplagio($event)" hidden />
+          @if (uploadingAntiplagio()) {
+            <span class="hab-upload-loading">⏳ Subiendo archivo...</span>
+          } @else if (antiplagioUrl()) {
+            <span class="hab-upload-done">✅ {{ antiplagioNombre() }}</span>
+          } @else {
+            <span class="hab-upload-prompt">
+              📁 Subir PDF del certificado COMPILATIO<br>
+              <small>El certificado firmado por usted como Director</small>
+            </span>
+          }
+        </label>
+      </div>
+
+      <div class="hab-form-group" style="margin-top:16px;">
+        <label>% Coincidencia COMPILATIO <span class="req">*</span></label>
+        <input type="number" step="0.01" min="0" max="100"
+               class="hab-input"
+               [value]="antiplagioPct()"
+               (input)="antiplagioPct.set(+$any($event.target).value)"
+               placeholder="Ej: 7.35" />
+        <small>
+          Si el porcentaje supera el 10% el sistema lo marcará como RECHAZADO
+          automáticamente (Art. 57 num.2) y el estudiante deberá corregir el trabajo.
+        </small>
+      </div>
+
+      @if (error()) {
+        <div class="hab-alert hab-alert--error">{{ error() }}</div>
+      }
+
+      <div class="hab-modal__footer">
+        <button class="hab-btn hab-btn--ghost" (click)="cerrarModalAntiplagio()" [disabled]="loading()">
+          Cancelar
+        </button>
+        <button class="hab-btn hab-btn--primary" (click)="confirmarAntiplagio()"
+                [disabled]="loading() || uploadingAntiplagio() || !antiplagioUrl()">
+          {{ loading() ? 'Registrando...' : 'Confirmar certificado' }}
         </button>
       </div>
 

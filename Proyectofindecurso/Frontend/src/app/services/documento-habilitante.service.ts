@@ -55,6 +55,11 @@ export interface ValidarHabilitanteRequest {
   comentario?: string;
   porcentajeCoincidencia?: number;
 }
+export interface SubirAntiplagioPorDirectorRequest {
+  urlArchivo: string;
+  nombreArchivo: string;
+  porcentajeCoincidencia: number;
+}
 @Injectable({
   providedIn: 'root'
 })
@@ -121,6 +126,17 @@ export class DocumentoHabilitanteService {
   ): Observable<HabilitanteDto> {
     return this.http.post<HabilitanteDto>(
       `${this.base}/estudiante/${idEstudiante}/subir-complexivo`,
+      req
+    );
+
+  }
+  subirCertificadoAntiplagio(
+    idDocente: number,
+    idProyecto: number,
+    req: SubirAntiplagioPorDirectorRequest
+  ): Observable<HabilitanteDto> {
+    return this.http.post<HabilitanteDto>(
+      `${this.base}/director/${idDocente}/proyecto/${idProyecto}/antiplagio`,
       req
     );
   }

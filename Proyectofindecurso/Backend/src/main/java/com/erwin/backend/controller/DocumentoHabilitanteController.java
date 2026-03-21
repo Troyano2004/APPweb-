@@ -53,6 +53,15 @@ public class DocumentoHabilitanteController {
             @PathVariable Integer idProyecto) {
         return service.obtenerResumenPorProyecto(idProyecto);
     }
+    // ── DIRECTOR — subir certificado antiplagio ────────────────
+    @PostMapping("/director/{idDocente}/proyecto/{idProyecto}/antiplagio")
+    public ResponseEntity<DocumentoHabilitanteDtos.HabilitanteDto> subirAntiplagio(
+            @PathVariable Integer idDocente,
+            @PathVariable Integer idProyecto,
+            @RequestBody DocumentoHabilitanteDtos.SubirAntiplagioPorDirectorRequest req) {
+        return ResponseEntity.ok(
+                service.subirCertificadoAntiplagio(idDocente, idProyecto, req));
+    }
 
     @GetMapping("/director/{idDocente}/pendientes")
     public List<DocumentoHabilitanteDtos.HabilitanteDto> pendientesDirector(
