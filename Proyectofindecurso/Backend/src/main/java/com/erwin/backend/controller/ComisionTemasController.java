@@ -1,3 +1,5 @@
+
+
 package com.erwin.backend.controller;
 
 import com.erwin.backend.entities.*;
@@ -33,6 +35,8 @@ public class ComisionTemasController {
     private final DocumentoTitulacionRepository documentoTitulacionRepository;
     private final AnteproyectoTitulacionRepository anteproyectoTitulacionRepository;
     private final ComplexivoDocenteAsignacionRepository complexivoAsignacionRepository;
+    private final ComplexivoDt1AsignacionRepository complexivoDt1Repository;
+    private final ComplexivoTitulacionRepository complexivoTitulacionRepository;
     private final EmailService emailService;
 
     public ComisionTemasController(BancoTemasRepository bancoTemasRepository,
@@ -50,23 +54,27 @@ public class ComisionTemasController {
                                    DocumentoTitulacionRepository documentoTitulacionRepository,
                                    AnteproyectoTitulacionRepository anteproyectoTitulacionRepository,
                                    ComplexivoDocenteAsignacionRepository complexivoAsignacionRepository,
+                                   ComplexivoDt1AsignacionRepository complexivoDt1Repository,
+                                   ComplexivoTitulacionRepository complexivoTitulacionRepository,
                                    EmailService emailService) {
-        this.bancoTemasRepository            = bancoTemasRepository;
-        this.propuestaRepository             = propuestaRepository;
-        this.comisionMiembroRepository       = comisionMiembroRepository;
-        this.docenteRepository               = docenteRepository;
-        this.estudianteRepository            = estudianteRepository;
-        this.carreraRepository               = carreraRepository;
-        this.eleccionRepository              = eleccionRepository;
-        this.modalidadRepository             = modalidadRepository;
-        this.carreraModalidadRepository      = carreraModalidadRepository;
-        this.periodoRepository               = periodoRepository;
-        this.proyectoTitulacionRepository    = proyectoTitulacionRepository;
-        this.tipoTrabajoTitulacionRepository = tipoTrabajoTitulacionRepository;
-        this.documentoTitulacionRepository   = documentoTitulacionRepository;
+        this.bancoTemasRepository             = bancoTemasRepository;
+        this.propuestaRepository              = propuestaRepository;
+        this.comisionMiembroRepository        = comisionMiembroRepository;
+        this.docenteRepository                = docenteRepository;
+        this.estudianteRepository             = estudianteRepository;
+        this.carreraRepository                = carreraRepository;
+        this.eleccionRepository               = eleccionRepository;
+        this.modalidadRepository              = modalidadRepository;
+        this.carreraModalidadRepository       = carreraModalidadRepository;
+        this.periodoRepository                = periodoRepository;
+        this.proyectoTitulacionRepository     = proyectoTitulacionRepository;
+        this.tipoTrabajoTitulacionRepository  = tipoTrabajoTitulacionRepository;
+        this.documentoTitulacionRepository    = documentoTitulacionRepository;
         this.anteproyectoTitulacionRepository = anteproyectoTitulacionRepository;
-        this.complexivoAsignacionRepository  = complexivoAsignacionRepository;
-        this.emailService                    = emailService;
+        this.complexivoAsignacionRepository   = complexivoAsignacionRepository;
+        this.complexivoDt1Repository          = complexivoDt1Repository;
+        this.complexivoTitulacionRepository   = complexivoTitulacionRepository;
+        this.emailService                     = emailService;
     }
 
     // ════════════════════════════════════════════════════════════════════════
@@ -104,7 +112,7 @@ public class ComisionTemasController {
         if (estudiante.getCarrera() == null || estudiante.getCarrera().getIdCarrera() == null)
             throw new RuntimeException("El estudiante no tiene una carrera registrada");
 
-        Integer idCarrera   = estudiante.getCarrera().getIdCarrera();
+        Integer idCarrera = estudiante.getCarrera().getIdCarrera();
         Integer idModalidad = req.idModalidad;
 
         boolean esPermitida = carreraModalidadRepository
@@ -143,7 +151,8 @@ public class ComisionTemasController {
         validarMiembroComision(idDocente);
         return bancoTemasRepository.findAll().stream()
                 .sorted(Comparator.comparing(BancoTemas::getIdTema).reversed())
-                .map(this::toTemaDto).toList();
+                .map(this::toTemaDto)
+                .toList();
     }
 
     @PostMapping("/docente/{idDocente}/banco")
@@ -152,8 +161,9 @@ public class ComisionTemasController {
         validarMiembroComision(idDocente);
 
         if (req == null || req.titulo == null || req.titulo.trim().isEmpty()
-                || req.descripcion == null || req.descripcion.trim().isEmpty())
+                || req.descripcion == null || req.descripcion.trim().isEmpty()) {
             throw new RuntimeException("Título y descripción son obligatorios");
+        }
 
         Docente docente = docenteRepository.findById(idDocente)
                 .orElseThrow(() -> new RuntimeException("Docente no encontrado"));
@@ -181,7 +191,8 @@ public class ComisionTemasController {
         return propuestaRepository.findAll().stream()
                 .filter(p -> !esModalidadComplexivo(p))
                 .sorted(Comparator.comparing(PropuestaTitulacion::getIdPropuesta).reversed())
-                .map(this::toPropuestaDto).toList();
+                .map(this::toPropuestaDto)
+                .toList();
     }
 
     @PostMapping("/docente/{idDocente}/propuestas/{idPropuesta}/decision")
@@ -193,19 +204,22 @@ public class ComisionTemasController {
         PropuestaTitulacion propuesta = propuestaRepository.findById(idPropuesta)
                 .orElseThrow(() -> new RuntimeException("Propuesta no encontrada"));
 
-        if (esModalidadComplexivo(propuesta))
+        if (esModalidadComplexivo(propuesta)) {
             throw new RuntimeException(
                     "Esta propuesta es de Examen Complexivo. Debe revisarla el docente complexivo asignado.");
+        }
 
         String estado = req.estado == null ? "" : req.estado.trim().toUpperCase();
-        if (!estado.equals("APROBADA") && !estado.equals("RECHAZADA"))
+        if (!estado.equals("APROBADA") && !estado.equals("RECHAZADA")) {
             throw new RuntimeException("El estado debe ser APROBADA o RECHAZADA");
+        }
 
         Integer actualizado = propuestaRepository.registrarDecisionStored(
                 idPropuesta, estado, req.observaciones, LocalDate.now());
 
-        if (actualizado == null || actualizado == 0)
+        if (actualizado == null || actualizado == 0) {
             throw new RuntimeException("No se pudo registrar la decisión de la propuesta");
+        }
 
         PropuestaTitulacion propuestaActualizada = propuestaRepository.findById(idPropuesta)
                 .orElseThrow(() -> new RuntimeException("Propuesta no encontrada"));
@@ -223,36 +237,47 @@ public class ComisionTemasController {
     }
 
     // ════════════════════════════════════════════════════════════════════════
-    // PROPUESTAS COMPLEXIVO — DOCENTE COMPLEXIVO
+    // PROPUESTAS COMPLEXIVO — DOCENTE COMPLEXIVO / DT1
     // ════════════════════════════════════════════════════════════════════════
 
     /**
-     * Lista propuestas Complexivo del docente — solo las de sus estudiantes asignados
+     * Lista propuestas Complexivo del docente — usa tabla complexivo_dt1_asignacion
      */
     @GetMapping("/docente/{idDocente}/propuestas-complexivo")
     public List<PropuestaDto> propuestasComplexivo(@PathVariable Integer idDocente) {
         PeriodoTitulacion periodo = periodoRepository.findByActivoTrue()
                 .orElseThrow(() -> new RuntimeException("No hay periodo activo"));
 
-        List<Integer> idsEstudiantes = complexivoAsignacionRepository
+        List<Integer> idsEstudiantes = complexivoDt1Repository
                 .findByPeriodo_IdPeriodoAndActivoTrue(periodo.getIdPeriodo())
                 .stream()
                 .filter(a -> a.getDocente().getIdDocente().equals(idDocente))
                 .map(a -> a.getEstudiante().getIdEstudiante())
                 .toList();
 
+        if (idsEstudiantes.isEmpty()) {
+            idsEstudiantes = complexivoAsignacionRepository
+                    .findByPeriodo_IdPeriodoAndActivoTrue(periodo.getIdPeriodo())
+                    .stream()
+                    .filter(a -> a.getDocente().getIdDocente().equals(idDocente))
+                    .map(a -> a.getEstudiante().getIdEstudiante())
+                    .toList();
+        }
+
         if (idsEstudiantes.isEmpty()) return List.of();
 
+        final List<Integer> ids = idsEstudiantes;
         return propuestaRepository.findAll().stream()
-                .filter(p -> esModalidadComplexivo(p))
+                .filter(this::esModalidadComplexivo)
                 .filter(p -> p.getEstudiante() != null
-                        && idsEstudiantes.contains(p.getEstudiante().getIdEstudiante()))
+                        && ids.contains(p.getEstudiante().getIdEstudiante()))
                 .sorted(Comparator.comparing(PropuestaTitulacion::getIdPropuesta).reversed())
-                .map(this::toPropuestaDto).toList();
+                .map(this::toPropuestaDto)
+                .toList();
     }
 
     /**
-     * El docente complexivo decide sobre la propuesta de su estudiante
+     * El docente DT1 decide sobre la propuesta de su estudiante
      */
     @PostMapping("/docente/{idDocente}/propuestas-complexivo/{idPropuesta}/decision")
     public PropuestaDto decidirPropuestaComplexivo(@PathVariable Integer idDocente,
@@ -261,39 +286,68 @@ public class ComisionTemasController {
         PropuestaTitulacion propuesta = propuestaRepository.findById(idPropuesta)
                 .orElseThrow(() -> new RuntimeException("Propuesta no encontrada"));
 
-        if (!esModalidadComplexivo(propuesta))
+        if (!esModalidadComplexivo(propuesta)) {
             throw new RuntimeException("Esta propuesta no es de modalidad Examen Complexivo");
+        }
 
         PeriodoTitulacion periodo = periodoRepository.findByActivoTrue()
                 .orElseThrow(() -> new RuntimeException("No hay periodo activo"));
 
-        boolean esSuEstudiante = complexivoAsignacionRepository
+        boolean esSuEstudiante = complexivoDt1Repository
                 .findByPeriodo_IdPeriodoAndActivoTrue(periodo.getIdPeriodo())
                 .stream()
                 .anyMatch(a -> a.getDocente().getIdDocente().equals(idDocente)
                         && a.getEstudiante().getIdEstudiante()
                         .equals(propuesta.getEstudiante().getIdEstudiante()));
 
-        if (!esSuEstudiante)
+        if (!esSuEstudiante) {
+            esSuEstudiante = complexivoAsignacionRepository
+                    .findByPeriodo_IdPeriodoAndActivoTrue(periodo.getIdPeriodo())
+                    .stream()
+                    .anyMatch(a -> a.getDocente().getIdDocente().equals(idDocente)
+                            && a.getEstudiante().getIdEstudiante()
+                            .equals(propuesta.getEstudiante().getIdEstudiante()));
+        }
+
+        if (!esSuEstudiante) {
             throw new RuntimeException("Este estudiante no está asignado a tu cargo en complexivo");
+        }
 
         String estado = req.estado == null ? "" : req.estado.trim().toUpperCase();
-        if (!estado.equals("APROBADA") && !estado.equals("RECHAZADA"))
+        if (!estado.equals("APROBADA") && !estado.equals("RECHAZADA")) {
             throw new RuntimeException("El estado debe ser APROBADA o RECHAZADA");
+        }
 
         Integer actualizado = propuestaRepository.registrarDecisionStored(
                 idPropuesta, estado, req.observaciones, LocalDate.now());
 
-        if (actualizado == null || actualizado == 0)
-            throw new RuntimeException("No se pudo registrar la decisión");
+        if (actualizado == null || actualizado == 0) {
+            throw new RuntimeException("No se pudo registrar la decisión de la propuesta");
+        }
 
-        PropuestaTitulacion propuestaActualizada = propuestaRepository.findById(idPropuesta)
+        PropuestaTitulacion actualizada = propuestaRepository.findById(idPropuesta)
                 .orElseThrow(() -> new RuntimeException("Propuesta no encontrada"));
 
-        if ("APROBADA".equals(propuestaActualizada.getEstado()))
-            notificarPropuestaAprobada(propuestaActualizada);
+        if ("APROBADA".equals(actualizada.getEstado())) {
+            boolean yaExiste = complexivoTitulacionRepository
+                    .findByEstudiante_IdEstudianteAndPeriodo_IdPeriodo(
+                            actualizada.getEstudiante().getIdEstudiante(),
+                            periodo.getIdPeriodo())
+                    .isPresent();
 
-        return toPropuestaDto(propuestaActualizada);
+            if (!yaExiste) {
+                ComplexivoTitulacion ct = new ComplexivoTitulacion();
+                ct.setEstudiante(actualizada.getEstudiante());
+                ct.setCarrera(actualizada.getCarrera());
+                ct.setPeriodo(periodo);
+                ct.setEleccion(actualizada.getEleccion());
+                ct.setEstado("EN_CURSO");
+                ct.setFechaInscripcion(LocalDate.now());
+                complexivoTitulacionRepository.save(ct);
+            }
+        }
+
+        return toPropuestaDto(actualizada);
     }
 
     // ════════════════════════════════════════════════════════════════════════
@@ -306,12 +360,14 @@ public class ComisionTemasController {
         Estudiante estudiante = estudianteRepository.findById(idEstudiante)
                 .orElseThrow(() -> new RuntimeException("Estudiante no encontrado"));
 
-        if (req == null || req.titulo == null || req.titulo.trim().isEmpty())
+        if (req == null || req.titulo == null || req.titulo.trim().isEmpty()) {
             throw new RuntimeException("El título de la propuesta es obligatorio");
+        }
 
         EleccionTitulacion eleccion = obtenerEleccionVigente(idEstudiante);
-        if (eleccion == null)
+        if (eleccion == null) {
             throw new RuntimeException("El estudiante no tiene elección de titulación registrada");
+        }
 
         Carrera carrera = estudiante.getCarrera() != null
                 ? estudiante.getCarrera()
@@ -325,8 +381,9 @@ public class ComisionTemasController {
             BancoTemas tema = bancoTemasRepository.findById(req.idTema)
                     .orElseThrow(() -> new RuntimeException("Tema seleccionado no existe"));
             idTema = tema.getIdTema();
-            if (temaInvestigacion.isBlank() || temaInvestigacion.equals("Pendiente de definir"))
+            if (temaInvestigacion.isBlank() || temaInvestigacion.equals("Pendiente de definir")) {
                 temaInvestigacion = tema.getTitulo();
+            }
         }
 
         Integer idPropuestaCreada = propuestaRepository.crearPropuestaStored(
@@ -347,8 +404,9 @@ public class ComisionTemasController {
                 LocalDate.now()
         );
 
-        if (idPropuestaCreada == null)
+        if (idPropuestaCreada == null) {
             throw new RuntimeException("No se pudo crear la propuesta");
+        }
 
         return toPropuestaDto(propuestaRepository.findById(idPropuestaCreada)
                 .orElseThrow(() -> new RuntimeException("Propuesta creada no encontrada")));
@@ -359,7 +417,8 @@ public class ComisionTemasController {
         return propuestaRepository.findByEstudianteStored(idEstudiante)
                 .stream()
                 .sorted(Comparator.comparing(PropuestaTitulacion::getIdPropuesta).reversed())
-                .map(this::toPropuestaDto).toList();
+                .map(this::toPropuestaDto)
+                .toList();
     }
 
     @GetMapping("/estudiante/{idEstudiante}/temas-disponibles")
@@ -375,7 +434,8 @@ public class ComisionTemasController {
                         || (t.getCarrera() != null
                         && idCarreraEstudiante.equals(t.getCarrera().getIdCarrera())))
                 .sorted(Comparator.comparing(BancoTemas::getIdTema).reversed())
-                .map(this::toTemaDto).toList();
+                .map(this::toTemaDto)
+                .toList();
     }
 
     // ════════════════════════════════════════════════════════════════════════
@@ -388,14 +448,17 @@ public class ComisionTemasController {
         Estudiante estudiante = estudianteRepository.findById(idEstudiante)
                 .orElseThrow(() -> new RuntimeException("Estudiante no encontrado"));
 
-        if (req == null || req.titulo == null || req.titulo.trim().isEmpty())
+        if (req == null || req.titulo == null || req.titulo.trim().isEmpty()) {
             throw new RuntimeException("El título es obligatorio");
-        if (req.descripcion == null || req.descripcion.trim().isEmpty())
+        }
+        if (req.descripcion == null || req.descripcion.trim().isEmpty()) {
             throw new RuntimeException("La descripción es obligatoria");
+        }
 
         Carrera carrera = estudiante.getCarrera();
-        if (carrera == null)
+        if (carrera == null) {
             throw new RuntimeException("El estudiante no tiene carrera asignada");
+        }
 
         BancoTemas tema = new BancoTemas();
         tema.setTitulo(req.titulo.trim());
@@ -412,7 +475,9 @@ public class ComisionTemasController {
     public List<TemaDto> listarSugerencias(@PathVariable Integer idDocente) {
         validarMiembroComision(idDocente);
         return bancoTemasRepository.findByEstadoOrderByIdTemaDesc("SUGERIDO")
-                .stream().map(this::toTemaDto).toList();
+                .stream()
+                .map(this::toTemaDto)
+                .toList();
     }
 
     @PostMapping("/docente/{idDocente}/sugerencias/{idTema}/aprobar")
@@ -422,16 +487,18 @@ public class ComisionTemasController {
         validarMiembroComision(idDocente);
         BancoTemas tema = bancoTemasRepository.findById(idTema)
                 .orElseThrow(() -> new RuntimeException("Sugerencia no encontrada"));
-        if (!"SUGERIDO".equals(tema.getEstado()))
+        if (!"SUGERIDO".equals(tema.getEstado())) {
             throw new RuntimeException("Este tema ya fue procesado");
+        }
 
         Docente docente = docenteRepository.findById(idDocente)
                 .orElseThrow(() -> new RuntimeException("Docente no encontrado"));
         tema.setEstado("PROPUESTO");
         tema.setDocenteProponente(docente);
         tema.setFechaRevision(LocalDate.now());
-        if (req != null && req.observaciones != null && !req.observaciones.trim().isEmpty())
+        if (req != null && req.observaciones != null && !req.observaciones.trim().isEmpty()) {
             tema.setObservaciones(req.observaciones.trim());
+        }
 
         return toTemaDto(bancoTemasRepository.save(tema));
     }
@@ -443,13 +510,15 @@ public class ComisionTemasController {
         validarMiembroComision(idDocente);
         BancoTemas tema = bancoTemasRepository.findById(idTema)
                 .orElseThrow(() -> new RuntimeException("Sugerencia no encontrada"));
-        if (!"SUGERIDO".equals(tema.getEstado()))
+        if (!"SUGERIDO".equals(tema.getEstado())) {
             throw new RuntimeException("Este tema ya fue procesado");
+        }
 
         tema.setEstado("RECHAZADO");
         tema.setFechaRevision(LocalDate.now());
-        if (req != null && req.observaciones != null && !req.observaciones.trim().isEmpty())
+        if (req != null && req.observaciones != null && !req.observaciones.trim().isEmpty()) {
             tema.setObservaciones(req.observaciones.trim());
+        }
 
         return toTemaDto(bancoTemasRepository.save(tema));
     }
@@ -463,7 +532,8 @@ public class ComisionTemasController {
                 .filter(t -> t.getEstudianteSugerente() != null
                         && idEstudiante.equals(t.getEstudianteSugerente().getIdEstudiante()))
                 .sorted(Comparator.comparing(BancoTemas::getIdTema).reversed())
-                .map(this::toTemaDto).toList();
+                .map(this::toTemaDto)
+                .toList();
     }
 
     // ════════════════════════════════════════════════════════════════════════
@@ -499,8 +569,9 @@ public class ComisionTemasController {
         boolean esMiembro = comisionMiembroRepository.findAll().stream()
                 .anyMatch(m -> m.getDocente() != null
                         && idDocente.equals(m.getDocente().getIdDocente()));
-        if (!esMiembro)
+        if (!esMiembro) {
             throw new RuntimeException("El docente no pertenece a ninguna comisión formativa");
+        }
     }
 
     private void notificarPropuestaAprobada(PropuestaTitulacion propuesta) {
@@ -524,41 +595,61 @@ public class ComisionTemasController {
 
     private TemaDto toTemaDto(BancoTemas tema) {
         String docente = "Sin docente";
-        if (tema.getDocenteProponente() != null && tema.getDocenteProponente().getUsuario() != null)
+        if (tema.getDocenteProponente() != null && tema.getDocenteProponente().getUsuario() != null) {
             docente = tema.getDocenteProponente().getUsuario().getNombres() + " "
                     + tema.getDocenteProponente().getUsuario().getApellidos();
+        }
 
         String carrera = tema.getCarrera() != null ? tema.getCarrera().getNombre() : "Sin carrera";
         Integer idEstudianteSugerente = tema.getEstudianteSugerente() != null
                 ? tema.getEstudianteSugerente().getIdEstudiante() : null;
 
-        return new TemaDto(tema.getIdTema(), tema.getTitulo(), tema.getDescripcion(),
-                carrera, docente, tema.getEstado(), tema.getObservaciones(), idEstudianteSugerente);
+        return new TemaDto(
+                tema.getIdTema(),
+                tema.getTitulo(),
+                tema.getDescripcion(),
+                carrera,
+                docente,
+                tema.getEstado(),
+                tema.getObservaciones(),
+                idEstudianteSugerente
+        );
     }
 
     private PropuestaDto toPropuestaDto(PropuestaTitulacion propuesta) {
         String estudiante = "Sin estudiante";
-        if (propuesta.getEstudiante() != null && propuesta.getEstudiante().getUsuario() != null)
+        if (propuesta.getEstudiante() != null && propuesta.getEstudiante().getUsuario() != null) {
             estudiante = propuesta.getEstudiante().getUsuario().getNombres() + " "
                     + propuesta.getEstudiante().getUsuario().getApellidos();
+        }
 
         String carrera = propuesta.getCarrera() != null ? propuesta.getCarrera().getNombre() : "Sin carrera";
         String tema = propuesta.getTema() != null
-                ? propuesta.getTema().getTitulo() : propuesta.getTemaInvestigacion();
+                ? propuesta.getTema().getTitulo()
+                : propuesta.getTemaInvestigacion();
 
-        // Incluir la modalidad en el DTO para que el frontend pueda distinguir
         String modalidad = (propuesta.getEleccion() != null
                 && propuesta.getEleccion().getModalidad() != null)
-                ? propuesta.getEleccion().getModalidad().getNombre() : null;
+                ? propuesta.getEleccion().getModalidad().getNombre()
+                : null;
 
-        return new PropuestaDto(propuesta.getIdPropuesta(), propuesta.getTitulo(),
-                tema, estudiante, carrera, propuesta.getEstado(),
-                propuesta.getFechaEnvio(), propuesta.getObservacionesComision(), modalidad);
+        return new PropuestaDto(
+                propuesta.getIdPropuesta(),
+                propuesta.getTitulo(),
+                tema,
+                estudiante,
+                carrera,
+                propuesta.getEstado(),
+                propuesta.getFechaEnvio(),
+                propuesta.getObservacionesComision(),
+                modalidad
+        );
     }
 
     private Docente resolverDirectorInicial(PropuestaTitulacion propuesta) {
-        if (propuesta.getTema() != null && propuesta.getTema().getDocenteProponente() != null)
+        if (propuesta.getTema() != null && propuesta.getTema().getDocenteProponente() != null) {
             return propuesta.getTema().getDocenteProponente();
+        }
         throw new RuntimeException(
                 "No se puede crear el proyecto: la propuesta no tiene docente director asociado");
     }
@@ -570,21 +661,24 @@ public class ComisionTemasController {
 
         EleccionTitulacion eleccion = propuesta.getEleccion();
         if (eleccion == null || eleccion.getModalidad() == null
-                || eleccion.getModalidad().getIdModalidad() == null)
+                || eleccion.getModalidad().getIdModalidad() == null) {
             throw new RuntimeException(
                     "No se puede crear el proyecto: la propuesta no tiene modalidad asociada");
+        }
 
         PeriodoTitulacion periodo = eleccion.getPeriodo();
-        if (periodo == null)
+        if (periodo == null) {
             periodo = periodoRepository.findByActivoTrue()
                     .orElseThrow(() -> new RuntimeException("No se encontró un periodo activo"));
+        }
 
         List<Tipotrabajotitulacion> tiposTrabajo = tipoTrabajoTitulacionRepository
                 .findByModalidadTitulacion_IdModalidad(eleccion.getModalidad().getIdModalidad());
 
-        if (tiposTrabajo.isEmpty())
+        if (tiposTrabajo.isEmpty()) {
             throw new RuntimeException(
                     "No existe un tipo de trabajo configurado para la modalidad seleccionada");
+        }
 
         Docente directorInicial = resolverDirectorInicial(propuesta);
 
@@ -602,8 +696,9 @@ public class ComisionTemasController {
 
     private void crearDocumentoTitulacionDesdeProyecto(ProyectoTitulacion proyecto,
                                                        PropuestaTitulacion propuesta) {
-        if (documentoTitulacionRepository.findByProyecto_IdProyecto(proyecto.getIdProyecto()).isPresent())
+        if (documentoTitulacionRepository.findByProyecto_IdProyecto(proyecto.getIdProyecto()).isPresent()) {
             return;
+        }
 
         DocumentoTitulacion documento = new DocumentoTitulacion();
         documento.setProyecto(proyecto);
@@ -617,7 +712,9 @@ public class ComisionTemasController {
     private void crearAnteproyectoAprobadoDesdePropuesta(PropuestaTitulacion propuesta,
                                                          ProyectoTitulacion proyecto) {
         if (anteproyectoTitulacionRepository
-                .findByPropuesta_IdPropuesta(propuesta.getIdPropuesta()).isPresent()) return;
+                .findByPropuesta_IdPropuesta(propuesta.getIdPropuesta()).isPresent()) {
+            return;
+        }
 
         AnteproyectoTitulacion ante = new AnteproyectoTitulacion();
         ante.setPropuesta(propuesta);
@@ -666,28 +763,49 @@ public class ComisionTemasController {
     }
 
     public record TemaDto(
-            Integer idTema, String titulo, String descripcion,
-            String carrera, String docente, String estado,
-            String observaciones, Integer idEstudianteSugerente) {}
+            Integer idTema,
+            String titulo,
+            String descripcion,
+            String carrera,
+            String docente,
+            String estado,
+            String observaciones,
+            Integer idEstudianteSugerente
+    ) {}
 
-    // ✅ modalidad agregado al DTO para que el frontend pueda distinguir
     public record PropuestaDto(
-            Integer idPropuesta, String titulo, String tema,
-            String estudiante, String carrera, String estado,
-            LocalDate fechaEnvio, String observaciones, String modalidad) {}
+            Integer idPropuesta,
+            String titulo,
+            String tema,
+            String estudiante,
+            String carrera,
+            String estado,
+            LocalDate fechaEnvio,
+            String observaciones,
+            String modalidad
+    ) {}
 
     public record ModalidadSimpleDto(Integer idModalidad, String nombre) {}
 
     public record EstadoModalidadDto(
-            boolean tieneModalidad, Integer idEleccion,
-            Integer idModalidad, String modalidad,
-            Integer idCarrera, List<ModalidadSimpleDto> modalidadesDisponibles) {
-
+            boolean tieneModalidad,
+            Integer idEleccion,
+            Integer idModalidad,
+            String modalidad,
+            Integer idCarrera,
+            List<ModalidadSimpleDto> modalidadesDisponibles
+    ) {
         public EstadoModalidadDto withEleccion(Integer nuevoIdEleccion,
                                                Integer nuevaIdModalidad,
                                                String nuevaModalidad) {
-            return new EstadoModalidadDto(true, nuevoIdEleccion, nuevaIdModalidad,
-                    nuevaModalidad, idCarrera, modalidadesDisponibles);
+            return new EstadoModalidadDto(
+                    true,
+                    nuevoIdEleccion,
+                    nuevaIdModalidad,
+                    nuevaModalidad,
+                    idCarrera,
+                    modalidadesDisponibles
+            );
         }
     }
 }

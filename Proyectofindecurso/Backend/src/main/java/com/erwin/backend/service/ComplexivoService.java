@@ -1,3 +1,4 @@
+
 package com.erwin.backend.service;
 
 import com.erwin.backend.dtos.ComplexivoDtos.*;
@@ -82,7 +83,7 @@ public class ComplexivoService {
 
         List<ComplexivoDocenteAsignacionResponse> actuales = dt1Repo
                 .findByCarreraAndPeriodoActivo(carrera.getIdCarrera(), periodo.getIdPeriodo())
-                .stream().map(a -> toDt1AsignacionResponse(a)).toList();
+                .stream().map(this::toDt1AsignacionResponse).toList();
 
         return new InfoCoordinadorDt1Dto(
                 carrera.getIdCarrera(), carrera.getNombre(),
@@ -118,7 +119,7 @@ public class ComplexivoService {
 
         List<ComplexivoDocenteAsignacionResponse> actuales = dt2Repo
                 .findByCarreraAndPeriodoActivo(carrera.getIdCarrera(), periodo.getIdPeriodo())
-                .stream().map(a -> toDt2AsignacionResponse(a)).toList();
+                .stream().map(this::toDt2AsignacionResponse).toList();
 
         return new InfoCoordinadorDt2Dto(
                 carrera.getIdCarrera(), carrera.getNombre(),
@@ -147,17 +148,28 @@ public class ComplexivoService {
         Usuario asignadoPor = usuarioRepo.findById(req.idUsuarioCoordinador())
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "USUARIO_NO_ENCONTRADO"));
-        EleccionTitulacion eleccion = eleccionRepo
+
+        // Buscar elección — si no existe usar la carrera del estudiante directamente
+        Carrera carrera;
+        var eleccionOpt = eleccionRepo
                 .findByEstudiante_IdEstudianteAndPeriodo_IdPeriodo(
-                        req.idEstudiante(), periodo.getIdPeriodo())
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST, "ESTUDIANTE_SIN_ELECCION_EN_PERIODO"));
+                        req.idEstudiante(), periodo.getIdPeriodo());
+
+        if (eleccionOpt.isPresent()) {
+            carrera = eleccionOpt.get().getCarrera();
+        } else {
+            // Fallback: usar la carrera directa del estudiante
+            carrera = estudiante.getCarrera();
+            if (carrera == null)
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "ESTUDIANTE_SIN_CARRERA_ASIGNADA");
+        }
 
         ComplexivoDt1Asignacion asig = new ComplexivoDt1Asignacion();
         asig.setEstudiante(estudiante);
         asig.setDocente(docente);
         asig.setPeriodo(periodo);
-        asig.setCarrera(eleccion.getCarrera());
+        asig.setCarrera(carrera);
         asig.setAsignadoPor(asignadoPor);
         asig.setObservacion(req.observacion());
         asig.setActivo(true);
@@ -186,19 +198,26 @@ public class ComplexivoService {
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "USUARIO_NO_ENCONTRADO"));
 
-        // Para DT2 usamos complexivo_titulacion para la carrera
-        ComplexivoTitulacion ct = complexivoRepo
-                .findByEstudiante_IdEstudianteAndPeriodo_IdPeriodo(
-                        req.idEstudiante(), periodo.getIdPeriodo())
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST,
-                        "ESTUDIANTE_SIN_REGISTRO_COMPLEXIVO_PROPUESTA_NO_APROBADA"));
+        // Buscar carrera desde complexivo_titulacion (propuesta aprobada)
+        // Si no existe, usar carrera directa del estudiante
+        Carrera carrera;
+        var ctOpt = complexivoRepo.findByEstudiante_IdEstudianteAndPeriodo_IdPeriodo(
+                req.idEstudiante(), periodo.getIdPeriodo());
+
+        if (ctOpt.isPresent()) {
+            carrera = ctOpt.get().getCarrera();
+        } else {
+            carrera = estudiante.getCarrera();
+            if (carrera == null)
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "ESTUDIANTE_SIN_CARRERA_Y_SIN_PROPUESTA_APROBADA");
+        }
 
         ComplexivoDt2Asignacion asig = new ComplexivoDt2Asignacion();
         asig.setEstudiante(estudiante);
         asig.setDocente(docente);
         asig.setPeriodo(periodo);
-        asig.setCarrera(ct.getCarrera());
+        asig.setCarrera(carrera);
         asig.setAsignadoPor(asignadoPor);
         asig.setObservacion(req.observacion());
         asig.setActivo(true);
@@ -285,7 +304,9 @@ public class ComplexivoService {
                 .findByComplexivo_IdComplexivo(ct.getIdComplexivo())
                 .orElseGet(() -> {
                     ComplexivoInformePractico n = new ComplexivoInformePractico();
-                    n.setComplexivo(ct); n.setEstado("BORRADOR"); return n;
+                    n.setComplexivo(ct);
+                    n.setEstado("BORRADOR");
+                    return n;
                 });
 
         if (!"BORRADOR".equals(informe.getEstado()))
