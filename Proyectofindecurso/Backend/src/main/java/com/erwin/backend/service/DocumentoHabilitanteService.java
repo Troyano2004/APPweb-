@@ -153,7 +153,7 @@ public class DocumentoHabilitanteService {
         doc.setFechaValidacion(null);
         doc.setValidadoPor(null);
 
-        aplicarAntiplagio(doc, req);
+        // El porcentaje de antiplagio lo registra el Director al validar, no al subir
         habilitanteRepo.save(doc);
         return toDto(doc);
     }
