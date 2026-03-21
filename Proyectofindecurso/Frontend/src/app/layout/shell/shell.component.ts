@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { ComisionTemasService } from '../../services/comision-temas';
 import {
   ActivatedRoute,
   NavigationEnd,
@@ -28,12 +29,14 @@ interface MenuItem {
   label: string;
   path: string;
   roles?: AppRole[];
+  soloComplexivo?: boolean;
 }
 
 interface MenuSection {
   title: string;
   icon: string;
   roles?: AppRole[];
+  soloComplexivo?: boolean;
   items: MenuItem[];
 }
 
@@ -95,8 +98,6 @@ export class ShellComponent implements OnInit, OnDestroy {
         { label: 'Docentes por Carrera',    path: '/app/catalogos/docente-carrera' },
       ],
     },
-
-    // ── BANCO DE TEMAS — comisión + estudiante ────────────────────────────
     {
       title: 'Banco de Temas',
       icon: '📚',
@@ -108,7 +109,6 @@ export class ShellComponent implements OnInit, OnDestroy {
         { label: 'Mis propuestas de tema', path: '/app/temas/mis-propuestas', roles: ['ESTUDIANTE'] },
       ],
     },
-
     {
       title: 'Propuesta y Anteproyecto',
       icon: '📝',
@@ -120,8 +120,7 @@ export class ShellComponent implements OnInit, OnDestroy {
         { label: 'Revisión por director',   path: '/app/propuesta/revision',    roles: ['DOCENTE','DOCENTE_TITULADO','ADMIN'] },
         { label: 'Historial observaciones', path: '/app/tutorias/historial',    roles: ['ESTUDIANTE','ADMIN'] },
         { label: 'Historial observaciones', path: '/app/propuesta/historial',   roles: ['DOCENTE','DOCENTE_TITULADO'] },
-        { label: 'Reporte de propuestas', path: '/app/propuesta/reporte', roles: ['ADMIN','COORDINADOR','DOCENTE','DOCENTE_TITULADO'] },
-
+        { label: 'Reporte de propuestas',   path: '/app/propuesta/reporte',     roles: ['ADMIN','COORDINADOR','DOCENTE','DOCENTE_TITULADO'] },
       ],
     },
     {
@@ -129,13 +128,13 @@ export class ShellComponent implements OnInit, OnDestroy {
       icon: '👨‍🏫',
       roles: ['DOCENTE', 'DOCENTE_TITULADO', 'ADMIN'],
       items: [
-        { label: 'Mis anteproyectos',           path: '/app/director/mis-anteproyectos' },
-        { label: 'Tutorías',                    path: '/app/director/tutorias' },
-        { label: 'Acta de revisión',            path: '/app/director/acta' },
-        { label: 'Revisión Final Anteproyecto', path: '/app/dt1/lista' },
-        { label: 'Registrar tutoría',           path: '/app/tutorias/nueva' },
-        { label: 'Actas de tutoría',            path: '/app/tutorias/actas' },
-        { label: 'Historial',                   path: '/app/tutorias/historial', roles: ['ADMIN'] },
+        { label: 'Mis anteproyectos',            path: '/app/director/mis-anteproyectos' },
+        { label: 'Tutorías',                     path: '/app/director/tutorias' },
+        { label: 'Acta de revisión',             path: '/app/director/acta' },
+        { label: 'Revisión Final Anteproyecto',  path: '/app/dt1/lista' },
+        { label: 'Registrar tutoría',            path: '/app/tutorias/nueva' },
+        { label: 'Actas de tutoría',             path: '/app/tutorias/actas' },
+        { label: 'Historial',                    path: '/app/tutorias/historial', roles: ['ADMIN'] },
         { label: 'Complexivo - Mis estudiantes', path: '/app/complexivo/mis-estudiantes', roles: ['DOCENTE','DOCENTE_TITULADO','ADMIN'] },
       ],
     },
@@ -165,7 +164,7 @@ export class ShellComponent implements OnInit, OnDestroy {
       ],
     },
     {
-      // NUEVO — solo aparece si el estudiante eligió Examen Complexivo
+      // Solo aparece si el estudiante eligió Examen Complexivo
       title: 'Titulación II — Complexivo',
       icon: '📋',
       roles: ['ESTUDIANTE'],
@@ -221,7 +220,6 @@ export class ShellComponent implements OnInit, OnDestroy {
         { label: 'Reportes',                      path: '/app/coordinador/reportes' },
         { label: 'Comisión formativa',            path: '/app/coordinador/comision' },
         { label: 'DT1 - Docentes y Tutores',      path: '/app/coordinador/dt1-asignacion' },
-        // NUEVO
         { label: 'Complexivo - Asignar Docente',  path: '/app/coordinador/complexivo-asignacion' },
       ],
     },
@@ -282,7 +280,6 @@ export class ShellComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadUserData();
     this.loadTheme();
-    // Construir menú inmediatamente — igual que el original
     this.menuSections = this.buildMenuByRoles();
     this.openSectionIndex = this.menuSections.length ? 0 : -1;
     this.updateTitles();
@@ -293,7 +290,6 @@ export class ShellComponent implements OnInit, OnDestroy {
     this.subscriptions.add(sub);
 
     // En segundo plano: si es estudiante, consultar modalidad
-    // y agregar sección complexivo solo si la eligió
     this.cargarModalidadSiEsEstudiante();
   }
 
@@ -305,11 +301,11 @@ export class ShellComponent implements OnInit, OnDestroy {
     return (this.modalidadEstudiante ?? '').toLowerCase().includes('complexivo');
   }
 
-  // Igual que el original — sin filtros adicionales
   itemsVisibles(section: MenuSection): MenuItem[] {
     return section.items;
   }
 
+  // ── Sidebar ───────────────────────────────────────────
   toggleCollapse(): void { this.isCollapsed = !this.isCollapsed; }
   toggleMobile():   void { this.isMobileOpen = !this.isMobileOpen; }
   closeMobile():    void { this.isMobileOpen = false; }
@@ -318,12 +314,14 @@ export class ShellComponent implements OnInit, OnDestroy {
     this.openSectionIndex = this.openSectionIndex === index ? -1 : index;
   }
 
+  // ── Tema ──────────────────────────────────────────────
   toggleTheme(): void {
     this.isDarkMode = !this.isDarkMode;
     document.body.classList.toggle('dark-mode', this.isDarkMode);
     localStorage.setItem('theme', this.isDarkMode ? 'dark' : 'light');
   }
 
+  // ── Sesión ────────────────────────────────────────────
   logout(): void {
     localStorage.removeItem('usuario');
     localStorage.removeItem('token');

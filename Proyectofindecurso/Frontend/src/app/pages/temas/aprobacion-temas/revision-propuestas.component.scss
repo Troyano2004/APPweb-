@@ -15,6 +15,9 @@ $radius-lg:  14px;
   margin: 0 auto;
   font-family: 'Segoe UI', sans-serif;
   position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
 }
 
 // ── Header ─────────────────────────────────────────────
@@ -23,11 +26,10 @@ $radius-lg:  14px;
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 20px;
   flex-wrap: wrap;
 }
-.page-title   { font-size: 1.5rem; font-weight: 700; color: $text-main; margin: 0 0 4px; }
-.page-subtitle{ color: $text-muted; font-size: .875rem; margin: 0; }
+.page-title    { font-size: 1.5rem; font-weight: 700; color: $text-main; margin: 0 0 4px; }
+.page-subtitle { color: $text-muted; font-size: .875rem; margin: 0; }
 
 .btn-recargar {
   padding: 8px 14px;
@@ -42,9 +44,31 @@ $radius-lg:  14px;
   &:hover { border-color: $verde; color: $verde; }
 }
 
-// ── Filtros ────────────────────────────────────────────
-.filtros-bar { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+// ── Tabs de modo ────────────────────────────────────────
+.modo-tabs {
+  display: flex;
+  gap: 0;
+  border: 1.5px solid $border;
+  border-radius: $radius;
+  overflow: hidden;
+  width: fit-content;
+}
+.modo-tab {
+  padding: 9px 20px;
+  border: none;
+  background: #f9fafb;
+  font-size: .85rem;
+  font-weight: 600;
+  color: $text-muted;
+  cursor: pointer;
+  transition: all .15s;
+  &:not(:last-child)   { border-right: 1.5px solid $border; }
+  &.active             { background: $verde; color: white; }
+  &:hover:not(.active) { background: #f3f4f6; color: $text-main; }
+}
 
+// ── Filtros ────────────────────────────────────────────
+.filtros-bar { display: flex; gap: 8px; flex-wrap: wrap; }
 .filtro-btn {
   display: flex;
   align-items: center;
@@ -57,8 +81,7 @@ $radius-lg:  14px;
   color: $text-muted;
   cursor: pointer;
   transition: all .15s;
-
-  &:hover { border-color: $verde; color: $verde; }
+  &:hover  { border-color: $verde; color: $verde; }
   &.activo { background: $verde; border-color: $verde; color: white; }
 }
 .filtro-count {
@@ -133,8 +156,8 @@ $radius-lg:  14px;
   tbody tr {
     border-bottom: 1px solid #f3f4f6;
     transition: background .1s;
-    &:last-child { border-bottom: none; }
-    &:hover      { background: #fafafa; }
+    &:last-child     { border-bottom: none; }
+    &:hover          { background: #fafafa; }
     &.fila-pendiente { background: #fffbeb; &:hover { background: #fef9e7; } }
   }
 
@@ -151,6 +174,7 @@ $radius-lg:  14px;
   .tema-ref     { font-size: .78rem; color: $text-muted; display: block; }
 }
 .col-fecha { white-space: nowrap; }
+.muted     { color: $text-muted; }
 
 .badge {
   font-size: .73rem;
@@ -158,10 +182,19 @@ $radius-lg:  14px;
   padding: 3px 10px;
   border-radius: 20px;
   white-space: nowrap;
-
   &.badge-en_revision { background: #fef3c7; color: #92400e; }
   &.badge-aprobada    { background: #dcfce7; color: #14532d; }
   &.badge-rechazada   { background: #fee2e2; color: #7f1d1d; }
+}
+
+.modalidad-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: #ede9fe;
+  color: #5b21b6;
+  font-size: .73rem;
+  font-weight: 600;
 }
 
 .btn-revisar {
@@ -213,7 +246,6 @@ $radius-lg:  14px;
   justify-content: space-between;
   padding: 20px 24px 16px;
   border-bottom: 1px solid #f3f4f6;
-
   h2 { font-size: 1.05rem; font-weight: 700; color: $text-main; margin: 0; }
 }
 .modal-close {
@@ -238,9 +270,21 @@ $radius-lg:  14px;
   gap: 16px;
 }
 
+.modalidad-banner {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  background: #f5f3ff;
+  border: 1px solid #ddd6fe;
+  border-radius: 8px;
+  padding: .6rem 1rem;
+  font-size: .85rem;
+  color: #5b21b6;
+  .complexivo-hint { color: #7c3aed; font-style: italic; font-size: .8rem; }
+}
+
 .detalle-item { display: flex; flex-direction: column; gap: 5px; }
 .detalle-row  { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-
 .detalle-label {
   font-size: .75rem;
   font-weight: 600;
@@ -250,16 +294,11 @@ $radius-lg:  14px;
 }
 .requerido  { color: #dc2626; }
 .label-hint { font-weight: 400; text-transform: none; letter-spacing: 0; color: #9ca3af; margin-left: 4px; }
-
 .detalle-valor {
-  font-size: .9rem;
-  color: $text-main;
-  font-weight: 500;
-  margin: 0;
+  font-size: .9rem; color: $text-main; font-weight: 500; margin: 0;
   &.muted { color: $text-muted; font-weight: 400; }
 }
 
-// ── Decisión ───────────────────────────────────────────
 .decision-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .decision-btn {
   padding: 10px 12px;
@@ -271,16 +310,10 @@ $radius-lg:  14px;
   cursor: pointer;
   text-align: center;
   transition: all .15s;
-
-  &.aprobar {
-    &:hover, &.sel { border-color: #16a34a; background: #f0fdf4; color: #15803d; }
-  }
-  &.rechazar {
-    &:hover, &.sel { border-color: #dc2626; background: #fef2f2; color: #b91c1c; }
-  }
+  &.aprobar  { &:hover, &.sel { border-color: #16a34a; background: #f0fdf4; color: #15803d; } }
+  &.rechazar { &:hover, &.sel { border-color: #dc2626; background: #fef2f2; color: #b91c1c; } }
 }
 
-// ── Aviso aprobación ───────────────────────────────────
 .aviso-aprobacion {
   background: #f0fdf4;
   border: 1px solid #bbf7d0;
@@ -289,9 +322,9 @@ $radius-lg:  14px;
   font-size: .82rem;
   color: #15803d;
   line-height: 1.5;
+  &.complexivo { background: #f5f3ff; border-color: #ddd6fe; color: #5b21b6; }
 }
 
-// ── Textarea modal ─────────────────────────────────────
 .form-textarea {
   width: 100%;
   padding: 9px 13px;
@@ -303,16 +336,10 @@ $radius-lg:  14px;
   font-family: inherit;
   box-sizing: border-box;
   transition: border-color .15s;
-
-  &:focus {
-    outline: none;
-    border-color: $verde;
-    box-shadow: 0 0 0 3px rgba(26,107,58,.1);
-  }
+  &:focus { outline: none; border-color: $verde; box-shadow: 0 0 0 3px rgba(26,107,58,.1); }
   &::placeholder { color: #9ca3af; }
 }
 
-// ── Alertas ────────────────────────────────────────────
 .alerta {
   border-radius: 8px;
   padding: 10px 14px;
@@ -320,7 +347,6 @@ $radius-lg:  14px;
   &.error { background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; }
 }
 
-// ── Footer modal ───────────────────────────────────────
 .modal-footer {
   padding: 16px 24px 20px;
   border-top: 1px solid #f3f4f6;
@@ -340,7 +366,6 @@ $radius-lg:  14px;
   font-weight: 600;
   cursor: pointer;
   transition: background .15s;
-
   &:hover:not(:disabled) { background: $verde-dark; }
   &.rechazar             { background: #dc2626; &:hover:not(:disabled) { background: #b91c1c; } }
   &:disabled             { opacity: .6; cursor: not-allowed; }
@@ -356,4 +381,83 @@ $radius-lg:  14px;
   cursor: pointer;
   transition: all .15s;
   &:hover { border-color: #9ca3af; background: #f9fafb; }
+}
+
+// ── Dark mode ──────────────────────────────────────────
+:host-context(body.dark-mode) {
+  .page-title    { color: #f1f5f9; }
+  .page-subtitle { color: #94a3b8; }
+  .btn-recargar  { background: #1e293b; border-color: #334155; color: #e2e8f0; &:hover { border-color: #4ade80; color: #4ade80; } }
+
+  .modo-tabs { border-color: #334155; }
+  .modo-tab  {
+    background: #0f172a; color: #94a3b8;
+    &:not(:last-child)   { border-color: #334155; }
+    &.active             { background: $verde; color: white; }
+    &:hover:not(.active) { background: #1e293b; color: #e2e8f0; }
+  }
+
+  .filtro-btn {
+    background: #1e293b; border-color: #334155; color: #94a3b8;
+    .filtro-count { background: #334155; color: #e2e8f0; }
+    &:hover  { border-color: #4ade80; color: #4ade80; }
+    &.activo { background: $verde; border-color: $verde; color: white; }
+  }
+
+  .estado-carga { color: #94a3b8; }
+  .estado-vacio { color: #64748b; }
+
+  .tabla-wrap { background: #1e293b; border-color: #334155; }
+  .tabla {
+    thead th { background: #0f172a; color: #94a3b8; border-color: #334155; }
+    tbody tr {
+      border-color: #334155;
+      &:hover          { background: #263448; }
+      &.fila-pendiente { background: #2a1f0a; &:hover { background: #332208; } }
+    }
+    td { color: #e2e8f0; }
+  }
+  .col-titulo { .titulo-texto { color: #f1f5f9; } .tema-ref { color: #64748b; } }
+
+  .badge {
+    &.badge-en_revision { background: #2a1f0a; color: #fcd34d; }
+    &.badge-aprobada    { background: #052e16; color: #4ade80; }
+    &.badge-rechazada   { background: #2d1b1b; color: #fca5a5; }
+  }
+  .modalidad-tag { background: #2d1b4e; color: #c4b5fd; }
+
+  .modal-card    { background: #1e293b; }
+  .modal-header  { border-color: #334155; h2 { color: #f1f5f9; } }
+  .modal-close   { background: #334155; color: #94a3b8; &:hover { background: #475569; } }
+
+  .modalidad-banner {
+    background: #1e1a2e; border-color: #4c1d95; color: #c4b5fd;
+    .complexivo-hint { color: #a78bfa; }
+  }
+
+  .detalle-label { color: #94a3b8; }
+  .detalle-valor { color: #e2e8f0; &.muted { color: #64748b; } }
+  .label-hint    { color: #64748b; }
+
+  .decision-btn {
+    background: #0f172a; border-color: #334155; color: #e2e8f0;
+    &.aprobar  { &:hover, &.sel { border-color: #4ade80; background: #052e16; color: #4ade80; } }
+    &.rechazar { &:hover, &.sel { border-color: #fca5a5; background: #2d1b1b; color: #fca5a5; } }
+  }
+
+  .aviso-aprobacion {
+    background: #052e16; border-color: #166534; color: #4ade80;
+    &.complexivo { background: #1e1a2e; border-color: #4c1d95; color: #c4b5fd; }
+  }
+
+  .form-textarea {
+    background: #0f172a; border-color: #334155; color: #e2e8f0;
+    &:focus { border-color: #4ade80; box-shadow: 0 0 0 3px rgba(74,222,128,.1); }
+    &::placeholder { color: #475569; }
+  }
+
+  .alerta.error { background: #2d1b1b; border-color: #7f1d1d; color: #fca5a5; }
+
+  .modal-footer  { border-color: #334155; }
+  .btn-secondary { background: #1e293b; border-color: #334155; color: #e2e8f0; &:hover { background: #263448; border-color: #475569; } }
 }

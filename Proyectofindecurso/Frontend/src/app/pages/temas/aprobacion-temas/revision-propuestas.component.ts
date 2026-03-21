@@ -1,13 +1,14 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { getSessionUser, getSessionEntityId } from '../../../services/session';
+import { getSessionUser, getSessionEntityId, getUserRoles } from '../../../services/session';
 import {
   ComisionTemasService,
   PropuestaTemaDto
 } from '../../../services/comision-temas';
 
 type FiltroEstado = 'TODAS' | 'EN_REVISION' | 'APROBADA' | 'RECHAZADA';
+type ModoRevision  = 'COMISION' | 'COMPLEXIVO';
 
 @Component({
   selector: 'app-revision-propuestas',
@@ -24,9 +25,14 @@ export class RevisionPropuestasComponent implements OnInit {
   decisionObservaciones = '';
   errorDecision = '';
 
-  cargando  = false;
+  cargando   = false;
   procesando = false;
   filtroActual: FiltroEstado = 'TODAS';
+
+  // Modo: la vista muestra propuestas de comisión O de complexivo
+  modoRevision: ModoRevision = 'COMISION';
+  esDocenteComplexivo = false;
+  esMiembroComision   = false;
 
   readonly filtros: { valor: FiltroEstado; etiqueta: string }[] = [
     { valor: 'TODAS',       etiqueta: 'Todas' },
@@ -40,15 +46,68 @@ export class RevisionPropuestasComponent implements OnInit {
   constructor(private readonly comisionService: ComisionTemasService) {}
 
   ngOnInit(): void {
+    this.detectarModo();
+  }
+
+  // ── Detecta si es comisión, docente complexivo, o ambos ──────────────────
+
+  private detectarModo(): void {
+    // Primero intentar cargar propuestas de comisión
+    // Si el docente es miembro de comisión → carga las de comisión
+    // Si tiene estudiantes complexivo asignados → carga las de complexivo
+    // Si tiene ambos roles → muestra tabs para elegir
+
+    this.comisionService.listarPropuestasComision(this.idDocente).subscribe({
+      next: data => {
+        this.esMiembroComision = true;
+        if (this.modoRevision === 'COMISION') {
+          this.propuestas = data;
+          this.cargando = false;
+        }
+      },
+      error: () => {
+        // No es miembro de comisión — probar con complexivo
+        this.esMiembroComision = false;
+      }
+    });
+
+    this.comisionService.listarPropuestasComplexivo(this.idDocente).subscribe({
+      next: data => {
+        this.esDocenteComplexivo = true;
+        if (!this.esMiembroComision) {
+          // Solo es docente complexivo — cambiar modo automáticamente
+          this.modoRevision = 'COMPLEXIVO';
+          this.propuestas   = data;
+          this.cargando     = false;
+        }
+      },
+      error: () => {
+        this.esDocenteComplexivo = false;
+        this.cargando = false;
+      }
+    });
+  }
+
+  cambiarModo(modo: ModoRevision): void {
+    this.modoRevision = modo;
     this.cargarPropuestas();
   }
 
   cargarPropuestas(): void {
     this.cargando = true;
-    this.comisionService.listarPropuestasComision(this.idDocente).subscribe({
-      next: (data) => { this.propuestas = data; this.cargando = false; },
-      error: ()     => { this.cargando = false; }
-    });
+    this.propuestas = [];
+
+    if (this.modoRevision === 'COMPLEXIVO') {
+      this.comisionService.listarPropuestasComplexivo(this.idDocente).subscribe({
+        next: data => { this.propuestas = data; this.cargando = false; },
+        error: ()   => { this.cargando = false; }
+      });
+    } else {
+      this.comisionService.listarPropuestasComision(this.idDocente).subscribe({
+        next: data => { this.propuestas = data; this.cargando = false; },
+        error: ()   => { this.cargando = false; }
+      });
+    }
   }
 
   get propuestasFiltradas(): PropuestaTemaDto[] {
@@ -82,12 +141,21 @@ export class RevisionPropuestasComponent implements OnInit {
     this.errorDecision = '';
     this.procesando    = true;
 
-    this.comisionService.decidirPropuesta(
-      this.idDocente,
-      this.propuestaEnRevision.idPropuesta,
-      this.decisionEstado,
-      this.decisionObservaciones
-    ).subscribe({
+    const obs$ = this.modoRevision === 'COMPLEXIVO'
+      ? this.comisionService.decidirPropuestaComplexivo(
+        this.idDocente,
+        this.propuestaEnRevision.idPropuesta,
+        this.decisionEstado,
+        this.decisionObservaciones
+      )
+      : this.comisionService.decidirPropuesta(
+        this.idDocente,
+        this.propuestaEnRevision.idPropuesta,
+        this.decisionEstado,
+        this.decisionObservaciones
+      );
+
+    obs$.subscribe({
       next: () => {
         this.procesando = false;
         this.cerrarModal();
@@ -95,7 +163,7 @@ export class RevisionPropuestasComponent implements OnInit {
       },
       error: (err) => {
         this.procesando    = false;
-        this.errorDecision = err?.error?.message || 'Error al registrar la decisión. Inténtalo nuevamente.';
+        this.errorDecision = err?.error?.message || 'Error al registrar la decisión.';
       }
     });
   }
@@ -108,5 +176,17 @@ export class RevisionPropuestasComponent implements OnInit {
       TODAS:       'Todas'
     };
     return map[estado] ?? estado;
+  }
+
+  get tituloVista(): string {
+    return this.modoRevision === 'COMPLEXIVO'
+      ? 'Propuestas — Examen Complexivo'
+      : 'Propuestas — Comisión Formativa';
+  }
+
+  get subtituloVista(): string {
+    return this.modoRevision === 'COMPLEXIVO'
+      ? 'Propuestas de tus estudiantes asignados en Complexivo'
+      : 'Propuestas de titulación (TIC) pendientes de revisión por la comisión';
   }
 }

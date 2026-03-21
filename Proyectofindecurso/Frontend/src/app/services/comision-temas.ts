@@ -2,8 +2,6 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
-// ── DTOs ────────────────────────────────────────────────────────────────────
-
 export interface TemaBancoDto {
   idTema: number;
   titulo: string;
@@ -12,7 +10,7 @@ export interface TemaBancoDto {
   docente: string;
   estado: string;
   observaciones: string | null;
-  idEstudianteSugerente: number | null; // ✅ NUEVO
+  idEstudianteSugerente: number | null;
 }
 
 export interface PropuestaTemaDto {
@@ -24,6 +22,7 @@ export interface PropuestaTemaDto {
   estado: string;
   fechaEnvio: string | null;
   observaciones: string | null;
+  modalidad: string | null; // ← nuevo: distingue Complexivo de TIC
 }
 
 export interface CrearTemaRequest {
@@ -61,8 +60,6 @@ export interface EstadoModalidadDto {
   modalidadesDisponibles: ModalidadSimpleDto[];
 }
 
-// ── Service ─────────────────────────────────────────────────────────────────
-
 @Injectable({ providedIn: 'root' })
 export class ComisionTemasService {
 
@@ -80,7 +77,7 @@ export class ComisionTemasService {
     return this.http.post<TemaBancoDto>(`${this.API_URL}/docente/${idDocente}/banco`, payload);
   }
 
-  // ── Comisión: propuestas de estudiantes ──────────────────────────────────
+  // ── Comisión: propuestas (excluye Complexivo) ────────────────────────────
 
   listarPropuestasComision(idDocente: number): Observable<PropuestaTemaDto[]> {
     return this.http.get<PropuestaTemaDto[]>(`${this.API_URL}/docente/${idDocente}/propuestas`);
@@ -94,6 +91,26 @@ export class ComisionTemasService {
   ): Observable<PropuestaTemaDto> {
     return this.http.post<PropuestaTemaDto>(
       `${this.API_URL}/docente/${idDocente}/propuestas/${idPropuesta}/decision`,
+      { estado, observaciones }
+    );
+  }
+
+  // ── Docente Complexivo: propuestas de sus estudiantes ────────────────────
+
+  listarPropuestasComplexivo(idDocente: number): Observable<PropuestaTemaDto[]> {
+    return this.http.get<PropuestaTemaDto[]>(
+      `${this.API_URL}/docente/${idDocente}/propuestas-complexivo`
+    );
+  }
+
+  decidirPropuestaComplexivo(
+    idDocente: number,
+    idPropuesta: number,
+    estado: 'APROBADA' | 'RECHAZADA',
+    observaciones: string
+  ): Observable<PropuestaTemaDto> {
+    return this.http.post<PropuestaTemaDto>(
+      `${this.API_URL}/docente/${idDocente}/propuestas-complexivo/${idPropuesta}/decision`,
       { estado, observaciones }
     );
   }
@@ -125,7 +142,7 @@ export class ComisionTemasService {
     );
   }
 
-  // ── Sugerencias de temas ─────────────────────────────────────────────────
+  // ── Sugerencias ──────────────────────────────────────────────────────────
 
   sugerirTema(idEstudiante: number, titulo: string, descripcion: string): Observable<TemaBancoDto> {
     return this.http.post<TemaBancoDto>(
@@ -151,8 +168,6 @@ export class ComisionTemasService {
       { observaciones: observaciones ?? '' }
     );
   }
-
-  // ── Temas aprobados para un estudiante específico ────────────────────────
 
   listarTemasAprobadosEstudiante(idEstudiante: number): Observable<TemaBancoDto[]> {
     return this.http.get<TemaBancoDto[]>(
