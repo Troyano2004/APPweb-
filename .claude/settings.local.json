@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(netstat -ano)",
+      "Bash(taskkill:*)",
+      "Bash(PGPASSWORD=12345 \"/c/Program Files/PostgreSQL/18/bin/psql\" -h localhost -U ElToke -d efrain -c \"SELECT prosrc FROM pg_proc WHERE proname = 'fn_audit_trigger';\")",
+      "Bash(psql -h localhost -p 5432 -U ElToke -d efrain -c \":*)",
+      "Bash(where psql:*)",
+      "Read(//c/Program Files/PostgreSQL/**)",
+      "Read(//c/Program Files \\(x86\\)/**)",
+      "Bash(PGPASSWORD=12345 \"/c/Program Files/PostgreSQL/18/bin/psql\" -h localhost -p 5432 -U ElToke -d efrain -c \"\nSELECT c.relname AS tabla,\n       CASE t.tgenabled WHEN 'O' THEN 'ACTIVO' WHEN 'D' THEN 'DESACTIVADO' END AS estado\nFROM pg_trigger t\nJOIN pg_class c ON c.oid = t.tgrelid\nJOIN pg_namespace n ON n.oid = c.relnamespace\nWHERE t.tgname = 'trg_audit' AND n.nspname = 'public'\nORDER BY estado, c.relname;\n\" 2>&1)"
+    ]
+  }
+}
