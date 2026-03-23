@@ -1,0 +1,91 @@
+<div class="sesiones-wrapper">
+
+  <!-- Modal de confirmación -->
+  <div class="modal-overlay" *ngIf="mostrarConfirm" (click)="cancelarCerrar()">
+    <div class="modal-confirm" (click)="$event.stopPropagation()">
+      <div class="modal-icon">🔒</div>
+      <h3>Cerrar sesión</h3>
+      <p>¿Estás seguro que deseas cerrar la sesión de
+        <strong>{{ sesionSeleccionada?.username }}</strong>?
+      </p>
+      <p class="modal-sub">El usuario será desconectado inmediatamente.</p>
+      <div class="modal-actions">
+        <button class="btn-cancelar" (click)="cancelarCerrar()">Cancelar</button>
+        <button class="btn-confirmar" (click)="confirmarCerrar()">Sí, cerrar sesión</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sesiones-header">
+    <div class="titulo-bloque">
+      <h2>Sesiones Activas</h2>
+      <p class="subtitulo">Usuarios conectados en este momento. Se actualiza cada 30 segundos.</p>
+    </div>
+
+    <div class="estado-bloque">
+      <span class="badge-activos" *ngIf="sesiones.length > 0">
+        <span class="dot pulsa"></span>
+        {{ sesiones.length }} usuario{{ sesiones.length === 1 ? '' : 's' }} conectado{{ sesiones.length === 1 ? '' : 's' }}
+      </span>
+      <span *ngIf="sesiones.length === 0 && !cargando" class="sin-sesiones">
+        Sin usuarios conectados
+      </span>
+      <button class="btn-refresh" (click)="cargar()" [disabled]="cargando">
+        {{ cargando ? 'Actualizando...' : 'Actualizar' }}
+      </button>
+    </div>
+  </div>
+
+  <div class="alerta-exito" *ngIf="mensajeExito">✓ {{ mensajeExito }}</div>
+  <div class="alerta-error" *ngIf="mensajeError">✗ {{ mensajeError }}</div>
+
+  <div class="tabla-container">
+    <table *ngIf="sesiones.length > 0; else sinDatos">
+      <thead>
+        <tr>
+          <th>Usuario</th>
+          <th>Rol</th>
+          <th>Correo</th>
+          <th>IP / Red</th>
+          <th>Tiempo activo</th>
+          <th>Acción</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let s of sesiones" [class.fila-propia]="s.username === usuarioActual">
+          <td>
+            <span class="dot-verde"></span>
+            {{ s.username }}
+            <span class="tu-label" *ngIf="s.username === usuarioActual">(tú)</span>
+          </td>
+          <td><span class="badge-rol">{{ s.rol || 'Sin rol' }}</span></td>
+          <td>{{ s.correo || '—' }}</td>
+          <td>
+            <span class="ip-badge" [class.vpn]="esVpn(s.ip)">
+              {{ s.ip ?? '—' }}
+              <small *ngIf="esVpn(s.ip)">VPN</small>
+            </span>
+          </td>
+          <td>{{ formatearTiempo(s.minutosActivo) }}</td>
+          <td>
+            <button
+              class="btn-cerrar"
+              (click)="cerrarSesion(s)"
+              [disabled]="s.username === usuarioActual">
+              {{ s.username === usuarioActual ? 'Tu sesión' : 'Cerrar sesión' }}
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <ng-template #sinDatos>
+      <div class="empty-state" *ngIf="!cargando">
+        <span class="empty-icon">🔒</span>
+        <p>No hay sesiones activas en este momento.</p>
+      </div>
+      <div class="cargando-estado" *ngIf="cargando">Cargando sesiones...</div>
+    </ng-template>
+  </div>
+
+</div>
