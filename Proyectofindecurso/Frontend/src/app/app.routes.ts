@@ -47,9 +47,11 @@ import { DirectorMisAnteproyectosComponent } from './pages/director/directorante
 import { RegistroEstudianteComponent } from './pages/registro-estudiante/registro-estudiante';
 import { GestionSolicitudesComponent } from './pages/gestion-solicitudes/gestion-solicitudes';
 import { ConfiguracionCorreoComponent } from './pages/configuracion-correo/configuracion-correo';
-import { AuditLogsComponent }      from './pages/auditoria/audit-logs/audit-logs';
-import { AuditConfigComponent }    from './pages/auditoria/audit-config/audit-config';
-import { AuditDashboardComponent } from './pages/auditoria/audit-dashboard/audit-dashboard';
+import { AuditLogsComponent }        from './pages/auditoria/audit-logs/audit-logs';
+import { AuditConfigComponent }      from './pages/auditoria/audit-config/audit-config';
+import { AuditDashboardComponent }   from './pages/auditoria/audit-dashboard/audit-dashboard';
+import { SesionesActivasComponent }  from './pages/auditoria/sesiones-activas/sesiones-activas';
+import { ControlCambiosComponent }   from './pages/auditoria/control-cambios/control-cambios';
 import { ExpedienteComponent } from './pages/reportes/expediente/expediente.component';
 import { ReportePeriodoComponent } from './pages/reportes/periodo/periodo.component';
 import { ActasComponent }      from './pages/reportes/actas/actas.component';
@@ -165,9 +167,11 @@ export const routes: Routes = [
       { path: 'admin/configuracion-correo', component: ConfiguracionCorreoComponent,data: { title: 'Configuración de Correo' } },
       { path: 'admin/backup',               component: BackupJobsComponent,         data: { title: 'Respaldos de Base de Datos' } },
       { path: 'admin/backup/restaurar',     component: BackupRestoreComponent,      data: { title: 'Restauración de Backups' } },
-      { path: 'admin/auditoria/dashboard',  component: AuditDashboardComponent,     data: { title: 'Dashboard Auditoría' } },
-      { path: 'admin/auditoria/logs',       component: AuditLogsComponent,          data: { title: 'Logs de Auditoría' } },
-      { path: 'admin/auditoria/config',     component: AuditConfigComponent,        data: { title: 'Configuración Auditoría' } },
+      { path: 'admin/auditoria/dashboard',  component: AuditDashboardComponent,    data: { title: 'Dashboard Auditoría' } },
+      { path: 'admin/auditoria/logs',       component: AuditLogsComponent,         data: { title: 'Logs de Auditoría' } },
+      { path: 'admin/auditoria/config',     component: AuditConfigComponent,       data: { title: 'Configuración Auditoría' } },
+      { path: 'admin/auditoria/sesiones',   component: SesionesActivasComponent,   data: { title: 'Sesiones Activas' } },
+      { path: 'admin/auditoria/cambios',    component: ControlCambiosComponent,    data: { title: 'Control de Cambios' } },
 
       // ── Coordinación ──────────────────────────────────────────────────────────
       { path: 'coordinador/seguimiento',    component: SeguimientoProyectosComponent, data: { title: 'Seguimiento de proyectos' } },

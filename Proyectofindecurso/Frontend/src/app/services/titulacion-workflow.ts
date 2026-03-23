@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface WorkflowResumenDto {
   idDocumento: number;
@@ -57,7 +58,7 @@ export interface CerrarExpedienteRequest {
 
 @Injectable({ providedIn: 'root' })
 export class TitulacionWorkflowService {
-  private readonly API_URL = 'http://localhost:8080';
+  private readonly API_URL = environment.apiUrl;
   private readonly baseUrl = `${this.API_URL}/api/titulacion2/workflow`;
 
   constructor(private http: HttpClient) {}

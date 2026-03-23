@@ -217,6 +217,52 @@ public class AuditController {
         configRepo.deleteById(id); return ResponseEntity.noContent().build();
     }
 
+    // ── Control de Cambios ───────────────────────────────────────────────────
+
+    @GetMapping("/cambios")
+    public Page<AuditLog> getCambios(
+            @RequestParam(required=false) String entidad,
+            @RequestParam(required=false) String accion,
+            @RequestParam(required=false) String username,
+            @RequestParam(required=false) @DateTimeFormat(iso=DateTimeFormat.ISO.DATE) LocalDate desde,
+            @RequestParam(required=false) @DateTimeFormat(iso=DateTimeFormat.ISO.DATE) LocalDate hasta,
+            @RequestParam(defaultValue="0") int page,
+            @RequestParam(defaultValue="15") int size) {
+
+        LocalDateTime d = desde != null ? desde.atStartOfDay() : null;
+        LocalDateTime h = hasta != null ? hasta.atTime(23, 59, 59) : null;
+
+        Specification<AuditLog> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(root.get("accion").in(
+                "CREATE", "UPDATE", "DELETE", "APROBAR", "RECHAZAR",
+                "DECISION", "VALIDAR", "APROBAR_DIRECTOR", "DEVOLVER"
+            ));
+            if (entidad  != null && !entidad.isBlank())
+                predicates.add(cb.equal(root.get("entidad"), entidad));
+            if (accion   != null && !accion.isBlank())
+                predicates.add(cb.equal(root.get("accion"), accion));
+            if (username != null && !username.isBlank())
+                predicates.add(cb.equal(root.get("username"), username));
+            if (d != null)
+                predicates.add(cb.greaterThanOrEqualTo(root.get("timestampEvento"), d));
+            if (h != null)
+                predicates.add(cb.lessThanOrEqualTo(root.get("timestampEvento"), h));
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+
+        return logRepo.findAll(spec,
+                PageRequest.of(page, size, Sort.by("timestampEvento").descending()));
+    }
+
+    @GetMapping("/usuarios-activos")
+    public List<String> getUsuariosActivos() {
+        return logRepo.findAll().stream()
+                .map(AuditLog::getUsername)
+                .filter(u -> u != null && !u.isBlank() && !u.startsWith("DB:"))
+                .distinct().sorted().toList();
+    }
+
     @GetMapping("/stats")
     public AuditStatsDto getStats() {
         LocalDateTime hoy = LocalDate.now(ZoneId.of("America/Guayaquil")).atStartOfDay();

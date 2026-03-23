@@ -2,10 +2,11 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Dt1Detalle, Dt1Enviado, Dt1RevisionRequest } from './model';
+import { environment } from '../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class Dt1ApiService {
-  private base = 'http://localhost:8080/api/dt1';
+  private base = environment.apiUrl + '/api/dt1';
 
   constructor(private http: HttpClient) {}
 

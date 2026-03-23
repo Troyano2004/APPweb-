@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { DocumentoTitulacionDto } from './documento-titulacion';
+import { environment } from '../../environments/environment';
 
 export interface SeguimientoProyecto {
   idProyecto: number;
@@ -112,7 +113,7 @@ export interface InformacionAcademicaDt1 {
 
 @Injectable({ providedIn: 'root' })
 export class CoordinadorService {
-  private readonly API_URL = 'http://localhost:8080/api/coordinador';
+  private readonly API_URL = environment.apiUrl + '/api/coordinador';
 
   constructor(private http: HttpClient) {}
 

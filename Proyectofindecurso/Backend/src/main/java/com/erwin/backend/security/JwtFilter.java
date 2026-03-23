@@ -1,6 +1,6 @@
-
 package com.erwin.backend.security;
 
+import com.erwin.backend.audit.service.SesionActivaRegistry;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,9 +19,11 @@ import java.util.Collections;
 public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
+    private final SesionActivaRegistry sesionRegistry;
 
-    public JwtFilter(JwtService jwtService) {
-        this.jwtService = jwtService;
+    public JwtFilter(JwtService jwtService, SesionActivaRegistry sesionRegistry) {
+        this.jwtService     = jwtService;
+        this.sesionRegistry = sesionRegistry;
     }
 
     @Override
@@ -30,14 +32,13 @@ public class JwtFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
-        // ✅ EXCEPCIÓN PARA LOGIN (NO PROTEGER)
+        // ✅ EXCEPCIÓN PARA LOGIN / LOGOUT (no proteger)
         String path = request.getServletPath();
         if (path.startsWith("/api/auth/")) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        // 🔒 A PARTIR DE AQUÍ SÍ SE PROTEGE
         String authHeader = request.getHeader("Authorization");
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
@@ -54,21 +55,29 @@ public class JwtFilter extends OncePerRequestFilter {
 
         String username = jwtService.extractUsername(token);
 
-        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+        // 🔒 Verificar si el admin cerró la sesión de este usuario
+        if (sesionRegistry.estaUsuarioMarcado(username)) {
+            String cerradaPor = sesionRegistry.quienCerroSesionUsuario(username);
+            sesionRegistry.limpiarMarcaUsuario(username);
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json;charset=UTF-8");
+            response.getWriter().write(
+                "{\"error\":\"sesion_cerrada_por_admin\",\"cerradaPor\":\"" + cerradaPor + "\"}"
+            );
+            return;
+        }
 
+        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(
-                            username,
-                            null,
-                            Collections.emptyList()
-                    );
-
+                            username, null, Collections.emptyList());
             authentication.setDetails(
-                    new WebAuthenticationDetailsSource().buildDetails(request)
-            );
-
+                    new WebAuthenticationDetailsSource().buildDetails(request));
             SecurityContextHolder.getContext().setAuthentication(authentication);
         }
+
+        // Mantener el timestamp de última actividad actualizado en el registry
+        sesionRegistry.actualizarActividadPorUsername(username);
 
         filterChain.doFilter(request, response);
     }

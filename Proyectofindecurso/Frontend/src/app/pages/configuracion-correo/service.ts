@@ -2,11 +2,12 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ConfiguracionCorreoDto } from './model';
+import { environment } from '../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class ConfiguracionCorreoService {
 
-  private readonly base = 'http://localhost:8080/api/configuracion-correo';
+  private readonly base = environment.apiUrl + '/api/configuracion-correo';
 
   constructor(private http: HttpClient) {}
 

@@ -1,7 +1,6 @@
-
-
 package com.erwin.backend.config;
 
+import com.erwin.backend.audit.service.SesionActivaRegistry;
 import com.erwin.backend.security.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -23,13 +22,14 @@ public class DbSessionFilter extends OncePerRequestFilter {
     public static final String SES_DB_USER = "SES_DB_USER";
     public static final String SES_DB_PASS = "SES_DB_PASS";
 
-    // ✅ El usuario de arranque/default — debe coincidir con spring.datasource.username
     private static final String DEFAULT_USER = "auth_reader";
 
     private final JwtService jwtService;
+    private final SesionActivaRegistry sesionRegistry;
 
-    public DbSessionFilter(JwtService jwtService) {
-        this.jwtService = jwtService;
+    public DbSessionFilter(JwtService jwtService, SesionActivaRegistry sesionRegistry) {
+        this.jwtService     = jwtService;
+        this.sesionRegistry = sesionRegistry;
     }
 
     @Override
@@ -38,6 +38,19 @@ public class DbSessionFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain         filterChain
     ) throws ServletException, IOException {
+
+        // ── Verificar si la sesión fue cerrada remotamente por el admin ──────
+        HttpSession httpSession = request.getSession(false);
+        if (httpSession != null && sesionRegistry.estaMarcadaParaCerrar(httpSession.getId())) {
+            sesionRegistry.limpiarMarca(httpSession.getId());
+            httpSession.invalidate();
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.setCharacterEncoding("UTF-8");
+            response.getWriter().write(
+                "{\"error\":\"Tu sesion fue cerrada por el administrador\"}");
+            return;
+        }
 
         String user = null;
         String pass = null;

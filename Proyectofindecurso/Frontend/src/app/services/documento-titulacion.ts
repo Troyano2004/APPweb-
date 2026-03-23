@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export type EstadoDocumento =
   | 'BORRADOR'
@@ -78,7 +79,7 @@ export interface DocumentoUpdateRequest {
 
 @Injectable({ providedIn: 'root' })
 export class DocumentoTitulacionService {
-  private readonly API_URL = 'http://localhost:8080';
+  private readonly API_URL = environment.apiUrl;
   private readonly baseUrl = `${this.API_URL}/api/titulacion2`;
 
   constructor(private http: HttpClient) {}

@@ -2,10 +2,11 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { PeriodoSelect, EstudianteSelect } from './model';
+import { environment } from '../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class ReporteService {
-  private base = 'http://localhost:8080/api/reportes';
+  private base = environment.apiUrl + '/api/reportes';
   constructor(private http: HttpClient) {}
 
   getPeriodos(): Observable<PeriodoSelect[]> {

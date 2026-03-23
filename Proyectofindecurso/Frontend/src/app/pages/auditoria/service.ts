@@ -2,10 +2,11 @@ import { Injectable, NgZone } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, Subject } from 'rxjs';
 import { AuditFiltros, AuditConfig, AuditStats, AuditLog } from './model';
+import { environment } from '../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class AuditoriaService {
-  private base = 'http://localhost:8080/api/auditoria';
+  private base = environment.apiUrl + '/api/auditoria';
   private eventSource: EventSource | null = null;
 
   // Subject que emite cada nuevo log recibido en tiempo real
@@ -116,5 +117,33 @@ export class AuditoriaService {
 
   get estaConectado(): boolean {
     return this.eventSource?.readyState === EventSource.OPEN;
+  }
+
+  getCambios(f: any): Observable<any> {
+    let p = new HttpParams()
+      .set('page', f.page)
+      .set('size', f.size);
+    if (f.entidad)  p = p.set('entidad',  f.entidad);
+    if (f.accion)   p = p.set('accion',   f.accion);
+    if (f.username) p = p.set('username', f.username);
+    if (f.desde)    p = p.set('desde',    f.desde);
+    if (f.hasta)    p = p.set('hasta',    f.hasta);
+    return this.http.get<any>(`${this.base}/cambios`, { params: p });
+  }
+
+  getUsuariosConCambios(): Observable<string[]> {
+    return this.http.get<string[]>(`${this.base}/usuarios-activos`);
+  }
+
+  getSesionesActivas(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.base}/sesiones`);
+  }
+
+  cerrarSesion(sessionId: string): Observable<any> {
+    return this.http.delete(`${this.base}/sesiones/${sessionId}`);
+  }
+
+  cerrarTodasSesiones(username: string): Observable<any> {
+    return this.http.delete(`${this.base}/sesiones/usuario/${username}`);
   }
 }

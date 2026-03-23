@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 // ── DTOs ────────────────────────────────────────────────────────────────────
 
@@ -66,7 +67,7 @@ export interface EstadoModalidadDto {
 @Injectable({ providedIn: 'root' })
 export class ComisionTemasService {
 
-  private readonly API_URL = 'http://localhost:8080/api/comision-temas';
+  private readonly API_URL = environment.apiUrl + '/api/comision-temas';
 
   constructor(private readonly http: HttpClient) {}
 

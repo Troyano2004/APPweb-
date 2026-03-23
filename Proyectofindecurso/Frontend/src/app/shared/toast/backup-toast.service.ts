@@ -1,5 +1,6 @@
 import { Injectable, NgZone } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface BackupToast {
   id:        string;
@@ -27,7 +28,7 @@ export class BackupToastService {
   conectar(token: string): void {
     if (this.eventSource) return; // ya conectado
 
-    const url = `http://localhost:8080/api/backup/eventos`;
+    const url = `${environment.apiUrl}/api/backup/eventos`;
     this.eventSource = new EventSource(url);
 
     this.eventSource.addEventListener('backup-completado', (event: MessageEvent) => {

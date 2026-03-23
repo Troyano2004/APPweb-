@@ -248,6 +248,8 @@ export class ShellComponent implements OnInit, OnDestroy {
         { label: 'Dashboard Auditoría',     path: '/app/admin/auditoria/dashboard' },
         { label: 'Logs de Auditoría',       path: '/app/admin/auditoria/logs' },
         { label: 'Config. Auditoría',       path: '/app/admin/auditoria/config' },
+        { label: 'Sesiones Activas',        path: '/app/admin/auditoria/sesiones' },
+        { label: 'Control de Cambios',      path: '/app/admin/auditoria/cambios' },
         { label: 'Respaldos BD',            path: '/app/admin/backup',           roles: ['ADMIN'] },
         { label: 'Restaurar BD',            path: '/app/admin/backup/restaurar', roles: ['ADMIN'] },
       ],

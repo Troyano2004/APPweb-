@@ -24,6 +24,19 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long>, JpaSp
     @Query("SELECT MAX(l.timestampEvento) FROM AuditLog l")
     LocalDateTime findUltimoTimestamp();
 
+    @Query("SELECT l FROM AuditLog l WHERE l.accion = :accion " +
+           "AND l.timestampEvento > :desde " +
+           "AND l.username IS NOT NULL AND l.username NOT LIKE 'DB:%' " +
+           "ORDER BY l.timestampEvento DESC")
+    List<AuditLog> findByAccionSince(@Param("accion") String accion,
+                                     @Param("desde") LocalDateTime desde);
+
+    @Query("SELECT COUNT(l) > 0 FROM AuditLog l WHERE l.accion = :accion " +
+           "AND l.username = :username AND l.timestampEvento > :desde")
+    boolean existsByAccionAndUsernameAfter(@Param("accion") String accion,
+                                           @Param("username") String username,
+                                           @Param("desde") LocalDateTime desde);
+
     @Query("SELECT l.entidad, COUNT(l) FROM AuditLog l WHERE l.timestampEvento >= :desde GROUP BY l.entidad ORDER BY COUNT(l) DESC")
     List<Object[]> topEntidades(@Param("desde") LocalDateTime desde);
 

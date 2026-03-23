@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ReporteService } from '../service';
 import { PeriodoSelect } from '../model';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-reporte-periodo',
@@ -28,14 +29,14 @@ export class ReportePeriodoComponent implements OnInit {
 
   periodoPdf() {
     if (!this.periodoSeleccionado) return;
-    let url = `http://localhost:8080/api/reportes/periodo/${this.periodoSeleccionado}/pdf`;
+    let url = `${environment.apiUrl}/api/reportes/periodo/${this.periodoSeleccionado}/pdf`;
     if (this.estadoFiltro) url += `?estado=${this.estadoFiltro}`;
     this.svc.descargar(url, `Periodo_${this.periodoSeleccionado}.pdf`);
   }
 
   periodoExcel() {
     if (!this.periodoSeleccionado) return;
-    let url = `http://localhost:8080/api/reportes/periodo/${this.periodoSeleccionado}/excel`;
+    let url = `${environment.apiUrl}/api/reportes/periodo/${this.periodoSeleccionado}/excel`;
     if (this.estadoFiltro) url += `?estado=${this.estadoFiltro}`;
     this.svc.descargar(url, `Periodo_${this.periodoSeleccionado}.xlsx`);
   }
