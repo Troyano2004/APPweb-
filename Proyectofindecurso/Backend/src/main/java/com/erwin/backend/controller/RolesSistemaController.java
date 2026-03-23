@@ -21,7 +21,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/roles-sistema")
-@CrossOrigin(origins = "http://localhost:4200")
+@CrossOrigin(origins = {"http://localhost:4200", "http://26.102.176.187:4200", "http://26.122.106.219:4200"}, allowCredentials = "true")
 public class RolesSistemaController {
 
     private final RolesSistemaRepository repo;

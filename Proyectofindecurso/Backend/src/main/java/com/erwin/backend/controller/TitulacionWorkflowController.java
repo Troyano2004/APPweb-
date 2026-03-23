@@ -11,7 +11,7 @@ import java.util.Map;
  * La lógica de ponderación 50/50 era incorrecta.
  * Usar los nuevos endpoints: /api/dt2/proyectos/{id}/...
  */
-@CrossOrigin(origins = "http://localhost:4200")
+@CrossOrigin(origins = {"http://localhost:4200", "http://26.102.176.187:4200", "http://26.122.106.219:4200"}, allowCredentials = "true")
 @RestController
 @RequestMapping("/api/titulacion2/workflow")
 @Deprecated
