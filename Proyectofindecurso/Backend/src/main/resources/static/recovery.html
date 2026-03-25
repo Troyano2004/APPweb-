@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>🛡️ Recovery Mode — Sistema de Titulación UTEQ</title>
+    <style>
+        /* ── Reset y base ─────────────────────────────── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0a0f1e;
+            color: #e2e8f0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem 1rem;
+        }
+
+        /* ── Header ───────────────────────────────────── */
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .header .badge-recovery {
+            display: inline-block;
+            background: #dc2626;
+            color: #fff;
+            font-size: .7rem;
+            font-weight: 800;
+            letter-spacing: .1em;
+            padding: .25rem .75rem;
+            border-radius: 20px;
+            text-transform: uppercase;
+            margin-bottom: .75rem;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50%       { opacity: .6; }
+        }
+
+        .header h1 {
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: #f1f5f9;
+            margin-bottom: .35rem;
+        }
+
+        .header p {
+            font-size: .88rem;
+            color: #94a3b8;
+        }
+
+        /* ── Card ─────────────────────────────────────── */
+        .card {
+            background: #111827;
+            border: 1px solid #1e293b;
+            border-radius: 14px;
+            padding: 2rem;
+            width: 100%;
+            max-width: 680px;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #f1f5f9;
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+        }
+
+        .step-num {
+            background: #1d4ed8;
+            color: #fff;
+            width: 24px; height: 24px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .75rem;
+            font-weight: 800;
+            flex-shrink: 0;
+        }
+
+        /* ── Form elements ────────────────────────────── */
+        .form-group { margin-bottom: 1rem; }
+
+        label {
+            display: block;
+            font-size: .82rem;
+            font-weight: 600;
+            color: #94a3b8;
+            margin-bottom: .4rem;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+        }
+
+        input[type="password"],
+        input[type="text"],
+        select {
+            width: 100%;
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: .65rem 1rem;
+            font-size: .9rem;
+            color: #f1f5f9;
+            outline: none;
+            transition: border-color .2s;
+        }
+
+        input:focus, select:focus { border-color: #3b82f6; }
+
+        /* ── Buttons ──────────────────────────────────── */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: .45rem;
+            padding: .65rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: .9rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all .2s;
+            white-space: nowrap;
+        }
+
+        .btn:disabled { opacity: .45; cursor: not-allowed; }
+
+        .btn-primary  { background: #1d4ed8; color: #fff; }
+        .btn-primary:hover:not(:disabled)  { background: #1e40af; }
+
+        .btn-danger   { background: #dc2626; color: #fff; }
+        .btn-danger:hover:not(:disabled)   { background: #b91c1c; }
+
+        .btn-success  { background: #16a34a; color: #fff; }
+        .btn-success:hover:not(:disabled)  { background: #15803d; }
+
+        .btn-ghost    { background: #1e293b; color: #94a3b8; border: 1px solid #334155; }
+        .btn-ghost:hover:not(:disabled)    { background: #263448; color: #f1f5f9; }
+
+        .btn-sm { padding: .4rem .85rem; font-size: .8rem; }
+        .btn-full { width: 100%; }
+
+        /* ── Alerts ───────────────────────────────────── */
+        .alert {
+            padding: .75rem 1rem;
+            border-radius: 8px;
+            font-size: .88rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: flex-start;
+            gap: .5rem;
+            line-height: 1.5;
+        }
+
+        .alert-error   { background: #2d1b1b; border-left: 4px solid #dc2626; color: #fca5a5; }
+        .alert-success { background: #052e16; border-left: 4px solid #16a34a; color: #86efac; }
+        .alert-warn    { background: #2a1f0a; border-left: 4px solid #d97706; color: #fcd34d; }
+        .alert-info    { background: #0f2a3d; border-left: 4px solid #3b82f6; color: #93c5fd; }
+
+        /* ── Backup list ──────────────────────────────── */
+        .backup-list { display: flex; flex-direction: column; gap: .6rem; }
+
+        .backup-item {
+            background: #1e293b;
+            border: 1.5px solid #334155;
+            border-radius: 10px;
+            padding: .85rem 1rem;
+            cursor: pointer;
+            transition: all .2s;
+            display: flex;
+            align-items: center;
+            gap: .85rem;
+        }
+
+        .backup-item:hover   { border-color: #3b82f6; background: #1a2744; }
+        .backup-item.selected { border-color: #3b82f6; background: #1a2744;
+            box-shadow: 0 0 0 2px rgba(59,130,246,.3); }
+
+        .backup-icon {
+            font-size: 1.6rem;
+            flex-shrink: 0;
+        }
+
+        .backup-info { flex: 1; min-width: 0; }
+
+        .backup-nombre {
+            font-size: .85rem;
+            font-weight: 700;
+            color: #f1f5f9;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .backup-meta {
+            font-size: .75rem;
+            color: #64748b;
+            margin-top: .2rem;
+        }
+
+        .badge-tipo {
+            font-size: .68rem;
+            font-weight: 800;
+            padding: .2rem .55rem;
+            border-radius: 10px;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            flex-shrink: 0;
+        }
+
+        .badge-full { background: #1e3a8a; color: #93c5fd; }
+        .badge-dif  { background: #78350f; color: #fcd34d; }
+
+        /* ── Log output ───────────────────────────────── */
+        .log-box {
+            background: #0a0f1e;
+            border: 1px solid #1e293b;
+            border-radius: 8px;
+            padding: 1rem;
+            font-family: 'Courier New', monospace;
+            font-size: .78rem;
+            color: #4ade80;
+            max-height: 220px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+            margin-top: .75rem;
+        }
+
+        /* ── Progress ─────────────────────────────────── */
+        .progress-wrapper {
+            margin: 1rem 0;
+        }
+
+        .progress-bar-bg {
+            background: #1e293b;
+            border-radius: 99px;
+            height: 8px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            background: linear-gradient(90deg, #1d4ed8, #06b6d4);
+            height: 100%;
+            border-radius: 99px;
+            transition: width .5s;
+            animation: progress-anim 1.5s infinite;
+        }
+
+        @keyframes progress-anim {
+            0%   { opacity: 1; }
+            50%  { opacity: .7; }
+            100% { opacity: 1; }
+        }
+
+        .progress-label {
+            font-size: .78rem;
+            color: #64748b;
+            margin-top: .4rem;
+            text-align: center;
+        }
+
+        /* ── Divider ──────────────────────────────────── */
+        .divider {
+            border: none;
+            border-top: 1px solid #1e293b;
+            margin: 1.25rem 0;
+        }
+
+        /* ── Status dot ───────────────────────────────── */
+        .status-dot {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: .4rem;
+        }
+
+        .dot-ok     { background: #16a34a; box-shadow: 0 0 6px #16a34a; }
+        .dot-err    { background: #dc2626; box-shadow: 0 0 6px #dc2626; }
+        .dot-warn   { background: #d97706; box-shadow: 0 0 6px #d97706; }
+
+        /* ── Utilities ────────────────────────────────── */
+        .hidden   { display: none !important; }
+        .mt-1     { margin-top: .5rem; }
+        .mt-2     { margin-top: 1rem; }
+        .row      { display: flex; gap: .75rem; flex-wrap: wrap; }
+        .row .btn { flex: 1; }
+
+        .footer {
+            font-size: .75rem;
+            color: #334155;
+            text-align: center;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ══ Header ══ -->
+<div class="header">
+    <span class="badge-recovery">⚠️ Recovery Mode</span>
+    <h1>🛡️ Sistema de Titulación UTEQ</h1>
+    <p>Restauración de base de datos desde Google Drive</p>
+</div>
+
+<!-- ══ PASO 1: Autenticación ══ -->
+<div class="card" id="card-auth">
+    <div class="card-title">
+        <span class="step-num">1</span> Acceso de Recuperación
+    </div>
+
+    <div class="alert alert-warn">
+        ⚠️ Esta herramienta restaura la base de datos directamente. Úsala solo en caso de emergencia.
+    </div>
+
+    <div id="alert-auth" class="alert alert-error hidden"></div>
+
+    <div class="form-group">
+        <label>Contraseña de Recuperación</label>
+        <input type="password" id="input-password"
+               placeholder="Ingresa la contraseña maestra"
+               onkeydown="if(event.key==='Enter') autenticar()" />
+    </div>
+
+    <button class="btn btn-primary btn-full mt-1" onclick="autenticar()">
+        🔓 Acceder al modo de recuperación
+    </button>
+</div>
+
+<!-- ══ PASO 2: Selección de Job ══ -->
+<div class="card hidden" id="card-jobs">
+    <div class="card-title">
+        <span class="step-num">2</span> Selecciona el Job de Backup
+    </div>
+
+    <div id="alert-jobs" class="alert alert-error hidden"></div>
+
+    <div class="form-group">
+        <label>Job de Backup</label>
+        <select id="select-job" onchange="seleccionarJob()">
+            <option value="">— Cargando jobs... —</option>
+        </select>
+    </div>
+
+    <div id="info-job" class="hidden">
+        <div id="ping-status" class="alert alert-info" style="margin-top:.75rem"></div>
+    </div>
+
+    <button class="btn btn-primary btn-full mt-2" id="btn-cargar-backups"
+            onclick="cargarBackups()" disabled>
+        📂 Cargar backups disponibles en Drive
+    </button>
+</div>
+
+<!-- ══ PASO 3: Selección de Backup ══ -->
+<div class="card hidden" id="card-backups">
+    <div class="card-title">
+        <span class="step-num">3</span> Selecciona el Backup a Restaurar
+    </div>
+
+    <div id="alert-backups" class="alert alert-info">
+        💡 Selecciona un <strong>FULL</strong> para restauración completa.
+        Los diferenciales solo restauran las tablas modificadas — debes aplicarlos después del FULL.
+    </div>
+
+    <div id="backup-list-container" class="backup-list mt-2">
+        <div class="alert alert-info">⏳ Cargando backups...</div>
+    </div>
+</div>
+
+<!-- ══ PASO 4: Configuración de Restore ══ -->
+<div class="card hidden" id="card-restore">
+    <div class="card-title">
+        <span class="step-num">4</span> Confirmar Restauración
+    </div>
+
+    <div id="alert-restore-warn" class="alert alert-warn">
+        ⚠️ <strong>ATENCIÓN:</strong> Esta acción sobreescribirá la base de datos seleccionada.
+        Asegúrate de tener backup de los datos actuales si los hay.
+    </div>
+
+    <div id="restore-selected-info" class="alert alert-info" style="margin-bottom:1rem"></div>
+
+    <div class="form-group">
+        <label>Modo de Restauración</label>
+        <select id="select-modo" onchange="toggleModoRestore()">
+            <option value="REEMPLAZAR">Reemplazar BD existente (recomendado en emergencia)</option>
+            <option value="NUEVA_BD">Restaurar en nueva base de datos</option>
+        </select>
+    </div>
+
+    <div class="form-group hidden" id="group-nueva-bd">
+        <label>Nombre de la nueva base de datos</label>
+        <input type="text" id="input-nueva-bd" placeholder="Ej: efrain_recuperado" />
+    </div>
+
+    <hr class="divider" />
+
+    <div class="row">
+        <button class="btn btn-ghost" onclick="volverABackups()">← Volver</button>
+        <button class="btn btn-danger" id="btn-confirmar" onclick="confirmarRestore()">
+            🔄 Iniciar Restauración
+        </button>
+    </div>
+</div>
+
+<!-- ══ PASO 5: Progreso ══ -->
+<div class="card hidden" id="card-progreso">
+    <div class="card-title">
+        <span class="step-num">5</span> Restauración en Progreso
+    </div>
+
+    <div class="progress-wrapper">
+        <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="progress-fill" style="width:100%"></div>
+        </div>
+        <div class="progress-label" id="progress-label">Conectando con Google Drive...</div>
+    </div>
+
+    <div id="progreso-steps">
+        <div id="step-descarga"  class="alert alert-info mt-1">⏳ Descargando archivo de Google Drive...</div>
+        <div id="step-restore"   class="alert alert-info mt-1 hidden">⏳ Ejecutando pg_restore...</div>
+    </div>
+</div>
+
+<!-- ══ Resultado ══ -->
+<div class="card hidden" id="card-resultado">
+    <div id="resultado-alert"></div>
+    <div id="resultado-info" class="mt-1" style="font-size:.85rem; color:#94a3b8; line-height:1.7"></div>
+    <div id="log-container" class="hidden">
+        <hr class="divider" />
+        <div style="font-size:.8rem; color:#64748b; margin-bottom:.4rem">Log de pg_restore:</div>
+        <div class="log-box" id="log-output"></div>
+    </div>
+    <hr class="divider" />
+    <div class="row">
+        <button class="btn btn-ghost" onclick="reiniciar()">🔄 Nueva recuperación</button>
+        <button class="btn btn-success" onclick="window.location.href='/'">🏠 Ir al sistema</button>
+    </div>
+</div>
+
+<div class="footer">
+    Sistema de Titulación UTEQ — Recovery Mode &nbsp;|&nbsp;
+    <span id="footer-time"></span>
+</div>
+
+<script>
+    // ══ Estado global ══════════════════════════════════════════════
+    const state = {
+        autenticado: false,
+        jobId:       null,
+        jobNombre:   '',
+        backupSeleccionado: null
+    };
+
+    // ── Utilidades ─────────────────────────────────────────────────
+    const API = '/api/recovery';
+
+    async function post(url, body) {
+        const r = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        return r.json();
+    }
+
+    async function get(url) {
+        const r = await fetch(url);
+        return r.json();
+    }
+
+    function show(id)  { document.getElementById(id).classList.remove('hidden'); }
+    function hide(id)  { document.getElementById(id).classList.add('hidden'); }
+    function el(id)    { return document.getElementById(id); }
+
+    function showAlert(id, msg, tipo = 'error') {
+        const div = el(id);
+        div.className = `alert alert-${tipo}`;
+        div.textContent = msg;
+        div.classList.remove('hidden');
+    }
+
+    function formatFecha(iso) {
+        if (!iso) return '—';
+        const d = new Date(iso);
+        return d.toLocaleString('es-EC', { dateStyle: 'short', timeStyle: 'short' });
+    }
+
+    function formatBytes(bytes) {
+        const n = parseInt(bytes) || 0;
+        if (n === 0) return '—';
+        if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
+        return (n / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    // ── Paso 1: Autenticación ──────────────────────────────────────
+    async function autenticar() {
+        const pwd = el('input-password').value.trim();
+        if (!pwd) { showAlert('alert-auth', 'Ingresa la contraseña'); return; }
+
+        hide('alert-auth');
+        const res = await post(`${API}/auth`, { password: pwd });
+
+        if (res.ok) {
+            state.autenticado = true;
+            hide('card-auth');
+            show('card-jobs');
+            cargarJobs();
+        } else {
+            showAlert('alert-auth', '❌ ' + (res.mensaje || 'Contraseña incorrecta'));
+            el('input-password').value = '';
+            el('input-password').focus();
+        }
+    }
+
+    // ── Paso 2: Jobs ───────────────────────────────────────────────
+    async function cargarJobs() {
+        const jobs = await get(`${API}/jobs`);
+        const sel  = el('select-job');
+        sel.innerHTML = '<option value="">— Selecciona un job —</option>';
+
+        if (!jobs || jobs.length === 0) {
+            sel.innerHTML = '<option value="">No hay jobs configurados</option>';
+            return;
+        }
+
+        jobs.forEach(j => {
+            const opt = document.createElement('option');
+            opt.value = j.idJob;
+            opt.textContent = `${j.nombre} — ${j.databases}`;
+            opt.dataset.tieneDrive = j.tieneDrive;
+            sel.appendChild(opt);
+        });
+    }
+
+    async function seleccionarJob() {
+        const sel  = el('select-job');
+        const opt  = sel.options[sel.selectedIndex];
+        const idJob = sel.value;
+
+        hide('info-job');
+        el('btn-cargar-backups').disabled = true;
+        state.jobId = null;
+
+        if (!idJob) return;
+
+        const tieneDrive = opt.dataset.tieneDrive === 'true';
+        if (!tieneDrive) {
+            showAlert('alert-jobs',
+                '⚠️ Este job no tiene Google Drive configurado o conectado. Selecciona otro job.', 'warn');
+            show('alert-jobs');
+            return;
+        }
+
+        hide('alert-jobs');
+        state.jobId = parseInt(idJob);
+        state.jobNombre = opt.textContent;
+
+        // Verificar conexión PG
+        show('info-job');
+        el('ping-status').innerHTML = '⏳ Verificando conexión a PostgreSQL...';
+        el('ping-status').className = 'alert alert-info';
+
+        const ping = await get(`${API}/ping/${idJob}`);
+        if (ping.ok) {
+            el('ping-status').innerHTML = '<span class="status-dot dot-ok"></span> PostgreSQL conectado — listo para restaurar';
+            el('ping-status').className = 'alert alert-success';
+        } else {
+            el('ping-status').innerHTML = '<span class="status-dot dot-warn"></span> PostgreSQL no responde — puedes restaurar de todas formas (se intentará al ejecutar)';
+            el('ping-status').className = 'alert alert-warn';
+        }
+
+        el('btn-cargar-backups').disabled = false;
+    }
+
+    // ── Paso 3: Backups ────────────────────────────────────────────
+    async function cargarBackups() {
+        if (!state.jobId) return;
+
+        show('card-backups');
+        el('backup-list-container').innerHTML =
+            '<div class="alert alert-info">⏳ Conectando con Google Drive...</div>';
+
+        try {
+            const backups = await get(`${API}/backups/${state.jobId}`);
+
+            if (backups.error) {
+                el('backup-list-container').innerHTML =
+                    `<div class="alert alert-error">❌ ${backups.error}</div>`;
+                return;
+            }
+
+            if (!backups || backups.length === 0) {
+                el('backup-list-container').innerHTML =
+                    '<div class="alert alert-warn">⚠️ No se encontraron backups en Google Drive para este job.</div>';
+                return;
+            }
+
+            renderBackups(backups);
+        } catch (e) {
+            el('backup-list-container').innerHTML =
+                `<div class="alert alert-error">❌ Error conectando con Drive: ${e.message}</div>`;
+        }
+    }
+
+    function renderBackups(backups) {
+        const container = el('backup-list-container');
+        container.innerHTML = '';
+
+        backups.forEach(b => {
+            const div = document.createElement('div');
+            div.className = 'backup-item';
+            div.dataset.fileId  = b.fileId;
+            div.dataset.nombre  = b.nombre;
+            div.dataset.tipo    = b.tipo;
+
+            const icon   = b.tipo === 'FULL' ? '🗄️' : '📋';
+            const badgeClass = b.tipo === 'FULL' ? 'badge-full' : 'badge-dif';
+
+            div.innerHTML = `
+      <span class="backup-icon">${icon}</span>
+      <div class="backup-info">
+        <div class="backup-nombre">${b.nombre}</div>
+        <div class="backup-meta">
+          ${formatFecha(b.fechaCreacion)} &nbsp;·&nbsp; ${formatBytes(b.tamano)}
+        </div>
+      </div>
+      <span class="badge-tipo ${badgeClass}">${b.tipo}</span>
+    `;
+
+            div.onclick = () => seleccionarBackup(div, b);
+            container.appendChild(div);
+        });
+    }
+
+    function seleccionarBackup(div, backup) {
+        // Deseleccionar anterior
+        document.querySelectorAll('.backup-item').forEach(i => i.classList.remove('selected'));
+        div.classList.add('selected');
+
+        state.backupSeleccionado = backup;
+
+        // Mostrar paso 4
+        show('card-restore');
+        el('restore-selected-info').innerHTML =
+            `📦 Seleccionado: <strong>${backup.nombre}</strong><br>` +
+            `Tipo: <strong>${backup.tipo}</strong> &nbsp;·&nbsp; ` +
+            `Fecha: <strong>${formatFecha(backup.fechaCreacion)}</strong> &nbsp;·&nbsp; ` +
+            `Tamaño: <strong>${formatBytes(backup.tamano)}</strong>`;
+
+        // Scroll al paso 4
+        el('card-restore').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // ── Paso 4: Configuración restore ─────────────────────────────
+    function toggleModoRestore() {
+        const modo = el('select-modo').value;
+        if (modo === 'NUEVA_BD') {
+            show('group-nueva-bd');
+        } else {
+            hide('group-nueva-bd');
+        }
+    }
+
+    function volverABackups() {
+        hide('card-restore');
+        state.backupSeleccionado = null;
+        document.querySelectorAll('.backup-item').forEach(i => i.classList.remove('selected'));
+    }
+
+    // ── Paso 5: Ejecutar restore ───────────────────────────────────
+    async function confirmarRestore() {
+        const b = state.backupSeleccionado;
+        if (!b) return;
+
+        const modo        = el('select-modo').value;
+        const nombreBdNueva = el('input-nueva-bd').value.trim();
+
+        if (modo === 'NUEVA_BD' && !nombreBdNueva) {
+            el('input-nueva-bd').focus();
+            el('input-nueva-bd').style.borderColor = '#dc2626';
+            return;
+        }
+
+        if (!confirm(
+            `¿Confirmas la restauración?\n\n` +
+            `Archivo: ${b.nombre}\n` +
+            `Modo: ${modo === 'REEMPLAZAR' ? 'Reemplazar BD existente' : 'Nueva BD: ' + nombreBdNueva}\n\n` +
+            `Esta acción NO se puede deshacer.`
+        )) return;
+
+        // Mostrar progreso
+        hide('card-restore');
+        show('card-progreso');
+        el('btn-confirmar').disabled = true;
+
+        actualizarProgreso('Descargando backup desde Google Drive...', 'step-descarga');
+
+        try {
+            const resultado = await post(`${API}/restore`, {
+                idJob:         state.jobId,
+                fileId:        b.fileId,
+                nombreArchivo: b.nombre,
+                modo:          modo,
+                nombreBdNueva: nombreBdNueva
+            });
+
+            hide('card-progreso');
+            show('card-resultado');
+
+            if (resultado.exitoso) {
+                el('resultado-alert').innerHTML =
+                    `<div class="alert alert-success">
+          ✅ Restauración completada exitosamente
+        </div>`;
+                el('resultado-info').innerHTML =
+                    `<strong>BD restaurada:</strong> ${resultado.bdRestaurada}<br>` +
+                    `<strong>Duración:</strong> ${resultado.duracionSegundos}s<br>` +
+                    `<strong>Archivo:</strong> ${b.nombre}`;
+            } else {
+                el('resultado-alert').innerHTML =
+                    `<div class="alert alert-error">
+          ❌ Error en la restauración: ${resultado.mensaje}
+        </div>`;
+            }
+
+            if (resultado.log) {
+                show('log-container');
+                el('log-output').textContent = resultado.log;
+            }
+
+        } catch (e) {
+            hide('card-progreso');
+            show('card-resultado');
+            el('resultado-alert').innerHTML =
+                `<div class="alert alert-error">❌ Error inesperado: ${e.message}</div>`;
+        }
+    }
+
+    function actualizarProgreso(msg, stepId) {
+        el('progress-label').textContent = msg;
+        // Activar step
+        ['step-descarga', 'step-restore'].forEach(id => {
+            if (id === stepId) {
+                el(id).className = 'alert alert-warn mt-1';
+                el(id).innerHTML = '⏳ ' + el(id).textContent.replace('⏳ ', '');
+                el(id).classList.remove('hidden');
+            }
+        });
+    }
+
+    // ── Reset ──────────────────────────────────────────────────────
+    function reiniciar() {
+        state.backupSeleccionado = null;
+        state.jobId = null;
+
+        hide('card-resultado');
+        hide('card-progreso');
+        hide('card-restore');
+        show('card-backups');
+
+        el('backup-list-container').innerHTML =
+            '<div class="alert alert-info">Selecciona un backup de la lista.</div>';
+        el('btn-confirmar').disabled = false;
+        el('select-modo').value = 'REEMPLAZAR';
+        hide('group-nueva-bd');
+        el('input-nueva-bd').value = '';
+    }
+
+    // ── Footer timestamp ───────────────────────────────────────────
+    function actualizarReloj() {
+        el('footer-time').textContent = new Date().toLocaleString('es-EC');
+    }
+    actualizarReloj();
+    setInterval(actualizarReloj, 1000);
+
+    // Foco automático
+    window.onload = () => el('input-password').focus();
+</script>
+</body>
+</html>

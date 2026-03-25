@@ -1,5 +1,3 @@
-
-
 package com.erwin.backend.config;
 
 import com.erwin.backend.security.JwtService;
@@ -23,13 +21,21 @@ public class DbSessionFilter extends OncePerRequestFilter {
     public static final String SES_DB_USER = "SES_DB_USER";
     public static final String SES_DB_PASS = "SES_DB_PASS";
 
-    // ✅ El usuario de arranque/default — debe coincidir con spring.datasource.username
     private static final String DEFAULT_USER = "auth_reader";
 
     private final JwtService jwtService;
 
     public DbSessionFilter(JwtService jwtService) {
         this.jwtService = jwtService;
+    }
+
+    // ── Excluir rutas de recovery: no necesitan JWT ni sesión ─────────────────
+    // Esto es importante cuando la BD está caída — no queremos que este filtro
+    // intente hacer nada que dependa de un contexto de BD activo.
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        return path.startsWith("/api/recovery/") || path.equals("/recovery.html");
     }
 
     @Override
@@ -42,7 +48,7 @@ public class DbSessionFilter extends OncePerRequestFilter {
         String user = null;
         String pass = null;
 
-        // ✅ PRIORIDAD 1: leer credenciales BD desde el JWT (Authorization: Bearer ...)
+        // PRIORIDAD 1: leer credenciales BD desde el JWT (Authorization: Bearer ...)
         String authHeader = request.getHeader("Authorization");
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7);
@@ -57,7 +63,7 @@ public class DbSessionFilter extends OncePerRequestFilter {
             }
         }
 
-        // ✅ PRIORIDAD 2 (fallback): leer de sesión HTTP (para clientes con cookie)
+        // PRIORIDAD 2 (fallback): leer de sesión HTTP (para clientes con cookie)
         if (user == null || user.isBlank()) {
             HttpSession session = request.getSession(false);
             if (session != null) {

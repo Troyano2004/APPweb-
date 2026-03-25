@@ -1,11 +1,13 @@
 package com.erwin.backend.service;
 
+import com.erwin.backend.config.DataSourceConfig;
 import com.erwin.backend.entities.BackupExecution.TipoBackup;
 import com.erwin.backend.entities.BackupJob;
 import com.erwin.backend.repository.BackupJobRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Service;
@@ -26,11 +28,35 @@ public class BackupSchedulerService {
     private final BackupJobRepository jobRepo;
     private final BackupService       backupService;
 
+    // Leemos las credenciales para poder verificar si la BD existe
+    @Value("${spring.datasource.url}")
+    private String datasourceUrl;
+
+    @Value("${spring.datasource.username}")
+    private String datasourceUsername;
+
+    @Value("${spring.datasource.password}")
+    private String datasourcePassword;
+
     private final Map<Long, ScheduledFuture<?>> tareasFullMap = new ConcurrentHashMap<>();
     private final Map<Long, ScheduledFuture<?>> tareasDifMap  = new ConcurrentHashMap<>();
 
     @PostConstruct
     public void inicializarTareas() {
+        // ── Recovery Mode ──────────────────────────────────────────────────────
+        // Si la BD no existe aún (fue eliminada o nunca se creó), no intentamos
+        // hacer queries — eso crashearía Spring antes de que recovery.html
+        // esté disponible. El administrador puede restaurar desde /recovery.html
+        // ──────────────────────────────────────────────────────────────────────
+        if (!DataSourceConfig.baseDeDatosExiste(datasourceUrl, datasourceUsername, datasourcePassword)) {
+            log.warn("╔══════════════════════════════════════════════════════════╗");
+            log.warn("║  RECOVERY MODE — Base de datos '{}' no encontrada", extraerNombreBd());
+            log.warn("║  BackupScheduler NO inicializado.");
+            log.warn("║  Restaura desde: http://localhost:8080/recovery.html");
+            log.warn("╚══════════════════════════════════════════════════════════╝");
+            return;  // ← salida limpia, Spring sigue arrancando normalmente
+        }
+
         log.info("Inicializando schedulers de backup...");
         jobRepo.findByActivoTrue().forEach(this::programarJob);
     }
@@ -108,5 +134,10 @@ public class BackupSchedulerService {
 
     private void cancelarTarea(ScheduledFuture<?> tarea) {
         if (tarea != null && !tarea.isCancelled()) tarea.cancel(false);
+    }
+
+    private String extraerNombreBd() {
+        if (datasourceUrl == null) return "desconocida";
+        return datasourceUrl.substring(datasourceUrl.lastIndexOf('/') + 1);
     }
 }

@@ -36,18 +36,25 @@ public class GoogleDriveUploadService {
                 "{\"name\":\"%s\",\"parents\":[\"%s\"]}",
                 archivo.getFileName().toString(), folderId);
 
-        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-        body.add("metadata", new HttpEntity<>(metadata,
-                buildHeaders(accessToken, MediaType.APPLICATION_JSON)));
-        body.add("file", new HttpEntity<>(new FileSystemResource(archivo.toFile()),
-                buildHeaders(accessToken, MediaType.APPLICATION_OCTET_STREAM)));
+        // ── CORRECCIÓN: cada parte del multipart necesita su propio Content-Type,
+        //    pero el Bearer va sólo en los headers exteriores de la petición. ──────
+        HttpHeaders metaHeaders = new HttpHeaders();
+        metaHeaders.setContentType(MediaType.APPLICATION_JSON);
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(accessToken);
-        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        HttpHeaders fileHeaders = new HttpHeaders();
+        fileHeaders.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        body.add("metadata", new HttpEntity<>(metadata, metaHeaders));
+        body.add("file",     new HttpEntity<>(new FileSystemResource(archivo.toFile()), fileHeaders));
+
+        HttpHeaders requestHeaders = new HttpHeaders();
+        requestHeaders.setBearerAuth(accessToken);          // ← Bearer en los headers raíz
+        requestHeaders.setContentType(MediaType.MULTIPART_FORM_DATA);
 
         ResponseEntity<Map> response = restTemplate.exchange(
-                UPLOAD_URL, HttpMethod.POST, new HttpEntity<>(body, headers), Map.class);
+                UPLOAD_URL, HttpMethod.POST,
+                new HttpEntity<>(body, requestHeaders), Map.class);
 
         if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
             throw new RuntimeException("Error subiendo archivo a Google Drive");
@@ -65,8 +72,7 @@ public class GoogleDriveUploadService {
                 ? destino.getGdriveFolderNombre().trim()
                 : "Backups_Sistema";
 
-        // 1. Si ya tenemos el ID guardado (y el nombre no cambió — controlado en BackupService),
-        //    verificar que la carpeta aún existe en Drive
+        // 1. Si ya tenemos el ID guardado, verificar que la carpeta aún exista en Drive
         if (destino.getGdriveFolderId() != null && !destino.getGdriveFolderId().isBlank()) {
             try {
                 HttpHeaders h = new HttpHeaders();
@@ -116,7 +122,7 @@ public class GoogleDriveUploadService {
             log.warn("Error buscando carpeta '{}' en Drive: {}", nombreCarpeta, e.getMessage());
         }
 
-        // 3. No existe — crear carpeta nueva con el nombre solicitado
+        // 3. No existe — crear carpeta nueva
         String folderMeta = String.format(
                 "{\"name\":\"%s\",\"mimeType\":\"application/vnd.google-apps.folder\"}",
                 nombreCarpeta);
@@ -198,11 +204,5 @@ public class GoogleDriveUploadService {
             log.warn("Prueba Google Drive fallida: {}", e.getMessage());
             return false;
         }
-    }
-
-    private HttpHeaders buildHeaders(String accessToken, MediaType contentType) {
-        HttpHeaders h = new HttpHeaders();
-        h.setContentType(contentType);
-        return h;
     }
 }

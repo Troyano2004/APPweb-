@@ -91,11 +91,33 @@
         </dependency>
 
         <!-- ═══════════════════════════════════════════ -->
-        <!-- JSON                                        -->
+        <!-- JPA                                         -->
         <!-- ═══════════════════════════════════════════ -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+
+        <!-- ═══════════════════════════════════════════ -->
+        <!-- FLYWAY — migraciones de BD                  -->
+        <!-- Gestionado manualmente por FlywayConfig.java-->
+        <!-- para soportar arranque sin BD (Recovery Mode)-->
+        <!-- ═══════════════════════════════════════════ -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
+        </dependency>
+
+        <!-- ═══════════════════════════════════════════ -->
+        <!-- REST TEMPLATE — llamadas HTTP a Google Drive-->
+        <!-- ═══════════════════════════════════════════ -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
         <!-- ═══════════════════════════════════════════ -->
@@ -108,27 +130,31 @@
         </dependency>
 
         <!-- ═══════════════════════════════════════════ -->
-        <!-- AWS S3 (backup)                             -->
+        <!-- PDF                                         -->
         <!-- ═══════════════════════════════════════════ -->
         <dependency>
             <groupId>com.itextpdf</groupId>
             <artifactId>itextpdf</artifactId>
             <version>5.5.13.3</version>
         </dependency>
+
+        <!-- ═══════════════════════════════════════════ -->
+        <!-- EXCEL                                       -->
+        <!-- ═══════════════════════════════════════════ -->
         <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi-ooxml</artifactId>
             <version>5.2.5</version>
-
         </dependency>
 
+        <!-- ═══════════════════════════════════════════ -->
+        <!-- AWS S3 (backup)                             -->
+        <!-- ═══════════════════════════════════════════ -->
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>s3</artifactId>
             <version>2.25.40</version>
         </dependency>
-
-
 
     </dependencies>
 

@@ -1,4 +1,3 @@
-
 package com.erwin.backend.security;
 
 import org.springframework.context.annotation.Bean;
@@ -25,6 +24,11 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/login").permitAll()
                         .requestMatchers("/api/auth/logout").permitAll()
                         .requestMatchers("/debug/**").permitAll()
+                        // ── Recovery: accesible aunque la BD esté caída ──────────
+                        // La seguridad la maneja RecoveryService con contraseña maestra
+                        .requestMatchers("/api/recovery/**").permitAll()
+                        .requestMatchers("/recovery.html").permitAll()
+                        // ────────────────────────────────────────────────────────
                         .anyRequest().permitAll()
                 )
 
@@ -47,7 +51,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(List.of("http://localhost:4200"));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")); // ✅ FIX: se agregó PATCH
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);
