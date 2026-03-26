@@ -3,14 +3,16 @@ import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, NavigationEnd } from '@angular/router';
-import { filter, Subscription } from 'rxjs';
+import { filter, finalize, Subscription } from 'rxjs';
 import { getSessionUser, getSessionEntityId } from '../../../services/session';
 import {
   ComisionTemasService,
   EstadoModalidadDto,
   TemaBancoDto,
   PropuestaTemaDto,
-  CrearPropuestaRequest
+  CrearPropuestaRequest,
+  FeedbackIAPropuesta,
+  RevisionPropuestaIAResponse
 } from '../../../services/comision-temas';
 
 type Vista = 'mis-propuestas' | 'nueva-propuesta' | 'sugerir-tema';
@@ -48,7 +50,7 @@ export class SugerenciaTemaComponent implements OnInit, OnDestroy {
   exitoMsg           = '';
   form: CrearPropuestaRequest = this.formVacio();
 
-  // ── Temas aprobados ───────────────────────────────────────────────────
+  // DESPUÉS (sin \ — CORRECTO):
   temasAprobados: TemaBancoDto[] = [];
   cargandoAprobados = false;
 
@@ -57,6 +59,15 @@ export class SugerenciaTemaComponent implements OnInit, OnDestroy {
   enviandoSug = false;
   errorSug    = '';
   exitoSug    = '';
+
+  // ── Panel IA ──────────────────────────────────────────────────────────
+  idPropuestaGuardada: number | null = null;
+  analizandoIA   = false;
+  respuestaIA:   RevisionPropuestaIAResponse | null = null;
+  feedbackIA:    FeedbackIAPropuesta | null = null;
+  errorIA        = '';
+  modoIA: 'integral' | 'coherencia' | 'pertinencia' | 'viabilidad' = 'integral';
+  instruccionIA  = '';
 
   private idEstudiante: number = getSessionEntityId(getSessionUser(), 'estudiante') ?? 0;
   private routerSub: Subscription | null = null;
@@ -102,6 +113,19 @@ export class SugerenciaTemaComponent implements OnInit, OnDestroy {
 
   get tieneModalidad(): boolean {
     return this.estadoModalidad?.tieneModalidad ?? false;
+  }
+
+  get mostrarPanelIA(): boolean {
+    return !!(this.idPropuestaGuardada || this.feedbackIA || this.analizandoIA || this.errorIA);
+  }
+
+  get colorEstadoIA(): Record<string, boolean> {
+    const e = this.feedbackIA?.estado_evaluacion;
+    return {
+      'estado-aprobable':        e === 'APROBABLE',
+      'estado-requiere-ajustes': e === 'REQUIERE_AJUSTES',
+      'estado-rechazable':       e === 'RECHAZABLE'
+    };
   }
 
   // ── Navegación ─────────────────────────────────────────────────────────
@@ -250,22 +274,21 @@ export class SugerenciaTemaComponent implements OnInit, OnDestroy {
     }
 
     this.enviando = true;
+    this.limpiarIA();
     const payload: CrearPropuestaRequest = { ...this.form };
     if (this.modoFormulario === 'tema-banco' && this.temaSeleccionado) {
       payload.idTema = this.temaSeleccionado.idTema;
     }
 
     this.comisionService.crearPropuestaEstudiante(this.idEstudiante, payload).subscribe({
-      next: () => {
+      next: (propuestaCreada) => {
         this.enviando = false;
-        this.exitoMsg = '¡Propuesta enviada! La comisión la revisará pronto.';
+        this.exitoMsg = '¡Propuesta enviada! Ahora puedes analizarla con IA ✦';
+        // Guardar ID para el panel IA
+        this.idPropuestaGuardada = propuestaCreada.idPropuesta;
         this.limpiarFormulario();
-        this.cdr.detectChanges();
-        setTimeout(() => {
-          this.vistaActual = 'mis-propuestas';
-          this.exitoMsg    = '';
-          this.cargarPropuestas();
-        }, 1800);
+        this.cdr.detectChanges();  // ← fuerza aparición del panel IA
+        this.cargarPropuestas();
       },
       error: (err) => {
         this.enviando = false;
@@ -280,6 +303,55 @@ export class SugerenciaTemaComponent implements OnInit, OnDestroy {
     this.temaSeleccionado = null;
     this.errorMsg         = '';
     this.exitoMsg         = '';
+  }
+
+  // ── Panel IA ──────────────────────────────────────────────────────────
+
+  analizarConIA(idPropuesta?: number): void {
+    const id = idPropuesta ?? this.idPropuestaGuardada;
+    if (!id) {
+      this.errorIA = 'Primero debes enviar tu propuesta para analizarla con IA.';
+      this.cdr.detectChanges();
+      return;
+    }
+
+    this.analizandoIA = true;
+    this.errorIA      = '';
+    this.feedbackIA   = null;
+    this.respuestaIA  = null;
+    this.idPropuestaGuardada = id;
+    this.cdr.detectChanges();
+
+    this.comisionService.evaluarPropuestaConIA(id, {
+      modo: this.modoIA,
+      instruccionAdicional: this.instruccionIA.trim() || undefined
+    })
+      .pipe(finalize(() => { this.analizandoIA = false; this.cdr.detectChanges(); }))
+      .subscribe({
+        next: (resp) => {
+          this.respuestaIA = resp;
+          try {
+            this.feedbackIA = JSON.parse(resp.feedbackIa);
+          } catch {
+            this.errorIA = 'La IA respondió en formato inesperado. Intenta nuevamente.';
+          }
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          this.errorIA = err?.error?.message ?? 'Error al conectarse con el servicio de IA.';
+          this.cdr.detectChanges();
+        }
+      });
+  }
+
+  limpiarIA(): void {
+    this.idPropuestaGuardada = null;
+    this.feedbackIA          = null;
+    this.respuestaIA         = null;
+    this.errorIA             = '';
+    this.instruccionIA       = '';
+    this.modoIA              = 'integral';
+    this.cdr.detectChanges();
   }
 
   // ── Sugerencia ─────────────────────────────────────────────────────────

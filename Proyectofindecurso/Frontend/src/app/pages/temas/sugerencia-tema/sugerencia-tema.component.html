@@ -1,3 +1,4 @@
+
 <div class="page-wrapper">
 
   <!-- ── Header ── -->
@@ -339,4 +340,92 @@
     </div>
 
   </ng-container>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- PANEL IA — aparece después de enviar una propuesta         -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <div class="panel-ia" *ngIf="mostrarPanelIA">
+
+    <div class="ia-header">
+      <h3>✦ Asistente IA — Evaluación de propuesta</h3>
+      <button class="btn-cerrar-ia" (click)="limpiarIA()">✕ Cerrar</button>
+    </div>
+
+    <!-- Controles -->
+    <div class="ia-controles" *ngIf="!analizandoIA">
+      <div class="ia-campo">
+        <label>Tipo de análisis</label>
+        <select [(ngModel)]="modoIA">
+          <option value="integral">Evaluación integral</option>
+          <option value="coherencia">Coherencia interna</option>
+          <option value="pertinencia">Pertinencia a la carrera</option>
+          <option value="viabilidad">Viabilidad del proyecto</option>
+        </select>
+      </div>
+      <div class="ia-campo">
+        <label>Instrucción adicional (opcional)</label>
+        <input type="text" [(ngModel)]="instruccionIA"
+               placeholder="Ej: El proyecto debe completarse en 6 meses..." />
+      </div>
+      <button class="btn-ia"
+              (click)="analizarConIA()"
+              [disabled]="!idPropuestaGuardada && !feedbackIA">
+        ✦ Analizar con IA
+      </button>
+    </div>
+
+    <!-- Cargando -->
+    <div class="ia-loading" *ngIf="analizandoIA">
+      <div class="spinner-ia"></div>
+      <p>Analizando tu propuesta con IA... esto puede tomar unos segundos.</p>
+    </div>
+
+    <!-- Error IA -->
+    <div class="ia-error" *ngIf="errorIA">⚠ {{ errorIA }}</div>
+
+    <!-- Resultado -->
+    <div class="ia-resultado" *ngIf="feedbackIA as fb">
+
+      <div class="ia-badges">
+        <span [ngClass]="colorEstadoIA">
+          {{ fb.estado_evaluacion === 'APROBABLE' ? '✅ Aprobable' :
+          fb.estado_evaluacion === 'REQUIERE_AJUSTES' ? '⚠️ Requiere ajustes' :
+            fb.estado_evaluacion === 'RECHAZABLE' ? '❌ Rechazable' : fb.estado_evaluacion }}
+        </span>
+        <span class="badge-puntaje">{{ fb.puntaje_estimado }}/100</span>
+        <span class="badge-pertinencia">Pertinencia: {{ fb.pertinencia_carrera }}</span>
+        <span *ngIf="respuestaIA" class="ctx-tag">{{ respuestaIA.nombreCarrera }}</span>
+        <span *ngIf="respuestaIA" class="ctx-tag">{{ respuestaIA.modalidadTitulacion }}</span>
+      </div>
+
+      <div class="ia-secciones">
+        <div><strong>Título:</strong> {{ fb.analisis_titulo }}</div>
+        <div><strong>Objetivos:</strong> {{ fb.analisis_objetivos }}</div>
+        <div><strong>Metodología:</strong> {{ fb.analisis_metodologia }}</div>
+      </div>
+
+      <div class="ia-dos-col">
+        <div>
+          <h4>✅ Fortalezas</h4>
+          <ul><li *ngFor="let f of fb.fortalezas">{{ f }}</li></ul>
+        </div>
+        <div>
+          <h4>⚠️ Debilidades</h4>
+          <ul><li *ngFor="let d of fb.debilidades">{{ d }}</li></ul>
+        </div>
+      </div>
+
+      <div *ngIf="fb.sugerencias_mejora.length > 0">
+        <h4>💡 Sugerencias</h4>
+        <ol><li *ngFor="let s of fb.sugerencias_mejora">{{ s }}</li></ol>
+      </div>
+
+      <div class="ia-mensaje">
+        <span>✦</span>
+        <p>{{ fb.mensaje_estudiante }}</p>
+      </div>
+
+    </div>
+  </div>
+
 </div>

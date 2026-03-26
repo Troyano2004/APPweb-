@@ -1,5 +1,5 @@
 
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs/operators';
@@ -40,25 +40,12 @@ export class PropuestaNuevaComponent implements OnInit {
   carreras            = signal<CatalogoCarrera[]>([]);
 
   // ── Estado del panel IA ──────────────────────────────────────────────────
-  /** ID de la propuesta recién guardada sobre la que se ejecutará la IA */
   idPropuestaGuardada  = signal<number | null>(null);
-
-  /** true mientras espera respuesta de Groq */
   analizandoIA         = signal(false);
-
-  /** Respuesta cruda del backend IA */
   respuestaIA          = signal<RevisionPropuestaIAResponse | null>(null);
-
-  /** Feedback parseado (JSON.parse del campo feedbackIa) */
   feedbackIA           = signal<FeedbackIAPropuesta | null>(null);
-
-  /** Error específico del análisis IA */
   errorIA              = signal<string | null>(null);
-
-  /** Modo seleccionado en el selector IA */
   modoIA: 'integral' | 'coherencia' | 'pertinencia' | 'viabilidad' = 'integral';
-
-  /** Instrucción adicional libre */
   instruccionIA = '';
 
   // ── Formulario ───────────────────────────────────────────────────────────
@@ -77,7 +64,8 @@ export class PropuestaNuevaComponent implements OnInit {
 
   constructor(
     private readonly api: ComisionTemasService,
-    private readonly catalogosApi: CatalogosService
+    private readonly catalogosApi: CatalogosService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -100,19 +88,18 @@ export class PropuestaNuevaComponent implements OnInit {
   }
 
   get tieneModalidadSeleccionada(): boolean {
-    return !this.loadingModalidad() && (this.estadoModalidad()?.tieneModalidad ?? false);
+    return this.estadoModalidad()?.tieneModalidad ?? false;
   }
 
-  /** Color del badge según estado_evaluacion */
-  get colorEstado(): string {
+  get colorEstado(): Record<string, boolean> {
     const e = this.feedbackIA()?.estado_evaluacion;
-    if (e === 'APROBABLE')        return 'estado-verde';
-    if (e === 'REQUIERE_AJUSTES') return 'estado-amarillo';
-    if (e === 'RECHAZABLE')       return 'estado-rojo';
-    return 'estado-gris';
+    return {
+      'estado-aprobable':       e === 'APROBABLE',
+      'estado-requiere-ajustes': e === 'REQUIERE_AJUSTES',
+      'estado-rechazable':      e === 'RECHAZABLE'
+    };
   }
 
-  /** Etiqueta legible del modo */
   get etiquetaModo(): string {
     const modos: Record<string, string> = {
       integral:    'Evaluación integral',
@@ -123,7 +110,7 @@ export class PropuestaNuevaComponent implements OnInit {
     return modos[this.modoIA] ?? 'Integral';
   }
 
-  // ── Carga de datos ───────────────────────────────────────────────────────
+  // ── Cargar datos ─────────────────────────────────────────────────────────
 
   cargarEstadoModalidad(): void {
     if (!this.idEstudiante) { this.error.set('No se pudo identificar al estudiante.'); return; }
@@ -132,13 +119,12 @@ export class PropuestaNuevaComponent implements OnInit {
       next: estado => {
         this.estadoModalidad.set(estado);
         this.modalidadSeleccionada.set(estado.idModalidad);
-        if (estado.idCarrera) this.form.idCarrera = estado.idCarrera;
-        this.onSeleccionCarrera();
         this.loadingModalidad.set(false);
+        this.cdr.detectChanges();
       },
-      error: err => {
-        this.error.set(err?.error?.message ?? 'No se pudo validar la modalidad.');
+      error: () => {
         this.loadingModalidad.set(false);
+        this.cdr.detectChanges();
       }
     });
   }
@@ -146,36 +132,15 @@ export class PropuestaNuevaComponent implements OnInit {
   cargarCarreras(): void {
     this.loadingCarreras.set(true);
     this.catalogosApi.listarCarreras().subscribe({
-      next: resp => {
-        const carreras = resp ?? [];
-        this.carreras.set(carreras);
-        if (!carreras.some(c => c.idCarrera === this.form.idCarrera))
-          this.form.idCarrera = carreras[0]?.idCarrera ?? this.form.idCarrera;
-        this.onSeleccionCarrera();
+      next: data => {
+        this.carreras.set(data ?? []);
+        if (data?.length > 0) this.form.idCarrera = data[0].idCarrera;
         this.loadingCarreras.set(false);
+        this.cdr.detectChanges();
       },
-      error: err => {
-        this.error.set(err?.error?.message ?? 'No se pudo cargar el catálogo de carreras.');
+      error: () => {
         this.loadingCarreras.set(false);
-      }
-    });
-  }
-
-  guardarModalidad(): void {
-    if (!this.idEstudiante) { this.error.set('No se pudo identificar al estudiante.'); return; }
-    const idModalidad = this.modalidadSeleccionada();
-    if (!idModalidad) { this.error.set('Selecciona una modalidad para continuar.'); return; }
-    this.guardandoModalidad.set(true);
-    this.error.set(null);
-    this.api.seleccionarModalidad(this.idEstudiante, idModalidad).subscribe({
-      next: estado => {
-        this.estadoModalidad.set(estado);
-        this.ok.set(`Modalidad registrada: ${estado.modalidad}. Ya puedes enviar tu propuesta.`);
-        this.guardandoModalidad.set(false);
-      },
-      error: err => {
-        this.error.set(err?.error?.message ?? 'No se pudo guardar la modalidad.');
-        this.guardandoModalidad.set(false);
+        this.cdr.detectChanges();
       }
     });
   }
@@ -184,17 +149,20 @@ export class PropuestaNuevaComponent implements OnInit {
     if (!this.idEstudiante) return;
     this.loadingTemas.set(true);
     this.api.listarTemasDisponiblesEstudiante(this.idEstudiante).subscribe({
-      next: resp => { this.temasDisponibles.set(resp ?? []); this.loadingTemas.set(false); },
-      error: err => {
-        this.error.set(err?.error?.message ?? 'No se pudo cargar los temas.');
+      next: data => {
+        this.temasDisponibles.set(data ?? []);
         this.loadingTemas.set(false);
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.loadingTemas.set(false);
+        this.cdr.detectChanges();
       }
     });
   }
 
   onSeleccionCarrera(): void {
-    if (!this.temasFiltradosPorCarrera.some(t => t.idTema === this.form.idTema))
-      this.form.idTema = null;
+    this.form.idTema = null;
   }
 
   onSeleccionTema(): void {
@@ -208,10 +176,39 @@ export class PropuestaNuevaComponent implements OnInit {
     if (!this.idEstudiante) return;
     this.loading.set(true);
     this.api.listarPropuestasEstudiante(this.idEstudiante).subscribe({
-      next: resp => { this.historial.set(resp ?? []); this.loading.set(false); },
+      next: resp => {
+        this.historial.set(resp ?? []);
+        this.loading.set(false);
+        this.cdr.detectChanges();
+      },
       error: err => {
         this.error.set(err?.error?.message ?? 'No se pudo cargar historial.');
         this.loading.set(false);
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  // ── Modalidad ────────────────────────────────────────────────────────────
+
+  guardarModalidad(): void {
+    const idModalidad = this.modalidadSeleccionada();
+    if (!this.idEstudiante) { this.error.set('No se pudo identificar al estudiante.'); return; }
+    if (!idModalidad) { this.error.set('Selecciona una modalidad.'); return; }
+
+    this.guardandoModalidad.set(true);
+    this.api.seleccionarModalidad(this.idEstudiante, idModalidad).subscribe({
+      next: (estado) => {
+        this.estadoModalidad.set(estado);
+        this.modalidadSeleccionada.set(estado.idModalidad);
+        this.ok.set(`Modalidad registrada: ${estado.modalidad}. Ya puedes enviar tu propuesta.`);
+        this.guardandoModalidad.set(false);
+        this.cdr.detectChanges();
+      },
+      error: err => {
+        this.error.set(err?.error?.message ?? 'Error al guardar la modalidad.');
+        this.guardandoModalidad.set(false);
+        this.cdr.detectChanges();
       }
     });
   }
@@ -228,7 +225,6 @@ export class PropuestaNuevaComponent implements OnInit {
     this.saving.set(true);
     this.error.set(null);
     this.ok.set(null);
-    // Limpiar resultado IA anterior al enviar nueva propuesta
     this.limpiarIA();
 
     this.api.crearPropuestaEstudiante(this.idEstudiante, {
@@ -245,15 +241,16 @@ export class PropuestaNuevaComponent implements OnInit {
     }).subscribe({
       next: (propuestaCreada) => {
         this.ok.set('Tu propuesta fue enviada a la comisión. ¡Ahora puedes analizarla con IA!');
-        // Guardar el ID para poder llamar la IA sobre esta propuesta
         this.idPropuestaGuardada.set(propuestaCreada.idPropuesta);
         this.resetForm();
         this.saving.set(false);
+        this.cdr.detectChanges();  // ← CLAVE: fuerza que aparezca el panel IA
         this.cargarHistorial();
       },
       error: err => {
         this.error.set(err?.error?.message ?? 'No se pudo enviar la propuesta.');
         this.saving.set(false);
+        this.cdr.detectChanges();
         this.cargarEstadoModalidad();
       }
     });
@@ -261,16 +258,11 @@ export class PropuestaNuevaComponent implements OnInit {
 
   // ── IA: Analizar propuesta ───────────────────────────────────────────────
 
-  /**
-   * Llama al backend IA para analizar la propuesta recién guardada.
-   * Requiere que se haya enviado la propuesta primero (idPropuestaGuardada).
-   *
-   * También puede llamarse desde el historial pasando el idPropuesta directamente.
-   */
   analizarConIA(idPropuesta?: number): void {
     const id = idPropuesta ?? this.idPropuestaGuardada();
     if (!id) {
       this.errorIA.set('Primero debes enviar tu propuesta para poder analizarla con IA.');
+      this.cdr.detectChanges();
       return;
     }
 
@@ -278,12 +270,17 @@ export class PropuestaNuevaComponent implements OnInit {
     this.errorIA.set(null);
     this.feedbackIA.set(null);
     this.respuestaIA.set(null);
+    this.idPropuestaGuardada.set(id);
+    this.cdr.detectChanges();  // ← fuerza aparición del panel antes de la respuesta
 
     this.api.evaluarPropuestaConIA(id, {
       modo: this.modoIA,
       instruccionAdicional: this.instruccionIA.trim() || undefined
     })
-      .pipe(finalize(() => this.analizandoIA.set(false)))
+      .pipe(finalize(() => {
+        this.analizandoIA.set(false);
+        this.cdr.detectChanges();
+      }))
       .subscribe({
         next: resp => {
           this.respuestaIA.set(resp);
@@ -293,9 +290,11 @@ export class PropuestaNuevaComponent implements OnInit {
           } catch {
             this.errorIA.set('La IA respondió en formato inesperado. Intente nuevamente.');
           }
+          this.cdr.detectChanges();
         },
         error: err => {
           this.errorIA.set(err?.error?.message ?? 'Error al conectarse con el servicio de IA.');
+          this.cdr.detectChanges();
         }
       });
   }
@@ -304,8 +303,10 @@ export class PropuestaNuevaComponent implements OnInit {
     this.feedbackIA.set(null);
     this.respuestaIA.set(null);
     this.errorIA.set(null);
+    this.idPropuestaGuardada.set(null);
     this.instruccionIA = '';
     this.modoIA = 'integral';
+    this.cdr.detectChanges();
   }
 
   // ── Helpers ──────────────────────────────────────────────────────────────
