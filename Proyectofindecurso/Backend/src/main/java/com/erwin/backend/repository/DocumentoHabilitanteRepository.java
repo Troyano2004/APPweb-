@@ -57,11 +57,16 @@ public interface DocumentoHabilitanteRepository
     List<DocumentoHabilitante> findPendientesPorDirector(
             @Param("idDocente") Integer idDocente);
 
-    // ── Pendientes DT2 Complexivo ──────────────────────────────
+    // ── Pendientes DT2 Complexivo filtrado por docente ─────────
     @Query("""
         SELECT d FROM DocumentoHabilitante d
+        JOIN ComplexivoDt2Asignacion a
+            ON a.estudiante.idEstudiante = d.estudiante.idEstudiante
+            AND a.activo = true
         WHERE d.estado = 'ENVIADO'
           AND d.complexivo IS NOT NULL
+          AND a.docente.idDocente = :idDocente
     """)
-    List<DocumentoHabilitante> findPendientesComplexivo();
+    List<DocumentoHabilitante> findPendientesComplexivoPorDocente(
+            @Param("idDocente") Integer idDocente);
 }

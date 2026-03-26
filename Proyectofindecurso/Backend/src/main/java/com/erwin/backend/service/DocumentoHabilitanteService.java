@@ -342,6 +342,26 @@ public class DocumentoHabilitanteService {
                 .stream().map(this::toDto).toList();
     }
 
+
+    public List<DocumentoHabilitanteDtos.HabilitanteDto> pendientesPorDirectorYComplexivo(
+            Integer idDocente) {
+        // TIC: documentos de proyectos donde el docente es director
+        List<DocumentoHabilitanteDtos.HabilitanteDto> tic =
+                habilitanteRepo.findPendientesPorDirector(idDocente)
+                        .stream().map(this::toDto).toList();
+
+        // Complexivo: documentos de estudiantes donde el docente es DT2 asignado
+        List<DocumentoHabilitanteDtos.HabilitanteDto> complexivo =
+                habilitanteRepo.findPendientesComplexivoPorDocente(idDocente)
+                        .stream().map(this::toDto).toList();
+
+        List<DocumentoHabilitanteDtos.HabilitanteDto> todos = new ArrayList<>(tic);
+        todos.addAll(complexivo);
+        return todos;
+    }
+
+
+
     // ══════════════════════════════════════════════════════════
     // Helpers privados
     // ══════════════════════════════════════════════════════════

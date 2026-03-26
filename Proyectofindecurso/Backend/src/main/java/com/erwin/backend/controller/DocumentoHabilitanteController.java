@@ -66,7 +66,7 @@ public class DocumentoHabilitanteController {
     @GetMapping("/director/{idDocente}/pendientes")
     public List<DocumentoHabilitanteDtos.HabilitanteDto> pendientesDirector(
             @PathVariable Integer idDocente) {
-        return service.pendientesPorDirector(idDocente);
+        return service.pendientesPorDirectorYComplexivo(idDocente);
     }
 
     @PostMapping("/director/{idDocente}/validar/{idHabilitante}")
