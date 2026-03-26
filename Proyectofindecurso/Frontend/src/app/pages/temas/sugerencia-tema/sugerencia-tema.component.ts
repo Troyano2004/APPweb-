@@ -1,4 +1,5 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, NavigationEnd } from '@angular/router';
@@ -62,13 +63,13 @@ export class SugerenciaTemaComponent implements OnInit, OnDestroy {
 
   constructor(
     private readonly comisionService: ComisionTemasService,
-    private readonly router: Router
+    private readonly router: Router,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
     this.cargarTodo();
 
-    // ✅ Recarga cuando el usuario navega a esta página
     this.routerSub = this.router.events
       .pipe(filter(e => e instanceof NavigationEnd))
       .subscribe((e: any) => {
@@ -88,7 +89,6 @@ export class SugerenciaTemaComponent implements OnInit, OnDestroy {
     this.vistaActual      = 'mis-propuestas';
     this.temasDisponibles = [];
 
-    // ✅ FIX: solo mostrar spinner si aún no tenemos datos de modalidad
     if (this.estadoModalidad) {
       this.cargandoModalidad = false;
     }
@@ -127,20 +127,20 @@ export class SugerenciaTemaComponent implements OnInit, OnDestroy {
   // ── Modalidad ──────────────────────────────────────────────────────────
 
   cargarModalidad(): void {
-    // ✅ FIX: no mostrar spinner si ya tenemos datos (evita el bug de carga)
     if (!this.estadoModalidad) {
       this.cargandoModalidad = true;
     }
+    this.cdr.detectChanges();
 
     this.comisionService.obtenerEstadoModalidad(this.idEstudiante).subscribe({
       next: (estado) => {
         this.estadoModalidad       = estado;
         this.modalidadSeleccionada = estado.idModalidad;
         this.cargandoModalidad     = false;
+        this.cdr.detectChanges();
       },
       error: () => {
         this.cargandoModalidad = false;
-        // Si falla y no hay datos previos, mostrar bloque sin modalidad
         if (!this.estadoModalidad) {
           this.estadoModalidad = {
             tieneModalidad: false,
@@ -151,6 +151,7 @@ export class SugerenciaTemaComponent implements OnInit, OnDestroy {
             modalidadesDisponibles: []
           };
         }
+        this.cdr.detectChanges();
       }
     });
   }
@@ -171,12 +172,14 @@ export class SugerenciaTemaComponent implements OnInit, OnDestroy {
         this.okModalidad             = `✅ Modalidad guardada: ${estado.modalidad}`;
         this.guardandoModalidad      = false;
         this.mostrarCambiarModalidad = false;
+        this.cdr.detectChanges();
         this.cargarPropuestas();
         this.cargarTemasAprobados();
       },
       error: (err) => {
         this.errorModalidad     = err?.error?.message ?? 'Error al guardar la modalidad.';
         this.guardandoModalidad = false;
+        this.cdr.detectChanges();
       }
     });
   }
@@ -198,16 +201,16 @@ export class SugerenciaTemaComponent implements OnInit, OnDestroy {
   cargarPropuestas(): void {
     this.cargandoPropuestas = true;
     this.comisionService.listarPropuestasEstudiante(this.idEstudiante).subscribe({
-      next: (data) => { this.propuestasEstudiante = data; this.cargandoPropuestas = false; },
-      error: ()    => { this.cargandoPropuestas = false; }
+      next: (data) => { this.propuestasEstudiante = data; this.cargandoPropuestas = false; this.cdr.detectChanges(); },
+      error: ()    => { this.cargandoPropuestas = false; this.cdr.detectChanges(); }
     });
   }
 
   cargarTemasAprobados(): void {
     this.cargandoAprobados = true;
     this.comisionService.listarTemasAprobadosEstudiante(this.idEstudiante).subscribe({
-      next: (data) => { this.temasAprobados = data; this.cargandoAprobados = false; },
-      error: ()    => { this.cargandoAprobados = false; }
+      next: (data) => { this.temasAprobados = data; this.cargandoAprobados = false; this.cdr.detectChanges(); },
+      error: ()    => { this.cargandoAprobados = false; this.cdr.detectChanges(); }
     });
   }
 
@@ -215,8 +218,8 @@ export class SugerenciaTemaComponent implements OnInit, OnDestroy {
     if (this.temasDisponibles.length > 0) return;
     this.cargandoTemas = true;
     this.comisionService.listarTemasDisponiblesEstudiante(this.idEstudiante).subscribe({
-      next: (data) => { this.temasDisponibles = data; this.cargandoTemas = false; },
-      error: ()    => { this.cargandoTemas = false; }
+      next: (data) => { this.temasDisponibles = data; this.cargandoTemas = false; this.cdr.detectChanges(); },
+      error: ()    => { this.cargandoTemas = false; this.cdr.detectChanges(); }
     });
   }
 
@@ -257,6 +260,7 @@ export class SugerenciaTemaComponent implements OnInit, OnDestroy {
         this.enviando = false;
         this.exitoMsg = '¡Propuesta enviada! La comisión la revisará pronto.';
         this.limpiarFormulario();
+        this.cdr.detectChanges();
         setTimeout(() => {
           this.vistaActual = 'mis-propuestas';
           this.exitoMsg    = '';
@@ -266,6 +270,7 @@ export class SugerenciaTemaComponent implements OnInit, OnDestroy {
       error: (err) => {
         this.enviando = false;
         this.errorMsg = err?.error?.message || 'Error al enviar la propuesta.';
+        this.cdr.detectChanges();
       }
     });
   }
@@ -296,6 +301,7 @@ export class SugerenciaTemaComponent implements OnInit, OnDestroy {
         this.enviandoSug    = false;
         this.exitoSug       = '¡Sugerencia enviada! La comisión la revisará pronto.';
         this.formSugerencia = { titulo: '', descripcion: '' };
+        this.cdr.detectChanges();
         setTimeout(() => {
           this.vistaActual = 'mis-propuestas';
           this.exitoSug    = '';
@@ -304,6 +310,7 @@ export class SugerenciaTemaComponent implements OnInit, OnDestroy {
       error: (err) => {
         this.enviandoSug = false;
         this.errorSug    = err?.error?.message ?? 'Error al enviar la sugerencia.';
+        this.cdr.detectChanges();
       }
     });
   }

@@ -1,5 +1,5 @@
 
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { getSessionUser, getSessionEntityId, getUserRoles } from '../../../services/session';
@@ -40,7 +40,7 @@ export class RevisionPropuestasComponent implements OnInit {
 
   private idDocente: number = getSessionEntityId(getSessionUser(), 'docente') ?? 0;
 
-  constructor(private readonly comisionService: ComisionTemasService) {}
+  constructor(private readonly comisionService: ComisionTemasService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void { this.detectarModo(); }
 
@@ -77,16 +77,17 @@ export class RevisionPropuestasComponent implements OnInit {
   cargarPropuestas(): void {
     this.cargando = true;
     this.propuestas = [];
+    this.cdr.detectChanges();
 
     if (this.modoRevision === 'COMPLEXIVO') {
       this.comisionService.listarPropuestasComplexivo(this.idDocente).subscribe({
-        next: data => { this.propuestas = data; this.cargando = false; },
-        error: ()   => { this.cargando = false; }
+        next: data => { this.propuestas = data; this.cargando = false; this.cdr.detectChanges(); },
+        error: ()   => { this.cargando = false; this.cdr.detectChanges(); }
       });
     } else {
       this.comisionService.listarPropuestasComision(this.idDocente).subscribe({
-        next: data => { this.propuestas = data; this.cargando = false; },
-        error: ()   => { this.cargando = false; }
+        next: data => { this.propuestas = data; this.cargando = false; this.cdr.detectChanges(); },
+        error: ()   => { this.cargando = false; this.cdr.detectChanges(); }
       });
     }
   }
