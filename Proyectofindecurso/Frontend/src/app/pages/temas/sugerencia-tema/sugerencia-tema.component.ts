@@ -60,8 +60,7 @@ export class SugerenciaTemaComponent implements OnInit, OnDestroy {
   errorSug    = '';
   exitoSug    = '';
 
-  // ── Panel IA ──────────────────────────────────────────────────────────
-  idPropuestaGuardada: number | null = null;
+  // ── Panel IA (revisión PREVIA — usa datos del form, NO guarda en BD) ──
   analizandoIA   = false;
   respuestaIA:   RevisionPropuestaIAResponse | null = null;
   feedbackIA:    FeedbackIAPropuesta | null = null;
@@ -115,8 +114,9 @@ export class SugerenciaTemaComponent implements OnInit, OnDestroy {
     return this.estadoModalidad?.tieneModalidad ?? false;
   }
 
+  /** Panel IA visible si hay análisis activo, resultado o error — no depende de propuesta guardada */
   get mostrarPanelIA(): boolean {
-    return !!(this.idPropuestaGuardada || this.feedbackIA || this.analizandoIA || this.errorIA);
+    return !!(this.feedbackIA || this.analizandoIA || this.errorIA);
   }
 
   get colorEstadoIA(): Record<string, boolean> {
@@ -145,6 +145,7 @@ export class SugerenciaTemaComponent implements OnInit, OnDestroy {
   cambiarModo(modo: ModoFormulario): void {
     this.modoFormulario = modo;
     this.limpiarFormulario();
+    this.limpiarIA();
     if (modo === 'tema-banco') this.cargarTemasDisponibles();
   }
 
@@ -264,32 +265,36 @@ export class SugerenciaTemaComponent implements OnInit, OnDestroy {
     this.vistaActual            = 'nueva-propuesta';
   }
 
+  // ── Enviar propuesta (solo después de revisar con IA) ──────────────────
+  // IMPORTANTE: el formulario NO se limpia automáticamente al enviar.
+  // El usuario puede revisar la confirmación y luego limpiar manualmente.
+
   enviarPropuesta(): void {
     this.errorMsg = '';
     this.exitoMsg = '';
-    if (!this.form.titulo?.trim()) { this.errorMsg = 'El título es obligatorio.'; return; }
+
+    if (!this.form.titulo?.trim()) {
+      this.errorMsg = 'El título es obligatorio.';
+      return;
+    }
     if (this.modoFormulario === 'tema-banco' && !this.temaSeleccionado) {
       this.errorMsg = 'Debes seleccionar un tema del banco.';
       return;
     }
 
     this.enviando = true;
-    this.limpiarIA();
     const payload: CrearPropuestaRequest = { ...this.form };
     if (this.modoFormulario === 'tema-banco' && this.temaSeleccionado) {
       payload.idTema = this.temaSeleccionado.idTema;
     }
 
     this.comisionService.crearPropuestaEstudiante(this.idEstudiante, payload).subscribe({
-      next: (propuestaCreada) => {
-        this.enviando            = false;
-        this.exitoMsg            = '¡Propuesta enviada! Analizando con IA automáticamente ✦';
-        this.idPropuestaGuardada = propuestaCreada.idPropuesta;
-        this.limpiarFormulario();
+      next: () => {
+        this.enviando = false;
+        // ✅ El form NO se limpia — el estudiante puede ver lo que envió
+        this.exitoMsg = '✅ ¡Propuesta enviada a la comisión con éxito!';
         this.cdr.detectChanges();
         this.cargarPropuestas();
-        // ← lanza el análisis automáticamente al enviar
-        this.analizarConIA(propuestaCreada.idPropuesta);
       },
       error: (err) => {
         this.enviando = false;
@@ -304,28 +309,36 @@ export class SugerenciaTemaComponent implements OnInit, OnDestroy {
     this.temaSeleccionado = null;
     this.errorMsg         = '';
     this.exitoMsg         = '';
+    this.limpiarIA();
   }
 
-  // ── Panel IA ──────────────────────────────────────────────────────────
+  // ── Panel IA: analiza los datos del FORM EN MEMORIA (sin guardar en BD) ──
 
-  analizarConIA(idPropuesta?: number): void {
-    const id = idPropuesta ?? this.idPropuestaGuardada;
-    if (!id) {
-      this.errorIA = 'Primero debes enviar tu propuesta para analizarla con IA.';
+  analizarConIA(): void {
+    if (!this.form.titulo?.trim()) {
+      this.errorIA = 'Escribe al menos el título antes de analizar.';
       this.cdr.detectChanges();
       return;
     }
 
-    this.analizandoIA        = true;
-    this.errorIA             = '';
-    this.feedbackIA          = null;
-    this.respuestaIA         = null;
-    this.idPropuestaGuardada = id;   // ← mantiene el ID siempre
+    this.analizandoIA = true;
+    this.errorIA      = '';
+    this.feedbackIA   = null;
+    this.respuestaIA  = null;
     this.cdr.detectChanges();
 
-    this.comisionService.evaluarPropuestaConIA(id, {
-      modo: this.modoIA,
-      instruccionAdicional: this.instruccionIA.trim() || undefined
+    this.comisionService.evaluarPropuestaConIAPrevia({
+      idEstudiante:          this.idEstudiante,
+      titulo:                this.form.titulo,
+      temaInvestigacion:     this.form.temaInvestigacion,
+      planteamientoProblema: this.form.planteamientoProblema,
+      objetivosGenerales:    this.form.objetivosGenerales,
+      objetivosEspecificos:  this.form.objetivosEspecificos,
+      metodologia:           this.form.metodologia,
+      resultadosEsperados:   this.form.resultadosEsperados,
+      bibliografia:          (this.form as any).bibliografia,
+      modo:                  this.modoIA,
+      instruccionAdicional:  this.instruccionIA.trim() || undefined
     })
       .pipe(finalize(() => {
         this.analizandoIA = false;
@@ -335,7 +348,7 @@ export class SugerenciaTemaComponent implements OnInit, OnDestroy {
         next: (resp) => {
           this.respuestaIA = resp;
           try {
-            const raw = resp.feedbackIa;
+            const raw   = resp.feedbackIa;
             const start = raw.indexOf('{');
             const end   = raw.lastIndexOf('}');
             const json  = (start !== -1 && end > start)
@@ -355,12 +368,11 @@ export class SugerenciaTemaComponent implements OnInit, OnDestroy {
   }
 
   limpiarIA(): void {
-    this.idPropuestaGuardada = null;
-    this.feedbackIA          = null;
-    this.respuestaIA         = null;
-    this.errorIA             = '';
-    this.instruccionIA       = '';
-    this.modoIA              = 'integral';
+    this.feedbackIA   = null;
+    this.respuestaIA  = null;
+    this.errorIA      = '';
+    this.instruccionIA = '';
+    this.modoIA       = 'integral';
     this.cdr.detectChanges();
   }
 

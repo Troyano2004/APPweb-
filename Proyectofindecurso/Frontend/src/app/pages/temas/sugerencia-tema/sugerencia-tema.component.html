@@ -232,7 +232,7 @@
         </button>
       </div>
 
-      <!-- TEMA PROPIO -->
+      <!-- ══ TEMA PROPIO ══ -->
       <div *ngIf="modoFormulario === 'tema-propio'" class="form-card">
         <h2 class="form-titulo">Propuesta de tema propio</h2>
         <p class="form-desc">Completa la información. La comisión revisará y aprobará o rechazará tu propuesta.</p>
@@ -274,19 +274,153 @@
           </div>
         </div>
 
+        <!-- ══════════════════════════════════════════════════════════ -->
+        <!-- BLOQUE IA — ANTES del botón enviar                        -->
+        <!-- ══════════════════════════════════════════════════════════ -->
+        <div class="ia-previa-bloque">
+          <hr class="ia-separador" />
+
+          <div class="ia-previa-header">
+            <span class="ia-icono-titulo">✦</span>
+            <div>
+              <h3>Revisar con IA antes de enviar</h3>
+              <p class="hint-text">Analiza tu borrador y mejóralo antes de enviarlo a la comisión.</p>
+            </div>
+          </div>
+
+          <!-- Controles IA -->
+          <div class="ia-controles" *ngIf="!analizandoIA">
+            <div class="ia-campo">
+              <label>Tipo de análisis</label>
+              <select [(ngModel)]="modoIA">
+                <option value="integral">Evaluación integral</option>
+                <option value="coherencia">Coherencia interna</option>
+                <option value="pertinencia">Pertinencia a la carrera</option>
+                <option value="viabilidad">Viabilidad del proyecto</option>
+              </select>
+            </div>
+            <div class="ia-campo">
+              <label>Instrucción adicional (opcional)</label>
+              <input type="text" [(ngModel)]="instruccionIA"
+                     placeholder="Ej: El proyecto debe completarse en 6 meses..." />
+            </div>
+            <div class="ia-acciones-btn">
+              <button class="btn-ia"
+                      (click)="analizarConIA()"
+                      [disabled]="analizandoIA || !form.titulo?.trim()">
+                ✦ Analizar borrador con IA
+              </button>
+              <button class="btn-secondary btn-sm" (click)="limpiarIA()"
+                      *ngIf="feedbackIA || errorIA">
+                ✕ Limpiar análisis
+              </button>
+            </div>
+          </div>
+
+          <!-- Cargando IA -->
+          <div class="ia-loading" *ngIf="analizandoIA">
+            <div class="spinner-ia"></div>
+            <p>Analizando tu borrador con IA... esto puede tomar unos segundos.</p>
+          </div>
+
+          <!-- Error IA -->
+          <div class="alerta error" *ngIf="errorIA">⚠️ {{ errorIA }}</div>
+
+          <!-- Resultado IA -->
+          <div class="ia-resultado" *ngIf="feedbackIA as fb">
+
+            <div class="ia-resultado-header">
+              <div class="ia-contexto" *ngIf="respuestaIA as resp">
+                <span class="ctx-tag">{{ resp.nombreCarrera }}</span>
+                <span class="ctx-tag modalidad-tag">{{ resp.modalidadTitulacion }}</span>
+              </div>
+              <div class="ia-badges">
+                <span class="badge-evaluacion" [ngClass]="colorEstadoIA">
+                  {{ fb.estado_evaluacion === 'APROBABLE'        ? '✅ Aprobable' :
+                  fb.estado_evaluacion === 'REQUIERE_AJUSTES' ? '⚠️ Requiere ajustes' :
+                    fb.estado_evaluacion === 'RECHAZABLE'       ? '❌ Rechazable' : fb.estado_evaluacion }}
+                </span>
+                <span class="badge-puntaje">{{ fb.puntaje_estimado }}/100</span>
+                <span class="badge-pertinencia" [ngClass]="{
+                  'pertinencia-alta':  fb.pertinencia_carrera === 'ALTA',
+                  'pertinencia-media': fb.pertinencia_carrera === 'MEDIA',
+                  'pertinencia-baja':  fb.pertinencia_carrera === 'BAJA'
+                }">
+                  Pertinencia: {{ fb.pertinencia_carrera }}
+                </span>
+              </div>
+            </div>
+
+            <div class="ia-secciones">
+              <div class="ia-seccion"><span class="seccion-label">Título:</span> {{ fb.analisis_titulo }}</div>
+              <div class="ia-seccion"><span class="seccion-label">Objetivos:</span> {{ fb.analisis_objetivos }}</div>
+              <div class="ia-seccion"><span class="seccion-label">Metodología:</span> {{ fb.analisis_metodologia }}</div>
+            </div>
+
+            <div class="ia-dos-col">
+              <div class="ia-col verde">
+                <h4>✅ Fortalezas</h4>
+                <ul><li *ngFor="let f of fb.fortalezas">{{ f }}</li></ul>
+                <p *ngIf="fb.fortalezas.length === 0" class="muted">No se identificaron fortalezas.</p>
+              </div>
+              <div class="ia-col rojo">
+                <h4>⚠️ Debilidades</h4>
+                <ul><li *ngFor="let d of fb.debilidades">{{ d }}</li></ul>
+                <p *ngIf="fb.debilidades.length === 0" class="muted">No se identificaron debilidades.</p>
+              </div>
+            </div>
+
+            <div class="ia-sugerencias" *ngIf="fb.sugerencias_mejora.length > 0">
+              <h4>💡 Sugerencias de mejora</h4>
+              <ol><li *ngFor="let s of fb.sugerencias_mejora">{{ s }}</li></ol>
+            </div>
+
+            <div class="ia-mensaje">
+              <span class="ia-icono-msg">✦</span>
+              <p>{{ fb.mensaje_estudiante }}</p>
+            </div>
+
+            <!-- Botón re-analizar después de corregir -->
+            <div class="ia-reanalizar">
+              <button class="btn-secondary" (click)="limpiarIA()">
+                ↻ Corregí algo — volver a analizar
+              </button>
+            </div>
+          </div>
+
+          <hr class="ia-separador" />
+        </div>
+        <!-- /ia-previa-bloque -->
+
+        <!-- Mensajes de envío -->
         <div *ngIf="errorMsg" class="alerta error">⚠️ {{ errorMsg }}</div>
         <div *ngIf="exitoMsg" class="alerta exito">{{ exitoMsg }}</div>
 
+        <!-- Hint según estado IA -->
+        <p class="hint-envio" *ngIf="!feedbackIA && !exitoMsg">
+          💡 Te recomendamos analizar tu borrador con IA antes de enviar.
+        </p>
+        <p class="hint-envio aprobable"   *ngIf="feedbackIA?.estado_evaluacion === 'APROBABLE'">
+          ✅ La IA considera tu propuesta lista para enviar. ¡Adelante!
+        </p>
+        <p class="hint-envio advertencia" *ngIf="feedbackIA?.estado_evaluacion === 'REQUIERE_AJUSTES'">
+          ⚠️ La IA sugiere ajustes. Puedes enviar igualmente o mejorar primero.
+        </p>
+        <p class="hint-envio peligro"     *ngIf="feedbackIA?.estado_evaluacion === 'RECHAZABLE'">
+          ❌ La IA recomienda mejorar la propuesta antes de enviar.
+        </p>
+
         <div class="form-actions">
           <button class="btn-secondary" (click)="limpiarFormulario()">Limpiar</button>
-          <button class="btn-primary" [disabled]="enviando || !form.titulo?.trim()" (click)="enviarPropuesta()">
+          <button class="btn-primary btn-enviar" [disabled]="enviando || !form.titulo?.trim()" (click)="enviarPropuesta()">
             <span *ngIf="enviando" class="spinner-sm"></span>
-            {{ enviando ? 'Enviando...' : 'Enviar propuesta' }}
+            {{ enviando ? 'Enviando...' : '→ Enviar propuesta' }}
           </button>
         </div>
       </div>
+      <!-- /tema-propio -->
 
-      <!-- TEMA DEL BANCO -->
+      <!-- ══ TEMA DEL BANCO ══ -->
       <div *ngIf="modoFormulario === 'tema-banco'" class="form-card">
         <h2 class="form-titulo">Elegir del banco de temas</h2>
         <p class="form-desc">Selecciona un tema registrado por la comisión.</p>
@@ -325,107 +459,116 @@
                       placeholder="Comentario para la comisión..."></textarea>
           </div>
 
+          <!-- ══ BLOQUE IA para tema banco ══ -->
+          <div class="ia-previa-bloque" *ngIf="temaSeleccionado">
+            <hr class="ia-separador" />
+
+            <div class="ia-previa-header">
+              <span class="ia-icono-titulo">✦</span>
+              <div>
+                <h3>Revisar con IA antes de enviar</h3>
+                <p class="hint-text">Analiza tu borrador y mejóralo antes de enviarlo a la comisión.</p>
+              </div>
+            </div>
+
+            <div class="ia-controles" *ngIf="!analizandoIA">
+              <div class="ia-campo">
+                <label>Tipo de análisis</label>
+                <select [(ngModel)]="modoIA">
+                  <option value="integral">Evaluación integral</option>
+                  <option value="coherencia">Coherencia interna</option>
+                  <option value="pertinencia">Pertinencia a la carrera</option>
+                  <option value="viabilidad">Viabilidad del proyecto</option>
+                </select>
+              </div>
+              <div class="ia-campo">
+                <label>Instrucción adicional (opcional)</label>
+                <input type="text" [(ngModel)]="instruccionIA"
+                       placeholder="Ej: El proyecto debe completarse en 6 meses..." />
+              </div>
+              <div class="ia-acciones-btn">
+                <button class="btn-ia" (click)="analizarConIA()"
+                        [disabled]="analizandoIA || !form.titulo?.trim()">
+                  ✦ Analizar borrador con IA
+                </button>
+                <button class="btn-secondary btn-sm" (click)="limpiarIA()"
+                        *ngIf="feedbackIA || errorIA">
+                  ✕ Limpiar análisis
+                </button>
+              </div>
+            </div>
+
+            <div class="ia-loading" *ngIf="analizandoIA">
+              <div class="spinner-ia"></div>
+              <p>Analizando con IA...</p>
+            </div>
+
+            <div class="alerta error" *ngIf="errorIA">⚠️ {{ errorIA }}</div>
+
+            <div class="ia-resultado" *ngIf="feedbackIA as fb">
+              <div class="ia-badges">
+                <span class="badge-evaluacion" [ngClass]="colorEstadoIA">
+                  {{ fb.estado_evaluacion === 'APROBABLE'        ? '✅ Aprobable' :
+                  fb.estado_evaluacion === 'REQUIERE_AJUSTES' ? '⚠️ Requiere ajustes' :
+                    fb.estado_evaluacion === 'RECHAZABLE'       ? '❌ Rechazable' : fb.estado_evaluacion }}
+                </span>
+                <span class="badge-puntaje">{{ fb.puntaje_estimado }}/100</span>
+              </div>
+              <div class="ia-secciones">
+                <div><span class="seccion-label">Título:</span> {{ fb.analisis_titulo }}</div>
+                <div><span class="seccion-label">Objetivos:</span> {{ fb.analisis_objetivos }}</div>
+              </div>
+              <div class="ia-dos-col">
+                <div class="ia-col verde">
+                  <h4>✅ Fortalezas</h4>
+                  <ul><li *ngFor="let f of fb.fortalezas">{{ f }}</li></ul>
+                </div>
+                <div class="ia-col rojo">
+                  <h4>⚠️ Debilidades</h4>
+                  <ul><li *ngFor="let d of fb.debilidades">{{ d }}</li></ul>
+                </div>
+              </div>
+              <div *ngIf="fb.sugerencias_mejora.length > 0" class="ia-sugerencias">
+                <h4>💡 Sugerencias</h4>
+                <ol><li *ngFor="let s of fb.sugerencias_mejora">{{ s }}</li></ol>
+              </div>
+              <div class="ia-mensaje"><span>✦</span><p>{{ fb.mensaje_estudiante }}</p></div>
+              <div class="ia-reanalizar">
+                <button class="btn-secondary" (click)="limpiarIA()">↻ Corregí algo — volver a analizar</button>
+              </div>
+            </div>
+
+            <hr class="ia-separador" />
+          </div>
+          <!-- /ia-previa-bloque banco -->
+
           <div *ngIf="errorMsg" class="alerta error">⚠️ {{ errorMsg }}</div>
           <div *ngIf="exitoMsg" class="alerta exito">{{ exitoMsg }}</div>
 
+          <p class="hint-envio" *ngIf="!feedbackIA && !exitoMsg && temaSeleccionado">
+            💡 Te recomendamos analizar tu borrador con IA antes de enviar.
+          </p>
+          <p class="hint-envio aprobable"   *ngIf="feedbackIA?.estado_evaluacion === 'APROBABLE'">
+            ✅ La IA considera tu propuesta lista para enviar. ¡Adelante!
+          </p>
+          <p class="hint-envio advertencia" *ngIf="feedbackIA?.estado_evaluacion === 'REQUIERE_AJUSTES'">
+            ⚠️ La IA sugiere ajustes. Puedes enviar igualmente o mejorar primero.
+          </p>
+
           <div class="form-actions" *ngIf="temaSeleccionado">
             <button class="btn-secondary" (click)="limpiarFormulario()">Cancelar</button>
-            <button class="btn-primary" [disabled]="enviando || !form.titulo?.trim()" (click)="enviarPropuesta()">
+            <button class="btn-primary btn-enviar" [disabled]="enviando || !form.titulo?.trim()" (click)="enviarPropuesta()">
               <span *ngIf="enviando" class="spinner-sm"></span>
-              {{ enviando ? 'Enviando...' : 'Enviar propuesta' }}
+              {{ enviando ? 'Enviando...' : '→ Enviar propuesta ' }}
             </button>
           </div>
         </div>
       </div>
+      <!-- /tema-banco -->
+
     </div>
+    <!-- /nueva-propuesta -->
 
   </ng-container>
-
-  <!-- ═══════════════════════════════════════════════════════════ -->
-  <!-- PANEL IA — aparece después de enviar una propuesta         -->
-  <!-- ═══════════════════════════════════════════════════════════ -->
-  <div class="panel-ia" *ngIf="mostrarPanelIA">
-
-    <div class="ia-header">
-      <h3>✦ Asistente IA — Evaluación de propuesta</h3>
-      <button class="btn-cerrar-ia" (click)="limpiarIA()">✕ Cerrar</button>
-    </div>
-
-    <!-- Controles -->
-    <div class="ia-controles" *ngIf="!analizandoIA">
-      <div class="ia-campo">
-        <label>Tipo de análisis</label>
-        <select [(ngModel)]="modoIA">
-          <option value="integral">Evaluación integral</option>
-          <option value="coherencia">Coherencia interna</option>
-          <option value="pertinencia">Pertinencia a la carrera</option>
-          <option value="viabilidad">Viabilidad del proyecto</option>
-        </select>
-      </div>
-      <div class="ia-campo">
-        <label>Instrucción adicional (opcional)</label>
-        <input type="text" [(ngModel)]="instruccionIA"
-               placeholder="Ej: El proyecto debe completarse en 6 meses..." />
-      </div>
-      <button class="btn-ia"
-              (click)="analizarConIA()"
-              [disabled]="analizandoIA || !idPropuestaGuardada">
-        ✦ Analizar con IA
-      </button>
-    </div>
-
-    <!-- Cargando -->
-    <div class="ia-loading" *ngIf="analizandoIA">
-      <div class="spinner-ia"></div>
-      <p>Analizando tu propuesta con IA... esto puede tomar unos segundos.</p>
-    </div>
-
-    <!-- Error IA -->
-    <div class="ia-error" *ngIf="errorIA">⚠ {{ errorIA }}</div>
-
-    <!-- Resultado -->
-    <div class="ia-resultado" *ngIf="feedbackIA as fb">
-
-      <div class="ia-badges">
-        <span [ngClass]="colorEstadoIA">
-          {{ fb.estado_evaluacion === 'APROBABLE' ? '✅ Aprobable' :
-          fb.estado_evaluacion === 'REQUIERE_AJUSTES' ? '⚠️ Requiere ajustes' :
-            fb.estado_evaluacion === 'RECHAZABLE' ? '❌ Rechazable' : fb.estado_evaluacion }}
-        </span>
-        <span class="badge-puntaje">{{ fb.puntaje_estimado }}/100</span>
-        <span class="badge-pertinencia">Pertinencia: {{ fb.pertinencia_carrera }}</span>
-        <span *ngIf="respuestaIA" class="ctx-tag">{{ respuestaIA.nombreCarrera }}</span>
-        <span *ngIf="respuestaIA" class="ctx-tag">{{ respuestaIA.modalidadTitulacion }}</span>
-      </div>
-
-      <div class="ia-secciones">
-        <div><strong>Título:</strong> {{ fb.analisis_titulo }}</div>
-        <div><strong>Objetivos:</strong> {{ fb.analisis_objetivos }}</div>
-        <div><strong>Metodología:</strong> {{ fb.analisis_metodologia }}</div>
-      </div>
-
-      <div class="ia-dos-col">
-        <div>
-          <h4>✅ Fortalezas</h4>
-          <ul><li *ngFor="let f of fb.fortalezas">{{ f }}</li></ul>
-        </div>
-        <div>
-          <h4>⚠️ Debilidades</h4>
-          <ul><li *ngFor="let d of fb.debilidades">{{ d }}</li></ul>
-        </div>
-      </div>
-
-      <div *ngIf="fb.sugerencias_mejora.length > 0">
-        <h4>💡 Sugerencias</h4>
-        <ol><li *ngFor="let s of fb.sugerencias_mejora">{{ s }}</li></ol>
-      </div>
-
-      <div class="ia-mensaje">
-        <span>✦</span>
-        <p>{{ fb.mensaje_estudiante }}</p>
-      </div>
-
-    </div>
-  </div>
 
 </div>
