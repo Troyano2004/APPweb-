@@ -1,3 +1,4 @@
+
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -96,6 +97,22 @@ export interface RevisionPropuestaIAResponse {
   estadoPropuesta:     string;
   feedbackIa:          string;   // JSON string — parsear con JSON.parse()
   fechaAnalisisIa:     string;
+}
+
+// ── DTO para revisión PREVIA (antes de guardar en BD) ─────────────────────────
+export interface RevisionPropuestaPreviaRequest {
+  idEstudiante:          number;
+  titulo?:               string;
+  temaInvestigacion?:    string;
+  planteamientoProblema?: string;
+  objetivosGenerales?:   string;
+  objetivosEspecificos?: string;
+  marcoTeorico?:         string;
+  metodologia?:          string;
+  resultadosEsperados?:  string;
+  bibliografia?:         string;
+  modo?:                 'integral' | 'coherencia' | 'pertinencia' | 'viabilidad';
+  instruccionAdicional?: string;
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -231,6 +248,24 @@ export class ComisionTemasService {
   ): Observable<RevisionPropuestaIAResponse> {
     return this.http.post<RevisionPropuestaIAResponse>(
       `${this.IA_API_URL}/propuesta/${idPropuesta}`,
+      payload
+    );
+  }
+
+  // ── IA: Revisión PREVIA (sin guardar en BD) ──────────────────────────────
+
+  /**
+   * Evalúa el BORRADOR del formulario ANTES de enviarlo.
+   * POST /api/revision-ia/propuesta/previa
+   *
+   * No necesita idPropuesta. Envía los datos del form directamente.
+   * El backend obtiene carrera y modalidad usando el idEstudiante.
+   */
+  evaluarPropuestaConIAPrevia(
+    payload: RevisionPropuestaPreviaRequest
+  ): Observable<RevisionPropuestaIAResponse> {
+    return this.http.post<RevisionPropuestaIAResponse>(
+      `${this.IA_API_URL}/propuesta/previa`,
       payload
     );
   }

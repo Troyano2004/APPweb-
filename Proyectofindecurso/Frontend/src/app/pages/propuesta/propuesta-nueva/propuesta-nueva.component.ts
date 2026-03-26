@@ -39,16 +39,15 @@ export class PropuestaNuevaComponent implements OnInit {
   modalidadSeleccionada = signal<number | null>(null);
   carreras            = signal<CatalogoCarrera[]>([]);
 
-  // ── Estado del panel IA ──────────────────────────────────────────────────
-  idPropuestaGuardada  = signal<number | null>(null);
-  analizandoIA         = signal(false);
-  respuestaIA          = signal<RevisionPropuestaIAResponse | null>(null);
-  feedbackIA           = signal<FeedbackIAPropuesta | null>(null);
-  errorIA              = signal<string | null>(null);
+  // ── Estado del panel IA (revisión PREVIA, antes de enviar) ──────────────
+  analizandoIA        = signal(false);
+  respuestaIA         = signal<RevisionPropuestaIAResponse | null>(null);
+  feedbackIA          = signal<FeedbackIAPropuesta | null>(null);
+  errorIA             = signal<string | null>(null);
   modoIA: 'integral' | 'coherencia' | 'pertinencia' | 'viabilidad' = 'integral';
   instruccionIA = '';
 
-  // ── Formulario ───────────────────────────────────────────────────────────
+  // ── Formulario ────────────────────────────────────────────────────────
   form = {
     idCarrera: 1,
     idTema: null as number | null,
@@ -75,7 +74,7 @@ export class PropuestaNuevaComponent implements OnInit {
     this.cargarHistorial();
   }
 
-  // ── Getters ──────────────────────────────────────────────────────────────
+  // ── Getters ──────────────────────────────────────────────────────────
 
   get nombreCarreraSeleccionada(): string {
     return this.carreras().find(c => c.idCarrera === this.form.idCarrera)?.nombre ?? '';
@@ -94,9 +93,9 @@ export class PropuestaNuevaComponent implements OnInit {
   get colorEstado(): Record<string, boolean> {
     const e = this.feedbackIA()?.estado_evaluacion;
     return {
-      'estado-aprobable':       e === 'APROBABLE',
+      'estado-aprobable':        e === 'APROBABLE',
       'estado-requiere-ajustes': e === 'REQUIERE_AJUSTES',
-      'estado-rechazable':      e === 'RECHAZABLE'
+      'estado-rechazable':       e === 'RECHAZABLE'
     };
   }
 
@@ -110,7 +109,12 @@ export class PropuestaNuevaComponent implements OnInit {
     return modos[this.modoIA] ?? 'Integral';
   }
 
-  // ── Cargar datos ─────────────────────────────────────────────────────────
+  /** Muestra el panel IA si ya hay un análisis previo o está analizando */
+  get mostrarPanelIA(): boolean {
+    return this.analizandoIA() || this.feedbackIA() !== null || this.errorIA() !== null;
+  }
+
+  // ── Cargar datos ─────────────────────────────────────────────────────
 
   cargarEstadoModalidad(): void {
     if (!this.idEstudiante) { this.error.set('No se pudo identificar al estudiante.'); return; }
@@ -122,10 +126,7 @@ export class PropuestaNuevaComponent implements OnInit {
         this.loadingModalidad.set(false);
         this.cdr.detectChanges();
       },
-      error: () => {
-        this.loadingModalidad.set(false);
-        this.cdr.detectChanges();
-      }
+      error: () => { this.loadingModalidad.set(false); this.cdr.detectChanges(); }
     });
   }
 
@@ -138,10 +139,7 @@ export class PropuestaNuevaComponent implements OnInit {
         this.loadingCarreras.set(false);
         this.cdr.detectChanges();
       },
-      error: () => {
-        this.loadingCarreras.set(false);
-        this.cdr.detectChanges();
-      }
+      error: () => { this.loadingCarreras.set(false); this.cdr.detectChanges(); }
     });
   }
 
@@ -154,22 +152,17 @@ export class PropuestaNuevaComponent implements OnInit {
         this.loadingTemas.set(false);
         this.cdr.detectChanges();
       },
-      error: () => {
-        this.loadingTemas.set(false);
-        this.cdr.detectChanges();
-      }
+      error: () => { this.loadingTemas.set(false); this.cdr.detectChanges(); }
     });
   }
 
-  onSeleccionCarrera(): void {
-    this.form.idTema = null;
-  }
+  onSeleccionCarrera(): void { this.form.idTema = null; }
 
   onSeleccionTema(): void {
     const tema = this.temasDisponibles().find(t => t.idTema === this.form.idTema);
     if (!tema) return;
-    if (!this.form.titulo.trim())             this.form.titulo = tema.titulo;
-    if (!this.form.temaInvestigacion.trim())  this.form.temaInvestigacion = tema.titulo;
+    if (!this.form.titulo.trim())            this.form.titulo = tema.titulo;
+    if (!this.form.temaInvestigacion.trim()) this.form.temaInvestigacion = tema.titulo;
   }
 
   cargarHistorial(): void {
@@ -189,7 +182,7 @@ export class PropuestaNuevaComponent implements OnInit {
     });
   }
 
-  // ── Modalidad ────────────────────────────────────────────────────────────
+  // ── Modalidad ─────────────────────────────────────────────────────────
 
   guardarModalidad(): void {
     const idModalidad = this.modalidadSeleccionada();
@@ -201,7 +194,7 @@ export class PropuestaNuevaComponent implements OnInit {
       next: (estado) => {
         this.estadoModalidad.set(estado);
         this.modalidadSeleccionada.set(estado.idModalidad);
-        this.ok.set(`Modalidad registrada: ${estado.modalidad}. Ya puedes enviar tu propuesta.`);
+        this.ok.set(`Modalidad registrada: ${estado.modalidad}. Ya puedes redactar tu propuesta.`);
         this.guardandoModalidad.set(false);
         this.cdr.detectChanges();
       },
@@ -213,55 +206,20 @@ export class PropuestaNuevaComponent implements OnInit {
     });
   }
 
-  // ── Enviar propuesta ─────────────────────────────────────────────────────
+  // ── IA: Analizar ANTES de enviar ──────────────────────────────────────
 
-  enviar(): void {
-    if (!this.idEstudiante) { this.error.set('No se pudo identificar al estudiante.'); return; }
-    if (!this.tieneModalidadSeleccionada) {
-      this.error.set('Antes de registrar la propuesta debes seleccionar tu modalidad.'); return;
+  /**
+   * Llama al endpoint /api/revision-ia/propuesta/previa
+   * con los datos del formulario en memoria (SIN guardar en BD).
+   */
+  analizarConIA(): void {
+    if (!this.idEstudiante) {
+      this.errorIA.set('No se pudo identificar al estudiante.');
+      this.cdr.detectChanges();
+      return;
     }
-    if (!this.form.titulo.trim()) { this.error.set('El título es obligatorio.'); return; }
-
-    this.saving.set(true);
-    this.error.set(null);
-    this.ok.set(null);
-    this.limpiarIA();
-
-    this.api.crearPropuestaEstudiante(this.idEstudiante, {
-      idCarrera:             this.form.idCarrera,
-      idTema:                this.form.idTema ?? undefined,
-      titulo:                this.form.titulo,
-      temaInvestigacion:     this.form.temaInvestigacion,
-      planteamientoProblema: this.form.planteamientoProblema,
-      objetivosGenerales:    this.form.objetivosGenerales,
-      objetivosEspecificos:  this.form.objetivosEspecificos,
-      metodologia:           this.form.metodologia,
-      resultadosEsperados:   this.form.resultadosEsperados,
-      bibliografia:          this.form.bibliografia
-    }).subscribe({
-      next: (propuestaCreada) => {
-        this.ok.set('Tu propuesta fue enviada a la comisión. ¡Ahora puedes analizarla con IA!');
-        this.idPropuestaGuardada.set(propuestaCreada.idPropuesta);
-        this.resetForm();
-        this.saving.set(false);
-        this.cdr.detectChanges();  // ← CLAVE: fuerza que aparezca el panel IA
-        this.cargarHistorial();
-      },
-      error: err => {
-        this.error.set(err?.error?.message ?? 'No se pudo enviar la propuesta.');
-        this.saving.set(false);
-        this.cdr.detectChanges();
-        this.cargarEstadoModalidad();
-      }
-    });
-  }
-
-  // ── IA: Analizar propuesta ───────────────────────────────────────────────
-
-  analizarConIA(idPropuesta?: number): void {
-    const id = idPropuesta ?? this.idPropuestaGuardada();
-    if (!id) {
-      this.errorIA.set('Primero debes enviar tu propuesta para poder analizarla con IA.');
+    if (!this.form.titulo.trim()) {
+      this.errorIA.set('Escribe al menos el título antes de analizar.');
       this.cdr.detectChanges();
       return;
     }
@@ -270,12 +228,20 @@ export class PropuestaNuevaComponent implements OnInit {
     this.errorIA.set(null);
     this.feedbackIA.set(null);
     this.respuestaIA.set(null);
-    this.idPropuestaGuardada.set(id);
-    this.cdr.detectChanges();  // ← fuerza aparición del panel antes de la respuesta
+    this.cdr.detectChanges();
 
-    this.api.evaluarPropuestaConIA(id, {
-      modo: this.modoIA,
-      instruccionAdicional: this.instruccionIA.trim() || undefined
+    this.api.evaluarPropuestaConIAPrevia({
+      idEstudiante:          this.idEstudiante,
+      titulo:                this.form.titulo,
+      temaInvestigacion:     this.form.temaInvestigacion,
+      planteamientoProblema: this.form.planteamientoProblema,
+      objetivosGenerales:    this.form.objetivosGenerales,
+      objetivosEspecificos:  this.form.objetivosEspecificos,
+      metodologia:           this.form.metodologia,
+      resultadosEsperados:   this.form.resultadosEsperados,
+      bibliografia:          this.form.bibliografia,
+      modo:                  this.modoIA,
+      instruccionAdicional:  this.instruccionIA.trim() || undefined
     })
       .pipe(finalize(() => {
         this.analizandoIA.set(false);
@@ -303,13 +269,54 @@ export class PropuestaNuevaComponent implements OnInit {
     this.feedbackIA.set(null);
     this.respuestaIA.set(null);
     this.errorIA.set(null);
-    this.idPropuestaGuardada.set(null);
     this.instruccionIA = '';
     this.modoIA = 'integral';
     this.cdr.detectChanges();
   }
 
-  // ── Helpers ──────────────────────────────────────────────────────────────
+  // ── Enviar propuesta (solo después de revisar con IA) ─────────────────
+
+  enviar(): void {
+    if (!this.idEstudiante) { this.error.set('No se pudo identificar al estudiante.'); return; }
+    if (!this.tieneModalidadSeleccionada) {
+      this.error.set('Antes de registrar la propuesta debes seleccionar tu modalidad.'); return;
+    }
+    if (!this.form.titulo.trim()) { this.error.set('El título es obligatorio.'); return; }
+
+    this.saving.set(true);
+    this.error.set(null);
+    this.ok.set(null);
+
+    this.api.crearPropuestaEstudiante(this.idEstudiante, {
+      idCarrera:             this.form.idCarrera,
+      idTema:                this.form.idTema ?? undefined,
+      titulo:                this.form.titulo,
+      temaInvestigacion:     this.form.temaInvestigacion,
+      planteamientoProblema: this.form.planteamientoProblema,
+      objetivosGenerales:    this.form.objetivosGenerales,
+      objetivosEspecificos:  this.form.objetivosEspecificos,
+      metodologia:           this.form.metodologia,
+      resultadosEsperados:   this.form.resultadosEsperados,
+      bibliografia:          this.form.bibliografia
+    }).subscribe({
+      next: () => {
+        this.ok.set('✅ Propuesta enviada a la comisión con éxito.');
+        this.resetForm();
+        this.limpiarIA();
+        this.saving.set(false);
+        this.cdr.detectChanges();
+        this.cargarHistorial();
+      },
+      error: err => {
+        this.error.set(err?.error?.message ?? 'No se pudo enviar la propuesta.');
+        this.saving.set(false);
+        this.cdr.detectChanges();
+        this.cargarEstadoModalidad();
+      }
+    });
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────────────
 
   private resetForm(): void {
     this.form = {

@@ -1,35 +1,33 @@
+
 package com.erwin.backend.controller;
 
+import com.erwin.backend.dtos.RevisionPropuestaPreviaRequest;
 import com.erwin.backend.dtos.RevisionPropuestaIARequest;
 import com.erwin.backend.dtos.RevisionPropuestaIAResponse;
+import com.erwin.backend.service.RevisionPropuestaPreviaService;
 import com.erwin.backend.service.RevisionPropuestaIAService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * Controlador IA — Fase 1: Evaluación de Propuesta de Titulación.
+ * Controlador unificado para todos los endpoints IA del sistema.
  *
- * Endpoint: POST /api/revision-ia/propuesta/{idPropuesta}
+ * ─── Endpoints ─────────────────────────────────────────────────────────────
  *
- * Separado intencionalmente de los otros controladores IA (Fases 3/4 y 5).
- * Usa la misma API Groq pero con prompts específicos para propuestas,
- * incluyendo el contexto de la carrera del estudiante.
+ *  POST /api/revision-ia/propuesta/previa
+ *    → Revisa el BORRADOR del formulario ANTES de guardar en BD.
+ *    → Requiere: idEstudiante + todos los campos del form en el body.
+ *    → NO guarda nada. Solo analiza y devuelve feedback.
+ *    → Usado por: propuesta-nueva.component.ts (botón "Analizar con IA")
+ *
+ *  POST /api/revision-ia/propuesta/{idPropuesta}
+ *    → Revisa una propuesta YA GUARDADA en BD.
+ *    → Requiere: idPropuesta en la URL.
+ *    → Usado por: docentes/coordinadores en revisión posterior.
  *
  * ─── Ruta del archivo ──────────────────────────────────────────────────────
- * src/main/java/com/erwin/backend/controller/RevisionPropuestaIAController.java
- *
- * ─── Quién puede llamar este endpoint ─────────────────────────────────────
- *   - El propio ESTUDIANTE: para revisar su propuesta antes de enviarla
- *   - El DOCENTE de la comisión: para tener una pre-evaluación automatizada
- *   - El COORDINADOR: para revisar el estado de propuestas en lote
- *
- * ─── Cómo se conecta al endpoint desde Angular ─────────────────────────────
- * Agrega este método en revision-director.ts (o crea un servicio nuevo):
- *
- *   evaluarPropuesta(idPropuesta: number, payload: any = {}): Observable<any> {
- *     return this.http.post(`http://localhost:8080/api/revision-ia/propuesta/${idPropuesta}`, payload);
- *   }
+ *  src/main/java/com/erwin/backend/controller/RevisionPropuestaIAController.java
  */
 @RestController
 @RequestMapping("/api/revision-ia")
@@ -39,18 +37,60 @@ public class RevisionPropuestaIAController {
     @Autowired
     private RevisionPropuestaIAService service;
 
+    @Autowired
+    private RevisionPropuestaPreviaService previaService;
+
+    // ─── ENDPOINT 1: Revisión PREVIA (sin guardar en BD) ─────────────────
+
+    /**
+     * POST /api/revision-ia/propuesta/previa
+     *
+     * Body (JSON):
+     * {
+     *   "idEstudiante": 123,
+     *   "titulo": "...",
+     *   "temaInvestigacion": "...",
+     *   "planteamientoProblema": "...",
+     *   "objetivosGenerales": "...",
+     *   "objetivosEspecificos": "...",
+     *   "marcoTeorico": "...",
+     *   "metodologia": "...",
+     *   "resultadosEsperados": "...",
+     *   "bibliografia": "...",
+     *   "modo": "integral",
+     *   "instruccionAdicional": "..."
+     * }
+     *
+     * IMPORTANTE: La ruta "/previa" debe declararse ANTES de "/{idPropuesta}"
+     * para que Spring no intente convertir "previa" en un Integer.
+     */
+    @PostMapping("/propuesta/previa")
+    public ResponseEntity<RevisionPropuestaIAResponse> evaluarPropuestaPrevia(
+            @RequestBody RevisionPropuestaPreviaRequest request) {
+
+        try {
+            RevisionPropuestaIAResponse response = previaService.evaluarPropuestaPrevia(request);
+            return ResponseEntity.ok(response);
+
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    // ─── ENDPOINT 2: Revisión de propuesta YA GUARDADA ───────────────────
+
     /**
      * POST /api/revision-ia/propuesta/{idPropuesta}
      *
      * Body (JSON, todos opcionales):
      * {
      *   "modo": "integral" | "coherencia" | "pertinencia" | "viabilidad",
-     *   "instruccionAdicional": "texto libre del docente o estudiante"
+     *   "instruccionAdicional": "texto libre"
      * }
-     *
-     * Response: RevisionPropuestaIAResponse con feedbackIa en JSON string.
-     * El frontend debe hacer JSON.parse(response.feedbackIa) para acceder
-     * a los campos individuales (estado_evaluacion, puntaje_estimado, etc.)
      */
     @PostMapping("/propuesta/{idPropuesta}")
     public ResponseEntity<RevisionPropuestaIAResponse> evaluarPropuesta(
@@ -66,7 +106,6 @@ public class RevisionPropuestaIAController {
             return ResponseEntity.ok(response);
 
         } catch (RuntimeException e) {
-            // 404: propuesta no encontrada
             return ResponseEntity.notFound().build();
 
         } catch (Exception e) {
