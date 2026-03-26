@@ -50,7 +50,7 @@ export class SugerenciaTemaComponent implements OnInit, OnDestroy {
   exitoMsg           = '';
   form: CrearPropuestaRequest = this.formVacio();
 
-  // DESPUÉS (sin \ — CORRECTO):
+  // ── Temas aprobados ───────────────────────────────────────────────────
   temasAprobados: TemaBancoDto[] = [];
   cargandoAprobados = false;
 
@@ -282,13 +282,14 @@ export class SugerenciaTemaComponent implements OnInit, OnDestroy {
 
     this.comisionService.crearPropuestaEstudiante(this.idEstudiante, payload).subscribe({
       next: (propuestaCreada) => {
-        this.enviando = false;
-        this.exitoMsg = '¡Propuesta enviada! Ahora puedes analizarla con IA ✦';
-        // Guardar ID para el panel IA
+        this.enviando            = false;
+        this.exitoMsg            = '¡Propuesta enviada! Analizando con IA automáticamente ✦';
         this.idPropuestaGuardada = propuestaCreada.idPropuesta;
         this.limpiarFormulario();
-        this.cdr.detectChanges();  // ← fuerza aparición del panel IA
+        this.cdr.detectChanges();
         this.cargarPropuestas();
+        // ← lanza el análisis automáticamente al enviar
+        this.analizarConIA(propuestaCreada.idPropuesta);
       },
       error: (err) => {
         this.enviando = false;
@@ -315,23 +316,32 @@ export class SugerenciaTemaComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.analizandoIA = true;
-    this.errorIA      = '';
-    this.feedbackIA   = null;
-    this.respuestaIA  = null;
-    this.idPropuestaGuardada = id;
+    this.analizandoIA        = true;
+    this.errorIA             = '';
+    this.feedbackIA          = null;
+    this.respuestaIA         = null;
+    this.idPropuestaGuardada = id;   // ← mantiene el ID siempre
     this.cdr.detectChanges();
 
     this.comisionService.evaluarPropuestaConIA(id, {
       modo: this.modoIA,
       instruccionAdicional: this.instruccionIA.trim() || undefined
     })
-      .pipe(finalize(() => { this.analizandoIA = false; this.cdr.detectChanges(); }))
+      .pipe(finalize(() => {
+        this.analizandoIA = false;
+        this.cdr.detectChanges();
+      }))
       .subscribe({
         next: (resp) => {
           this.respuestaIA = resp;
           try {
-            this.feedbackIA = JSON.parse(resp.feedbackIa);
+            const raw = resp.feedbackIa;
+            const start = raw.indexOf('{');
+            const end   = raw.lastIndexOf('}');
+            const json  = (start !== -1 && end > start)
+              ? raw.substring(start, end + 1)
+              : raw;
+            this.feedbackIA = JSON.parse(json);
           } catch {
             this.errorIA = 'La IA respondió en formato inesperado. Intenta nuevamente.';
           }

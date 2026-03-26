@@ -369,7 +369,7 @@
       </div>
       <button class="btn-ia"
               (click)="analizarConIA()"
-              [disabled]="!idPropuestaGuardada && !feedbackIA">
+              [disabled]="analizandoIA || !idPropuestaGuardada">
         ✦ Analizar con IA
       </button>
     </div>
