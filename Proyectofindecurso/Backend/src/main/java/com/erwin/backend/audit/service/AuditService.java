@@ -32,7 +32,14 @@ public class AuditService {
     public void registrar(AuditEventDto evento) {
         try {
             Optional<AuditConfig> configOpt = configRepo.findByEntidadAndAccion(evento.getEntidad(), evento.getAccion());
-            if (configOpt.isEmpty() || !configOpt.get().getActivo()) return;
+            System.out.println("[AUDIT] Buscando config para entidad='" + evento.getEntidad()
+                    + "' accion='" + evento.getAccion() + "' → encontrada=" + configOpt.isPresent()
+                    + (configOpt.isPresent() ? " activa=" + configOpt.get().getActivo() : ""));
+            if (configOpt.isEmpty() || !configOpt.get().getActivo()) {
+                System.err.println("[AUDIT] Config no encontrada o inactiva — evento NO guardado: "
+                        + evento.getEntidad() + "/" + evento.getAccion());
+                return;
+            }
             AuditConfig config = configOpt.get();
             AuditLog log = new AuditLog();
             log.setConfig(config);
@@ -57,7 +64,8 @@ public class AuditService {
                     java.time.LocalDateTime.now().toString());
             }
         } catch (Exception e) {
-            System.err.println("[AUDIT ERROR] " + e.getClass().getSimpleName() + ": " + e.getMessage());
+            System.err.println("[AUDIT ERROR en registrar()] " + e.getClass().getSimpleName() + ": " + e.getMessage());
+            e.printStackTrace();
         }
     }
 

@@ -11,6 +11,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { filter, Subscription } from 'rxjs';
 import { getSessionUser, getUserRoles } from '../../services/session';
+import { AuthService } from '../../services/auth';
 
 type AppRole =
   | 'ADMIN'
@@ -260,7 +261,8 @@ export class ShellComponent implements OnInit, OnDestroy {
 
   constructor(
     private readonly router: Router,
-    private readonly route: ActivatedRoute
+    private readonly route: ActivatedRoute,
+    private readonly authService: AuthService
   ) {}
 
   ngOnInit(): void {
@@ -298,9 +300,16 @@ export class ShellComponent implements OnInit, OnDestroy {
 
   // ── Sesión ────────────────────────────────────────────
   logout(): void {
-    localStorage.removeItem('usuario');
-    localStorage.removeItem('token');
-    this.router.navigate(['/login']);
+    this.authService.logout().subscribe({
+      next: () => this.ejecutarLogoutLocal(),
+      error: () => this.ejecutarLogoutLocal()
+    });
+  }
+
+  private ejecutarLogoutLocal(): void {
+    localStorage.clear();
+    sessionStorage.clear();
+    window.location.href = '/login';
   }
 
   // ── Búsqueda ──────────────────────────────────────────

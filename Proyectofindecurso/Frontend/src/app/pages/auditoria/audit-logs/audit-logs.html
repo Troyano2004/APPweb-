@@ -13,8 +13,11 @@
         title="Click para ver los nuevos eventos">
         +{{ nuevosNoVistos }} nuevo{{ nuevosNoVistos === 1 ? '' : 's' }}
       </span>
-      <button (click)="exportar()" class="btn-export" [disabled]="exportando">
-        {{ exportando ? 'Exportando...' : 'Exportar CSV' }}
+      <button (click)="exportarPdf()" class="btn-export btn-pdf" [disabled]="exportandoPdf">
+        {{ exportandoPdf ? 'Generando...' : '📄 PDF' }}
+      </button>
+      <button (click)="exportarExcel()" class="btn-export btn-excel" [disabled]="exportandoExcel">
+        {{ exportandoExcel ? 'Generando...' : '📊 Excel' }}
       </button>
     </div>
   </div>

@@ -95,6 +95,9 @@ public class SesionActivaRegistry {
                 + " | ip=" + ip
                 + " | total antes=" + sesiones.size());
 
+        // Eliminar sesiones anteriores del mismo usuario antes de registrar la nueva
+        sesiones.entrySet().removeIf(e -> username.equals(e.getValue().getUsername()));
+
         SesionActivaInfo info = new SesionActivaInfo();
         info.setSessionId(sessionId);
         info.setUsername(username);
@@ -126,7 +129,12 @@ public class SesionActivaRegistry {
         }
     }
 
-    /** Cierra todas las sesiones de un usuario y registra quién lo hizo. */
+    /** Logout manual — solo elimina del registry, NO marca para expulsión. */
+    public void cerrarSesionesPorUsername(String username) {
+        sesiones.entrySet().removeIf(e -> username.equals(e.getValue().getUsername()));
+    }
+
+    /** Cierre remoto por admin — elimina Y marca para expulsión. */
     public void cerrarSesionesPorUsername(String username, String cerradaPor) {
         sesiones.entrySet().removeIf(e -> username.equals(e.getValue().getUsername()));
         usuariosAExpulsar.put(username,

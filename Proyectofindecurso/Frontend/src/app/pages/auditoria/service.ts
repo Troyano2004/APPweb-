@@ -26,13 +26,22 @@ export class AuditoriaService {
     return this.http.get<any>(`${this.base}/logs`, { params: p });
   }
 
-  exportCsv(filtros: AuditFiltros): Observable<Blob> {
+  exportPdf(filtros: AuditFiltros): Observable<Blob> {
     let params = new HttpParams();
     if (filtros.entidad) params = params.set('entidad', filtros.entidad);
-    if (filtros.accion)  params = params.set('accion', filtros.accion);
-    if (filtros.desde)   params = params.set('desde', filtros.desde);
-    if (filtros.hasta)   params = params.set('hasta', filtros.hasta);
-    return this.http.get(`${this.base}/logs/export/csv`, { params, responseType: 'blob' });
+    if (filtros.accion)  params = params.set('accion',  filtros.accion);
+    if (filtros.desde)   params = params.set('desde',   filtros.desde);
+    if (filtros.hasta)   params = params.set('hasta',   filtros.hasta);
+    return this.http.get(`${this.base}/logs/export/pdf`, { params, responseType: 'blob' });
+  }
+
+  exportExcel(filtros: AuditFiltros): Observable<Blob> {
+    let params = new HttpParams();
+    if (filtros.entidad) params = params.set('entidad', filtros.entidad);
+    if (filtros.accion)  params = params.set('accion',  filtros.accion);
+    if (filtros.desde)   params = params.set('desde',   filtros.desde);
+    if (filtros.hasta)   params = params.set('hasta',   filtros.hasta);
+    return this.http.get(`${this.base}/logs/export/excel`, { params, responseType: 'blob' });
   }
 
   getConfigs(): Observable<AuditConfig[]> {

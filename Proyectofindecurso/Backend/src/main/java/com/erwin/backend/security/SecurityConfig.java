@@ -28,15 +28,7 @@ public class SecurityConfig {
                         .anyRequest().permitAll()
                 )
 
-                .logout(logout -> logout
-                        .logoutUrl("/api/auth/logout")
-                        .invalidateHttpSession(true)
-                        .deleteCookies("JSESSIONID")
-                        .logoutSuccessHandler((req, res, auth) -> {
-                            System.out.println("🔴 LOGOUT realizado -> sesión invalidada");
-                            res.setStatus(200);
-                        })
-                )
+                .logout(logout -> logout.disable())
 
                 .httpBasic(Customizer.withDefaults());
 

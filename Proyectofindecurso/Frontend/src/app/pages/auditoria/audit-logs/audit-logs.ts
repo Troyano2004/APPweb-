@@ -26,7 +26,8 @@ export class AuditLogsComponent implements OnInit, OnDestroy {
   enVivo         = false;
   conectado      = false;
   nuevosNoVistos = 0;
-  exportando     = false;
+  exportandoPdf   = false;
+  exportandoExcel = false;
   private streamSub?: Subscription;
 
   constructor(private svc: AuditoriaService) {}
@@ -84,21 +85,40 @@ export class AuditLogsComponent implements OnInit, OnDestroy {
   verDetalle(log: AuditLog) { this.logSeleccionado = log; }
   cerrarDetalle()   { this.logSeleccionado = null; }
 
-  exportar() {
-    this.exportando = true;
-    this.svc.exportCsv(this.filtros).subscribe({
+  exportarPdf() {
+    this.exportandoPdf = true;
+    this.svc.exportPdf(this.filtros).subscribe({
       next: blob => {
         const url = URL.createObjectURL(blob);
-        const a   = document.createElement('a');
-        a.href     = url;
-        a.download = 'Auditoria_' + new Date().toISOString().slice(0, 10) + '.csv';
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'Auditoria_' + new Date().toISOString().slice(0, 10) + '.pdf';
         a.click();
         URL.revokeObjectURL(url);
-        this.exportando = false;
+        this.exportandoPdf = false;
       },
       error: () => {
-        alert('Error al exportar. Intente nuevamente.');
-        this.exportando = false;
+        alert('Error al exportar PDF');
+        this.exportandoPdf = false;
+      }
+    });
+  }
+
+  exportarExcel() {
+    this.exportandoExcel = true;
+    this.svc.exportExcel(this.filtros).subscribe({
+      next: blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'Auditoria_' + new Date().toISOString().slice(0, 10) + '.xlsx';
+        a.click();
+        URL.revokeObjectURL(url);
+        this.exportandoExcel = false;
+      },
+      error: () => {
+        alert('Error al exportar Excel');
+        this.exportandoExcel = false;
       }
     });
   }

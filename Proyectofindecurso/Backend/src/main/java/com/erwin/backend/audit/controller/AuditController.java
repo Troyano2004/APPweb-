@@ -3,8 +3,13 @@ import com.erwin.backend.audit.dto.AuditStatsDto;
 import com.erwin.backend.audit.entity.*;
 import com.erwin.backend.audit.repository.*;
 import com.erwin.backend.audit.service.AuditSseService;
+import com.itextpdf.text.*;
+import com.itextpdf.text.pdf.*;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.servlet.http.HttpServletResponse;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -13,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.time.*;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -103,85 +109,259 @@ public class AuditController {
         return logRepo.findById(id).map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
     }
 
-    @GetMapping("/logs/export/csv")
-    public void exportCsv(
-            @RequestParam(required = false) String entidad,
-            @RequestParam(required = false) String accion,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta,
+    @GetMapping("/logs/export/pdf")
+    public void exportPdf(
+            @RequestParam(required=false) String entidad,
+            @RequestParam(required=false) String accion,
+            @RequestParam(required=false) @DateTimeFormat(iso=DateTimeFormat.ISO.DATE) LocalDate desde,
+            @RequestParam(required=false) @DateTimeFormat(iso=DateTimeFormat.ISO.DATE) LocalDate hasta,
             HttpServletResponse response) throws Exception {
 
-        response.setCharacterEncoding("UTF-8");
-        response.setContentType("text/csv; charset=UTF-8");
+        response.setContentType("application/pdf");
         response.setHeader("Content-Disposition",
-            "attachment; filename=Auditoria_" + LocalDate.now() + ".csv");
+                "attachment; filename=Auditoria_" + LocalDate.now() + ".pdf");
 
         LocalDateTime d = desde != null ? desde.atStartOfDay() : null;
         LocalDateTime h = hasta != null ? hasta.atTime(23, 59, 59) : null;
-
-        List<AuditLog> logs = logRepo.findAll(buildSpec(entidad, accion, null, d, h),
+        List<AuditLog> logs = logRepo.findAll(
+                buildSpec(entidad, accion, null, d, h),
                 Sort.by("timestampEvento").descending());
 
-        java.io.OutputStreamWriter writer = new java.io.OutputStreamWriter(
-            response.getOutputStream(), java.nio.charset.StandardCharsets.UTF_8);
+        Document document = new Document(PageSize.A4.rotate());
+        PdfWriter.getInstance(document, response.getOutputStream());
+        document.open();
 
-        writer.write('\uFEFF');
-        writer.write("sep=;\n");
-        writer.write("REPORTE DE AUDITORIA - Sistema de Titulacion UTEQ\n");
-        writer.write("Fecha de generacion:;" + java.time.LocalDateTime.now().format(
-            java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")) + "\n");
-        writer.write("Total de registros:;" + logs.size() + "\n");
-        writer.write("Registros CRITICAL:;" +
-            logs.stream().filter(l -> l.getConfig() != null &&
-                "CRITICAL".equals(l.getConfig().getSeveridad())).count() + "\n");
-        writer.write("Registros HIGH:;" +
-            logs.stream().filter(l -> l.getConfig() != null &&
-                "HIGH".equals(l.getConfig().getSeveridad())).count() + "\n\n");
+        com.itextpdf.text.Font headerFont = new com.itextpdf.text.Font(com.itextpdf.text.Font.FontFamily.HELVETICA, 9, com.itextpdf.text.Font.BOLD, BaseColor.WHITE);
+        com.itextpdf.text.Font cellFont   = new com.itextpdf.text.Font(com.itextpdf.text.Font.FontFamily.HELVETICA, 8);
 
-        writer.write("No.;Fecha y Hora;Entidad;ID;Accion;Usuario;Correo;IP;Severidad;Origen;Estado Anterior;Estado Nuevo\n");
+        // ── Encabezado con fondo verde ──────────────────────────────
+        PdfPTable header = new PdfPTable(2);
+        header.setWidthPercentage(100);
+        header.setWidths(new float[]{1f, 3f});
+        header.setSpacingAfter(15);
 
-        int numero = 1;
-        for (AuditLog l : logs) {
-            String severidad = l.getConfig() != null ? l.getConfig().getSeveridad() : "N/A";
-            String origen = l.getIpAddress() != null && l.getIpAddress().contains("acceso-directo")
-                ? "Base de Datos" : "Aplicacion Web";
-            String usuario = l.getUsername() != null
-                ? l.getUsername().replace("DB:", "") : "-";
+        PdfPCell logoCell = new PdfPCell();
+        logoCell.setBackgroundColor(new BaseColor(27, 94, 32));
+        logoCell.setPadding(12);
+        logoCell.setBorder(0);
+        com.itextpdf.text.Font logoFont = new com.itextpdf.text.Font(com.itextpdf.text.Font.FontFamily.HELVETICA, 22, com.itextpdf.text.Font.BOLD, BaseColor.WHITE);
+        Paragraph logoText = new Paragraph("GPT", logoFont);
+        logoText.setAlignment(Element.ALIGN_CENTER);
+        logoCell.addElement(logoText);
+        com.itextpdf.text.Font subLogoFont = new com.itextpdf.text.Font(com.itextpdf.text.Font.FontFamily.HELVETICA, 7, com.itextpdf.text.Font.NORMAL, BaseColor.WHITE);
+        Paragraph subLogo = new Paragraph("Gestion del Proceso\nde Titulacion", subLogoFont);
+        subLogo.setAlignment(Element.ALIGN_CENTER);
+        logoCell.addElement(subLogo);
 
-            writer.write(
-                numero++ + ";" +
-                escapeCsv(l.getTimestampEvento() != null
-                    ? l.getTimestampEvento().format(java.time.format.DateTimeFormatter
-                        .ofPattern("dd/MM/yyyy HH:mm:ss")) : "-") + ";" +
-                escapeCsv(l.getEntidad()) + ";" +
-                escapeCsv(l.getEntidadId() != null ? l.getEntidadId() : "-") + ";" +
-                escapeCsv(l.getAccion()) + ";" +
-                escapeCsv(usuario) + ";" +
-                escapeCsv(l.getCorreoUsuario() != null ? l.getCorreoUsuario() : "-") + ";" +
-                escapeCsv(l.getIpAddress() != null ? l.getIpAddress() : "-") + ";" +
-                escapeCsv(severidad) + ";" +
-                escapeCsv(origen) + ";" +
-                escapeCsv(resumirJson(l.getEstadoAnterior())) + ";" +
-                escapeCsv(resumirJson(l.getEstadoNuevo())) + "\n"
-            );
+        PdfPCell titleCell = new PdfPCell();
+        titleCell.setBackgroundColor(new BaseColor(27, 94, 32));
+        titleCell.setPadding(12);
+        titleCell.setBorder(0);
+        com.itextpdf.text.Font mainTitleFont = new com.itextpdf.text.Font(com.itextpdf.text.Font.FontFamily.HELVETICA, 18, com.itextpdf.text.Font.BOLD, BaseColor.WHITE);
+        titleCell.addElement(new Paragraph("REPORTE DE AUDITORIA", mainTitleFont));
+        com.itextpdf.text.Font subTitleFont = new com.itextpdf.text.Font(com.itextpdf.text.Font.FontFamily.HELVETICA, 11, com.itextpdf.text.Font.NORMAL, BaseColor.WHITE);
+        titleCell.addElement(new Paragraph("Sistema de Titulacion UTEQ", subTitleFont));
+        com.itextpdf.text.Font infoFont = new com.itextpdf.text.Font(com.itextpdf.text.Font.FontFamily.HELVETICA, 8, com.itextpdf.text.Font.NORMAL, new BaseColor(200, 230, 201));
+        Paragraph info = new Paragraph("Fecha de generacion: " +
+                LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")) +
+                "   |   Total de registros: " + logs.size(), infoFont);
+        info.setSpacingBefore(6);
+        titleCell.addElement(info);
+
+        header.addCell(logoCell);
+        header.addCell(titleCell);
+        document.add(header);
+
+        // ── Línea separadora ────────────────────────────────────────
+        com.itextpdf.text.pdf.draw.LineSeparator line = new com.itextpdf.text.pdf.draw.LineSeparator();
+        line.setLineColor(new BaseColor(27, 94, 32));
+        line.setLineWidth(2f);
+        document.add(new Chunk(line));
+        document.add(Chunk.NEWLINE);
+
+        // ── Filtros aplicados (si hay) ───────────────────────────────
+        if (entidad != null || accion != null || desde != null || hasta != null) {
+            PdfPTable filtrosTable = new PdfPTable(1);
+            filtrosTable.setWidthPercentage(100);
+            filtrosTable.setSpacingAfter(8);
+            com.itextpdf.text.Font filtroFont = new com.itextpdf.text.Font(com.itextpdf.text.Font.FontFamily.HELVETICA, 8, com.itextpdf.text.Font.ITALIC, new BaseColor(80, 80, 80));
+            StringBuilder filtrosTxt = new StringBuilder("Filtros aplicados: ");
+            if (entidad != null) filtrosTxt.append("Entidad=").append(entidad).append("  ");
+            if (accion  != null) filtrosTxt.append("Accion=").append(accion).append("  ");
+            if (desde   != null) filtrosTxt.append("Desde=").append(desde).append("  ");
+            if (hasta   != null) filtrosTxt.append("Hasta=").append(hasta);
+            PdfPCell filtroCell = new PdfPCell(new Phrase(filtrosTxt.toString(), filtroFont));
+            filtroCell.setBorder(0);
+            filtroCell.setBackgroundColor(new BaseColor(245, 245, 245));
+            filtroCell.setPadding(5);
+            filtrosTable.addCell(filtroCell);
+            document.add(filtrosTable);
         }
 
-        writer.flush();
+        PdfPTable table = new PdfPTable(7);
+        table.setWidthPercentage(100);
+        table.setWidths(new float[]{3f, 2.5f, 1f, 2f, 2f, 2f, 1.5f});
+
+        BaseColor headerColor = new BaseColor(27, 94, 32);
+        String[] headers = {"Fecha/Hora","Entidad","ID","Accion","Usuario","IP","Severidad"};
+        for (String hdr : headers) {
+            PdfPCell cell = new PdfPCell(new Phrase(hdr, headerFont));
+            cell.setBackgroundColor(headerColor);
+            cell.setPadding(5);
+            cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+            table.addCell(cell);
+        }
+
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+        for (AuditLog log : logs) {
+            String sev = log.getConfig() != null ? log.getConfig().getSeveridad() : "-";
+            BaseColor rowColor = switch (sev) {
+                case "CRITICAL" -> new BaseColor(255, 235, 235);
+                case "HIGH"     -> new BaseColor(255, 248, 235);
+                case "MEDIUM"   -> new BaseColor(235, 245, 255);
+                default         -> BaseColor.WHITE;
+            };
+            String[] vals = {
+                log.getTimestampEvento() != null ? log.getTimestampEvento().format(fmt) : "-",
+                log.getEntidad()   != null ? log.getEntidad()   : "-",
+                log.getEntidadId() != null ? log.getEntidadId() : "-",
+                log.getAccion()    != null ? log.getAccion()    : "-",
+                log.getUsername()  != null ? log.getUsername()  : "-",
+                log.getIpAddress() != null ? log.getIpAddress() : "-",
+                sev
+            };
+            for (String val : vals) {
+                PdfPCell cell = new PdfPCell(new Phrase(val, cellFont));
+                cell.setBackgroundColor(rowColor);
+                cell.setPadding(4);
+                table.addCell(cell);
+            }
+        }
+        document.add(table);
+        document.close();
     }
 
-    private String escapeCsv(String value) {
-        if (value == null) return "";
-        if (value.contains(";") || value.contains("\"") || value.contains("\n"))
-            return "\"" + value.replace("\"", "\"\"") + "\"";
-        return value;
-    }
+    @GetMapping("/logs/export/excel")
+    public void exportExcel(
+            @RequestParam(required=false) String entidad,
+            @RequestParam(required=false) String accion,
+            @RequestParam(required=false) @DateTimeFormat(iso=DateTimeFormat.ISO.DATE) LocalDate desde,
+            @RequestParam(required=false) @DateTimeFormat(iso=DateTimeFormat.ISO.DATE) LocalDate hasta,
+            HttpServletResponse response) throws Exception {
 
-    private String resumirJson(String json) {
-        if (json == null || json.isBlank()) return "-";
-        String limpio = json.replaceAll("[\"{}]", "")
-                            .replaceAll(",", " / ")
-                            .replaceAll("\\s+", " ").trim();
-        return limpio.length() > 150 ? limpio.substring(0, 150) + "..." : limpio;
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        response.setHeader("Content-Disposition",
+                "attachment; filename=Auditoria_" + LocalDate.now() + ".xlsx");
+
+        LocalDateTime d = desde != null ? desde.atStartOfDay() : null;
+        LocalDateTime h = hasta != null ? hasta.atTime(23, 59, 59) : null;
+        List<AuditLog> logs = logRepo.findAll(
+                buildSpec(entidad, accion, null, d, h),
+                Sort.by("timestampEvento").descending());
+
+        try (Workbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("Auditoria");
+
+            // ── Estilo título principal ──────────────────────────────
+            CellStyle titleStyle = workbook.createCellStyle();
+            titleStyle.setFillForegroundColor(IndexedColors.DARK_GREEN.getIndex());
+            titleStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+            titleStyle.setAlignment(HorizontalAlignment.CENTER);
+            titleStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+            org.apache.poi.ss.usermodel.Font titleFont2 = workbook.createFont();
+            titleFont2.setBold(true);
+            titleFont2.setColor(IndexedColors.WHITE.getIndex());
+            titleFont2.setFontHeightInPoints((short) 16);
+            titleStyle.setFont(titleFont2);
+
+            Row titleRow = sheet.createRow(0);
+            titleRow.setHeightInPoints(35);
+            Cell titleCell = titleRow.createCell(0);
+            titleCell.setCellValue("REPORTE DE AUDITORIA - Sistema de Titulacion UTEQ");
+            titleCell.setCellStyle(titleStyle);
+            sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 6));
+
+            // ── Estilo subtítulo ─────────────────────────────────────
+            CellStyle subStyle = workbook.createCellStyle();
+            subStyle.setFillForegroundColor(IndexedColors.LIGHT_GREEN.getIndex());
+            subStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+            subStyle.setAlignment(HorizontalAlignment.CENTER);
+            org.apache.poi.ss.usermodel.Font subFont = workbook.createFont();
+            subFont.setItalic(true);
+            subFont.setFontHeightInPoints((short) 10);
+            subStyle.setFont(subFont);
+
+            Row infoRow = sheet.createRow(1);
+            infoRow.setHeightInPoints(20);
+            Cell infoCell = infoRow.createCell(0);
+            infoCell.setCellValue(
+                    "Generado: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")) +
+                    "   |   Total registros: " + logs.size());
+            infoCell.setCellStyle(subStyle);
+            sheet.addMergedRegion(new CellRangeAddress(1, 1, 0, 6));
+
+            sheet.createRow(2); // fila separadora vacía
+
+            // ── Estilo encabezados de columna ────────────────────────
+            CellStyle headerStyle = workbook.createCellStyle();
+            headerStyle.setFillForegroundColor(IndexedColors.DARK_GREEN.getIndex());
+            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+            org.apache.poi.ss.usermodel.Font hFont = workbook.createFont();
+            hFont.setBold(true);
+            hFont.setColor(IndexedColors.WHITE.getIndex());
+            headerStyle.setFont(hFont);
+            headerStyle.setAlignment(HorizontalAlignment.CENTER);
+
+            String[] cols = {"Fecha/Hora","Entidad","ID Registro","Accion","Usuario","IP","Severidad"};
+            Row headerRow = sheet.createRow(3);
+            for (int i = 0; i < cols.length; i++) {
+                Cell cell = headerRow.createCell(i);
+                cell.setCellValue(cols[i]);
+                cell.setCellStyle(headerStyle);
+            }
+
+            CellStyle criticalStyle = workbook.createCellStyle();
+            criticalStyle.setFillForegroundColor(IndexedColors.ROSE.getIndex());
+            criticalStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+            CellStyle highStyle = workbook.createCellStyle();
+            highStyle.setFillForegroundColor(IndexedColors.LIGHT_ORANGE.getIndex());
+            highStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+            CellStyle mediumStyle = workbook.createCellStyle();
+            mediumStyle.setFillForegroundColor(IndexedColors.LIGHT_BLUE.getIndex());
+            mediumStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+            DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+            int rowNum = 4;
+            for (AuditLog log : logs) {
+                Row row = sheet.createRow(rowNum++);
+                String sev = log.getConfig() != null ? log.getConfig().getSeveridad() : "-";
+                CellStyle rowStyle = switch (sev) {
+                    case "CRITICAL" -> criticalStyle;
+                    case "HIGH"     -> highStyle;
+                    case "MEDIUM"   -> mediumStyle;
+                    default         -> null;
+                };
+                String[] vals = {
+                    log.getTimestampEvento() != null ? log.getTimestampEvento().format(fmt) : "-",
+                    log.getEntidad()   != null ? log.getEntidad()   : "-",
+                    log.getEntidadId() != null ? log.getEntidadId() : "-",
+                    log.getAccion()    != null ? log.getAccion()    : "-",
+                    log.getUsername()  != null ? log.getUsername()  : "-",
+                    log.getIpAddress() != null ? log.getIpAddress() : "-",
+                    sev
+                };
+                for (int i = 0; i < vals.length; i++) {
+                    Cell cell = row.createCell(i);
+                    cell.setCellValue(vals[i]);
+                    if (rowStyle != null) cell.setCellStyle(rowStyle);
+                }
+            }
+
+            for (int i = 0; i < cols.length; i++) sheet.autoSizeColumn(i);
+            workbook.write(response.getOutputStream());
+        }
     }
 
     @GetMapping("/config")
