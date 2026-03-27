@@ -20,10 +20,14 @@ export class AuthService {
   }
 
   logout() {
+    const token = localStorage.getItem('token');
     return this.http.post(
       `${this.baseUrl}/logout`,
       {},
-      { withCredentials: true }
+      {
+        withCredentials: true,
+        headers: token ? { 'Authorization': 'Bearer ' + token } : {}
+      }
     );
   }
 }

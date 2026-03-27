@@ -24,28 +24,63 @@ public class AuditAspect {
 
     @Around("@annotation(auditable)")
     public Object interceptar(ProceedingJoinPoint pjp, Auditable auditable) throws Throwable {
+        // Capturar IP y args ANTES de proceed() — el RequestContextHolder
+        // solo está disponible en el hilo del request original
+        String ipAddress      = extraerIp();
         Object estadoAnterior = (auditable.capturarArgs() && pjp.getArgs().length > 0) ? pjp.getArgs()[0] : null;
+        long inicio = System.currentTimeMillis();
         Object resultado = pjp.proceed();
+        long duracion = System.currentTimeMillis() - inicio;
         try {
-            String  username  = extraerUsername();
-            Integer idUsuario = null;
-            String  correo    = null;
+            String  username   = extraerUsername();
+            String  entidadId  = extraerEntidadId(resultado);
+            Integer idUsuario  = null;
+            String  correo     = null;
             if (username != null) {
                 Optional<Usuario> u = usuarioRepo.findByUsername(username);
                 if (u.isPresent()) { idUsuario = u.get().getIdUsuario(); correo = u.get().getCorreoInstitucional(); }
             }
             auditService.registrar(AuditEventDto.builder()
                 .entidad(auditable.entidad()).accion(auditable.accion())
-                .idUsuario(idUsuario).username(username).correoUsuario(correo).ipAddress(extraerIp())
+                .entidadId(entidadId)
+                .idUsuario(idUsuario).username(username).correoUsuario(correo).ipAddress(ipAddress)
                 .estadoAnterior(auditable.capturarArgs() ? estadoAnterior : null)
                 .estadoNuevo(auditable.capturarArgs() ? resultado : null)
+                .duracionMs((int) duracion)
                 .build());
         } catch (Exception e) { System.err.println("[AuditAspect] Error (no propagado): " + e.getMessage()); }
         return resultado;
     }
 
+    private String extraerEntidadId(Object obj) {
+        if (obj == null) return null;
+        for (String metodo : new String[]{"getId","getIdUsuario","getIdEstudiante","getIdDocente","getIdProyecto"}) {
+            try {
+                Object id = obj.getClass().getMethod(metodo).invoke(obj);
+                if (id != null) return id.toString();
+            } catch (Exception ignored) {}
+        }
+        return null;
+    }
+
     private String extraerUsername() {
-        try { Authentication a = SecurityContextHolder.getContext().getAuthentication(); if (a != null && a.isAuthenticated()) return a.getName(); } catch (Exception ignored) {}
+        try {
+            Authentication a = SecurityContextHolder.getContext().getAuthentication();
+            if (a != null && a.isAuthenticated() && !"anonymousUser".equals(a.getName())) {
+                return a.getName();
+            }
+        } catch (Exception ignored) {}
+        try {
+            ServletRequestAttributes attrs = (ServletRequestAttributes)
+                    RequestContextHolder.getRequestAttributes();
+            if (attrs != null) {
+                jakarta.servlet.http.HttpSession session = attrs.getRequest().getSession(false);
+                if (session != null) {
+                    Object user = session.getAttribute("usuario");
+                    if (user != null) return user.toString();
+                }
+            }
+        } catch (Exception ignored) {}
         return null;
     }
     private String extraerIp() {

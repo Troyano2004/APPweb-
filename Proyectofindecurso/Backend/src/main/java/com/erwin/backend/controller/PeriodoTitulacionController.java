@@ -10,7 +10,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/catalogos/periodo")
-@CrossOrigin(origins = "http://localhost:4200")
+@CrossOrigin(origins = {"http://localhost:4200", "http://26.102.176.187:4200", "http://26.122.106.219:4200"}, allowCredentials = "true")
 public class PeriodoTitulacionController {
 
     private final PeriodoTitulacionService periodoService;
@@ -53,13 +53,13 @@ public class PeriodoTitulacionController {
 
     @PutMapping("/{id}/activar")
     public ResponseEntity<PeriodoTitulacionDto> activar(@PathVariable Integer id) {
-        PeriodoTitulacionDto activado = periodoService.cambiarEstado(id, true);
+        PeriodoTitulacionDto activado = periodoService.activar(id);
         return ResponseEntity.ok(activado);
     }
 
     @PutMapping("/{id}/desactivar")
     public ResponseEntity<PeriodoTitulacionDto> desactivar(@PathVariable Integer id) {
-        PeriodoTitulacionDto desactivado = periodoService.cambiarEstado(id, false);
+        PeriodoTitulacionDto desactivado = periodoService.desactivar(id);
         return ResponseEntity.ok(desactivado);
     }
 

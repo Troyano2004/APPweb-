@@ -29,5 +29,6 @@ public class AuditLog {
     @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
     private String metadata;
     @Column(name = "timestamp_evento") private LocalDateTime timestampEvento;
+    @Column(name = "duracion_ms") private Integer duracionMs;
     @PrePersist public void prePersist() { if (timestampEvento == null) timestampEvento = LocalDateTime.now(); }
 }

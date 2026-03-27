@@ -1,6 +1,7 @@
 
 package com.erwin.backend.service;
 
+import com.erwin.backend.audit.service.SesionActivaRegistry;
 import com.erwin.backend.config.DbSessionFilter;
 import com.erwin.backend.dtos.LoginRequest;
 import com.erwin.backend.dtos.LoginResponse;
@@ -10,6 +11,7 @@ import com.erwin.backend.repository.UsuarioRepository;
 import com.erwin.backend.repository.UsuarioSpRepository;
 import com.erwin.backend.security.CryptoUtil;
 import com.erwin.backend.security.JwtService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -25,20 +27,23 @@ public class AuthService {
     private final PasswordEncoder      passwordEncoder;
     private final JwtService           jwtService;
     private final com.erwin.backend.audit.service.AuditService auditService;
+    private final SesionActivaRegistry sesionRegistry;
 
     public AuthService(UsuarioRepository usuarioRepo,
                        UsuarioSpRepository usuarioSpRepo,
                        PasswordEncoder passwordEncoder,
                        JwtService jwtService,
-                       com.erwin.backend.audit.service.AuditService auditService) {
+                       com.erwin.backend.audit.service.AuditService auditService,
+                       SesionActivaRegistry sesionRegistry) {
         this.usuarioRepo    = usuarioRepo;
         this.usuarioSpRepo  = usuarioSpRepo;
         this.passwordEncoder = passwordEncoder;
         this.jwtService     = jwtService;
         this.auditService   = auditService;
+        this.sesionRegistry = sesionRegistry;
     }
 
-    public LoginResponse login(LoginRequest req, HttpSession session) {
+    public LoginResponse login(LoginRequest req, HttpSession session, HttpServletRequest request) {
 
         if (req == null || req.getUsuarioLogin() == null || req.getPassword() == null) {
             throw new RuntimeException("Faltan datos de login");
@@ -108,8 +113,18 @@ public class AuthService {
                 .idUsuario(usuario.getIdUsuario())
                 .username(usernameLogin)
                 .correoUsuario(usuario.getCorreoInstitucional())
+                .ipAddress(com.erwin.backend.audit.service.AuditService.extractIp(request))
                 .build());
         } catch (Exception ignored) {}
+
+        // Registrar sesión activa en el mapa en memoria
+        sesionRegistry.registrarSesion(
+                session.getId(),
+                usuario.getUsername(),
+                usuario.getRolAsignado(),
+                usuario.getCorreoInstitucional(),
+                com.erwin.backend.audit.service.AuditService.extractIp(request)
+        );
 
         return new LoginResponse(
                 usuario.getIdUsuario(),

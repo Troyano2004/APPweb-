@@ -1,5 +1,6 @@
 package com.erwin.backend.service;
 
+import com.erwin.backend.audit.aspect.Auditable;
 import com.erwin.backend.dtos.Dt1DetalleResponse;
 import com.erwin.backend.dtos.Dt1EnviadoResponse;
 import com.erwin.backend.dtos.Dt1RevisionRequest;
@@ -160,6 +161,7 @@ public class Dt1Service {
     //   APROBADO  → anteproyecto=APROBADO,  version=APROBADO  (bloqueado definitivamente)
     //   RECHAZADO → anteproyecto=BORRADOR,  version=RECHAZADO (estudiante corrige y reenvía)
     // =========================================================
+    @Auditable(entidad = "Dt1Revision", accion = "CREATE", capturarArgs = false)
     @Transactional
     public void revisar(Dt1RevisionRequest req) {
 

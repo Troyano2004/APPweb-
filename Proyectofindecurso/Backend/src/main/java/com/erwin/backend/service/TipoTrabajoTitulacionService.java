@@ -3,6 +3,7 @@ package com.erwin.backend.service;
 import com.erwin.backend.dtos.TipoTrabajoTitulacionDto;
 import com.erwin.backend.entities.Modalidadtitulacion;
 import com.erwin.backend.entities.Tipotrabajotitulacion;
+import com.erwin.backend.audit.aspect.Auditable;
 import com.erwin.backend.repository.ModalidadTitulacionRepository;
 import com.erwin.backend.repository.TipoTrabajoTitulacionRepository;
 import org.springframework.stereotype.Service;
@@ -43,6 +44,7 @@ public class TipoTrabajoTitulacionService {
         return convertirADto(tipo);
     }
 
+    @Auditable(entidad = "TipoTrabajoTitulacion", accion = "CREATE", capturarArgs = true)
     public TipoTrabajoTitulacionDto crear(TipoTrabajoTitulacionDto dto) {
         Modalidadtitulacion modalidad = modalidadRepo.findById(dto.getIdModalidad())
                 .orElseThrow(() -> new RuntimeException("Modalidad no encontrada"));
@@ -55,6 +57,7 @@ public class TipoTrabajoTitulacionService {
         return convertirADto(guardado);
     }
 
+    @Auditable(entidad = "TipoTrabajoTitulacion", accion = "UPDATE", capturarArgs = true)
     public TipoTrabajoTitulacionDto actualizar(Integer id, TipoTrabajoTitulacionDto dto) {
         Tipotrabajotitulacion tipo = tipoTrabajoRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Tipo de trabajo no encontrado"));
@@ -69,6 +72,7 @@ public class TipoTrabajoTitulacionService {
         return convertirADto(actualizado);
     }
 
+    @Auditable(entidad = "TipoTrabajoTitulacion", accion = "DELETE", capturarArgs = false)
     public void eliminar(Integer id) {
         if (!tipoTrabajoRepo.existsById(id)) {
             throw new RuntimeException("Tipo de trabajo no encontrado");

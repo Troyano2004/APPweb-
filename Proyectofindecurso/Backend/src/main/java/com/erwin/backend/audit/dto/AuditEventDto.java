@@ -14,4 +14,5 @@ public class AuditEventDto {
     private Object  estadoAnterior;
     private Object  estadoNuevo;
     private Map<String, Object> metadata;
+    private Integer duracionMs;
 }

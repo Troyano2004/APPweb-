@@ -1,5 +1,6 @@
 package com.erwin.backend.controller;
 
+import com.erwin.backend.audit.aspect.Auditable;
 import com.erwin.backend.dtos.RestoreRequest;
 import com.erwin.backend.dtos.RestoreResponse;
 import com.erwin.backend.dtos.RestoreResultado;
@@ -24,6 +25,7 @@ public class BackupRestoreController {
         return ResponseEntity.ok(restoreService.obtenerHistorialConDisponibilidad(jobId));
     }
 
+    @Auditable(entidad = "Backup", accion = "RESTORE", capturarArgs = false)
     @PostMapping("/ejecutar")
     public ResponseEntity<RestoreResultado> restaurar(@RequestBody RestoreRequest req) {
         return ResponseEntity.ok(restoreService.restaurar(req));

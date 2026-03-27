@@ -13,6 +13,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { filter, Subscription } from 'rxjs';
 import { getSessionEntityId, getSessionUser, getUserRoles } from '../../services/session';
+import { AuthService } from '../../services/auth';
 
 type AppRole =
   | 'ADMIN'
@@ -263,11 +264,13 @@ export class ShellComponent implements OnInit, OnDestroy {
         { label: 'Parámetros', path: '/app/admin/parametros' },
         { label: 'Gestión de solicitudes', path: '/app/admin/gestion-solicitudes' },
         { label: 'Configuración de correo', path: '/app/admin/configuracion-correo' },
-        { label: 'Dashboard Auditoría', path: '/app/admin/auditoria/dashboard' },
-        { label: 'Logs de Auditoría', path: '/app/admin/auditoria/logs' },
-        { label: 'Config. Auditoría', path: '/app/admin/auditoria/config' },
-        { label: 'Respaldos BD', path: '/app/admin/backup', roles: ['ADMIN'] },
-        { label: 'Restaurar BD', path: '/app/admin/backup/restaurar', roles: ['ADMIN'] },
+        { label: 'Dashboard Auditoría',     path: '/app/admin/auditoria/dashboard' },
+        { label: 'Logs de Auditoría',       path: '/app/admin/auditoria/logs' },
+        { label: 'Config. Auditoría',       path: '/app/admin/auditoria/config' },
+        { label: 'Sesiones Activas',        path: '/app/admin/auditoria/sesiones' },
+        { label: 'Control de Cambios',      path: '/app/admin/auditoria/cambios' },
+        { label: 'Respaldos BD',            path: '/app/admin/backup',           roles: ['ADMIN'] },
+        { label: 'Restaurar BD',            path: '/app/admin/backup/restaurar', roles: ['ADMIN'] },
       ],
     },
   ];
@@ -277,6 +280,7 @@ export class ShellComponent implements OnInit, OnDestroy {
   constructor(
     private readonly router: Router,
     private readonly route: ActivatedRoute,
+    private readonly authService: AuthService,
     private readonly comisionTemasService: ComisionTemasService
   ) {}
 
@@ -331,9 +335,16 @@ export class ShellComponent implements OnInit, OnDestroy {
   }
 
   logout(): void {
-    localStorage.removeItem('usuario');
-    localStorage.removeItem('token');
-    this.router.navigate(['/login']);
+    this.authService.logout().subscribe({
+      next: () => this.ejecutarLogoutLocal(),
+      error: () => this.ejecutarLogoutLocal()
+    });
+  }
+
+  private ejecutarLogoutLocal(): void {
+    localStorage.clear();
+    sessionStorage.clear();
+    window.location.href = '/login';
   }
 
   updateSearchResults(): void {

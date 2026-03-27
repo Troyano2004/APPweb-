@@ -1,5 +1,6 @@
 package com.erwin.backend.service;
 
+import com.erwin.backend.audit.aspect.Auditable;
 import com.erwin.backend.dtos.*;
 import com.erwin.backend.entities.*;
 import com.erwin.backend.enums.EstadoDocumento;
@@ -49,6 +50,7 @@ public class DocumentoTitulacionService {
         return toDto(doc);
     }
 
+    @Auditable(entidad = "DocumentoTitulacion", accion = "UPDATE", capturarArgs = false)
     @Transactional
     public DocumentoTitulacionDto guardarCambios(Integer idEstudiante, DocumentoUpdateRequest req) {
         DocumentoTitulacion doc = docRepo.findByEstudiante_IdEstudiante(idEstudiante)
@@ -62,6 +64,7 @@ public class DocumentoTitulacionService {
         return toDto(docRepo.save(doc));
     }
 
+    @Auditable(entidad = "DocumentoTitulacion", accion = "ENVIAR_REVISION", capturarArgs = false)
     @Transactional
     public void enviarRevision(Integer idEstudiante) {
         DocumentoTitulacion doc = docRepo.findByEstudiante_IdEstudiante(idEstudiante)
@@ -80,6 +83,7 @@ public class DocumentoTitulacionService {
                 .stream().map(this::toDto).toList();
     }
 
+    @Auditable(entidad = "ObservacionDocumento", accion = "CREATE", capturarArgs = false)
     @Transactional
     public ObservacionDto agregarObservacion(Integer idDocente, Integer idDocumento, CrearObservacionRequest req) {
         DocumentoTitulacion doc = docRepo.findById(idDocumento)
@@ -103,6 +107,7 @@ public class DocumentoTitulacionService {
         return toObsDto(obs);
     }
 
+    @Auditable(entidad = "DocumentoTitulacion", accion = "DEVOLVER", capturarArgs = false)
     @Transactional
     public void devolverConObservaciones(Integer idDocente, Integer idDocumento) {
         DocumentoTitulacion doc = docRepo.findById(idDocumento)
@@ -116,6 +121,7 @@ public class DocumentoTitulacionService {
         docRepo.save(doc);
     }
 
+    @Auditable(entidad = "DocumentoTitulacion", accion = "APROBAR_DIRECTOR", capturarArgs = false)
     @Transactional
     public void aprobar(Integer idDocente, Integer idDocumento) {
         DocumentoTitulacion doc = docRepo.findById(idDocumento)
@@ -155,6 +161,7 @@ public class DocumentoTitulacionService {
         }
     }
 
+    @Auditable(entidad = "ObservacionDocumento", accion = "ATENDER", capturarArgs = false)
     @Transactional
     public void marcarObservacionAtendida(Integer idEstudiante, Integer idObservacion) {
         ObservacionDocumento obs = obsRepo.findById(idObservacion)

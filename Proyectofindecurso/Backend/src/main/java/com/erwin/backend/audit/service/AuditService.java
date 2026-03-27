@@ -17,11 +17,14 @@ public class AuditService {
     private final AuditLogRepository    logRepo;
     private final EmailService          emailService;
     private final ObjectMapper          objectMapper;
+    private final AuditSseService       sseService;
 
     public AuditService(AuditConfigRepository configRepo, AuditLogRepository logRepo,
-                        EmailService emailService, ObjectMapper objectMapper) {
+                        EmailService emailService, ObjectMapper objectMapper,
+                        AuditSseService sseService) {
         this.configRepo = configRepo; this.logRepo = logRepo;
         this.emailService = emailService; this.objectMapper = objectMapper;
+        this.sseService = sseService;
     }
 
     @Async
@@ -29,7 +32,14 @@ public class AuditService {
     public void registrar(AuditEventDto evento) {
         try {
             Optional<AuditConfig> configOpt = configRepo.findByEntidadAndAccion(evento.getEntidad(), evento.getAccion());
-            if (configOpt.isEmpty() || !configOpt.get().getActivo()) return;
+            System.out.println("[AUDIT] Buscando config para entidad='" + evento.getEntidad()
+                    + "' accion='" + evento.getAccion() + "' → encontrada=" + configOpt.isPresent()
+                    + (configOpt.isPresent() ? " activa=" + configOpt.get().getActivo() : ""));
+            if (configOpt.isEmpty() || !configOpt.get().getActivo()) {
+                System.err.println("[AUDIT] Config no encontrada o inactiva — evento NO guardado: "
+                        + evento.getEntidad() + "/" + evento.getAccion());
+                return;
+            }
             AuditConfig config = configOpt.get();
             AuditLog log = new AuditLog();
             log.setConfig(config);
@@ -43,7 +53,10 @@ public class AuditService {
             log.setEstadoAnterior(toJson(evento.getEstadoAnterior()));
             log.setEstadoNuevo(toJson(evento.getEstadoNuevo()));
             log.setMetadata(toJson(evento.getMetadata()));
-            logRepo.save(log);
+            log.setDuracionMs(evento.getDuracionMs());
+            AuditLog guardado = logRepo.save(log);
+            // Notificar en vivo vía SSE — config ya está en memoria, sin lazy loading
+            sseService.notificar(guardado, config.getSeveridad());
             if (Boolean.TRUE.equals(config.getNotificarEmail()) && config.getDestinatarios() != null && !config.getDestinatarios().isEmpty()) {
                 emailService.enviarAlertaAuditoria(config.getDestinatarios(), evento.getEntidad(), evento.getAccion(),
                     config.getSeveridad(), evento.getUsername() != null ? evento.getUsername() : "sistema",
@@ -51,7 +64,8 @@ public class AuditService {
                     java.time.LocalDateTime.now().toString());
             }
         } catch (Exception e) {
-            // fallo silencioso — la auditoría nunca debe interrumpir el flujo principal
+            System.err.println("[AUDIT ERROR en registrar()] " + e.getClass().getSimpleName() + ": " + e.getMessage());
+            e.printStackTrace();
         }
     }
 

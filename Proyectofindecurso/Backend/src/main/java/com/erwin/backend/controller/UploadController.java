@@ -1,6 +1,7 @@
 
 package com.erwin.backend.controller;
 
+import com.erwin.backend.audit.aspect.Auditable;
 import com.erwin.backend.dtos.ImageUploadResponseDto;
 import com.erwin.backend.service.FileStorageService;
 import com.erwin.backend.service.ImageStorageService;
@@ -25,6 +26,7 @@ public class UploadController {
     }
 
     // ── Imágenes (existente sin cambios) ────────────────────────────────────
+    @Auditable(entidad = "ImagenSubida", accion = "UPLOAD", capturarArgs = false)
     @PostMapping("/images")
     public ResponseEntity<?> uploadImage(@RequestParam("file") MultipartFile file) {
         try {
@@ -39,6 +41,7 @@ public class UploadController {
     }
 
     // ── PDFs / Documentos habilitantes ──────────────────────────────────────
+    @Auditable(entidad = "ArchivoSubido", accion = "UPLOAD", capturarArgs = false)
     @PostMapping("/files")
     public ResponseEntity<?> uploadFile(@RequestParam("file") MultipartFile file) {
         try {

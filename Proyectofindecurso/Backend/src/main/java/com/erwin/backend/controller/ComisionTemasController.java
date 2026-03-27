@@ -1,5 +1,6 @@
 package com.erwin.backend.controller;
 
+import com.erwin.backend.audit.aspect.Auditable;
 import com.erwin.backend.entities.*;
 import com.erwin.backend.repository.AnteproyectoTitulacionRepository;
 import com.erwin.backend.enums.EstadoDocumento;
@@ -16,7 +17,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/comision-temas")
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = {"http://localhost:4200", "http://26.102.176.187:4200", "http://26.122.106.219:4200"}, allowCredentials = "true")
 public class ComisionTemasController {
 
     private static final String NOMBRE_MODALIDAD_COMPLEXIVO = "Examen Complexivo";
@@ -110,6 +111,7 @@ public class ComisionTemasController {
     }
 
     @PostMapping("/estudiante/{idEstudiante}/seleccionar-modalidad")
+    @Auditable(entidad = "EleccionTitulacion", accion = "CREATE", capturarArgs = false)
     public EstadoModalidadDto seleccionarModalidad(@PathVariable Integer idEstudiante,
                                                    @RequestBody SeleccionarModalidadRequest req) {
         if (req == null || req.idModalidad == null)
@@ -168,6 +170,7 @@ public class ComisionTemasController {
     }
 
     @PostMapping("/docente/{idDocente}/banco")
+    @Auditable(entidad = "BancoTemas", accion = "CREATE", capturarArgs = false)
     public TemaDto crearTema(@PathVariable Integer idDocente,
                              @RequestBody CrearTemaRequest req) {
         validarMiembroComision(idDocente);
@@ -210,6 +213,7 @@ public class ComisionTemasController {
     //    actualizado en BD después del stored procedure y no el cacheado ──
     @Transactional
     @PostMapping("/docente/{idDocente}/propuestas/{idPropuesta}/decision")
+    @Auditable(entidad = "PropuestaTitulacion", accion = "DECISION", capturarArgs = false)
     public PropuestaDto decidirPropuesta(@PathVariable Integer idDocente,
                                          @PathVariable Integer idPropuesta,
                                          @RequestBody DecisionPropuestaRequest req) {
@@ -407,6 +411,7 @@ public class ComisionTemasController {
     // ════════════════════════════════════════════════════════════════════════
 
     @PostMapping("/estudiante/{idEstudiante}/propuestas")
+    @Auditable(entidad = "PropuestaTitulacion", accion = "CREATE", capturarArgs = false)
     public PropuestaDto crearPropuesta(@PathVariable Integer idEstudiante,
                                        @RequestBody CrearPropuestaRequest req) {
         Estudiante estudiante = estudianteRepository.findById(idEstudiante)
@@ -496,6 +501,7 @@ public class ComisionTemasController {
     // ════════════════════════════════════════════════════════════════════════
 
     @PostMapping("/estudiante/{idEstudiante}/sugerir-tema")
+    @Auditable(entidad = "BancoTemas", accion = "SUGERIR", capturarArgs = false)
     public TemaDto sugerirTema(@PathVariable Integer idEstudiante,
                                @RequestBody SugerirTemaRequest req) {
         Estudiante estudiante = estudianteRepository.findById(idEstudiante)
@@ -529,6 +535,7 @@ public class ComisionTemasController {
     }
 
     @PostMapping("/docente/{idDocente}/sugerencias/{idTema}/aprobar")
+    @Auditable(entidad = "BancoTemas", accion = "APROBAR", capturarArgs = false)
     public TemaDto aprobarSugerencia(@PathVariable Integer idDocente,
                                      @PathVariable Integer idTema,
                                      @RequestBody(required = false) AprobarSugerenciaRequest req) {
@@ -551,6 +558,7 @@ public class ComisionTemasController {
     }
 
     @PostMapping("/docente/{idDocente}/sugerencias/{idTema}/rechazar")
+    @Auditable(entidad = "BancoTemas", accion = "RECHAZAR", capturarArgs = false)
     public TemaDto rechazarSugerencia(@PathVariable Integer idDocente,
                                       @PathVariable Integer idTema,
                                       @RequestBody(required = false) AprobarSugerenciaRequest req) {

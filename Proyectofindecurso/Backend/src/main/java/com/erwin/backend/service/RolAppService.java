@@ -1,6 +1,7 @@
 
 package com.erwin.backend.service;
 
+import com.erwin.backend.audit.aspect.Auditable;
 import com.erwin.backend.dtos.*;
 import com.erwin.backend.repository.RolAppSpRepository;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,7 @@ public class RolAppService {
         return repo.listarRolesApp();
     }
 
+    @Auditable(entidad = "RolApp", accion = "CREATE", capturarArgs = true)
     @Transactional
     public RolAppDto crear(RolAppCreateRequest req) {
         if (req == null) throw new RuntimeException("Body requerido");
@@ -47,6 +49,7 @@ public class RolAppService {
                 .orElseThrow(() -> new RuntimeException("Rol app no existe"));
     }
 
+    @Auditable(entidad = "RolApp", accion = "UPDATE", capturarArgs = true)
     @Transactional
     public RolAppDto editar(Integer id, RolAppUpdateRequest req) {
         if (req == null) throw new RuntimeException("Body requerido");
@@ -61,6 +64,7 @@ public class RolAppService {
                 .orElseThrow(() -> new RuntimeException("Rol app no existe"));
     }
 
+    @Auditable(entidad = "RolApp", accion = "CAMBIO_ESTADO", capturarArgs = false)
     @Transactional
     public RolAppDto cambiarEstado(Integer id, RolAppEstadoRequest req) {
         if (req == null || req.getActivo() == null)
@@ -74,6 +78,7 @@ public class RolAppService {
                 .orElseThrow(() -> new RuntimeException("Rol app no existe"));
     }
 
+    @Auditable(entidad = "RolApp", accion = "ASIGNAR_PERMISOS", capturarArgs = false)
     @Transactional
     public RolAppDto asignarPermisos(Integer id, RolAppPermisosRequest req) {
         // ── FIX Error 4: validación explícita antes de llamar al SP ──────

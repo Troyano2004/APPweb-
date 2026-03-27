@@ -2,6 +2,7 @@ package com.erwin.backend.service;
 
 import com.erwin.backend.dtos.UniversidadDto;
 import com.erwin.backend.entities.Universidad;
+import com.erwin.backend.audit.aspect.Auditable;
 import com.erwin.backend.repository.CarreraModalidadRepository;
 import com.erwin.backend.repository.CarreraRepository;
 import com.erwin.backend.repository.FacultadRepository;
@@ -43,6 +44,7 @@ public class UniversidadService {
         return convertirADto(universidad);
     }
 
+    @Auditable(entidad = "Universidad", accion = "CREATE", capturarArgs = true)
     public UniversidadDto crear(UniversidadDto dto) {
         Universidad universidad = new Universidad();
         universidad.setNombre(dto.getNombre());
@@ -57,6 +59,7 @@ public class UniversidadService {
         return convertirADto(guardada);
     }
 
+    @Auditable(entidad = "Universidad", accion = "UPDATE", capturarArgs = true)
     public UniversidadDto actualizar(Integer id, UniversidadDto dto) {
         Universidad universidad = universidadRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Universidad no encontrada"));
@@ -73,6 +76,7 @@ public class UniversidadService {
         return convertirADto(actualizada);
     }
 
+    @Auditable(entidad = "Universidad", accion = "DELETE", capturarArgs = false)
     public void eliminar(Integer id) {
         Universidad universidad = universidadRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Universidad no encontrada"));

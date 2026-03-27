@@ -11,6 +11,10 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 
+/**
+ * Gestión de documentos habilitantes para la sustentación en DT2.
+ * Arts. 10, 11, 57 num.2 y 59 del Reglamento UIC-UTEQ (sept-2024).
+ */
 @Service
 public class DocumentoHabilitanteService {
 

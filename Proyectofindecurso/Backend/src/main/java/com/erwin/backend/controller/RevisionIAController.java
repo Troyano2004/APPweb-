@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/revision-ia")
-@CrossOrigin(origins = "*") // Permite que Angular se conecte sin errores de CORS
+@CrossOrigin(origins = {"http://localhost:4200", "http://26.102.176.187:4200", "http://26.122.106.219:4200"}, allowCredentials = "true")
 public class RevisionIAController {
 
     @Autowired
