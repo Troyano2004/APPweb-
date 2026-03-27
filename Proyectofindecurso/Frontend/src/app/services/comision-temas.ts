@@ -1,3 +1,4 @@
+
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -22,7 +23,14 @@ export interface PropuestaTemaDto {
   estado: string;
   fechaEnvio: string | null;
   observaciones: string | null;
-  modalidad: string | null; // ← nuevo: distingue Complexivo de TIC
+  modalidad: string | null;
+  planteamientoProblema: string | null;
+  objetivosGenerales: string | null;
+  objetivosEspecificos: string | null;
+  marcoTeorico: string | null;
+  metodologia: string | null;
+  resultadosEsperados: string | null;
+  bibliografia: string | null;
 }
 
 export interface CrearTemaRequest {
@@ -60,10 +68,59 @@ export interface EstadoModalidadDto {
   modalidadesDisponibles: ModalidadSimpleDto[];
 }
 
+// ── DTO para la respuesta del análisis IA ─────────────────────────────────────
+export interface RevisionPropuestaIARequest {
+  modo?: 'integral' | 'coherencia' | 'pertinencia' | 'viabilidad';
+  instruccionAdicional?: string;
+}
+
+export interface FeedbackIAPropuesta {
+  estado_evaluacion:   'APROBABLE' | 'REQUIERE_AJUSTES' | 'RECHAZABLE' | 'ERROR';
+  puntaje_estimado:     number;
+  pertinencia_carrera: 'ALTA' | 'MEDIA' | 'BAJA' | 'ERROR';
+  analisis_titulo:      string;
+  analisis_objetivos:   string;
+  analisis_metodologia: string;
+  fortalezas:           string[];
+  debilidades:          string[];
+  sugerencias_mejora:   string[];
+  mensaje_estudiante:   string;
+}
+
+export interface RevisionPropuestaIAResponse {
+  idPropuesta:         number;
+  tituloPropuesta:     string;
+  nombreEstudiante:    string;
+  nombreCarrera:       string;
+  nombreFacultad:      string;
+  modalidadTitulacion: string;
+  estadoPropuesta:     string;
+  feedbackIa:          string;   // JSON string — parsear con JSON.parse()
+  fechaAnalisisIa:     string;
+}
+
+// ── DTO para revisión PREVIA (antes de guardar en BD) ─────────────────────────
+export interface RevisionPropuestaPreviaRequest {
+  idEstudiante:          number;
+  titulo?:               string;
+  temaInvestigacion?:    string;
+  planteamientoProblema?: string;
+  objetivosGenerales?:   string;
+  objetivosEspecificos?: string;
+  marcoTeorico?:         string;
+  metodologia?:          string;
+  resultadosEsperados?:  string;
+  bibliografia?:         string;
+  modo?:                 'integral' | 'coherencia' | 'pertinencia' | 'viabilidad';
+  instruccionAdicional?: string;
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 @Injectable({ providedIn: 'root' })
 export class ComisionTemasService {
 
-  private readonly API_URL = 'http://localhost:8080/api/comision-temas';
+  private readonly API_URL    = 'http://localhost:8080/api/comision-temas';
+  private readonly IA_API_URL = 'http://localhost:8080/api/revision-ia';
 
   constructor(private readonly http: HttpClient) {}
 
@@ -77,7 +134,7 @@ export class ComisionTemasService {
     return this.http.post<TemaBancoDto>(`${this.API_URL}/docente/${idDocente}/banco`, payload);
   }
 
-  // ── Comisión: propuestas (excluye Complexivo) ────────────────────────────
+  // ── Comisión: propuestas ─────────────────────────────────────────────────
 
   listarPropuestasComision(idDocente: number): Observable<PropuestaTemaDto[]> {
     return this.http.get<PropuestaTemaDto[]>(`${this.API_URL}/docente/${idDocente}/propuestas`);
@@ -95,7 +152,7 @@ export class ComisionTemasService {
     );
   }
 
-  // ── Docente Complexivo: propuestas de sus estudiantes ────────────────────
+  // ── Docente Complexivo ───────────────────────────────────────────────────
 
   listarPropuestasComplexivo(idDocente: number): Observable<PropuestaTemaDto[]> {
     return this.http.get<PropuestaTemaDto[]>(
@@ -129,8 +186,6 @@ export class ComisionTemasService {
     return this.http.get<TemaBancoDto[]>(`${this.API_URL}/estudiante/${idEstudiante}/temas-disponibles`);
   }
 
-  // ── Estudiante: modalidad ────────────────────────────────────────────────
-
   obtenerEstadoModalidad(idEstudiante: number): Observable<EstadoModalidadDto> {
     return this.http.get<EstadoModalidadDto>(`${this.API_URL}/estudiante/${idEstudiante}/estado-modalidad`);
   }
@@ -139,6 +194,12 @@ export class ComisionTemasService {
     return this.http.post<EstadoModalidadDto>(
       `${this.API_URL}/estudiante/${idEstudiante}/seleccionar-modalidad`,
       { idModalidad }
+    );
+  }
+
+  listarTemasAprobadosEstudiante(idEstudiante: number): Observable<TemaBancoDto[]> {
+    return this.http.get<TemaBancoDto[]>(
+      `${this.API_URL}/estudiante/${idEstudiante}/temas-aprobados`
     );
   }
 
@@ -169,9 +230,43 @@ export class ComisionTemasService {
     );
   }
 
-  listarTemasAprobadosEstudiante(idEstudiante: number): Observable<TemaBancoDto[]> {
-    return this.http.get<TemaBancoDto[]>(
-      `${this.API_URL}/estudiante/${idEstudiante}/temas-aprobados`
+  // ── IA: Evaluación de propuesta ──────────────────────────────────────────
+
+  /**
+   * Llama al backend IA para evaluar una propuesta ya guardada.
+   * POST /api/revision-ia/propuesta/{idPropuesta}
+   *
+   * El backend detecta automáticamente la carrera y modalidad del estudiante
+   * desde la base de datos y genera un análisis personalizado.
+   *
+   * @param idPropuesta  ID de la propuesta guardada en BD
+   * @param modo         tipo de análisis (default: 'integral')
+   */
+  evaluarPropuestaConIA(
+    idPropuesta: number,
+    payload: RevisionPropuestaIARequest = { modo: 'integral' }
+  ): Observable<RevisionPropuestaIAResponse> {
+    return this.http.post<RevisionPropuestaIAResponse>(
+      `${this.IA_API_URL}/propuesta/${idPropuesta}`,
+      payload
+    );
+  }
+
+  // ── IA: Revisión PREVIA (sin guardar en BD) ──────────────────────────────
+
+  /**
+   * Evalúa el BORRADOR del formulario ANTES de enviarlo.
+   * POST /api/revision-ia/propuesta/previa
+   *
+   * No necesita idPropuesta. Envía los datos del form directamente.
+   * El backend obtiene carrera y modalidad usando el idEstudiante.
+   */
+  evaluarPropuestaConIAPrevia(
+    payload: RevisionPropuestaPreviaRequest
+  ): Observable<RevisionPropuestaIAResponse> {
+    return this.http.post<RevisionPropuestaIAResponse>(
+      `${this.IA_API_URL}/propuesta/previa`,
+      payload
     );
   }
 }

@@ -53,8 +53,13 @@ export interface SubirHabilitanteRequest {
 export interface ValidarHabilitanteRequest {
   decision: 'APROBADO' | 'RECHAZADO';
   comentario?: string;
+  porcentajeCoincidencia?: number;
 }
-
+export interface SubirAntiplagioPorDirectorRequest {
+  urlArchivo: string;
+  nombreArchivo: string;
+  porcentajeCoincidencia: number;
+}
 @Injectable({
   providedIn: 'root'
 })
@@ -107,6 +112,32 @@ export class DocumentoHabilitanteService {
     return this.http.post<{ url: string; filename: string }>(
       `${this.API_URL}/api/uploads/files`,
       formData
+    );
+  }
+  getResumenComplexivo(idEstudiante: number): Observable<ResumenHabilitacionDto> {
+    return this.http.get<ResumenHabilitacionDto>(
+      `${this.base}/estudiante/${idEstudiante}/resumen-complexivo`
+    );
+  }
+
+  subirDocumentoComplexivo(
+    idEstudiante: number,
+    req: SubirHabilitanteRequest
+  ): Observable<HabilitanteDto> {
+    return this.http.post<HabilitanteDto>(
+      `${this.base}/estudiante/${idEstudiante}/subir-complexivo`,
+      req
+    );
+
+  }
+  subirCertificadoAntiplagio(
+    idDocente: number,
+    idProyecto: number,
+    req: SubirAntiplagioPorDirectorRequest
+  ): Observable<HabilitanteDto> {
+    return this.http.post<HabilitanteDto>(
+      `${this.base}/director/${idDocente}/proyecto/${idProyecto}/antiplagio`,
+      req
     );
   }
 }

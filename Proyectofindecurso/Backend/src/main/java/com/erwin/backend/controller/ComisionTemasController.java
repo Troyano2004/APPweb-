@@ -36,9 +36,12 @@ public class ComisionTemasController {
     private final DocumentoTitulacionRepository documentoTitulacionRepository;
     private final AnteproyectoTitulacionRepository anteproyectoTitulacionRepository;
     private final ComplexivoDocenteAsignacionRepository complexivoAsignacionRepository;
+    // ── Persona 2: nuevos repositorios para complexivo DT1 ──
+    private final ComplexivoDt1AsignacionRepository complexivoDt1Repository;
+    private final ComplexivoTitulacionRepository complexivoTitulacionRepository;
     private final EmailService emailService;
 
-    // ✅ EntityManager para limpiar el caché de Hibernate después del stored procedure
+    // ── Persona 1: EntityManager para limpiar caché de Hibernate tras stored procedure ──
     @PersistenceContext
     private EntityManager entityManager;
 
@@ -57,6 +60,8 @@ public class ComisionTemasController {
                                    DocumentoTitulacionRepository documentoTitulacionRepository,
                                    AnteproyectoTitulacionRepository anteproyectoTitulacionRepository,
                                    ComplexivoDocenteAsignacionRepository complexivoAsignacionRepository,
+                                   ComplexivoDt1AsignacionRepository complexivoDt1Repository,
+                                   ComplexivoTitulacionRepository complexivoTitulacionRepository,
                                    EmailService emailService) {
         this.bancoTemasRepository             = bancoTemasRepository;
         this.propuestaRepository              = propuestaRepository;
@@ -73,6 +78,8 @@ public class ComisionTemasController {
         this.documentoTitulacionRepository    = documentoTitulacionRepository;
         this.anteproyectoTitulacionRepository = anteproyectoTitulacionRepository;
         this.complexivoAsignacionRepository   = complexivoAsignacionRepository;
+        this.complexivoDt1Repository          = complexivoDt1Repository;
+        this.complexivoTitulacionRepository   = complexivoTitulacionRepository;
         this.emailService                     = emailService;
     }
 
@@ -88,8 +95,7 @@ public class ComisionTemasController {
         EleccionTitulacion eleccion = obtenerEleccionVigente(idEstudiante);
         Integer idCarrera = estudiante.getCarrera() != null
                 ? estudiante.getCarrera().getIdCarrera() : null;
-        List<ModalidadSimpleDto> modalidadesDisponibles =
-                obtenerModalidadesDisponibles(idCarrera);
+        List<ModalidadSimpleDto> modalidadesDisponibles = obtenerModalidadesDisponibles(idCarrera);
 
         return new EstadoModalidadDto(
                 eleccion != null,
@@ -112,17 +118,14 @@ public class ComisionTemasController {
         Estudiante estudiante = estudianteRepository.findById(idEstudiante)
                 .orElseThrow(() -> new RuntimeException("Estudiante no encontrado"));
 
-        if (estudiante.getCarrera() == null
-                || estudiante.getCarrera().getIdCarrera() == null)
-            throw new RuntimeException(
-                    "El estudiante no tiene una carrera registrada");
+        if (estudiante.getCarrera() == null || estudiante.getCarrera().getIdCarrera() == null)
+            throw new RuntimeException("El estudiante no tiene una carrera registrada");
 
         Integer idCarrera   = estudiante.getCarrera().getIdCarrera();
         Integer idModalidad = req.idModalidad;
 
         boolean esPermitida = carreraModalidadRepository
-                .existsById_IdCarreraAndId_IdModalidadAndActivoTrue(
-                        idCarrera, idModalidad);
+                .existsById_IdCarreraAndId_IdModalidadAndActivoTrue(idCarrera, idModalidad);
         if (!esPermitida)
             throw new RuntimeException(
                     "La modalidad seleccionada no está habilitada para tu carrera");
@@ -203,8 +206,8 @@ public class ComisionTemasController {
                 .map(this::toPropuestaDto).toList();
     }
 
-    // ✅ @Transactional + entityManager.flush/clear después del stored procedure
-    //    para que Hibernate vea el estado actualizado en BD y no el cacheado
+    // ── Persona 1: @Transactional + flush/clear para que Hibernate vea el estado
+    //    actualizado en BD después del stored procedure y no el cacheado ──
     @Transactional
     @PostMapping("/docente/{idDocente}/propuestas/{idPropuesta}/decision")
     public PropuestaDto decidirPropuesta(@PathVariable Integer idDocente,
@@ -219,7 +222,8 @@ public class ComisionTemasController {
                 .orElseThrow(() -> new RuntimeException("Propuesta no encontrada"));
 
         if (esModalidadComplexivo(propuesta))
-            throw new RuntimeException("Esta propuesta es de Examen Complexivo.");
+            throw new RuntimeException("Esta propuesta es de Examen Complexivo. " +
+                    "Debe revisarla el docente complexivo asignado.");
 
         String estado = req.estado == null ? "" : req.estado.trim().toUpperCase();
         if (!estado.equals("APROBADA") && !estado.equals("RECHAZADA"))
@@ -233,6 +237,7 @@ public class ComisionTemasController {
         if (actualizado == null || actualizado == 0)
             throw new RuntimeException("No se pudo registrar la decisión");
 
+        // ── Persona 1: limpiar caché de Hibernate ──
         entityManager.flush();
         entityManager.clear();
 
@@ -241,9 +246,6 @@ public class ComisionTemasController {
                 .orElseThrow(() -> new RuntimeException("Propuesta no encontrada"));
 
         System.out.println(">>> estado después del stored: " + propuestaActualizada.getEstado());
-        System.out.println(">>> eleccion: " + propuestaActualizada.getEleccion());
-        System.out.println(">>> modalidad: " + (propuestaActualizada.getEleccion() != null
-                ? propuestaActualizada.getEleccion().getModalidad() : "NULL"));
 
         if ("APROBADA".equals(propuestaActualizada.getEstado())) {
             System.out.println(">>> Entrando a crear proyecto...");
@@ -261,42 +263,60 @@ public class ComisionTemasController {
                 throw new RuntimeException("Error al crear proyecto: " + e.getMessage());
             }
             notificarPropuestaAprobada(propuestaActualizada);
-        } else {
-            System.out.println(">>> No entra al bloque APROBADA — estado actual: "
-                    + propuestaActualizada.getEstado());
         }
 
         return toPropuestaDto(propuestaActualizada);
     }
+
     // ════════════════════════════════════════════════════════════════════════
-    // PROPUESTAS COMPLEXIVO — DOCENTE COMPLEXIVO
+    // PROPUESTAS COMPLEXIVO — DOCENTE COMPLEXIVO / DT1
     // ════════════════════════════════════════════════════════════════════════
 
+    /**
+     * Lista propuestas Complexivo del docente.
+     * Persona 2: busca primero en complexivo_dt1_asignacion,
+     * con fallback a complexivo_docente_asignacion (Persona 1).
+     */
     @GetMapping("/docente/{idDocente}/propuestas-complexivo")
     public List<PropuestaDto> propuestasComplexivo(@PathVariable Integer idDocente) {
         PeriodoTitulacion periodo = periodoRepository.findByActivoTrue()
                 .orElseThrow(() -> new RuntimeException("No hay periodo activo"));
 
-        List<Integer> idsEstudiantes = complexivoAsignacionRepository
+        // Persona 2: intenta primero con DT1
+        List<Integer> idsEstudiantes = complexivoDt1Repository
                 .findByPeriodo_IdPeriodoAndActivoTrue(periodo.getIdPeriodo())
                 .stream()
                 .filter(a -> a.getDocente().getIdDocente().equals(idDocente))
                 .map(a -> a.getEstudiante().getIdEstudiante())
                 .toList();
 
+        // Persona 1: fallback a asignación original
+        if (idsEstudiantes.isEmpty()) {
+            idsEstudiantes = complexivoAsignacionRepository
+                    .findByPeriodo_IdPeriodoAndActivoTrue(periodo.getIdPeriodo())
+                    .stream()
+                    .filter(a -> a.getDocente().getIdDocente().equals(idDocente))
+                    .map(a -> a.getEstudiante().getIdEstudiante())
+                    .toList();
+        }
+
         if (idsEstudiantes.isEmpty()) return List.of();
 
+        final List<Integer> ids = idsEstudiantes;
         return propuestaRepository.findAll().stream()
-                .filter(p -> esModalidadComplexivo(p))
+                .filter(this::esModalidadComplexivo)
                 .filter(p -> p.getEstudiante() != null
-                        && idsEstudiantes.contains(
-                        p.getEstudiante().getIdEstudiante()))
+                        && ids.contains(p.getEstudiante().getIdEstudiante()))
                 .sorted(Comparator.comparing(
                         PropuestaTitulacion::getIdPropuesta).reversed())
                 .map(this::toPropuestaDto).toList();
     }
 
-    // ✅ Mismo patrón que decidirPropuesta
+    /**
+     * El docente DT1/complexivo decide sobre la propuesta de su estudiante.
+     * Persona 1: @Transactional + flush/clear para consistencia post-stored.
+     * Persona 2: crea ComplexivoTitulacion al aprobar.
+     */
     @Transactional
     @PostMapping("/docente/{idDocente}/propuestas-complexivo/{idPropuesta}/decision")
     public PropuestaDto decidirPropuestaComplexivo(@PathVariable Integer idDocente,
@@ -312,12 +332,23 @@ public class ComisionTemasController {
         PeriodoTitulacion periodo = periodoRepository.findByActivoTrue()
                 .orElseThrow(() -> new RuntimeException("No hay periodo activo"));
 
-        boolean esSuEstudiante = complexivoAsignacionRepository
+        // Persona 2: verifica en DT1 primero
+        boolean esSuEstudiante = complexivoDt1Repository
                 .findByPeriodo_IdPeriodoAndActivoTrue(periodo.getIdPeriodo())
                 .stream()
                 .anyMatch(a -> a.getDocente().getIdDocente().equals(idDocente)
                         && a.getEstudiante().getIdEstudiante()
                         .equals(propuesta.getEstudiante().getIdEstudiante()));
+
+        // Persona 1: fallback a asignación original
+        if (!esSuEstudiante) {
+            esSuEstudiante = complexivoAsignacionRepository
+                    .findByPeriodo_IdPeriodoAndActivoTrue(periodo.getIdPeriodo())
+                    .stream()
+                    .anyMatch(a -> a.getDocente().getIdDocente().equals(idDocente)
+                            && a.getEstudiante().getIdEstudiante()
+                            .equals(propuesta.getEstudiante().getIdEstudiante()));
+        }
 
         if (!esSuEstudiante)
             throw new RuntimeException(
@@ -333,7 +364,7 @@ public class ComisionTemasController {
         if (actualizado == null || actualizado == 0)
             throw new RuntimeException("No se pudo registrar la decisión");
 
-        // ✅ Limpiar caché igual que en decidirPropuesta
+        // ── Persona 1: limpiar caché de Hibernate ──
         entityManager.flush();
         entityManager.clear();
 
@@ -342,11 +373,30 @@ public class ComisionTemasController {
                 .orElseThrow(() -> new RuntimeException("Propuesta no encontrada"));
 
         if ("APROBADA".equals(propuestaActualizada.getEstado())) {
+            // Persona 1: crear proyecto + anteproyecto + documento
             ProyectoTitulacion proyecto =
                     crearProyectoTitulacionDesdePropuesta(propuestaActualizada);
             crearAnteproyectoAprobadoDesdePropuesta(propuestaActualizada, proyecto);
             crearDocumentoTitulacionDesdeProyecto(proyecto, propuestaActualizada);
             notificarPropuestaAprobada(propuestaActualizada);
+
+            // Persona 2: crear registro ComplexivoTitulacion
+            boolean yaExiste = complexivoTitulacionRepository
+                    .findByEstudiante_IdEstudianteAndPeriodo_IdPeriodo(
+                            propuestaActualizada.getEstudiante().getIdEstudiante(),
+                            periodo.getIdPeriodo())
+                    .isPresent();
+
+            if (!yaExiste) {
+                ComplexivoTitulacion ct = new ComplexivoTitulacion();
+                ct.setEstudiante(propuestaActualizada.getEstudiante());
+                ct.setCarrera(propuestaActualizada.getCarrera());
+                ct.setPeriodo(periodo);
+                ct.setEleccion(propuestaActualizada.getEleccion());
+                ct.setEstado("EN_CURSO");
+                ct.setFechaInscripcion(LocalDate.now());
+                complexivoTitulacionRepository.save(ct);
+            }
         }
 
         return toPropuestaDto(propuestaActualizada);
@@ -373,8 +423,7 @@ public class ComisionTemasController {
         Carrera carrera = estudiante.getCarrera() != null
                 ? estudiante.getCarrera()
                 : carreraRepository.findById(req.idCarrera)
-                .orElseThrow(() -> new RuntimeException(
-                        "Carrera no encontrada"));
+                .orElseThrow(() -> new RuntimeException("Carrera no encontrada"));
 
         String temaInvestigacion = valueOrDefault(
                 req.temaInvestigacion, "Pendiente de definir");
@@ -459,8 +508,7 @@ public class ComisionTemasController {
 
         Carrera carrera = estudiante.getCarrera();
         if (carrera == null)
-            throw new RuntimeException(
-                    "El estudiante no tiene carrera asignada");
+            throw new RuntimeException("El estudiante no tiene carrera asignada");
 
         BancoTemas tema = new BancoTemas();
         tema.setTitulo(req.titulo.trim());
@@ -582,27 +630,31 @@ public class ComisionTemasController {
                         + " " + est.getUsuario().getApellidos()).trim();
                 String periodoDesc = propuesta.getEleccion() != null
                         && propuesta.getEleccion().getPeriodo() != null
-                        ? propuesta.getEleccion().getPeriodo().getDescripcion()
-                        : "";
+                        ? propuesta.getEleccion().getPeriodo().getDescripcion() : "";
                 emailService.notificarPropuestaAprobada(
                         emailEst, nombreEst, propuesta.getTitulo(), periodoDesc);
             }
         } catch (Exception e) {
-            System.err.println(
-                    "[ComisionTemas] Error al notificar propuesta aprobada: "
-                            + e.getMessage());
+            System.err.println("[ComisionTemas] Error al notificar propuesta aprobada: "
+                    + e.getMessage());
         }
     }
 
-    // ✅ director null permitido — campo optional en la entidad
+    /**
+     * Persona 1: director null permitido (campo opcional en la entidad).
+     * Persona 2: lanzaba excepción — se mantiene null para no bloquear
+     * propuestas sin tema del banco asignado.
+     */
     private Docente resolverDirectorInicial(PropuestaTitulacion propuesta) {
         if (propuesta.getTema() != null
                 && propuesta.getTema().getDocenteProponente() != null)
             return propuesta.getTema().getDocenteProponente();
-        return null;
+        return null; // director opcional; se asignará después por coordinación
     }
 
-    // ✅ saveAndFlush garantiza ID generado antes de usarlo en DocumentoTitulacion
+    /**
+     * Persona 1: saveAndFlush garantiza ID generado antes de usarlo en DocumentoTitulacion.
+     */
     private ProyectoTitulacion crearProyectoTitulacionDesdePropuesta(
             PropuestaTitulacion propuesta) {
 
@@ -621,8 +673,7 @@ public class ComisionTemasController {
         PeriodoTitulacion periodo = eleccion.getPeriodo();
         if (periodo == null)
             periodo = periodoRepository.findByActivoTrue()
-                    .orElseThrow(() -> new RuntimeException(
-                            "No hay periodo activo"));
+                    .orElseThrow(() -> new RuntimeException("No hay periodo activo"));
 
         List<Tipotrabajotitulacion> tiposTrabajo = tipoTrabajoTitulacionRepository
                 .findByModalidadTitulacion_IdModalidad(
@@ -641,7 +692,7 @@ public class ComisionTemasController {
         proyecto.setTitulo(propuesta.getTitulo());
         proyecto.setEstado("ANTEPROYECTO");
 
-        // ✅ saveAndFlush: genera el ID inmediatamente en BD
+        // saveAndFlush: genera el ID inmediatamente en BD (Persona 1)
         return proyectoTitulacionRepository.saveAndFlush(proyecto);
     }
 
@@ -710,15 +761,29 @@ public class ComisionTemasController {
         String tema = propuesta.getTema() != null
                 ? propuesta.getTema().getTitulo()
                 : propuesta.getTemaInvestigacion();
-
         String modalidad = (propuesta.getEleccion() != null
                 && propuesta.getEleccion().getModalidad() != null)
                 ? propuesta.getEleccion().getModalidad().getNombre() : null;
 
-        return new PropuestaDto(propuesta.getIdPropuesta(), propuesta.getTitulo(),
-                tema, estudiante, carrera, propuesta.getEstado(),
-                propuesta.getFechaEnvio(), propuesta.getObservacionesComision(),
-                modalidad);
+        // Persona 2: campos extendidos para PDF
+        return new PropuestaDto(
+                propuesta.getIdPropuesta(),
+                propuesta.getTitulo(),
+                tema,
+                estudiante,
+                carrera,
+                propuesta.getEstado(),
+                propuesta.getFechaEnvio(),
+                propuesta.getObservacionesComision(),
+                modalidad,
+                propuesta.getPlanteamientoProblema(),
+                propuesta.getObjetivosGenerales(),
+                propuesta.getObjetivosEspecificos(),
+                propuesta.getMarcoTeorico(),
+                propuesta.getMetodologia(),
+                propuesta.getResultadosEsperados(),
+                propuesta.getBibliografia()
+        );
     }
 
     // ════════════════════════════════════════════════════════════════════════
@@ -758,10 +823,25 @@ public class ComisionTemasController {
             String carrera, String docente, String estado,
             String observaciones, Integer idEstudianteSugerente) {}
 
+    // Persona 2: campos extendidos para generación de PDF
     public record PropuestaDto(
-            Integer idPropuesta, String titulo, String tema,
-            String estudiante, String carrera, String estado,
-            LocalDate fechaEnvio, String observaciones, String modalidad) {}
+            Integer idPropuesta,
+            String titulo,
+            String tema,
+            String estudiante,
+            String carrera,
+            String estado,
+            LocalDate fechaEnvio,
+            String observaciones,
+            String modalidad,
+            String planteamientoProblema,
+            String objetivosGenerales,
+            String objetivosEspecificos,
+            String marcoTeorico,
+            String metodologia,
+            String resultadosEsperados,
+            String bibliografia
+    ) {}
 
     public record ModalidadSimpleDto(Integer idModalidad, String nombre) {}
 

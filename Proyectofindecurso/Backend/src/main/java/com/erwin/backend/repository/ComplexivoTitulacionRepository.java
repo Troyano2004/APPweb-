@@ -10,3 +10,5 @@ public interface ComplexivoTitulacionRepository
     Optional<ComplexivoTitulacion> findByEstudiante_IdEstudianteAndPeriodo_IdPeriodo(
             Integer idEstudiante, Integer idPeriodo);
 }
+
+

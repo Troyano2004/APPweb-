@@ -1,0 +1,242 @@
+<div class="cx-docente">
+  <h2>Titulación II — Complexivo: Mis Estudiantes</h2>
+  <p class="subtitle">Revisa el informe práctico de tus estudiantes asignados.</p>
+
+  <div class="alert error" *ngIf="error()">{{ error() }}</div>
+  <div class="alert ok" *ngIf="ok()">{{ ok() }}</div>
+
+  <div class="layout">
+
+    <!-- ───────── LISTA DE ESTUDIANTES ───────── -->
+    <div class="panel-lista">
+      <h3>Mis estudiantes ({{ estudiantes().length }})</h3>
+
+      <div class="empty" *ngIf="!loading() && estudiantes().length === 0">
+        No tienes estudiantes Complexivo DT2 asignados en este período.
+      </div>
+
+      <div
+        class="est-card"
+        *ngFor="let est of estudiantes()"
+        [class.activo]="estudSeleccionado()?.idComplexivo === est.idComplexivo"
+        (click)="seleccionar(est)"
+      >
+        <div class="est-nombre">{{ est.nombreEstudiante }}</div>
+        <div class="est-meta">{{ est.carrera }}</div>
+
+        <span class="badge" [ngClass]="badgeEstado(est.estadoInforme)">
+          {{ est.estadoInforme ?? 'Sin informe' }}
+        </span>
+      </div>
+    </div>
+
+    <!-- ───────── DETALLE ───────── -->
+    <div class="panel-detalle" *ngIf="estudSeleccionado(); else sinSeleccion">
+      <div class="det-header">
+        <div>
+          <h3>{{ estudSeleccionado()!.nombreEstudiante }}</h3>
+          <p>{{ estudSeleccionado()!.carrera }}</p>
+        </div>
+        <button class="btn-pdf-informe"
+                (click)="verPdfInforme()"
+                *ngIf="informe()"
+                title="Ver PDF del informe">
+          📄 Ver PDF
+        </button>
+      </div>
+
+      <!-- TABS INTERNOS -->
+      <div class="tabs">
+        <button
+          [class.active]="tabInforme()==='informe'"
+          (click)="setTabInforme('informe')"
+        >
+          📄 Informe
+        </button>
+
+        <button
+          [class.active]="tabInforme()==='asesorias'"
+          (click)="setTabInforme('asesorias')"
+        >
+          📝 Asesorías ({{ asesorias().length }})
+        </button>
+      </div>
+
+      <!-- ───────── INFORME ───────── -->
+      <div *ngIf="tabInforme()==='informe'">
+
+        <div class="empty" *ngIf="!informe() && !loading()">
+          El estudiante aún no ha iniciado su informe.
+        </div>
+
+        <div *ngIf="informe() as inf">
+
+          <!-- INFO GENERAL -->
+          <div class="info-band">
+            <span>
+              Estado:
+              <span class="badge" [ngClass]="badgeEstado(inf.estado)">
+                {{ inf.estado }}
+              </span>
+            </span>
+
+            <span *ngIf="inf.observaciones">
+              💬 Obs: <em>{{ inf.observaciones }}</em>
+            </span>
+          </div>
+
+          <!-- SECCIONES -->
+          <div class="informe-secciones">
+
+            <div class="seccion" *ngIf="inf.titulo">
+              <h4>Título</h4>
+              <p>{{ inf.titulo }}</p>
+            </div>
+
+            <div class="seccion" *ngIf="inf.planteamientoProblema">
+              <h4>Planteamiento</h4>
+              <p>{{ inf.planteamientoProblema }}</p>
+            </div>
+
+            <div class="seccion" *ngIf="inf.objetivos">
+              <h4>Objetivos</h4>
+              <p>{{ inf.objetivos }}</p>
+            </div>
+
+            <div class="seccion" *ngIf="inf.marcoTeorico">
+              <h4>Marco Teórico</h4>
+              <p>{{ inf.marcoTeorico }}</p>
+            </div>
+
+            <div class="seccion" *ngIf="inf.metodologia">
+              <h4>Metodología</h4>
+              <p>{{ inf.metodologia }}</p>
+            </div>
+
+            <div class="seccion" *ngIf="inf.resultados">
+              <h4>Resultados</h4>
+              <p>{{ inf.resultados }}</p>
+            </div>
+
+            <div class="seccion" *ngIf="inf.conclusiones">
+              <h4>Conclusiones</h4>
+              <p>{{ inf.conclusiones }}</p>
+            </div>
+
+          </div>
+
+          <!-- ───────── ACCIONES ───────── -->
+          <div class="acciones" *ngIf="inf.estado === 'ENTREGADO'">
+
+            <h4>Revisión del informe</h4>
+
+            <!-- APROBAR -->
+            <div class="decision-block aprobar-block">
+              <div class="form-row">
+                <label>Observación (opcional)</label>
+                <input [(ngModel)]="obsAprobar" placeholder="Comentario..." />
+              </div>
+
+              <button
+                class="btn-aprobar"
+                (click)="aprobarInforme()"
+                [disabled]="loading()"
+              >
+                ✅ Aprobar informe
+              </button>
+            </div>
+
+            <div class="o-separator">— o —</div>
+
+            <!-- RECHAZAR -->
+            <div class="decision-block rechazar-block">
+
+              <button
+                class="btn-rechazar-toggle"
+                (click)="mostrarFormRechazo = !mostrarFormRechazo"
+              >
+                {{ mostrarFormRechazo ? '▲ Ocultar' : '❌ Rechazar informe' }}
+              </button>
+
+              <div *ngIf="mostrarFormRechazo" class="form-rechazo">
+                <label>Motivo <strong>(requerido)</strong></label>
+
+                <textarea
+                  [(ngModel)]="obsRechazar"
+                  rows="3"
+                  placeholder="Qué debe corregir..."
+                ></textarea>
+
+                <button
+                  class="btn-rechazar"
+                  (click)="rechazarInforme()"
+                  [disabled]="loading()"
+                >
+                  Confirmar rechazo
+                </button>
+              </div>
+
+            </div>
+
+          </div>
+
+          <!-- ESTADOS -->
+          <div class="alert ok" *ngIf="inf.estado === 'APROBADO'">
+            ✅ Informe aprobado.
+          </div>
+
+          <div class="alert error" *ngIf="inf.estado === 'RECHAZADO'">
+            ❌ Informe rechazado. El estudiante debe corregirlo.
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ───────── ASESORÍAS ───────── -->
+      <div *ngIf="tabInforme()==='asesorias'">
+
+        <div class="form-asesoria">
+          <h4>Registrar asesoría</h4>
+
+          <div class="form-row">
+            <label>Observaciones de la sesión</label>
+
+            <textarea
+              [(ngModel)]="obsAsesoria"
+              rows="3"
+              placeholder="Temas tratados, acuerdos..."
+            ></textarea>
+          </div>
+
+          <button
+            class="btn-primary"
+            (click)="registrarAsesoria()"
+            [disabled]="loading()"
+          >
+            + Registrar asesoría
+          </button>
+        </div>
+
+        <div class="empty" *ngIf="asesorias().length === 0">
+          No hay asesorías registradas.
+        </div>
+
+        <div class="asesoria-card" *ngFor="let a of asesorias()">
+          <div class="asesoria-fecha">{{ a.fecha | date:'dd/MM/yyyy HH:mm' }}</div>
+          <div class="asesoria-obs">{{ a.observaciones }}</div>
+          <div class="asesoria-docente">{{ a.nombreDocente }}</div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- SIN SELECCIÓN -->
+    <ng-template #sinSeleccion>
+      <div class="panel-detalle empty-panel">
+        <p>Selecciona un estudiante para ver su informe.</p>
+      </div>
+    </ng-template>
+
+  </div>
+</div>

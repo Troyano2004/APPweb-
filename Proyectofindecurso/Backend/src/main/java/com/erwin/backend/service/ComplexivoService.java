@@ -1,3 +1,4 @@
+
 package com.erwin.backend.service;
 
 import com.erwin.backend.dtos.ComplexivoDtos.*;
@@ -15,7 +16,9 @@ public class ComplexivoService {
 
     private static final String NOMBRE_MODALIDAD_COMPLEXIVO = "Examen Complexivo";
 
-    private final ComplexivoDocenteAsignacionRepository asignacionRepo;
+    private final ComplexivoDocenteAsignacionRepository asignacionRepo;   // tabla vieja — mantener
+    private final ComplexivoDt1AsignacionRepository     dt1Repo;          // NUEVA tabla DT1
+    private final ComplexivoDt2AsignacionRepository     dt2Repo;          // NUEVA tabla DT2
     private final ComplexivoTitulacionRepository        complexivoRepo;
     private final ComplexivoInformePracticoRepository   informeRepo;
     private final ComplexivoTutoriaRepository           complexivoTutoriaRepo;
@@ -30,6 +33,8 @@ public class ComplexivoService {
 
     public ComplexivoService(
             ComplexivoDocenteAsignacionRepository asignacionRepo,
+            ComplexivoDt1AsignacionRepository dt1Repo,
+            ComplexivoDt2AsignacionRepository dt2Repo,
             ComplexivoTitulacionRepository complexivoRepo,
             ComplexivoInformePracticoRepository informeRepo,
             ComplexivoTutoriaRepository complexivoTutoriaRepo,
@@ -42,6 +47,8 @@ public class ComplexivoService {
             EleccionTitulacionRepository eleccionRepo,
             PropuestaTitulacionRepository propuestaRepo) {
         this.asignacionRepo        = asignacionRepo;
+        this.dt1Repo               = dt1Repo;
+        this.dt2Repo               = dt2Repo;
         this.complexivoRepo        = complexivoRepo;
         this.informeRepo           = informeRepo;
         this.complexivoTutoriaRepo = complexivoTutoriaRepo;
@@ -56,76 +63,131 @@ public class ComplexivoService {
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // COORDINADOR — info para asignación
+    // COORDINADOR — info DT1 (para asignar docente de Titulación I)
     // ═══════════════════════════════════════════════════════════════
     @Transactional(readOnly = true)
-    public InfoCoordinadorComplexivoDto infoCoordinador(Integer idUsuario) {
-        PeriodoTitulacion periodo = periodoRepo
-                .findFirstByActivoTrueOrderByIdPeriodoDesc()
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST, "NO_HAY_PERIODO_ACTIVO"));
-
-        Coordinador coord = coordinadorRepo
-                .findByUsuario_IdUsuarioAndActivoTrue(idUsuario)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.FORBIDDEN, "NO_ES_COORDINADOR_O_NO_ACTIVO"));
-
-        Carrera carrera = coord.getCarrera();
-
-        List<DocenteOpcionDto> docentes = docenteRepo.findAll()
-                .stream()
-                .map(d -> new DocenteOpcionDto(
-                        d.getIdDocente(),
-                        d.getUsuario().getNombres() + " " + d.getUsuario().getApellidos()))
-                .toList();
+    public InfoCoordinadorDt1Dto infoCoordinadorDt1(Integer idUsuario) {
+        PeriodoTitulacion periodo = getPeriodoActivo();
+        Carrera carrera = getCarreraCoordinador(idUsuario);
+        List<DocenteOpcionDto> docentes = getTodosDocentes();
 
         List<EstudianteComplexivoSinDocenteDto> sinDocente = eleccionRepo
                 .findByCarrera_IdCarreraAndModalidad_NombreAndPeriodo_IdPeriodoAndEstado(
-                        carrera.getIdCarrera(),
-                        NOMBRE_MODALIDAD_COMPLEXIVO,
+                        carrera.getIdCarrera(), NOMBRE_MODALIDAD_COMPLEXIVO,
                         periodo.getIdPeriodo(), "ACTIVA")
                 .stream()
-                .filter(e -> !asignacionRepo
-                        .existsByEstudiante_IdEstudianteAndPeriodo_IdPeriodoAndActivoTrue(
-                                e.getEstudiante().getIdEstudiante(), periodo.getIdPeriodo()))
-                .map(e -> {
-                    Estudiante est = e.getEstudiante();
-                    String nombre = est.getUsuario().getNombres()
-                            + " " + est.getUsuario().getApellidos();
-                    String estadoCt = complexivoRepo
-                            .findByEstudiante_IdEstudianteAndPeriodo_IdPeriodo(
-                                    est.getIdEstudiante(), periodo.getIdPeriodo())
-                            .map(ComplexivoTitulacion::getEstado).orElse("INSCRITO");
-                    return new EstudianteComplexivoSinDocenteDto(
-                            est.getIdEstudiante(), nombre,
-                            carrera.getNombre(), NOMBRE_MODALIDAD_COMPLEXIVO, estadoCt);
-                }).toList();
+                .filter(e -> !dt1Repo.existsByEstudiante_IdEstudianteAndPeriodo_IdPeriodoAndActivoTrue(
+                        e.getEstudiante().getIdEstudiante(), periodo.getIdPeriodo()))
+                .map(e -> toEstudianteSinDocente(e.getEstudiante(), carrera, periodo))
+                .toList();
 
-        List<ComplexivoDocenteAsignacionResponse> actuales = asignacionRepo
+        List<ComplexivoDocenteAsignacionResponse> actuales = dt1Repo
                 .findByCarreraAndPeriodoActivo(carrera.getIdCarrera(), periodo.getIdPeriodo())
-                .stream().map(this::toAsignacionResponse).toList();
+                .stream().map(this::toDt1AsignacionResponse).toList();
 
-        return new InfoCoordinadorComplexivoDto(
+        return new InfoCoordinadorDt1Dto(
                 carrera.getIdCarrera(), carrera.getNombre(),
                 periodo.getIdPeriodo(), periodo.getDescripcion(),
                 docentes, sinDocente, actuales);
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // COORDINADOR — asignar docente
+    // COORDINADOR — info DT2 (para asignar docente de Titulación II)
+    // ═══════════════════════════════════════════════════════════════
+    @Transactional(readOnly = true)
+    public InfoCoordinadorDt2Dto infoCoordinadorDt2(Integer idUsuario) {
+        PeriodoTitulacion periodo = getPeriodoActivo();
+        Carrera carrera = getCarreraCoordinador(idUsuario);
+        List<DocenteOpcionDto> docentes = getTodosDocentes();
+
+        // Mostrar TODOS los estudiantes del periodo con propuesta aprobada
+        // sin filtrar por carrera (puede haber inconsistencias en el campo carrera)
+        List<EstudianteComplexivoSinDocenteDto> sinDocente = complexivoRepo
+                .findAll().stream()
+                .filter(ct -> ct.getPeriodo().getIdPeriodo().equals(periodo.getIdPeriodo())
+                        && !dt2Repo.existsByEstudiante_IdEstudianteAndPeriodo_IdPeriodoAndActivoTrue(
+                        ct.getEstudiante().getIdEstudiante(), periodo.getIdPeriodo()))
+                .map(ct -> {
+                    Estudiante est = ct.getEstudiante();
+                    String nombre = est.getUsuario().getNombres()
+                            + " " + est.getUsuario().getApellidos();
+                    String nombreCarrera = ct.getCarrera() != null
+                            ? ct.getCarrera().getNombre()
+                            : (est.getCarrera() != null ? est.getCarrera().getNombre() : "Sin carrera");
+                    return new EstudianteComplexivoSinDocenteDto(
+                            est.getIdEstudiante(), nombre,
+                            nombreCarrera, NOMBRE_MODALIDAD_COMPLEXIVO,
+                            ct.getEstado());
+                }).toList();
+
+        // Para los ya asignados también mostrar todos del periodo
+        List<ComplexivoDocenteAsignacionResponse> actuales = dt2Repo
+                .findByPeriodo_IdPeriodoAndActivoTrue(periodo.getIdPeriodo())
+                .stream().map(this::toDt2AsignacionResponse).toList();
+
+        return new InfoCoordinadorDt2Dto(
+                carrera.getIdCarrera(), carrera.getNombre(),
+                periodo.getIdPeriodo(), periodo.getDescripcion(),
+                docentes, sinDocente, actuales);
+    }
+    // ═══════════════════════════════════════════════════════════════
+// ESTUDIANTE — crear registro complexivo si no existe (failsafe)
+// ═══════════════════════════════════════════════════════════════
+    @Transactional
+    public EstadoComplexivoEstudianteDto iniciarComplexivoDesdeEleccion(Integer idEstudiante) {
+        PeriodoTitulacion periodo = getPeriodoActivo();
+
+        // Si ya existe no hacer nada
+        if (complexivoRepo.findByEstudiante_IdEstudianteAndPeriodo_IdPeriodo(
+                idEstudiante, periodo.getIdPeriodo()).isPresent()) {
+            return estadoEstudiante(idEstudiante);
+        }
+
+        Estudiante estudiante = estudianteRepo.findById(idEstudiante)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "ESTUDIANTE_NO_ENCONTRADO"));
+
+        // Buscar carrera desde eleccion o directamente del estudiante
+        Carrera carrera;
+        EleccionTitulacion eleccion = null;
+        var eleccionOpt = eleccionRepo
+                .findByEstudiante_IdEstudianteAndPeriodo_IdPeriodo(
+                        idEstudiante, periodo.getIdPeriodo());
+
+        if (eleccionOpt.isPresent()) {
+            eleccion = eleccionOpt.get();
+            carrera = eleccion.getCarrera();
+        } else {
+            carrera = estudiante.getCarrera();
+        }
+
+        if (carrera == null)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "ESTUDIANTE_SIN_CARRERA");
+
+        ComplexivoTitulacion ct = new ComplexivoTitulacion();
+        ct.setEstudiante(estudiante);
+        ct.setCarrera(carrera);
+        ct.setPeriodo(periodo);
+        ct.setEleccion(eleccion);
+        ct.setEstado("EN_CURSO");
+        ct.setFechaInscripcion(java.time.LocalDate.now());
+        complexivoRepo.save(ct);
+
+        return estadoEstudiante(idEstudiante);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // COORDINADOR — asignar DT1
     // ═══════════════════════════════════════════════════════════════
     @Transactional
-    public ComplexivoDocenteAsignacionResponse asignarDocente(
-            AsignarDocenteComplexivoRequest req) {
-        PeriodoTitulacion periodo = periodoRepo
-                .findFirstByActivoTrueOrderByIdPeriodoDesc()
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST, "NO_HAY_PERIODO_ACTIVO"));
+    public ComplexivoDocenteAsignacionResponse asignarDt1(AsignarDt1ComplexivoRequest req) {
+        PeriodoTitulacion periodo = getPeriodoActivo();
 
-        if (asignacionRepo.existsByEstudiante_IdEstudianteAndPeriodo_IdPeriodoAndActivoTrue(
+        if (dt1Repo.existsByEstudiante_IdEstudianteAndPeriodo_IdPeriodoAndActivoTrue(
                 req.idEstudiante(), periodo.getIdPeriodo()))
             throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "ESTUDIANTE_YA_TIENE_DOCENTE_ASIGNADO");
+                    "ESTUDIANTE_YA_TIENE_DOCENTE_DT1_ASIGNADO");
 
         Estudiante estudiante = estudianteRepo.findById(req.idEstudiante())
                 .orElseThrow(() -> new ResponseStatusException(
@@ -136,21 +198,80 @@ public class ComplexivoService {
         Usuario asignadoPor = usuarioRepo.findById(req.idUsuarioCoordinador())
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "USUARIO_NO_ENCONTRADO"));
-        EleccionTitulacion eleccion = eleccionRepo
-                .findByEstudiante_IdEstudianteAndPeriodo_IdPeriodo(
-                        req.idEstudiante(), periodo.getIdPeriodo())
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST, "ESTUDIANTE_SIN_ELECCION_EN_PERIODO"));
 
-        ComplexivoDocenteAsignacion asig = new ComplexivoDocenteAsignacion();
+        // Buscar elección — si no existe usar la carrera del estudiante directamente
+        Carrera carrera;
+        var eleccionOpt = eleccionRepo
+                .findByEstudiante_IdEstudianteAndPeriodo_IdPeriodo(
+                        req.idEstudiante(), periodo.getIdPeriodo());
+
+        if (eleccionOpt.isPresent()) {
+            carrera = eleccionOpt.get().getCarrera();
+        } else {
+            // Fallback: usar la carrera directa del estudiante
+            carrera = estudiante.getCarrera();
+            if (carrera == null)
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "ESTUDIANTE_SIN_CARRERA_ASIGNADA");
+        }
+
+        ComplexivoDt1Asignacion asig = new ComplexivoDt1Asignacion();
         asig.setEstudiante(estudiante);
         asig.setDocente(docente);
         asig.setPeriodo(periodo);
-        asig.setCarrera(eleccion.getCarrera());
+        asig.setCarrera(carrera);
         asig.setAsignadoPor(asignadoPor);
         asig.setObservacion(req.observacion());
         asig.setActivo(true);
-        return toAsignacionResponse(asignacionRepo.save(asig));
+        return toDt1AsignacionResponse(dt1Repo.save(asig));
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // COORDINADOR — asignar DT2
+    // ═══════════════════════════════════════════════════════════════
+    @Transactional
+    public ComplexivoDocenteAsignacionResponse asignarDt2(AsignarDt2ComplexivoRequest req) {
+        PeriodoTitulacion periodo = getPeriodoActivo();
+
+        if (dt2Repo.existsByEstudiante_IdEstudianteAndPeriodo_IdPeriodoAndActivoTrue(
+                req.idEstudiante(), periodo.getIdPeriodo()))
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "ESTUDIANTE_YA_TIENE_DOCENTE_DT2_ASIGNADO");
+
+        Estudiante estudiante = estudianteRepo.findById(req.idEstudiante())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "ESTUDIANTE_NO_ENCONTRADO"));
+        Docente docente = docenteRepo.findById(req.idDocente())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "DOCENTE_NO_ENCONTRADO"));
+        Usuario asignadoPor = usuarioRepo.findById(req.idUsuarioCoordinador())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "USUARIO_NO_ENCONTRADO"));
+
+        // Buscar carrera desde complexivo_titulacion (propuesta aprobada)
+        // Si no existe, usar carrera directa del estudiante
+        Carrera carrera;
+        var ctOpt = complexivoRepo.findByEstudiante_IdEstudianteAndPeriodo_IdPeriodo(
+                req.idEstudiante(), periodo.getIdPeriodo());
+
+        if (ctOpt.isPresent()) {
+            carrera = ctOpt.get().getCarrera();
+        } else {
+            carrera = estudiante.getCarrera();
+            if (carrera == null)
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "ESTUDIANTE_SIN_CARRERA_Y_SIN_PROPUESTA_APROBADA");
+        }
+
+        ComplexivoDt2Asignacion asig = new ComplexivoDt2Asignacion();
+        asig.setEstudiante(estudiante);
+        asig.setDocente(docente);
+        asig.setPeriodo(periodo);
+        asig.setCarrera(carrera);
+        asig.setAsignadoPor(asignadoPor);
+        asig.setObservacion(req.observacion());
+        asig.setActivo(true);
+        return toDt2AsignacionResponse(dt2Repo.save(asig));
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -172,17 +293,18 @@ public class ComplexivoService {
 
         ComplexivoTitulacion ct = ctOpt.get();
         var informeOpt = informeRepo.findByComplexivo_IdComplexivo(ct.getIdComplexivo());
-        var docOpt = asignacionRepo
-                .findByEstudiante_IdEstudianteAndPeriodo_IdPeriodoAndActivoTrue(
-                        idEstudiante, periodo.getIdPeriodo());
+
+        // Para el estudiante mostramos el docente DT2 (quien revisa el informe)
+        var dt2Opt = dt2Repo.findByEstudiante_IdEstudianteAndPeriodo_IdPeriodoAndActivoTrue(
+                idEstudiante, periodo.getIdPeriodo());
 
         return new EstadoComplexivoEstudianteDto(
                 true, ct.getIdComplexivo(), ct.getEstado(),
                 informeOpt.isPresent(),
                 informeOpt.map(ComplexivoInformePractico::getIdInforme).orElse(null),
                 informeOpt.map(ComplexivoInformePractico::getEstado).orElse(null),
-                docOpt.isPresent(),
-                docOpt.map(a -> a.getDocente().getUsuario().getNombres()
+                dt2Opt.isPresent(),
+                dt2Opt.map(a -> a.getDocente().getUsuario().getNombres()
                         + " " + a.getDocente().getUsuario().getApellidos()).orElse(null));
     }
 
@@ -191,10 +313,7 @@ public class ComplexivoService {
     // ═══════════════════════════════════════════════════════════════
     @Transactional
     public ComplexivoInformeDto getInforme(Integer idEstudiante) {
-        PeriodoTitulacion periodo = periodoRepo
-                .findFirstByActivoTrueOrderByIdPeriodoDesc()
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST, "NO_HAY_PERIODO_ACTIVO"));
+        PeriodoTitulacion periodo = getPeriodoActivo();
 
         ComplexivoTitulacion ct = complexivoRepo
                 .findByEstudiante_IdEstudianteAndPeriodo_IdPeriodo(
@@ -224,11 +343,7 @@ public class ComplexivoService {
     @Transactional
     public ComplexivoInformeDto guardarInforme(Integer idEstudiante,
                                                ComplexivoInformeUpdateRequest req) {
-        PeriodoTitulacion periodo = periodoRepo
-                .findFirstByActivoTrueOrderByIdPeriodoDesc()
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST, "NO_HAY_PERIODO_ACTIVO"));
-
+        PeriodoTitulacion periodo = getPeriodoActivo();
         ComplexivoTitulacion ct = complexivoRepo
                 .findByEstudiante_IdEstudianteAndPeriodo_IdPeriodo(
                         idEstudiante, periodo.getIdPeriodo())
@@ -238,15 +353,21 @@ public class ComplexivoService {
         ComplexivoInformePractico informe = informeRepo
                 .findByComplexivo_IdComplexivo(ct.getIdComplexivo())
                 .orElseGet(() -> {
-                    ComplexivoInformePractico nuevo = new ComplexivoInformePractico();
-                    nuevo.setComplexivo(ct);
-                    nuevo.setEstado("BORRADOR");
-                    return nuevo;
+                    ComplexivoInformePractico n = new ComplexivoInformePractico();
+                    n.setComplexivo(ct);
+                    n.setEstado("BORRADOR");
+                    return n;
                 });
 
-        if (!"BORRADOR".equals(informe.getEstado()))
+        if (!"BORRADOR".equals(informe.getEstado()) && !"RECHAZADO".equals(informe.getEstado()))
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "INFORME_NO_EDITABLE_EN_ESTADO_" + informe.getEstado());
+
+// Si venía RECHAZADO, volvemos a BORRADOR al guardar
+        if ("RECHAZADO".equals(informe.getEstado())) {
+            informe.setEstado("BORRADOR");
+            informe.setObservaciones(null); // limpia la obs anterior al corregir
+        }
 
         informe.setTitulo(req.titulo());
         informe.setPlanteamientoProblema(req.planteamientoProblema());
@@ -264,11 +385,7 @@ public class ComplexivoService {
     // ═══════════════════════════════════════════════════════════════
     @Transactional
     public ComplexivoInformeDto enviarInforme(Integer idEstudiante) {
-        PeriodoTitulacion periodo = periodoRepo
-                .findFirstByActivoTrueOrderByIdPeriodoDesc()
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST, "NO_HAY_PERIODO_ACTIVO"));
-
+        PeriodoTitulacion periodo = getPeriodoActivo();
         ComplexivoTitulacion ct = complexivoRepo
                 .findByEstudiante_IdEstudianteAndPeriodo_IdPeriodo(
                         idEstudiante, periodo.getIdPeriodo())
@@ -289,16 +406,13 @@ public class ComplexivoService {
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // DOCENTE — propuestas de sus estudiantes
+    // DT1 — propuestas de sus estudiantes (para revisar en Aprobación)
     // ═══════════════════════════════════════════════════════════════
     @Transactional(readOnly = true)
-    public List<PropuestaComplexivoDto> propuestasDeDocente(Integer idDocente) {
-        PeriodoTitulacion periodo = periodoRepo
-                .findFirstByActivoTrueOrderByIdPeriodoDesc()
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST, "NO_HAY_PERIODO_ACTIVO"));
+    public List<PropuestaComplexivoDto> propuestasDeDocenteDt1(Integer idDocente) {
+        PeriodoTitulacion periodo = getPeriodoActivo();
 
-        List<Integer> idsEstudiantes = asignacionRepo
+        List<Integer> idsEstudiantes = dt1Repo
                 .findByPeriodo_IdPeriodoAndActivoTrue(periodo.getIdPeriodo())
                 .stream()
                 .filter(a -> a.getDocente().getIdDocente().equals(idDocente))
@@ -308,7 +422,8 @@ public class ComplexivoService {
         if (idsEstudiantes.isEmpty()) return List.of();
 
         return propuestaRepo.findAll().stream()
-                .filter(p -> idsEstudiantes.contains(p.getEstudiante().getIdEstudiante())
+                .filter(p -> p.getEstudiante() != null
+                        && idsEstudiantes.contains(p.getEstudiante().getIdEstudiante())
                         && p.getEleccion() != null
                         && periodo.getIdPeriodo().equals(
                         p.getEleccion().getPeriodo().getIdPeriodo()))
@@ -317,36 +432,32 @@ public class ComplexivoService {
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // DOCENTE — aprobar o rechazar propuesta
+    // DT1 — aprobar o rechazar propuesta
     // ═══════════════════════════════════════════════════════════════
     @Transactional
-    public PropuestaComplexivoDto decidirPropuesta(Integer idDocente,
-                                                   Integer idPropuesta,
-                                                   DecisionPropuestaComplexivoRequest req) {
+    public PropuestaComplexivoDto decidirPropuestaDt1(Integer idDocente,
+                                                      Integer idPropuesta,
+                                                      DecisionPropuestaComplexivoRequest req) {
         PropuestaTitulacion propuesta = propuestaRepo.findById(idPropuesta)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "PROPUESTA_NO_ENCONTRADA"));
 
-        PeriodoTitulacion periodo = periodoRepo
-                .findFirstByActivoTrueOrderByIdPeriodoDesc()
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST, "NO_HAY_PERIODO_ACTIVO"));
+        PeriodoTitulacion periodo = getPeriodoActivo();
 
-        boolean esDocente = asignacionRepo
-                .findByPeriodo_IdPeriodoAndActivoTrue(periodo.getIdPeriodo())
+        boolean esDt1 = dt1Repo.findByPeriodo_IdPeriodoAndActivoTrue(periodo.getIdPeriodo())
                 .stream()
                 .anyMatch(a -> a.getDocente().getIdDocente().equals(idDocente)
                         && a.getEstudiante().getIdEstudiante()
                         .equals(propuesta.getEstudiante().getIdEstudiante()));
 
-        if (!esDocente)
+        if (!esDt1)
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                    "NO_ERES_EL_DOCENTE_DE_ESTE_ESTUDIANTE");
+                    "NO_ERES_EL_DOCENTE_DT1_DE_ESTE_ESTUDIANTE");
 
-        String estado = (req.estado() == null ? "" : req.estado().trim().toUpperCase());
+        String estado = req.estado() == null ? "" : req.estado().trim().toUpperCase();
         if (!estado.equals("APROBADA") && !estado.equals("RECHAZADA"))
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "ESTADO_INVALIDO_USE_APROBADA_O_RECHAZADA");
+                    "ESTADO_INVALIDO");
 
         Integer actualizado = propuestaRepo.registrarDecisionStored(
                 idPropuesta, estado, req.observaciones(), java.time.LocalDate.now());
@@ -357,14 +468,12 @@ public class ComplexivoService {
 
         PropuestaTitulacion actualizada = propuestaRepo.findById(idPropuesta).orElseThrow();
 
-        // Si fue APROBADA → crear complexivo_titulacion si no existe
         if ("APROBADA".equals(actualizada.getEstado())) {
             boolean yaExiste = complexivoRepo
                     .findByEstudiante_IdEstudianteAndPeriodo_IdPeriodo(
                             actualizada.getEstudiante().getIdEstudiante(),
                             periodo.getIdPeriodo())
                     .isPresent();
-
             if (!yaExiste) {
                 ComplexivoTitulacion ct = new ComplexivoTitulacion();
                 ct.setEstudiante(actualizada.getEstudiante());
@@ -381,35 +490,28 @@ public class ComplexivoService {
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // DOCENTE — lista de sus estudiantes (informes)
+    // DT2 — lista de sus estudiantes (informes)
     // ═══════════════════════════════════════════════════════════════
     @Transactional(readOnly = true)
-    public List<EstudianteDeDocenteDto> estudiantesDeDocente(Integer idDocente) {
-        PeriodoTitulacion periodo = periodoRepo
-                .findFirstByActivoTrueOrderByIdPeriodoDesc()
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST, "NO_HAY_PERIODO_ACTIVO"));
+    public List<EstudianteDeDocenteDto> estudiantesDeDocenteDt2(Integer idDocente) {
+        PeriodoTitulacion periodo = getPeriodoActivo();
 
-        return asignacionRepo.findByPeriodo_IdPeriodoAndActivoTrue(periodo.getIdPeriodo())
+        return dt2Repo.findByPeriodo_IdPeriodoAndActivoTrue(periodo.getIdPeriodo())
                 .stream()
                 .filter(a -> a.getDocente().getIdDocente().equals(idDocente))
                 .map(a -> {
                     Estudiante est = a.getEstudiante();
                     String nombre = est.getUsuario().getNombres()
                             + " " + est.getUsuario().getApellidos();
-
                     var ctOpt = complexivoRepo.findByEstudiante_IdEstudianteAndPeriodo_IdPeriodo(
                             est.getIdEstudiante(), periodo.getIdPeriodo());
                     if (ctOpt.isEmpty()) return null;
-
                     ComplexivoTitulacion ct = ctOpt.get();
                     var infOpt = informeRepo.findByComplexivo_IdComplexivo(ct.getIdComplexivo());
-
                     return new EstudianteDeDocenteDto(
                             ct.getIdComplexivo(), est.getIdEstudiante(), nombre,
                             est.getCarrera() != null ? est.getCarrera().getNombre() : "",
-                            ct.getEstado(),
-                            infOpt.isPresent(),
+                            ct.getEstado(), infOpt.isPresent(),
                             infOpt.map(ComplexivoInformePractico::getEstado).orElse(null));
                 })
                 .filter(d -> d != null)
@@ -417,11 +519,10 @@ public class ComplexivoService {
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // DOCENTE — ver informe de un estudiante
+    // DT2 — ver informe de un estudiante
     // ═══════════════════════════════════════════════════════════════
     @Transactional(readOnly = true)
-    public ComplexivoInformeDto getInformeParaDocente(Integer idDocente,
-                                                      Integer idComplexivo) {
+    public ComplexivoInformeDto getInformeParaDt2(Integer idDocente, Integer idComplexivo) {
         ComplexivoTitulacion ct = complexivoRepo.findById(idComplexivo)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "COMPLEXIVO_NO_ENCONTRADO"));
@@ -437,7 +538,7 @@ public class ComplexivoService {
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // DOCENTE — aprobar o rechazar informe
+    // DT2 — aprobar o rechazar informe
     // ═══════════════════════════════════════════════════════════════
     @Transactional
     public ComplexivoInformeDto revisarInforme(Integer idDocente, Integer idInforme,
@@ -461,7 +562,7 @@ public class ComplexivoService {
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // DOCENTE — registrar asesoría
+    // DT2 — registrar asesoría
     // ═══════════════════════════════════════════════════════════════
     @Transactional
     public ComplexivoAsesoriaDto registrarAsesoria(Integer idDocente,
@@ -486,12 +587,11 @@ public class ComplexivoService {
         return new ComplexivoAsesoriaDto(
                 saved.getIdAsesoria(), idComplexivo,
                 saved.getFecha().toString(), saved.getObservaciones(),
-                docente.getUsuario().getNombres() + " "
-                        + docente.getUsuario().getApellidos());
+                docente.getUsuario().getNombres() + " " + docente.getUsuario().getApellidos());
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // DOCENTE — listar asesorías
+    // DT2 — listar asesorías
     // ═══════════════════════════════════════════════════════════════
     @Transactional(readOnly = true)
     public List<ComplexivoAsesoriaDto> listarAsesorias(Integer idDocente,
@@ -508,10 +608,81 @@ public class ComplexivoService {
     }
 
     // ═══════════════════════════════════════════════════════════════
+    // Métodos legacy — mantener compatibilidad con código existente
+    // ═══════════════════════════════════════════════════════════════
+    @Transactional(readOnly = true)
+    public InfoCoordinadorComplexivoDto infoCoordinador(Integer idUsuario) {
+        InfoCoordinadorDt1Dto dt1 = infoCoordinadorDt1(idUsuario);
+        return new InfoCoordinadorComplexivoDto(
+                dt1.idCarrera(), dt1.carrera(), dt1.idPeriodo(), dt1.periodo(),
+                dt1.docentesDisponibles(), dt1.estudiantesSinDocente(), dt1.asignacionesActuales());
+    }
+
+    @Transactional
+    public ComplexivoDocenteAsignacionResponse asignarDocente(AsignarDocenteComplexivoRequest req) {
+        return asignarDt1(new AsignarDt1ComplexivoRequest(
+                req.idEstudiante(), req.idDocente(),
+                req.idUsuarioCoordinador(), req.observacion()));
+    }
+
+    @Transactional(readOnly = true)
+    public List<PropuestaComplexivoDto> propuestasDeDocente(Integer idDocente) {
+        return propuestasDeDocenteDt1(idDocente);
+    }
+
+    @Transactional
+    public PropuestaComplexivoDto decidirPropuesta(Integer idDocente, Integer idPropuesta,
+                                                   DecisionPropuestaComplexivoRequest req) {
+        return decidirPropuestaDt1(idDocente, idPropuesta, req);
+    }
+
+    @Transactional(readOnly = true)
+    public List<EstudianteDeDocenteDto> estudiantesDeDocente(Integer idDocente) {
+        return estudiantesDeDocenteDt2(idDocente);
+    }
+
+    @Transactional(readOnly = true)
+    public ComplexivoInformeDto getInformeParaDocente(Integer idDocente, Integer idComplexivo) {
+        return getInformeParaDt2(idDocente, idComplexivo);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
     // Helpers privados
     // ═══════════════════════════════════════════════════════════════
-    private ComplexivoDocenteAsignacionResponse toAsignacionResponse(
-            ComplexivoDocenteAsignacion a) {
+    private PeriodoTitulacion getPeriodoActivo() {
+        return periodoRepo.findFirstByActivoTrueOrderByIdPeriodoDesc()
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST, "NO_HAY_PERIODO_ACTIVO"));
+    }
+
+    private Carrera getCarreraCoordinador(Integer idUsuario) {
+        return coordinadorRepo.findByUsuario_IdUsuarioAndActivoTrue(idUsuario)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.FORBIDDEN, "NO_ES_COORDINADOR_O_NO_ACTIVO"))
+                .getCarrera();
+    }
+
+    private List<DocenteOpcionDto> getTodosDocentes() {
+        return docenteRepo.findAll().stream()
+                .map(d -> new DocenteOpcionDto(d.getIdDocente(),
+                        d.getUsuario().getNombres() + " " + d.getUsuario().getApellidos()))
+                .toList();
+    }
+
+    private EstudianteComplexivoSinDocenteDto toEstudianteSinDocente(
+            Estudiante est, Carrera carrera, PeriodoTitulacion periodo) {
+        String nombre = est.getUsuario().getNombres() + " " + est.getUsuario().getApellidos();
+        String estadoCt = complexivoRepo
+                .findByEstudiante_IdEstudianteAndPeriodo_IdPeriodo(
+                        est.getIdEstudiante(), periodo.getIdPeriodo())
+                .map(ComplexivoTitulacion::getEstado).orElse("INSCRITO");
+        return new EstudianteComplexivoSinDocenteDto(
+                est.getIdEstudiante(), nombre,
+                carrera.getNombre(), NOMBRE_MODALIDAD_COMPLEXIVO, estadoCt);
+    }
+
+    private ComplexivoDocenteAsignacionResponse toDt1AsignacionResponse(
+            ComplexivoDt1Asignacion a) {
         return new ComplexivoDocenteAsignacionResponse(
                 a.getIdAsignacion(),
                 a.getEstudiante().getIdEstudiante(),
@@ -520,47 +691,50 @@ public class ComplexivoService {
                 a.getDocente().getIdDocente(),
                 a.getDocente().getUsuario().getNombres() + " "
                         + a.getDocente().getUsuario().getApellidos(),
-                a.getPeriodo().getIdPeriodo(),
-                a.getPeriodo().getDescripcion(),
-                a.getFechaAsignacion(),
-                a.getActivo());
+                a.getPeriodo().getIdPeriodo(), a.getPeriodo().getDescripcion(),
+                a.getFechaAsignacion(), a.getActivo());
+    }
+
+    private ComplexivoDocenteAsignacionResponse toDt2AsignacionResponse(
+            ComplexivoDt2Asignacion a) {
+        return new ComplexivoDocenteAsignacionResponse(
+                a.getIdAsignacion(),
+                a.getEstudiante().getIdEstudiante(),
+                a.getEstudiante().getUsuario().getNombres() + " "
+                        + a.getEstudiante().getUsuario().getApellidos(),
+                a.getDocente().getIdDocente(),
+                a.getDocente().getUsuario().getNombres() + " "
+                        + a.getDocente().getUsuario().getApellidos(),
+                a.getPeriodo().getIdPeriodo(), a.getPeriodo().getDescripcion(),
+                a.getFechaAsignacion(), a.getActivo());
     }
 
     private ComplexivoInformeDto toInformeDto(ComplexivoInformePractico i,
-                                              Integer idEstudiante,
-                                              Integer idPeriodo) {
-        var docOpt = asignacionRepo
-                .findByEstudiante_IdEstudianteAndPeriodo_IdPeriodoAndActivoTrue(
-                        idEstudiante, idPeriodo);
+                                              Integer idEstudiante, Integer idPeriodo) {
+        var dt2Opt = dt2Repo.findByEstudiante_IdEstudianteAndPeriodo_IdPeriodoAndActivoTrue(
+                idEstudiante, idPeriodo);
         return new ComplexivoInformeDto(
                 i.getIdInforme(), i.getComplexivo().getIdComplexivo(),
                 i.getTitulo(), i.getPlanteamientoProblema(), i.getObjetivos(),
                 i.getMarcoTeorico(), i.getMetodologia(), i.getResultados(),
                 i.getConclusiones(), i.getBibliografia(),
                 i.getEstado(), i.getObservaciones(),
-                docOpt.map(a -> a.getDocente().getIdDocente()).orElse(null),
-                docOpt.map(a -> a.getDocente().getUsuario().getNombres()
+                dt2Opt.map(a -> a.getDocente().getIdDocente()).orElse(null),
+                dt2Opt.map(a -> a.getDocente().getUsuario().getNombres()
                         + " " + a.getDocente().getUsuario().getApellidos()).orElse(null));
     }
 
     private PropuestaComplexivoDto toPropuestaComplexivoDto(PropuestaTitulacion p) {
         String nombreEst = p.getEstudiante() != null && p.getEstudiante().getUsuario() != null
                 ? p.getEstudiante().getUsuario().getNombres() + " "
-                + p.getEstudiante().getUsuario().getApellidos()
-                : "";
+                + p.getEstudiante().getUsuario().getApellidos() : "";
         return new PropuestaComplexivoDto(
                 p.getIdPropuesta(),
                 p.getEstudiante() != null ? p.getEstudiante().getIdEstudiante() : null,
-                nombreEst,
-                p.getTitulo(),
-                p.getPlanteamientoProblema(),
-                p.getObjetivosGenerales(),
-                p.getObjetivosEspecificos(),
-                p.getMetodologia(),
-                p.getResultadosEsperados(),
-                p.getBibliografia(),
-                p.getEstado(),
-                p.getObservacionesComision(),
+                nombreEst, p.getTitulo(), p.getPlanteamientoProblema(),
+                p.getObjetivosGenerales(), p.getObjetivosEspecificos(),
+                p.getMetodologia(), p.getResultadosEsperados(), p.getBibliografia(),
+                p.getEstado(), p.getObservacionesComision(),
                 p.getFechaEnvio() != null ? p.getFechaEnvio().toString() : null);
     }
 }

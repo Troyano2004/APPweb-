@@ -1,10 +1,14 @@
-import { Component, OnInit, signal } from '@angular/core';
+
+import { Component, OnInit, signal, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { finalize } from 'rxjs/operators';
 import {
   ComisionTemasService,
   EstadoModalidadDto,
+  FeedbackIAPropuesta,
   PropuestaTemaDto,
+  RevisionPropuestaIAResponse,
   TemaBancoDto
 } from '../../../services/comision-temas';
 import { CatalogoCarrera, CatalogosService } from '../../../services/catalogos';
@@ -18,22 +22,32 @@ import { getSessionEntityId, getSessionUser } from '../../../services/session';
   styleUrl: './propuesta-nueva.component.scss'
 })
 export class PropuestaNuevaComponent implements OnInit {
+
   idEstudiante = getSessionEntityId(getSessionUser(), 'estudiante');
 
-  historial = signal<PropuestaTemaDto[]>([]);
-  temasDisponibles = signal<TemaBancoDto[]>([]);
-  loading = signal(false);
-  loadingTemas = signal(false);
-  loadingCarreras = signal(false);
-  loadingModalidad = signal(false);
-  saving = signal(false);
-  guardandoModalidad = signal(false);
-  error = signal<string | null>(null);
-  ok = signal<string | null>(null);
-  estadoModalidad = signal<EstadoModalidadDto | null>(null);
+  historial           = signal<PropuestaTemaDto[]>([]);
+  temasDisponibles    = signal<TemaBancoDto[]>([]);
+  loading             = signal(false);
+  loadingTemas        = signal(false);
+  loadingCarreras     = signal(false);
+  loadingModalidad    = signal(false);
+  saving              = signal(false);
+  guardandoModalidad  = signal(false);
+  error               = signal<string | null>(null);
+  ok                  = signal<string | null>(null);
+  estadoModalidad     = signal<EstadoModalidadDto | null>(null);
   modalidadSeleccionada = signal<number | null>(null);
-  carreras = signal<CatalogoCarrera[]>([]);
+  carreras            = signal<CatalogoCarrera[]>([]);
 
+  // ── Estado del panel IA (revisión PREVIA, antes de enviar) ──────────────
+  analizandoIA        = signal(false);
+  respuestaIA         = signal<RevisionPropuestaIAResponse | null>(null);
+  feedbackIA          = signal<FeedbackIAPropuesta | null>(null);
+  errorIA             = signal<string | null>(null);
+  modoIA: 'integral' | 'coherencia' | 'pertinencia' | 'viabilidad' = 'integral';
+  instruccionIA = '';
+
+  // ── Formulario ────────────────────────────────────────────────────────
   form = {
     idCarrera: 1,
     idTema: null as number | null,
@@ -49,7 +63,8 @@ export class PropuestaNuevaComponent implements OnInit {
 
   constructor(
     private readonly api: ComisionTemasService,
-    private readonly catalogosApi: CatalogosService
+    private readonly catalogosApi: CatalogosService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -59,224 +74,266 @@ export class PropuestaNuevaComponent implements OnInit {
     this.cargarHistorial();
   }
 
+  // ── Getters ──────────────────────────────────────────────────────────
+
   get nombreCarreraSeleccionada(): string {
-    const idCarrera = this.form.idCarrera;
-    if (!idCarrera) return '';
-    return this.carreras().find((c) => c.idCarrera === idCarrera)?.nombre ?? '';
+    return this.carreras().find(c => c.idCarrera === this.form.idCarrera)?.nombre ?? '';
   }
 
   get temasFiltradosPorCarrera(): TemaBancoDto[] {
-    const nombreCarrera = this.normalizarTexto(this.nombreCarreraSeleccionada);
-    if (!nombreCarrera) return this.temasDisponibles();
-
-    return this.temasDisponibles().filter((tema) => this.normalizarTexto(tema.carrera) === nombreCarrera);
+    const nombre = this.normalizarTexto(this.nombreCarreraSeleccionada);
+    if (!nombre) return this.temasDisponibles();
+    return this.temasDisponibles().filter(t => this.normalizarTexto(t.carrera) === nombre);
   }
 
   get tieneModalidadSeleccionada(): boolean {
-    if (this.loadingModalidad()) {
-      return false;
-    }
     return this.estadoModalidad()?.tieneModalidad ?? false;
   }
 
-  cargarEstadoModalidad(): void {
-    if (!this.idEstudiante) {
-      this.error.set('No se pudo identificar al estudiante autenticado.');
-      return;
-    }
+  get colorEstado(): Record<string, boolean> {
+    const e = this.feedbackIA()?.estado_evaluacion;
+    return {
+      'estado-aprobable':        e === 'APROBABLE',
+      'estado-requiere-ajustes': e === 'REQUIERE_AJUSTES',
+      'estado-rechazable':       e === 'RECHAZABLE'
+    };
+  }
 
+  get etiquetaModo(): string {
+    const modos: Record<string, string> = {
+      integral:    'Evaluación integral',
+      coherencia:  'Coherencia interna',
+      pertinencia: 'Pertinencia a la carrera',
+      viabilidad:  'Viabilidad del proyecto'
+    };
+    return modos[this.modoIA] ?? 'Integral';
+  }
+
+  /** Muestra el panel IA si ya hay un análisis previo o está analizando */
+  get mostrarPanelIA(): boolean {
+    return this.analizandoIA() || this.feedbackIA() !== null || this.errorIA() !== null;
+  }
+
+  // ── Cargar datos ─────────────────────────────────────────────────────
+
+  cargarEstadoModalidad(): void {
+    if (!this.idEstudiante) { this.error.set('No se pudo identificar al estudiante.'); return; }
     this.loadingModalidad.set(true);
     this.api.obtenerEstadoModalidad(this.idEstudiante).subscribe({
-      next: (estado) => {
+      next: estado => {
         this.estadoModalidad.set(estado);
         this.modalidadSeleccionada.set(estado.idModalidad);
-        if (estado.idCarrera) {
-          this.form.idCarrera = estado.idCarrera;
-        }
-        this.onSeleccionCarrera();
         this.loadingModalidad.set(false);
+        this.cdr.detectChanges();
       },
-      error: (err) => {
-        this.error.set(err?.error?.message ?? 'No se pudo validar la modalidad de titulación.');
-        this.loadingModalidad.set(false);
-      }
+      error: () => { this.loadingModalidad.set(false); this.cdr.detectChanges(); }
     });
   }
 
   cargarCarreras(): void {
     this.loadingCarreras.set(true);
     this.catalogosApi.listarCarreras().subscribe({
-      next: (resp) => {
-        const carreras = resp ?? [];
-        this.carreras.set(carreras);
-
-        if (!carreras.some((c) => c.idCarrera === this.form.idCarrera)) {
-          this.form.idCarrera = carreras[0]?.idCarrera ?? this.form.idCarrera;
-        }
-
-        this.onSeleccionCarrera();
+      next: data => {
+        this.carreras.set(data ?? []);
+        if (data?.length > 0) this.form.idCarrera = data[0].idCarrera;
         this.loadingCarreras.set(false);
+        this.cdr.detectChanges();
       },
-      error: (err) => {
-        this.error.set(err?.error?.message ?? 'No se pudo cargar el catálogo de carreras.');
-        this.loadingCarreras.set(false);
-      }
-    });
-  }
-
-  guardarModalidad(): void {
-    if (!this.idEstudiante) {
-      this.error.set('No se pudo identificar al estudiante autenticado.');
-      return;
-    }
-
-    const idModalidad = this.modalidadSeleccionada();
-    if (!idModalidad) {
-      this.error.set('Selecciona una modalidad para continuar.');
-      return;
-    }
-
-    this.guardandoModalidad.set(true);
-    this.error.set(null);
-    this.ok.set(null);
-
-    this.api.seleccionarModalidad(this.idEstudiante, idModalidad).subscribe({
-      next: (estado) => {
-        this.estadoModalidad.set(estado);
-        this.ok.set(`Modalidad registrada correctamente: ${estado.modalidad}. Ya puedes enviar tu propuesta.`);
-        this.guardandoModalidad.set(false);
-      },
-      error: (err) => {
-        this.error.set(err?.error?.message ?? 'No se pudo guardar la modalidad seleccionada.');
-        this.guardandoModalidad.set(false);
-      }
+      error: () => { this.loadingCarreras.set(false); this.cdr.detectChanges(); }
     });
   }
 
   cargarTemasDisponibles(): void {
-    if (!this.idEstudiante) {
-      this.error.set('No se pudo identificar al estudiante autenticado.');
-      return;
-    }
-
+    if (!this.idEstudiante) return;
     this.loadingTemas.set(true);
     this.api.listarTemasDisponiblesEstudiante(this.idEstudiante).subscribe({
-      next: (resp) => {
-        this.temasDisponibles.set(resp ?? []);
+      next: data => {
+        this.temasDisponibles.set(data ?? []);
         this.loadingTemas.set(false);
+        this.cdr.detectChanges();
       },
-      error: (err) => {
-        this.error.set(err?.error?.message ?? 'No se pudo cargar los temas disponibles.');
-        this.loadingTemas.set(false);
-      }
+      error: () => { this.loadingTemas.set(false); this.cdr.detectChanges(); }
     });
   }
 
-  onSeleccionCarrera(): void {
-    const temaSeleccionado = this.temasFiltradosPorCarrera.some((tema) => tema.idTema === this.form.idTema);
-    if (!temaSeleccionado) {
-      this.form.idTema = null;
-    }
-  }
+  onSeleccionCarrera(): void { this.form.idTema = null; }
 
   onSeleccionTema(): void {
-    const idTema = this.form.idTema;
-    if (!idTema) return;
-
-    const tema = this.temasDisponibles().find((t) => t.idTema === idTema);
+    const tema = this.temasDisponibles().find(t => t.idTema === this.form.idTema);
     if (!tema) return;
-
-    if (!this.form.titulo.trim()) {
-      this.form.titulo = tema.titulo;
-    }
-    if (!this.form.temaInvestigacion.trim()) {
-      this.form.temaInvestigacion = tema.titulo;
-    }
+    if (!this.form.titulo.trim())            this.form.titulo = tema.titulo;
+    if (!this.form.temaInvestigacion.trim()) this.form.temaInvestigacion = tema.titulo;
   }
 
   cargarHistorial(): void {
-    if (!this.idEstudiante) {
-      this.error.set('No se pudo identificar al estudiante autenticado.');
-      return;
-    }
-
+    if (!this.idEstudiante) return;
     this.loading.set(true);
     this.api.listarPropuestasEstudiante(this.idEstudiante).subscribe({
-      next: (resp) => {
+      next: resp => {
         this.historial.set(resp ?? []);
         this.loading.set(false);
+        this.cdr.detectChanges();
       },
-      error: (err) => {
-        this.error.set(err?.error?.message ?? 'No se pudo cargar historial de propuestas.');
+      error: err => {
+        this.error.set(err?.error?.message ?? 'No se pudo cargar historial.');
         this.loading.set(false);
+        this.cdr.detectChanges();
       }
     });
   }
 
-  enviar(): void {
+  // ── Modalidad ─────────────────────────────────────────────────────────
+
+  guardarModalidad(): void {
+    const idModalidad = this.modalidadSeleccionada();
+    if (!this.idEstudiante) { this.error.set('No se pudo identificar al estudiante.'); return; }
+    if (!idModalidad) { this.error.set('Selecciona una modalidad.'); return; }
+
+    this.guardandoModalidad.set(true);
+    this.api.seleccionarModalidad(this.idEstudiante, idModalidad).subscribe({
+      next: (estado) => {
+        this.estadoModalidad.set(estado);
+        this.modalidadSeleccionada.set(estado.idModalidad);
+        this.ok.set(`Modalidad registrada: ${estado.modalidad}. Ya puedes redactar tu propuesta.`);
+        this.guardandoModalidad.set(false);
+        this.cdr.detectChanges();
+      },
+      error: err => {
+        this.error.set(err?.error?.message ?? 'Error al guardar la modalidad.');
+        this.guardandoModalidad.set(false);
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  // ── IA: Analizar ANTES de enviar ──────────────────────────────────────
+
+  /**
+   * Llama al endpoint /api/revision-ia/propuesta/previa
+   * con los datos del formulario en memoria (SIN guardar en BD).
+   */
+  analizarConIA(): void {
     if (!this.idEstudiante) {
-      this.error.set('No se pudo identificar al estudiante autenticado.');
+      this.errorIA.set('No se pudo identificar al estudiante.');
+      this.cdr.detectChanges();
       return;
     }
-
-    if (!this.tieneModalidadSeleccionada) {
-      this.error.set('Antes de registrar la propuesta debes seleccionar tu modalidad de titulación.');
-      return;
-    }
-
     if (!this.form.titulo.trim()) {
-      this.error.set('El título es obligatorio.');
+      this.errorIA.set('Escribe al menos el título antes de analizar.');
+      this.cdr.detectChanges();
       return;
     }
+
+    this.analizandoIA.set(true);
+    this.errorIA.set(null);
+    this.feedbackIA.set(null);
+    this.respuestaIA.set(null);
+    this.cdr.detectChanges();
+
+    this.api.evaluarPropuestaConIAPrevia({
+      idEstudiante:          this.idEstudiante,
+      titulo:                this.form.titulo,
+      temaInvestigacion:     this.form.temaInvestigacion,
+      planteamientoProblema: this.form.planteamientoProblema,
+      objetivosGenerales:    this.form.objetivosGenerales,
+      objetivosEspecificos:  this.form.objetivosEspecificos,
+      metodologia:           this.form.metodologia,
+      resultadosEsperados:   this.form.resultadosEsperados,
+      bibliografia:          this.form.bibliografia,
+      modo:                  this.modoIA,
+      instruccionAdicional:  this.instruccionIA.trim() || undefined
+    })
+      .pipe(finalize(() => {
+        this.analizandoIA.set(false);
+        this.cdr.detectChanges();
+      }))
+      .subscribe({
+        next: resp => {
+          this.respuestaIA.set(resp);
+          try {
+            const parsed: FeedbackIAPropuesta = JSON.parse(resp.feedbackIa);
+            this.feedbackIA.set(parsed);
+          } catch {
+            this.errorIA.set('La IA respondió en formato inesperado. Intente nuevamente.');
+          }
+          this.cdr.detectChanges();
+        },
+        error: err => {
+          this.errorIA.set(err?.error?.message ?? 'Error al conectarse con el servicio de IA.');
+          this.cdr.detectChanges();
+        }
+      });
+  }
+
+  limpiarIA(): void {
+    this.feedbackIA.set(null);
+    this.respuestaIA.set(null);
+    this.errorIA.set(null);
+    this.instruccionIA = '';
+    this.modoIA = 'integral';
+    this.cdr.detectChanges();
+  }
+
+  // ── Enviar propuesta (solo después de revisar con IA) ─────────────────
+
+  enviar(): void {
+    if (!this.idEstudiante) { this.error.set('No se pudo identificar al estudiante.'); return; }
+    if (!this.tieneModalidadSeleccionada) {
+      this.error.set('Antes de registrar la propuesta debes seleccionar tu modalidad.'); return;
+    }
+    if (!this.form.titulo.trim()) { this.error.set('El título es obligatorio.'); return; }
 
     this.saving.set(true);
     this.error.set(null);
     this.ok.set(null);
 
-    this.api
-      .crearPropuestaEstudiante(this.idEstudiante, {
-        idCarrera: this.form.idCarrera,
-        idTema: this.form.idTema ?? undefined,
-        titulo: this.form.titulo,
-        temaInvestigacion: this.form.temaInvestigacion,
-        planteamientoProblema: this.form.planteamientoProblema,
-        objetivosGenerales: this.form.objetivosGenerales,
-        objetivosEspecificos: this.form.objetivosEspecificos,
-        metodologia: this.form.metodologia,
-        resultadosEsperados: this.form.resultadosEsperados,
-        bibliografia: this.form.bibliografia
-      })
-      .subscribe({
-        next: () => {
-          this.ok.set('Tu propuesta fue enviada a la comisión para revisión.');
-          this.form = {
-            idCarrera: this.form.idCarrera,
-            idTema: null,
-            titulo: '',
-            temaInvestigacion: '',
-            planteamientoProblema: '',
-            objetivosGenerales: '',
-            objetivosEspecificos: '',
-            metodologia: '',
-            resultadosEsperados: '',
-            bibliografia: ''
-          };
-          this.saving.set(false);
-          this.cargarHistorial();
-        },
-        error: (err) => {
-          this.error.set(err?.error?.message ?? 'No se pudo enviar la propuesta.');
-          this.saving.set(false);
-          this.cargarEstadoModalidad();
-        }
-      });
+    this.api.crearPropuestaEstudiante(this.idEstudiante, {
+      idCarrera:             this.form.idCarrera,
+      idTema:                this.form.idTema ?? undefined,
+      titulo:                this.form.titulo,
+      temaInvestigacion:     this.form.temaInvestigacion,
+      planteamientoProblema: this.form.planteamientoProblema,
+      objetivosGenerales:    this.form.objetivosGenerales,
+      objetivosEspecificos:  this.form.objetivosEspecificos,
+      metodologia:           this.form.metodologia,
+      resultadosEsperados:   this.form.resultadosEsperados,
+      bibliografia:          this.form.bibliografia
+    }).subscribe({
+      next: () => {
+        this.ok.set('✅ Propuesta enviada a la comisión con éxito.');
+        this.resetForm();
+        this.limpiarIA();
+        this.saving.set(false);
+        this.cdr.detectChanges();
+        this.cargarHistorial();
+      },
+      error: err => {
+        this.error.set(err?.error?.message ?? 'No se pudo enviar la propuesta.');
+        this.saving.set(false);
+        this.cdr.detectChanges();
+        this.cargarEstadoModalidad();
+      }
+    });
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────────────
+
+  private resetForm(): void {
+    this.form = {
+      idCarrera: this.form.idCarrera,
+      idTema: null,
+      titulo: '',
+      temaInvestigacion: '',
+      planteamientoProblema: '',
+      objetivosGenerales: '',
+      objetivosEspecificos: '',
+      metodologia: '',
+      resultadosEsperados: '',
+      bibliografia: ''
+    };
   }
 
   private normalizarTexto(valor: string | null | undefined): string {
-    return (valor ?? '')
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .trim()
-      .toLowerCase();
+    return (valor ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
   }
 }

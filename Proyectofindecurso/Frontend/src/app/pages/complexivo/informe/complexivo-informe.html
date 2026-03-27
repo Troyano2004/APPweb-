@@ -1,91 +1,285 @@
-<section class="module-page">
-  <header class="module-header">
-    <div>
-      <h1>Informe Práctico — Examen Complexivo</h1>
-      <p>Desarrolla tu caso práctico de titulación para la modalidad Examen Complexivo.</p>
-    </div>
-    <div class="header-actions" *ngIf="informe() as inf">
-      <span class="badge" [ngClass]="badgeClass(inf.estado)">{{ inf.estado ?? 'BORRADOR' }}</span>
-      <span class="docente-badge" *ngIf="inf.nombreDocente">
-        👨‍🏫 Docente: <strong>{{ inf.nombreDocente }}</strong>
-      </span>
-      <span class="docente-badge warn" *ngIf="!inf.nombreDocente">
-        ⚠️ Sin docente asignado aún
-      </span>
-    </div>
-  </header>
 
-  <div class="alert error" *ngIf="error()">{{ error() }}</div>
-  <div class="alert ok"    *ngIf="ok()">{{ ok() }}</div>
-  <div class="loading-bar" *ngIf="loading()">Cargando informe...</div>
+<section class="cx-informe">
 
-  <div class="card" *ngIf="!loading()">
-    <!-- Toolbar -->
-    <div class="toolbar">
-      <button class="btn primary" (click)="guardar()" [disabled]="saving() || !puedeEditar()">
-        {{ saving() ? 'Guardando...' : '✔ Guardar' }}
-      </button>
-      <button class="btn outline" (click)="enviar()"
-              [disabled]="saving() || !puedeEditar() || informe()?.estado === 'ENTREGADO'">
-        → Enviar a revisión
-      </button>
+  <!-- ══ CABECERA PRINCIPAL ══════════════════════════════════════ -->
+  <div class="cx-hero">
+    <div class="cx-hero__left">
+      <div class="cx-hero__label">EXAMEN COMPLEXIVO · TITULACIÓN II</div>
+      <h1 class="cx-hero__title">Informe Práctico</h1>
+      <p class="cx-hero__sub">Desarrolla y presenta tu caso práctico de titulación.</p>
     </div>
 
-    <!-- Observaciones del docente -->
-    <div class="alert warn" *ngIf="informe()?.observaciones">
-      <strong>Observaciones del docente:</strong> {{ informe()?.observaciones }}
-    </div>
+    <div class="cx-hero__right" *ngIf="informe() as inf">
+      <!-- Estado badge grande -->
+      <div class="cx-estado" [ngClass]="'cx-estado--' + (inf.estado ?? 'BORRADOR').toLowerCase()">
+        <span class="cx-estado__icon">
+          <ng-container *ngIf="inf.estado === 'BORRADOR'">✏️</ng-container>
+          <ng-container *ngIf="inf.estado === 'ENTREGADO'">📬</ng-container>
+          <ng-container *ngIf="inf.estado === 'APROBADO'">✅</ng-container>
+          <ng-container *ngIf="inf.estado === 'RECHAZADO'">❌</ng-container>
+        </span>
+        <div>
+          <div class="cx-estado__label">Estado</div>
+          <div class="cx-estado__value">{{ inf.estado ?? 'BORRADOR' }}</div>
+        </div>
+      </div>
 
-    <!-- Tabs -->
-    <nav class="tabs">
-      <button [class.active]="activeTab()==='portada'"    (click)="setTab('portada')">Portada / Problema</button>
-      <button [class.active]="activeTab()==='marco'"      (click)="setTab('marco')">Marco / Metodología</button>
-      <button [class.active]="activeTab()==='resultados'" (click)="setTab('resultados')">Resultados</button>
-      <button [class.active]="activeTab()==='conclusiones'" (click)="setTab('conclusiones')">Conclusiones / Bibliografía</button>
-    </nav>
-
-    <!-- Tab: Portada -->
-    <div class="tab-content" *ngIf="activeTab()==='portada'">
-      <h3>Título del caso práctico</h3>
-      <textarea [(ngModel)]="form.titulo" rows="2" [disabled]="!puedeEditar()"
-                placeholder="Ingresa el título de tu informe práctico..."></textarea>
-
-      <h3>Planteamiento del Problema</h3>
-      <textarea [(ngModel)]="form.planteamientoProblema" rows="6" [disabled]="!puedeEditar()"
-                placeholder="Describe el problema que vas a resolver..."></textarea>
-
-      <h3>Objetivos</h3>
-      <textarea [(ngModel)]="form.objetivos" rows="5" [disabled]="!puedeEditar()"
-                placeholder="Objetivo general y específicos..."></textarea>
-    </div>
-
-    <!-- Tab: Marco / Metodología -->
-    <div class="tab-content" *ngIf="activeTab()==='marco'">
-      <h3>Marco Teórico</h3>
-      <textarea [(ngModel)]="form.marcoTeorico" rows="8" [disabled]="!puedeEditar()"
-                placeholder="Fundamentos teóricos del caso..."></textarea>
-
-      <h3>Metodología</h3>
-      <textarea [(ngModel)]="form.metodologia" rows="8" [disabled]="!puedeEditar()"
-                placeholder="Métodos y herramientas utilizados..."></textarea>
-    </div>
-
-    <!-- Tab: Resultados -->
-    <div class="tab-content" *ngIf="activeTab()==='resultados'">
-      <h3>Resultados y Discusión</h3>
-      <textarea [(ngModel)]="form.resultados" rows="12" [disabled]="!puedeEditar()"
-                placeholder="Presenta los resultados obtenidos y su análisis..."></textarea>
-    </div>
-
-    <!-- Tab: Conclusiones -->
-    <div class="tab-content" *ngIf="activeTab()==='conclusiones'">
-      <h3>Conclusiones</h3>
-      <textarea [(ngModel)]="form.conclusiones" rows="6" [disabled]="!puedeEditar()"
-                placeholder="Conclusiones del caso práctico..."></textarea>
-
-      <h3>Bibliografía</h3>
-      <textarea [(ngModel)]="form.bibliografia" rows="5" [disabled]="!puedeEditar()"
-                placeholder="Referencias bibliográficas..."></textarea>
+      <!-- Docente asignado -->
+      <div class="cx-docente-card" *ngIf="inf.nombreDocente">
+        <div class="cx-docente-card__avatar">{{ inf.nombreDocente[0] }}</div>
+        <div>
+          <div class="cx-docente-card__label">Docente DT2 asignado</div>
+          <div class="cx-docente-card__name">{{ inf.nombreDocente }}</div>
+        </div>
+      </div>
+      <div class="cx-docente-card cx-docente-card--warn" *ngIf="!inf.nombreDocente">
+        <div class="cx-docente-card__avatar warn">⚠</div>
+        <div>
+          <div class="cx-docente-card__label">Docente DT2</div>
+          <div class="cx-docente-card__name">Sin asignar aún</div>
+        </div>
+      </div>
     </div>
   </div>
+
+  <!-- ══ ALERTAS ════════════════════════════════════════════════ -->
+  <div class="cx-alert cx-alert--error" *ngIf="error()">
+    <span>⚠️</span> {{ error() }}
+  </div>
+  <div class="cx-alert cx-alert--ok" *ngIf="ok()">
+    <span>✅</span> {{ ok() }}
+  </div>
+
+  <div class="cx-loading" *ngIf="loading()">
+    <div class="cx-loading__bar"></div>
+    <span>Cargando tu informe...</span>
+  </div>
+
+  <!-- ══ CUERPO PRINCIPAL ════════════════════════════════════════ -->
+  <div class="cx-body" *ngIf="!loading()">
+
+    <!-- ── Observación del docente ── -->
+    <div class="cx-obs-docente" *ngIf="informe()?.observaciones">
+      <div class="cx-obs-docente__icon">💬</div>
+      <div>
+        <div class="cx-obs-docente__titulo">Observación del docente</div>
+        <div class="cx-obs-docente__texto">{{ informe()!.observaciones }}</div>
+      </div>
+    </div>
+
+    <!-- ── Título fijo de la propuesta aprobada ── -->
+    <div class="cx-titulo-bloque" *ngIf="informe()?.titulo && informe()!.titulo!.length > 0">
+      <div class="cx-titulo-bloque__label">📌 Tema de tu informe (aprobado)</div>
+      <div class="cx-titulo-bloque__valor">{{ informe()!.titulo }}</div>
+    </div>
+
+    <!-- ── Barra de herramientas ── -->
+    <!-- ── Barra de herramientas ── -->
+    <div class="cx-toolbar">
+      <div class="cx-toolbar__left">
+        <button class="cx-btn cx-btn--primary"
+                (click)="guardar()"
+                [disabled]="saving() || !puedeEditar()">
+          <span *ngIf="!saving()">💾 Guardar</span>
+          <span *ngIf="saving()">⏳ Guardando...</span>
+        </button>
+        <button class="cx-btn cx-btn--outline"
+                (click)="enviar()"
+                [disabled]="saving() || !puedeEditar()">
+          📤 Enviar a revisión
+        </button>
+
+        <!-- Separador visual -->
+        <div class="cx-toolbar__sep" *ngIf="puedeEditar()"></div>
+
+        <!-- Botón Recargar -->
+        <button class="cx-btn cx-btn--ghost"
+                (click)="recargar()"
+                *ngIf="puedeEditar()"
+                title="Descartar cambios y recargar desde el servidor">
+          🔄 Recargar
+        </button>
+
+        <!-- Botón Copiar propuesta -->
+        <button class="cx-btn cx-btn--ghost"
+                (click)="copiarDesdePropuesta()"
+                *ngIf="puedeEditar() && informe()?.titulo"
+                title="Copiar título desde la propuesta aprobada">
+          📋 Copiar propuesta
+        </button>
+      </div>
+
+      <div class="cx-toolbar__right">
+        <div class="cx-progress">
+          <div class="cx-progress__label">Completado</div>
+          <div class="cx-progress__bar">
+            <div class="cx-progress__fill" [style.width]="progreso + '%'"></div>
+          </div>
+          <div class="cx-progress__pct">{{ progreso }}%</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mensaje informativo debajo del toolbar -->
+    <div class="cx-info-msg" *ngIf="mensajeInfo()">
+      {{ mensajeInfo() }}
+    </div>
+
+    <!-- ── Estado no editable ── -->
+    <div class="cx-readonly-notice" *ngIf="!puedeEditar()">
+      <span *ngIf="informe()?.estado === 'ENTREGADO'">
+        📬 Informe enviado al docente. Espera la revisión.
+      </span>
+      <span *ngIf="informe()?.estado === 'APROBADO'">
+        🎉 ¡Informe aprobado! Tu docente lo ha validado.
+      </span>
+      <span *ngIf="informe()?.estado === 'RECHAZADO'">
+        🔄 Informe rechazado. Revisa las observaciones y vuelve a enviar.
+      </span>
+    </div>
+
+    <!-- ── Tabs de navegación ── -->
+    <nav class="cx-tabs">
+      <button class="cx-tab" [class.cx-tab--active]="activeTab()==='portada'"
+              (click)="setTab('portada')">
+        <span class="cx-tab__num">01</span>
+        <span class="cx-tab__txt">Portada & Problema</span>
+      </button>
+      <button class="cx-tab" [class.cx-tab--active]="activeTab()==='marco'"
+              (click)="setTab('marco')">
+        <span class="cx-tab__num">02</span>
+        <span class="cx-tab__txt">Marco & Metodología</span>
+      </button>
+      <button class="cx-tab" [class.cx-tab--active]="activeTab()==='resultados'"
+              (click)="setTab('resultados')">
+        <span class="cx-tab__num">03</span>
+        <span class="cx-tab__txt">Resultados</span>
+      </button>
+      <button class="cx-tab" [class.cx-tab--active]="activeTab()==='conclusiones'"
+              (click)="setTab('conclusiones')">
+        <span class="cx-tab__num">04</span>
+        <span class="cx-tab__txt">Conclusiones</span>
+      </button>
+    </nav>
+
+    <!-- ── Contenido de tabs ── -->
+    <div class="cx-panel">
+
+      <!-- TAB 01 -->
+      <div class="cx-tab-content" *ngIf="activeTab()==='portada'">
+        <div class="cx-field">
+          <label class="cx-label">
+            <span class="cx-label__num">1.1</span>
+            Título del Caso Práctico
+            <span class="cx-label__req">requerido</span>
+          </label>
+          <textarea class="cx-textarea"
+                    [(ngModel)]="form.titulo" rows="2"
+                    [disabled]="!puedeEditar()"
+                    placeholder="Escribe el título de tu informe práctico..."></textarea>
+        </div>
+
+        <div class="cx-field">
+          <label class="cx-label">
+            <span class="cx-label__num">1.2</span>
+            Planteamiento del Problema
+            <span class="cx-label__req">requerido</span>
+          </label>
+          <p class="cx-field__hint">Describe el problema que vas a resolver, su contexto e importancia.</p>
+          <textarea class="cx-textarea"
+                    [(ngModel)]="form.planteamientoProblema" rows="7"
+                    [disabled]="!puedeEditar()"
+                    placeholder="Describe el problema que identificaste y su impacto..."></textarea>
+        </div>
+
+        <div class="cx-field">
+          <label class="cx-label">
+            <span class="cx-label__num">1.3</span>
+            Objetivos
+            <span class="cx-label__req">requerido</span>
+          </label>
+          <p class="cx-field__hint">Incluye el objetivo general y los objetivos específicos.</p>
+          <textarea class="cx-textarea"
+                    [(ngModel)]="form.objetivos" rows="6"
+                    [disabled]="!puedeEditar()"
+                    placeholder="Objetivo general:&#10;• Objetivo específico 1:&#10;• Objetivo específico 2:"></textarea>
+        </div>
+      </div>
+
+      <!-- TAB 02 -->
+      <div class="cx-tab-content" *ngIf="activeTab()==='marco'">
+        <div class="cx-field">
+          <label class="cx-label">
+            <span class="cx-label__num">2.1</span>
+            Marco Teórico
+            <span class="cx-label__req">requerido</span>
+          </label>
+          <p class="cx-field__hint">Fundamenta teóricamente tu caso con conceptos, autores y referencias actuales.</p>
+          <textarea class="cx-textarea"
+                    [(ngModel)]="form.marcoTeorico" rows="10"
+                    [disabled]="!puedeEditar()"
+                    placeholder="Desarrolla los fundamentos teóricos que sustentan tu caso..."></textarea>
+        </div>
+
+        <div class="cx-field">
+          <label class="cx-label">
+            <span class="cx-label__num">2.2</span>
+            Metodología
+            <span class="cx-label__req">requerido</span>
+          </label>
+          <p class="cx-field__hint">Describe el tipo de investigación, técnicas, herramientas y procedimientos usados.</p>
+          <textarea class="cx-textarea"
+                    [(ngModel)]="form.metodologia" rows="8"
+                    [disabled]="!puedeEditar()"
+                    placeholder="Tipo de investigación, técnicas utilizadas, herramientas, procedimientos..."></textarea>
+        </div>
+      </div>
+
+      <!-- TAB 03 -->
+      <div class="cx-tab-content" *ngIf="activeTab()==='resultados'">
+        <div class="cx-field">
+          <label class="cx-label">
+            <span class="cx-label__num">3.1</span>
+            Resultados y Discusión
+            <span class="cx-label__req">requerido</span>
+          </label>
+          <p class="cx-field__hint">Presenta los resultados obtenidos, interprétalos y discute su relevancia.</p>
+          <textarea class="cx-textarea"
+                    [(ngModel)]="form.resultados" rows="14"
+                    [disabled]="!puedeEditar()"
+                    placeholder="Resultados obtenidos y su análisis..."></textarea>
+        </div>
+      </div>
+
+      <!-- TAB 04 -->
+      <div class="cx-tab-content" *ngIf="activeTab()==='conclusiones'">
+        <div class="cx-field">
+          <label class="cx-label">
+            <span class="cx-label__num">4.1</span>
+            Conclusiones
+            <span class="cx-label__req">requerido</span>
+          </label>
+          <p class="cx-field__hint">Síntesis de los hallazgos más importantes y su relación con los objetivos planteados.</p>
+          <textarea class="cx-textarea"
+                    [(ngModel)]="form.conclusiones" rows="7"
+                    [disabled]="!puedeEditar()"
+                    placeholder="Conclusiones del caso práctico..."></textarea>
+        </div>
+
+        <div class="cx-field">
+          <label class="cx-label">
+            <span class="cx-label__num">4.2</span>
+            Bibliografía
+          </label>
+          <p class="cx-field__hint">Usa formato.</p>
+          <textarea class="cx-textarea"
+                    [(ngModel)]="form.bibliografia" rows="6"
+                    [disabled]="!puedeEditar()"
+                    placeholder="Autor, A. (año). Título. Editorial.&#10;Autor, B. (año). Título. https://..."></textarea>
+        </div>
+      </div>
+
+    </div><!-- /cx-panel -->
+  </div><!-- /cx-body -->
+
 </section>

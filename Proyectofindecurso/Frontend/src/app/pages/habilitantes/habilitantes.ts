@@ -1,4 +1,3 @@
-
 import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -8,6 +7,7 @@ import {
   HabilitanteDto,
   ResumenHabilitacionDto,
   SubirHabilitanteRequest,
+  SubirAntiplagioPorDirectorRequest,
   ValidarHabilitanteRequest
 } from '../../services/documento-habilitante.service';
 
@@ -24,7 +24,7 @@ type RolView = 'estudiante' | 'director' | 'coordinador';
 })
 export class DocumentosHabilitantesComponent implements OnInit {
 
-  readonly rol = signal<RolView>('estudiante');
+  readonly rol       = signal<RolView>('estudiante');
   readonly idEntidad = signal<number | null>(null);
 
   loading  = signal(false);
@@ -40,6 +40,17 @@ export class DocumentosHabilitantesComponent implements OnInit {
   uploadingFile    = signal(false);
   archivoUrl       = signal<string | null>(null);
   archivoNombre    = signal<string | null>(null);
+
+  // Modal antiplagio — exclusivo del Director (Art. 57 num.2)
+  modalAntiplagio     = signal(false);
+  antiplagioPct       = signal<number | null>(null);
+  antiplagioUrl       = signal<string | null>(null);
+  antiplagioNombre    = signal<string | null>(null);
+  antiplagioProyecto  = signal<number | null>(null);
+  uploadingAntiplagio = signal(false);
+
+  // indica si el estudiante es de modalidad Complexivo
+  esComplexivo = false;
 
   formSubir!: FormGroup;
   formValidar!: FormGroup;
@@ -59,44 +70,63 @@ export class DocumentosHabilitantesComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.detectarRol();
     this.buildForms();
-    this.cargarDatos();
+    this.detectarRol();
   }
 
+  // ── Detectar rol y modalidad ────────────────────────────────
   private detectarRol(): void {
-    const user = getSessionUser();
+    const user   = getSessionUser();
     const rolRaw = String(user?.['rol'] ?? '')
-      .replace('ROLE_', '')
-      .trim()
-      .toUpperCase();
+      .replace('ROLE_', '').trim().toUpperCase();
 
     if (rolRaw === 'ESTUDIANTE') {
       this.rol.set('estudiante');
-      this.idEntidad.set(getSessionEntityId(user, 'estudiante'));
-    } else if (rolRaw === 'DOCENTE') {
+      const idEst = getSessionEntityId(user, 'estudiante');
+      this.idEntidad.set(idEst);
+
+      if (!idEst) {
+        this.error.set('No se identificó al estudiante.');
+        return;
+      }
+
+      // Detectar si es complexivo consultando el endpoint
+      this.api.getResumenComplexivo(idEst).subscribe({
+        next: () => {
+          this.esComplexivo = true;
+          this.cargarDatos();
+        },
+        error: () => {
+          this.esComplexivo = false;
+          this.cargarDatos();
+        }
+      });
+
+    } else if (rolRaw === 'DOCENTE' || rolRaw === 'DOCENTE_TITULADO') {
       this.rol.set('director');
       this.idEntidad.set(getSessionEntityId(user, 'docente'));
+      this.cargarDatos();
     } else {
-      // COORDINADOR / ADMIN: no tienen kind propio en getSessionEntityId,
-      // pero su id viene en idDocente o idUsuario (mismas keys que 'docente')
       this.rol.set('coordinador');
       this.idEntidad.set(getSessionEntityId(user, 'docente'));
+      this.cargarDatos();
     }
   }
 
   private buildForms(): void {
-    this.formSubir = this.fb.group({
-      porcentajeCoincidencia: [null],
-      umbralPermitido: [10.0]
-    });
+    // Estudiante: formulario vacío, no hay campos extra
+    this.formSubir = this.fb.group({});
 
+    // Director: validar otros documentos habilitantes
+    // porcentajeCoincidencia se eliminó porque el antiplagio
+    // ya tiene su propio modal independiente (abrirModalAntiplagio)
     this.formValidar = this.fb.group({
       decision:   ['APROBADO', Validators.required],
       comentario: ['']
     });
   }
 
+  // ── Cargar datos ────────────────────────────────────────────
   cargarDatos(): void {
     const id = this.idEntidad();
     if (!id) { this.error.set('No se identificó al usuario.'); return; }
@@ -105,23 +135,35 @@ export class DocumentosHabilitantesComponent implements OnInit {
     this.error.set(null);
 
     if (this.esEstudiante()) {
-      this.api.getResumenEstudiante(id).subscribe({
-        next: (r) => { this.resumen.set(r); this.loading.set(false); },
-        error: (e) => { this.error.set(e?.error?.message ?? 'Error cargando datos'); this.loading.set(false); }
+      const resumen$ = this.esComplexivo
+        ? this.api.getResumenComplexivo(id)
+        : this.api.getResumenEstudiante(id);
+
+      resumen$.subscribe({
+        next:  (r) => { this.resumen.set(r); this.loading.set(false); },
+        error: (e) => {
+          this.error.set(e?.error?.message ?? 'Error cargando datos');
+          this.loading.set(false);
+        }
       });
+
     } else {
       this.api.getPendientesDirector(id).subscribe({
-        next: (p) => { this.pendientes.set(p); this.loading.set(false); },
-        error: (e) => { this.error.set(e?.error?.message ?? 'Error cargando pendientes'); this.loading.set(false); }
+        next:  (p) => { this.pendientes.set(p); this.loading.set(false); },
+        error: (e) => {
+          this.error.set(e?.error?.message ?? 'Error cargando pendientes');
+          this.loading.set(false);
+        }
       });
     }
   }
 
+  // ── Modal subir (Estudiante) ────────────────────────────────
   abrirModalSubir(doc: HabilitanteDto): void {
     this.docSeleccionado.set(doc);
     this.archivoUrl.set(null);
     this.archivoNombre.set(null);
-    this.formSubir.reset({ porcentajeCoincidencia: null, umbralPermitido: 10.0 });
+    this.formSubir.reset();
     this.ok.set(null);
     this.error.set(null);
     this.modalSubirOpen.set(true);
@@ -137,8 +179,14 @@ export class DocumentosHabilitantesComponent implements OnInit {
     const file  = input.files?.[0];
     if (!file) return;
 
-    if (file.type !== 'application/pdf') { this.error.set('Solo se permiten archivos PDF.'); return; }
-    if (file.size > 20 * 1024 * 1024)   { this.error.set('El archivo no debe superar 20 MB.'); return; }
+    if (file.type !== 'application/pdf') {
+      this.error.set('Solo se permiten archivos PDF.');
+      return;
+    }
+    if (file.size > 20 * 1024 * 1024) {
+      this.error.set('El archivo no debe superar 20 MB.');
+      return;
+    }
 
     this.uploadingFile.set(true);
     this.error.set(null);
@@ -162,28 +210,25 @@ export class DocumentosHabilitantesComponent implements OnInit {
     const url    = this.archivoUrl();
     const nombre = this.archivoNombre();
 
-    if (!doc || !id || !url) { this.error.set('Debe seleccionar y subir un archivo PDF primero.'); return; }
-    if (!doc.idProyecto)     { this.error.set('El documento no tiene idProyecto.'); return; }
+    if (!doc || !id || !url) {
+      this.error.set('Debe seleccionar y subir un archivo PDF primero.');
+      return;
+    }
 
     const req: SubirHabilitanteRequest = {
-      idProyecto:    doc.idProyecto,
+      idProyecto:    doc.idProyecto!,
       tipoDocumento: doc.tipoDocumento,
       urlArchivo:    url,
       nombreArchivo: nombre ?? 'documento.pdf'
     };
 
-    if (doc.tipoDocumento === 'CERTIFICADO_ANTIPLAGIO') {
-      const pct = this.formSubir.value.porcentajeCoincidencia;
-      if (pct === null || pct === undefined || pct === '') {
-        this.error.set('Ingrese el porcentaje de coincidencia del reporte COMPILATIO.');
-        return;
-      }
-      req.porcentajeCoincidencia = Number(pct);
-      req.umbralPermitido = Number(this.formSubir.value.umbralPermitido ?? 10);
-    }
-
     this.loading.set(true);
-    this.api.subirDocumento(id, req).subscribe({
+
+    const subir$ = this.esComplexivo
+      ? this.api.subirDocumentoComplexivo(id, req)
+      : this.api.subirDocumento(id, req);
+
+    subir$.subscribe({
       next: () => {
         this.loading.set(false);
         this.ok.set('Documento enviado correctamente.');
@@ -197,6 +242,7 @@ export class DocumentosHabilitantesComponent implements OnInit {
     });
   }
 
+  // ── Modal validar (Director — documentos que NO son antiplagio) ──
   abrirModalValidar(doc: HabilitanteDto): void {
     this.docSeleccionado.set(doc);
     this.formValidar.reset({ decision: 'APROBADO', comentario: '' });
@@ -213,8 +259,15 @@ export class DocumentosHabilitantesComponent implements OnInit {
   confirmarValidacion(): void {
     const doc = this.docSeleccionado();
     const id  = this.idEntidad();
-    if (!doc?.id || !id) { this.error.set('No se encontró el documento o el usuario.'); return; }
-    if (this.formValidar.invalid) { this.formValidar.markAllAsTouched(); return; }
+
+    if (!doc?.id || !id) {
+      this.error.set('No se encontró el documento o el usuario.');
+      return;
+    }
+    if (this.formValidar.invalid) {
+      this.formValidar.markAllAsTouched();
+      return;
+    }
 
     const req: ValidarHabilitanteRequest = {
       decision:   this.formValidar.value.decision,
@@ -236,20 +289,108 @@ export class DocumentosHabilitantesComponent implements OnInit {
     });
   }
 
+  // ── Modal antiplagio (Director — Art. 57 num.2) ─────────────
+  // El Director corre COMPILATIO, emite el certificado firmado
+  // y lo registra aquí directamente. El estudiante no interviene.
+  abrirModalAntiplagio(idProyecto: number): void {
+    this.antiplagioProyecto.set(idProyecto);
+    this.antiplagioPct.set(null);
+    this.antiplagioUrl.set(null);
+    this.antiplagioNombre.set(null);
+    this.ok.set(null);
+    this.error.set(null);
+    this.modalAntiplagio.set(true);
+  }
+
+  cerrarModalAntiplagio(): void {
+    this.modalAntiplagio.set(false);
+    this.antiplagioProyecto.set(null);
+  }
+
+  onFileAntiplagio(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file  = input.files?.[0];
+    if (!file) return;
+    if (file.type !== 'application/pdf') {
+      this.error.set('Solo se permiten archivos PDF.');
+      return;
+    }
+    if (file.size > 20 * 1024 * 1024) {
+      this.error.set('El archivo no debe superar 20 MB.');
+      return;
+    }
+
+    this.uploadingAntiplagio.set(true);
+    this.error.set(null);
+    this.api.uploadArchivo(file).subscribe({
+      next: (res) => {
+        this.antiplagioUrl.set(res.url);
+        this.antiplagioNombre.set(file.name);
+        this.uploadingAntiplagio.set(false);
+      },
+      error: (e) => {
+        this.error.set(e?.error?.message ?? 'Error subiendo archivo');
+        this.uploadingAntiplagio.set(false);
+      }
+    });
+  }
+
+  confirmarAntiplagio(): void {
+    const id     = this.idEntidad();
+    const idProy = this.antiplagioProyecto();
+    const url    = this.antiplagioUrl();
+    const nombre = this.antiplagioNombre();
+    const pct    = this.antiplagioPct();
+
+    if (!id || !idProy || !url) {
+      this.error.set('Debe subir el PDF del certificado primero.');
+      return;
+    }
+    if (pct === null || pct === undefined) {
+      this.error.set('Debe ingresar el porcentaje de coincidencia.');
+      return;
+    }
+
+    const req: SubirAntiplagioPorDirectorRequest = {
+      urlArchivo:             url,
+      nombreArchivo:          nombre ?? 'certificado_antiplagio.pdf',
+      porcentajeCoincidencia: Number(pct)
+    };
+
+    this.loading.set(true);
+    this.api.subirCertificadoAntiplagio(id, idProy, req).subscribe({
+      next: () => {
+        this.loading.set(false);
+        this.ok.set('Certificado antiplagio registrado correctamente.');
+        this.cerrarModalAntiplagio();
+        this.cargarDatos();
+      },
+      error: (e) => {
+        this.loading.set(false);
+        this.error.set(e?.error?.message ?? 'Error al registrar el certificado.');
+      }
+    });
+  }
+
+  // ── Helpers ─────────────────────────────────────────────────
   esAntiplagio(tipo: string): boolean { return tipo === 'CERTIFICADO_ANTIPLAGIO'; }
 
   badgeClass(estado: string): string {
     const map: Record<string, string> = {
-      APROBADO: 'badge-aprobado', RECHAZADO: 'badge-rechazado',
-      ENVIADO:  'badge-enviado',  PENDIENTE: 'badge-pendiente'
+      APROBADO:  'badge-aprobado',
+      RECHAZADO: 'badge-rechazado',
+      ENVIADO:   'badge-enviado',
+      PENDIENTE: 'badge-pendiente'
     };
     return map[estado] ?? 'badge-pendiente';
   }
 
   badgeLabel(estado: string): string {
     const map: Record<string, string> = {
-      APROBADO: '✓ Aprobado', RECHAZADO: '✗ Rechazado',
-      ENVIADO:  '⏳ En revisión', PENDIENTE: '○ Pendiente'
+      APROBADO:  '✓ Aprobado',
+      RECHAZADO: '✗ Rechazado',
+      ENVIADO:   '⏳ En revisión',
+      PENDIENTE: '○ Pendiente'
     };
     return map[estado] ?? '○ Pendiente';
   }

@@ -1,3 +1,4 @@
+
 package com.erwin.backend.controller;
 
 import com.erwin.backend.dtos.ComplexivoDtos.*;
@@ -18,7 +19,31 @@ public class ComplexivoController {
         this.service = service;
     }
 
-    // ── Coordinador ──────────────────────────────────────────────────
+    // ── Coordinador DT1 ──────────────────────────────────────────────
+    @GetMapping("/coordinador/dt1/info")
+    public InfoCoordinadorDt1Dto infoCoordinadorDt1(@RequestParam Integer idUsuario) {
+        return service.infoCoordinadorDt1(idUsuario);
+    }
+
+    @PostMapping("/coordinador/dt1/asignar")
+    public ComplexivoDocenteAsignacionResponse asignarDt1(
+            @RequestBody AsignarDt1ComplexivoRequest req) {
+        return service.asignarDt1(req);
+    }
+
+    // ── Coordinador DT2 ──────────────────────────────────────────────
+    @GetMapping("/coordinador/dt2/info")
+    public InfoCoordinadorDt2Dto infoCoordinadorDt2(@RequestParam Integer idUsuario) {
+        return service.infoCoordinadorDt2(idUsuario);
+    }
+
+    @PostMapping("/coordinador/dt2/asignar")
+    public ComplexivoDocenteAsignacionResponse asignarDt2(
+            @RequestBody AsignarDt2ComplexivoRequest req) {
+        return service.asignarDt2(req);
+    }
+
+    // ── Endpoints legacy (compatibilidad con frontend existente) ─────
     @GetMapping("/coordinador/info")
     public InfoCoordinadorComplexivoDto infoCoordinador(@RequestParam Integer idUsuario) {
         return service.infoCoordinador(idUsuario);
@@ -54,8 +79,28 @@ public class ComplexivoController {
         return service.enviarInforme(idEstudiante);
     }
 
-    // ── Docente complexivo ───────────────────────────────────────────
+    @PostMapping("/estudiante/{idEstudiante}/iniciar")
+    public EstadoComplexivoEstudianteDto iniciarComplexivo(
+            @PathVariable Integer idEstudiante) {
+        return service.iniciarComplexivoDesdeEleccion(idEstudiante);
+    }
 
+    // ── DT1 — propuestas ─────────────────────────────────────────────
+    @GetMapping("/dt1/{idDocente}/propuestas")
+    public List<PropuestaComplexivoDto> propuestasDeDocenteDt1(
+            @PathVariable Integer idDocente) {
+        return service.propuestasDeDocenteDt1(idDocente);
+    }
+
+    @PostMapping("/dt1/{idDocente}/propuestas/{idPropuesta}/decision")
+    public PropuestaComplexivoDto decidirPropuestaDt1(
+            @PathVariable Integer idDocente,
+            @PathVariable Integer idPropuesta,
+            @RequestBody DecisionPropuestaComplexivoRequest req) {
+        return service.decidirPropuestaDt1(idDocente, idPropuesta, req);
+    }
+
+    // Endpoints legacy propuestas
     @GetMapping("/docente/{idDocente}/propuestas")
     public List<PropuestaComplexivoDto> propuestasDeDocente(
             @PathVariable Integer idDocente) {
@@ -70,6 +115,54 @@ public class ComplexivoController {
         return service.decidirPropuesta(idDocente, idPropuesta, req);
     }
 
+    // ── DT2 — informes ───────────────────────────────────────────────
+    @GetMapping("/dt2/{idDocente}/estudiantes")
+    public List<EstudianteDeDocenteDto> estudiantesDt2(
+            @PathVariable Integer idDocente) {
+        return service.estudiantesDeDocenteDt2(idDocente);
+    }
+
+    @GetMapping("/dt2/{idDocente}/informe/{idComplexivo}")
+    public ComplexivoInformeDto getInformeDt2(
+            @PathVariable Integer idDocente,
+            @PathVariable Integer idComplexivo) {
+        return service.getInformeParaDt2(idDocente, idComplexivo);
+    }
+
+    @PostMapping("/dt2/{idDocente}/informe/{idInforme}/aprobar")
+    public ComplexivoInformeDto aprobarInforme(
+            @PathVariable Integer idDocente,
+            @PathVariable Integer idInforme,
+            @RequestBody(required = false) Map<String, String> body) {
+        return service.revisarInforme(idDocente, idInforme, "APROBADO",
+                body != null ? body.get("observaciones") : null);
+    }
+
+    @PostMapping("/dt2/{idDocente}/informe/{idInforme}/rechazar")
+    public ComplexivoInformeDto rechazarInforme(
+            @PathVariable Integer idDocente,
+            @PathVariable Integer idInforme,
+            @RequestBody Map<String, String> body) {
+        return service.revisarInforme(idDocente, idInforme, "RECHAZADO",
+                body.get("observaciones"));
+    }
+
+    @PostMapping("/dt2/{idDocente}/asesoria/{idComplexivo}")
+    public ComplexivoAsesoriaDto registrarAsesoria(
+            @PathVariable Integer idDocente,
+            @PathVariable Integer idComplexivo,
+            @RequestBody RegistrarAsesoriaRequest req) {
+        return service.registrarAsesoria(idDocente, idComplexivo, req);
+    }
+
+    @GetMapping("/dt2/{idDocente}/asesorias/{idComplexivo}")
+    public List<ComplexivoAsesoriaDto> listarAsesorias(
+            @PathVariable Integer idDocente,
+            @PathVariable Integer idComplexivo) {
+        return service.listarAsesorias(idDocente, idComplexivo);
+    }
+
+    // Endpoints legacy informes
     @GetMapping("/docente/{idDocente}/estudiantes")
     public List<EstudianteDeDocenteDto> misEstudiantes(
             @PathVariable Integer idDocente) {
@@ -84,7 +177,7 @@ public class ComplexivoController {
     }
 
     @PostMapping("/docente/{idDocente}/informe/{idInforme}/aprobar")
-    public ComplexivoInformeDto aprobarInforme(
+    public ComplexivoInformeDto aprobarInformeLegacy(
             @PathVariable Integer idDocente,
             @PathVariable Integer idInforme,
             @RequestBody(required = false) Map<String, String> body) {
@@ -93,7 +186,7 @@ public class ComplexivoController {
     }
 
     @PostMapping("/docente/{idDocente}/informe/{idInforme}/rechazar")
-    public ComplexivoInformeDto rechazarInforme(
+    public ComplexivoInformeDto rechazarInformeLegacy(
             @PathVariable Integer idDocente,
             @PathVariable Integer idInforme,
             @RequestBody Map<String, String> body) {
@@ -102,7 +195,7 @@ public class ComplexivoController {
     }
 
     @PostMapping("/docente/{idDocente}/asesoria/{idComplexivo}")
-    public ComplexivoAsesoriaDto registrarAsesoria(
+    public ComplexivoAsesoriaDto registrarAsesoriaLegacy(
             @PathVariable Integer idDocente,
             @PathVariable Integer idComplexivo,
             @RequestBody RegistrarAsesoriaRequest req) {
@@ -110,7 +203,7 @@ public class ComplexivoController {
     }
 
     @GetMapping("/docente/{idDocente}/asesorias/{idComplexivo}")
-    public List<ComplexivoAsesoriaDto> listarAsesorias(
+    public List<ComplexivoAsesoriaDto> listarAsesoriasLegacy(
             @PathVariable Integer idDocente,
             @PathVariable Integer idComplexivo) {
         return service.listarAsesorias(idDocente, idComplexivo);

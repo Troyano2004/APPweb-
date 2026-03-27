@@ -27,22 +27,36 @@
            [class.activo]="propuestaSelec()?.idPropuesta === p.idPropuesta"
            (click)="seleccionarPropuesta(p)">
         <div class="est-nombre">{{ p.nombreEstudiante }}</div>
-        <div class="est-meta">{{ p.titulo || 'Sin título' }}</div>
+        <div class="est-meta est-meta-truncate">{{ p.titulo || 'Sin título' }}</div>
         <span class="badge" [ngClass]="badgeEstado(p.estado)">{{ p.estado }}</span>
       </div>
     </div>
 
     <div class="panel-detalle" *ngIf="propuestaSelec(); else sinSeleccionP">
+
+      <!-- Cabecera con botón PDF -->
       <div class="det-header">
-        <h3>{{ propuestaSelec()!.nombreEstudiante }}</h3>
-        <span class="badge" [ngClass]="badgeEstado(propuestaSelec()!.estado)">
-          {{ propuestaSelec()!.estado }}
-        </span>
+        <div>
+          <h3>{{ propuestaSelec()!.nombreEstudiante }}</h3>
+          <span class="fecha-envio" *ngIf="propuestaSelec()!.fechaEnvio">
+            Enviado: {{ propuestaSelec()!.fechaEnvio | date:'dd/MM/yyyy' }}
+          </span>
+        </div>
+        <div class="header-actions">
+          <span class="badge" [ngClass]="badgeEstado(propuestaSelec()!.estado)">
+            {{ propuestaSelec()!.estado }}
+          </span>
+          <button class="btn-pdf" (click)="descargarPdfPropuesta()" title="Ver / Imprimir PDF">
+            📄 Ver PDF
+          </button>
+        </div>
       </div>
 
+      <!-- Contenido de la propuesta -->
       <div class="informe-secciones">
         <div class="seccion">
-          <h4>Título</h4><p>{{ propuestaSelec()!.titulo }}</p>
+          <h4>Título</h4>
+          <p>{{ propuestaSelec()!.titulo }}</p>
         </div>
         <div class="seccion" *ngIf="propuestaSelec()!.planteamientoProblema">
           <h4>Planteamiento del Problema</h4>
@@ -64,49 +78,61 @@
           <h4>Resultados Esperados</h4>
           <p>{{ propuestaSelec()!.resultadosEsperados }}</p>
         </div>
+        <div class="seccion" *ngIf="propuestaSelec()!.bibliografia">
+          <h4>Bibliografía</h4>
+          <p>{{ propuestaSelec()!.bibliografia }}</p>
+        </div>
       </div>
 
-      <div class="alert ok"
-           *ngIf="propuestaSelec()!.estado === 'APROBADA'">
-        ✅ Ya aprobada.
+      <!-- Ya revisada -->
+      <div class="alert ok" *ngIf="propuestaSelec()!.estado === 'APROBADA'">
+        ✅ Propuesta aprobada.
         <span *ngIf="propuestaSelec()!.observacionesComision">
           Obs: {{ propuestaSelec()!.observacionesComision }}
         </span>
       </div>
-      <div class="alert error"
-           *ngIf="propuestaSelec()!.estado === 'RECHAZADA'">
+      <div class="alert error" *ngIf="propuestaSelec()!.estado === 'RECHAZADA'">
         ❌ Rechazada. Motivo: {{ propuestaSelec()!.observacionesComision }}
       </div>
 
+      <!-- Acciones -->
       <div class="acciones"
            *ngIf="propuestaSelec()!.estado === 'EN_REVISION'
                || propuestaSelec()!.estado === 'ENVIADA'">
         <h4>Decisión sobre la propuesta</h4>
 
-        <div class="form-row">
-          <label>Observación (opcional para aprobación)</label>
-          <input [(ngModel)]="obsDecision" placeholder="Comentario...">
-        </div>
-        <button class="btn-aprobar"
-                (click)="aprobarPropuesta()"
-                [disabled]="propuestaBloqueada(propuestaSelec()!.idPropuesta)">
-          ✅ Aprobar propuesta
-        </button>
-
-        <button class="btn-rechazar-toggle"
-                (click)="mostrarRechazoP = !mostrarRechazoP">
-          {{ mostrarRechazoP ? 'Cancelar' : '❌ Rechazar propuesta' }}
-        </button>
-
-        <div *ngIf="mostrarRechazoP" class="form-rechazo">
-          <label>Motivo del rechazo <strong>(requerido)</strong></label>
-          <textarea [(ngModel)]="obsDecision" rows="3"
-                    placeholder="Explica qué debe corregir el estudiante..."></textarea>
-          <button class="btn-rechazar"
-                  (click)="rechazarPropuesta()"
+        <!-- APROBAR — usa obsAprobacion -->
+        <div class="decision-block aprobar-block">
+          <div class="form-row">
+            <label>Observación para el estudiante (opcional)</label>
+            <input [(ngModel)]="obsAprobacion" placeholder="Ej: Propuesta bien estructurada...">
+          </div>
+          <button class="btn-aprobar"
+                  (click)="aprobarPropuesta()"
                   [disabled]="propuestaBloqueada(propuestaSelec()!.idPropuesta)">
-            Confirmar rechazo
+            ✅ Aprobar propuesta
           </button>
+        </div>
+
+        <div class="o-separator">— o —</div>
+
+        <!-- RECHAZAR — usa obsRechazo, completamente separado -->
+        <div class="decision-block rechazar-block">
+          <button class="btn-rechazar-toggle"
+                  (click)="mostrarRechazoP = !mostrarRechazoP">
+            {{ mostrarRechazoP ? '▲ Ocultar formulario de rechazo' : '❌ Rechazar propuesta' }}
+          </button>
+
+          <div *ngIf="mostrarRechazoP" class="form-rechazo">
+            <label>Motivo del rechazo <strong>(requerido)</strong></label>
+            <textarea [(ngModel)]="obsRechazo" rows="4"
+                      placeholder="Explica qué debe corregir el estudiante..."></textarea>
+            <button class="btn-rechazar"
+                    (click)="rechazarPropuesta()"
+                    [disabled]="propuestaBloqueada(propuestaSelec()!.idPropuesta)">
+              Confirmar rechazo
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -188,24 +214,29 @@
 
           <div class="acciones" *ngIf="inf.estado === 'ENTREGADO'">
             <h4>Revisión del informe</h4>
-            <div class="form-row">
-              <label>Observación (opcional)</label>
-              <input [(ngModel)]="obsAprobar" placeholder="Comentario de aprobación...">
-            </div>
-            <button class="btn-aprobar" (click)="aprobarInforme()" [disabled]="loading()">
-              ✅ Aprobar informe
-            </button>
-            <button class="btn-rechazar-toggle"
-                    (click)="mostrarFormRechazo = !mostrarFormRechazo">
-              {{ mostrarFormRechazo ? 'Cancelar' : '❌ Rechazar informe' }}
-            </button>
-            <div *ngIf="mostrarFormRechazo" class="form-rechazo">
-              <label>Motivo <strong>(requerido)</strong></label>
-              <textarea [(ngModel)]="obsRechazar" rows="3"
-                        placeholder="Qué debe corregir..."></textarea>
-              <button class="btn-rechazar" (click)="rechazarInforme()" [disabled]="loading()">
-                Confirmar rechazo
+            <div class="decision-block aprobar-block">
+              <div class="form-row">
+                <label>Observación (opcional)</label>
+                <input [(ngModel)]="obsAprobar" placeholder="Comentario de aprobación...">
+              </div>
+              <button class="btn-aprobar" (click)="aprobarInforme()" [disabled]="loading()">
+                ✅ Aprobar informe
               </button>
+            </div>
+            <div class="o-separator">— o —</div>
+            <div class="decision-block rechazar-block">
+              <button class="btn-rechazar-toggle"
+                      (click)="mostrarFormRechazo = !mostrarFormRechazo">
+                {{ mostrarFormRechazo ? '▲ Ocultar' : '❌ Rechazar informe' }}
+              </button>
+              <div *ngIf="mostrarFormRechazo" class="form-rechazo">
+                <label>Motivo <strong>(requerido)</strong></label>
+                <textarea [(ngModel)]="obsRechazar" rows="3"
+                          placeholder="Qué debe corregir..."></textarea>
+                <button class="btn-rechazar" (click)="rechazarInforme()" [disabled]="loading()">
+                  Confirmar rechazo
+                </button>
+              </div>
             </div>
           </div>
           <div class="alert ok"    *ngIf="inf.estado === 'APROBADO'">✅ Informe aprobado.</div>
@@ -228,9 +259,7 @@
             + Registrar asesoría
           </button>
         </div>
-        <div class="empty" *ngIf="asesorias().length === 0">
-          No hay asesorías registradas.
-        </div>
+        <div class="empty" *ngIf="asesorias().length === 0">No hay asesorías registradas.</div>
         <div class="asesoria-card" *ngFor="let a of asesorias()">
           <div class="asesoria-fecha">{{ a.fecha | date:'dd/MM/yyyy HH:mm' }}</div>
           <div class="asesoria-obs">{{ a.observaciones }}</div>

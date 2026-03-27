@@ -1,6 +1,5 @@
 <div class="page-wrapper">
 
-  <!-- ── Header ── -->
   <div class="page-header">
     <div>
       <h1 class="page-title">{{ tituloVista }}</h1>
@@ -9,7 +8,6 @@
     <button class="btn-recargar" (click)="cargarPropuestas()">↻ Recargar</button>
   </div>
 
-  <!-- ── Tabs de modo (solo si tiene ambos roles) ── -->
   <div class="modo-tabs" *ngIf="esMiembroComision && esDocenteComplexivo">
     <button class="modo-tab" [class.active]="modoRevision === 'COMISION'"
             (click)="cambiarModo('COMISION')">
@@ -21,13 +19,11 @@
     </button>
   </div>
 
-  <!-- ── Sin rol asignado ── -->
   <div class="estado-vacio" *ngIf="!cargando && !esMiembroComision && !esDocenteComplexivo">
     <div class="vacio-icon">🔒</div>
     <p>No tienes propuestas asignadas para revisar en este período.</p>
   </div>
 
-  <!-- ── Filtros ── -->
   <div class="filtros-bar" *ngIf="esMiembroComision || esDocenteComplexivo">
     <button *ngFor="let f of filtros" class="filtro-btn"
             [class.activo]="filtroActual === f.valor"
@@ -37,13 +33,11 @@
     </button>
   </div>
 
-  <!-- ── Carga ── -->
   <div *ngIf="cargando" class="estado-carga">
     <div class="spinner"></div>
     <span>Cargando propuestas...</span>
   </div>
 
-  <!-- ── Vacío ── -->
   <div *ngIf="!cargando && propuestasFiltradas.length === 0 && (esMiembroComision || esDocenteComplexivo)"
        class="estado-vacio">
     <div class="vacio-icon">📭</div>
@@ -52,7 +46,6 @@
     </p>
   </div>
 
-  <!-- ── Tabla ── -->
   <div *ngIf="!cargando && propuestasFiltradas.length > 0" class="tabla-wrap">
     <table class="tabla">
       <thead>
@@ -83,25 +76,30 @@
           {{ p.fechaEnvio ? (p.fechaEnvio | date:'dd/MM/yyyy') : '—' }}
         </td>
         <td>
-            <span class="badge" [ngClass]="'badge-' + p.estado.toLowerCase()">
-              {{ etiquetaEstado(p.estado) }}
-            </span>
+          <span class="badge" [ngClass]="'badge-' + p.estado.toLowerCase()">
+            {{ etiquetaEstado(p.estado) }}
+          </span>
         </td>
-        <td>
+        <td class="col-acciones">
+          <!-- Botón PDF siempre visible -->
+          <button class="btn-pdf" (click)="verPdfPropuesta(p)" title="Ver PDF">
+            📄 PDF
+          </button>
+          <!-- Botón revisar solo si está en revisión -->
           <button *ngIf="p.estado === 'EN_REVISION'"
                   class="btn-revisar" (click)="abrirDecision(p)">
             Revisar
           </button>
           <span *ngIf="p.estado !== 'EN_REVISION'" class="ya-resuelta">
-              {{ p.estado === 'APROBADA' ? '✅ Aprobada' : '❌ Rechazada' }}
-            </span>
+            {{ p.estado === 'APROBADA' ? '✅ Aprobada' : '❌ Rechazada' }}
+          </span>
         </td>
       </tr>
       </tbody>
     </table>
   </div>
 
-  <!-- ══════════ MODAL DECISIÓN ══════════ -->
+  <!-- MODAL DECISIÓN -->
   <div class="modal-overlay" *ngIf="propuestaEnRevision" (click)="cerrarModal()">
     <div class="modal-card" (click)="$event.stopPropagation()">
 
@@ -111,8 +109,6 @@
       </div>
 
       <div class="modal-body">
-
-        <!-- Banner de modalidad -->
         <div class="modalidad-banner" *ngIf="propuestaEnRevision.modalidad">
           <span>📋 Modalidad: <strong>{{ propuestaEnRevision.modalidad }}</strong></span>
           <span *ngIf="modoRevision === 'COMPLEXIVO'" class="complexivo-hint">
@@ -141,7 +137,6 @@
           <p class="detalle-valor muted">📚 {{ propuestaEnRevision.tema }}</p>
         </div>
 
-        <!-- Decisión -->
         <div class="detalle-item">
           <span class="detalle-label">Decisión <span class="requerido">*</span></span>
           <div class="decision-grid">
@@ -158,7 +153,6 @@
           </div>
         </div>
 
-        <!-- Observaciones -->
         <div class="detalle-item">
           <span class="detalle-label">
             Observaciones
@@ -168,25 +162,21 @@
           </span>
           <textarea class="form-textarea" [(ngModel)]="decisionObservaciones" rows="3"
                     [placeholder]="decisionEstado === 'RECHAZADA'
-                      ? 'Explica al estudiante el motivo del rechazo y cómo mejorar su propuesta...'
+                      ? 'Explica al estudiante el motivo del rechazo...'
                       : 'Comentarios adicionales para el estudiante...'">
           </textarea>
         </div>
 
-        <!-- Aviso aprobación TIC -->
         <div *ngIf="decisionEstado === 'APROBADA' && modoRevision === 'COMISION'"
              class="aviso-aprobacion">
           <strong>📋 Al aprobar se creará automáticamente:</strong>
           el proyecto de titulación, el anteproyecto y el documento asociado.
-          El estudiante recibirá una notificación por correo.
         </div>
 
-        <!-- Aviso aprobación Complexivo -->
         <div *ngIf="decisionEstado === 'APROBADA' && modoRevision === 'COMPLEXIVO'"
              class="aviso-aprobacion complexivo">
           <strong>📋 Al aprobar:</strong>
           el estudiante podrá continuar con el informe práctico del Examen Complexivo.
-          Recibirá una notificación por correo.
         </div>
 
         <div *ngIf="errorDecision" class="alerta error">⚠️ {{ errorDecision }}</div>
