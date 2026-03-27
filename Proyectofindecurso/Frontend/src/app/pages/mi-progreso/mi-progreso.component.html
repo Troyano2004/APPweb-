@@ -1,0 +1,70 @@
+<div *ngIf="cargando" class="progreso-loading">
+  <div class="spinner"></div>
+  <span>Cargando tu progreso...</span>
+</div>
+
+<div *ngIf="!cargando && error" class="progreso-error">
+  &#9888; {{ error }}
+</div>
+
+<div *ngIf="!cargando && !error && estado" class="progreso-wrapper">
+
+  <div class="progreso-header">
+    <div class="progreso-info">
+      <h2 class="progreso-nombre">{{ estado.nombreCompleto }}</h2>
+      <p class="progreso-carrera">{{ estado.carrera }} &bull; {{ estado.modalidad }}</p>
+      <p class="progreso-etapa-actual">Etapa actual: <strong>{{ estado.etapaActual }}</strong></p>
+    </div>
+    <div class="progreso-circulo">
+      <svg viewBox="0 0 36 36" class="circulo-svg">
+        <path class="circulo-bg"  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+        <path class="circulo-fill"
+              [attr.stroke-dasharray]="estado.porcentajeAvance + ', 100'"
+              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+      </svg>
+      <span class="circulo-texto">{{ estado.porcentajeAvance }}%</span>
+    </div>
+  </div>
+
+  <div class="barra-contenedor">
+    <div class="barra-fondo">
+      <div class="barra-relleno" [style.width.%]="estado.porcentajeAvance"></div>
+    </div>
+    <span class="barra-label">{{ estado.porcentajeAvance }}% completado</span>
+  </div>
+
+  <ol class="timeline">
+    <li *ngFor="let etapa of estado.etapas; let last = last"
+        class="timeline-item" [class.sin-linea]="last">
+
+      <div class="timeline-icono" [ngClass]="iconoClase(etapa.estado)">
+        <svg *ngIf="etapa.estado === 'COMPLETADO'" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+        <span *ngIf="etapa.estado === 'EN_CURSO'" class="punto-en-curso"></span>
+        <svg *ngIf="etapa.estado === 'RECHAZADO'" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </div>
+
+      <div class="timeline-contenido">
+        <div class="timeline-encabezado">
+          <span class="timeline-titulo">{{ etapa.titulo }}</span>
+          <span class="timeline-badge" [ngClass]="'badge-' + etapa.estado.toLowerCase()">
+            {{ etapa.estado === 'COMPLETADO' ? 'Completado'
+            : etapa.estado === 'EN_CURSO'   ? 'En curso'
+              : etapa.estado === 'RECHAZADO'  ? 'Rechazado'
+                : 'Pendiente' }}
+          </span>
+        </div>
+        <p class="timeline-desc">{{ etapa.descripcion }}</p>
+        <span *ngIf="etapa.fecha" class="timeline-fecha">{{ etapa.fecha | date:'dd/MM/yyyy' }}</span>
+      </div>
+
+    </li>
+  </ol>
+
+</div>

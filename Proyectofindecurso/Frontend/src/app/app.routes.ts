@@ -77,8 +77,13 @@ import { ComplexivoInformeComponent } from './pages/complexivo/informe/complexiv
 import { AsignacionComplexivoComponent } from './pages/coordinador/asignacion-complexivo/asignacion-complexivo';
 import { ComplexivoDocenteComponent } from './pages/complexivo/docente/complexivo-docente';
 
+
+import { MiProgresoComponent } from './pages/mi-progreso/mi-progreso.component';
+
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'login' },
+  { path: 'mi-progreso', component: MiProgresoComponent, data: { title: 'Mi progreso' } },
+
   { path: 'login', component: LoginComponent, canActivate: [loginGuard], data: { title: 'Login' } },
   { path: 'registro-estudiante', component: RegistroEstudianteComponent, data: { title: 'Registro Estudiante' } },
   {
