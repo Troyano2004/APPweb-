@@ -1,5 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { RecoveryModeService } from '../../services/recovery-mode.service';
 
 @Component({
@@ -17,7 +18,7 @@ import { RecoveryModeService } from '../../services/recovery-mode.service';
         </div>
 
         <!-- Botón flotante -->
-        <button class="recovery-fab" (click)="svc.abrirRecovery()" title="Abrir Recovery Mode">
+        <button class="recovery-fab" (click)="irARecovery()" title="Abrir Recovery Mode">
           <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22"
                viewBox="0 0 24 24" fill="none" stroke="currentColor"
                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -32,7 +33,6 @@ import { RecoveryModeService } from '../../services/recovery-mode.service';
     }
   `,
   styles: [`
-    /* ── Badge pulsante ───────────────────────────────── */
     .recovery-badge {
       position: fixed;
       top: 16px;
@@ -71,7 +71,6 @@ import { RecoveryModeService } from '../../services/recovery-mode.service';
       to   { opacity: 1; transform: translateX(-50%) translateY(0); }
     }
 
-    /* ── Botón flotante ───────────────────────────────── */
     .recovery-fab {
       position: fixed;
       bottom: 28px;
@@ -99,9 +98,7 @@ import { RecoveryModeService } from '../../services/recovery-mode.service';
       box-shadow: 0 10px 30px rgba(220, 38, 38, 0.55);
     }
 
-    .recovery-fab:active {
-      transform: translateY(0);
-    }
+    .recovery-fab:active { transform: translateY(0); }
 
     @keyframes fadeInUp {
       from { opacity: 0; transform: translateY(20px); }
@@ -110,5 +107,10 @@ import { RecoveryModeService } from '../../services/recovery-mode.service';
   `]
 })
 export class RecoveryFabComponent {
-  svc = inject(RecoveryModeService);
+  svc    = inject(RecoveryModeService);
+  router = inject(Router);
+
+  irARecovery(): void {
+    this.router.navigate(['/recovery']);
+  }
 }

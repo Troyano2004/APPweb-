@@ -21,6 +21,7 @@ import { ReportesCoordinacionComponent } from './pages/coordinador/reportes/repo
 import { ComisionFormativaComponent } from './pages/coordinador/comision-formativa/comision-formativa.component';
 import { VisualizarProyectoComponent } from './pages/coordinador/visualizar-proyecto/visualizar-proyecto.component';
 import { LoginComponent } from './pages/login/login';
+import { RecoveryComponent } from './pages/backup/recovery/recovery.component';
 import { AdminUsuariosComponent } from './pages/admin-usuario/admin-usuarios';
 import { RolesComponent } from './pages/roles/roles';
 import { AsignacionDt1 } from './pages/coordinador/asignacion-dt1/asignacion-dt1';
@@ -77,7 +78,8 @@ import { ComplexivoDocenteComponent } from './pages/complexivo/docente/complexiv
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'login' },
-  { path: 'login', component: LoginComponent, canActivate: [loginGuard], data: { title: 'Login' } },
+  { path: 'login',    component: LoginComponent,    canActivate: [loginGuard], data: { title: 'Login' } },
+  { path: 'recovery', component: RecoveryComponent,                               data: { title: 'Recovery Mode' } },
   { path: 'registro-estudiante', component: RegistroEstudianteComponent, data: { title: 'Registro Estudiante' } },
   {
     path: 'app',

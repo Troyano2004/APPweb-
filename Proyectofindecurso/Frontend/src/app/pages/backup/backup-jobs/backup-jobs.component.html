@@ -140,7 +140,7 @@
 
           <div class="form-group full">
             <label>Ruta de pg_dump *
-              <span class="hint">Ej: C:\Program Files\PostgreSQL\17\bin\pg_dump.exe</span>
+              <span class="hint">⚠️ Ajusta la versión de PostgreSQL si es diferente a la 18</span>
             </label>
             <div class="folder-picker">
               <div class="folder-selected" [class.empty]="!form.pgDumpPath">
@@ -161,7 +161,7 @@
               </div>
             </div>
             <input type="text" [(ngModel)]="form.pgDumpPath"
-                   placeholder="C:\Program Files\PostgreSQL\17\bin\pg_dump.exe" />
+                   placeholder="C:\Program Files\PostgreSQL\18\bin\pg_dump.exe" />
           </div>
 
           <div class="form-group">

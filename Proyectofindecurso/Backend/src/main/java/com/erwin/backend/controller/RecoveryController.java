@@ -78,6 +78,20 @@ public class RecoveryController {
         }
     }
 
+
+    // ── Listar backups en carpeta local ───────────────────────────────────────
+
+    @GetMapping("/backups-local/{idJob}")
+    public ResponseEntity<?> listarBackupsLocal(@PathVariable Long idJob) {
+        try {
+            return ResponseEntity.ok(recoveryService.listarBackupsLocales(idJob));
+        } catch (Exception e) {
+            log.error("Recovery listarBackupsLocal: {}", e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
     // ── Ejecutar restauración ─────────────────────────────────────────────────
 
     @PostMapping("/restore")

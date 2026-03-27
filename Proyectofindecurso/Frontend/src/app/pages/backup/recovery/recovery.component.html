@@ -1,0 +1,241 @@
+<div class="recovery-page">
+
+  <!-- ══ Header ══ -->
+  <div class="header">
+    <span class="badge-recovery">⚠️ Recovery Mode</span>
+    <h1>🛡️ Sistema de Titulación UTEQ</h1>
+    <p>Restauración de base de datos</p>
+  </div>
+
+  <!-- ══ PASO 1: Auth ══ -->
+  @if (paso() === 'auth') {
+    <div class="card">
+      <div class="card-title">
+        <span class="step-num">1</span> Acceso de Recuperación
+      </div>
+
+      <div class="alert alert-warn">
+        ⚠️ Esta herramienta restaura la base de datos directamente. Úsala solo en caso de emergencia.
+      </div>
+
+      @if (errorAuth) {
+        <div class="alert alert-error">❌ {{ errorAuth }}</div>
+      }
+
+      <div class="form-group">
+        <label>Contraseña de Recuperación</label>
+        <input type="password" [(ngModel)]="password"
+               placeholder="Ingresa la contraseña maestra"
+               (keydown.enter)="autenticar()" />
+      </div>
+
+      <button class="btn btn-primary btn-full mt-1" (click)="autenticar()">
+        🔓 Acceder al modo de recuperación
+      </button>
+    </div>
+  }
+
+  <!-- ══ PASO 2: Jobs ══ -->
+  @if (paso() === 'jobs') {
+    <div class="card">
+      <div class="card-title">
+        <span class="step-num">2</span> Selecciona el Job de Backup
+      </div>
+
+      @if (errorJobs) {
+        <div class="alert alert-error">❌ {{ errorJobs }}</div>
+      }
+
+      <!-- Selector de fuente -->
+      <div class="form-group">
+        <label>Fuente del Backup</label>
+        <div class="fuente-selector">
+          <button class="btn-fuente" [class.active]="fuente() === 'DRIVE'"
+                  (click)="seleccionarFuente('DRIVE')">
+            ☁️ Google Drive
+          </button>
+          <button class="btn-fuente" [class.active]="fuente() === 'LOCAL'"
+                  (click)="seleccionarFuente('LOCAL')">
+            📁 Archivo Local
+          </button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Job de Backup</label>
+        <div class="job-list">
+          @for (job of jobs; track job.idJob) {
+            <div class="job-item"
+                 [class.selected]="jobSeleccionado?.idJob === job.idJob"
+                 (click)="seleccionarJob(job)">
+              <div class="job-info">
+                <div class="job-nombre">{{ job.nombre }}</div>
+                <div class="job-meta">BD: {{ job.databases }}</div>
+              </div>
+              @if (job.esEmergencia) {
+                <span class="badge-emergencia">🔥 Emergencia</span>
+              } @else if (job.tieneDrive) {
+                <span class="badge-drive">☁️ Drive</span>
+              }
+            </div>
+          }
+          @if (jobs.length === 0) {
+            <div class="alert alert-warn">⏳ Cargando jobs...</div>
+          }
+        </div>
+      </div>
+
+      @if (jobSeleccionado) {
+        <div class="alert" [class.alert-success]="pingOk === true"
+             [class.alert-warn]="pingOk === false"
+             [class.alert-info]="pingOk === null">
+          @if (pingOk === null) { ⏳ Verificando conexión a PostgreSQL... }
+          @if (pingOk === true) { <span class="dot dot-ok"></span> PostgreSQL conectado — listo para restaurar }
+          @if (pingOk === false) { <span class="dot dot-warn"></span> PostgreSQL no responde — se intentará al ejecutar }
+        </div>
+
+        <button class="btn btn-primary btn-full mt-1" (click)="cargarBackups()">
+          @if (fuente() === 'DRIVE') { ☁️ Cargar backups desde Google Drive }
+          @else { 📁 Cargar backups desde carpeta local }
+        </button>
+      }
+    </div>
+  }
+
+  <!-- ══ PASO 3: Backups ══ -->
+  @if (paso() === 'backups') {
+    <div class="card">
+      <div class="card-title">
+        <span class="step-num">3</span> Selecciona el Backup a Restaurar
+        <span class="badge-fuente-activa">
+          {{ fuente() === 'DRIVE' ? '☁️ Google Drive' : '📁 Local' }}
+        </span>
+      </div>
+
+      <div class="alert alert-info">
+        💡 Selecciona un <strong>FULL</strong> para restauración completa.
+        Los diferenciales solo restauran tablas modificadas — aplícalos después del FULL.
+      </div>
+
+      @if (cargandoBackups) {
+        <div class="alert alert-info mt-1">⏳ Cargando backups...</div>
+      }
+
+      @if (errorBackups) {
+        <div class="alert alert-error mt-1">❌ {{ errorBackups }}</div>
+      }
+
+      <div class="backup-list mt-1">
+        @for (b of backups; track b.fileId) {
+          <div class="backup-item" (click)="seleccionarBackup(b)">
+            <span class="backup-icon">{{ b.tipo === 'FULL' ? '🗄️' : '📋' }}</span>
+            <div class="backup-info">
+              <div class="backup-nombre">{{ b.nombre }}</div>
+              <div class="backup-meta">
+                {{ formatFecha(b.fechaCreacion) }} &nbsp;·&nbsp; {{ formatBytes(b.tamano) }}
+              </div>
+            </div>
+            <span class="badge-tipo" [class.badge-full]="b.tipo === 'FULL'"
+                  [class.badge-dif]="b.tipo !== 'FULL'">{{ b.tipo }}</span>
+          </div>
+        }
+        @if (!cargandoBackups && backups.length === 0 && !errorBackups) {
+          <div class="alert alert-warn">⚠️ No se encontraron backups.</div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- ══ PASO 4: Confirmar Restore ══ -->
+  @if (paso() === 'restore') {
+    <div class="card">
+      <div class="card-title">
+        <span class="step-num">4</span> Confirmar Restauración
+      </div>
+
+      <div class="alert alert-warn">
+        ⚠️ <strong>ATENCIÓN:</strong> Esta acción sobreescribirá la base de datos. No se puede deshacer.
+      </div>
+
+      <div class="alert alert-info">
+        📦 <strong>{{ backupSeleccionado?.nombre }}</strong><br>
+        Tipo: <strong>{{ backupSeleccionado?.tipo }}</strong> &nbsp;·&nbsp;
+        Fuente: <strong>{{ backupSeleccionado?.fuente === 'DRIVE' ? '☁️ Google Drive' : '📁 Local' }}</strong><br>
+        Fecha: <strong>{{ formatFecha(backupSeleccionado?.fechaCreacion || '') }}</strong> &nbsp;·&nbsp;
+        Tamaño: <strong>{{ formatBytes(backupSeleccionado?.tamano || '0') }}</strong>
+      </div>
+
+      <div class="form-group">
+        <label>Modo de Restauración</label>
+        <select [(ngModel)]="modoRestore">
+          <option value="REEMPLAZAR">Reemplazar BD existente (recomendado en emergencia)</option>
+          <option value="NUEVA_BD">Restaurar en nueva base de datos</option>
+        </select>
+      </div>
+
+      @if (modoRestore === 'NUEVA_BD') {
+        <div class="form-group">
+          <label>Nombre de la nueva base de datos</label>
+          <input type="text" [(ngModel)]="nombreBdNueva" placeholder="Ej: efrain_recuperado" />
+        </div>
+      }
+
+      <hr class="divider" />
+      <div class="row">
+        <button class="btn btn-ghost" (click)="volverABackups()">← Volver</button>
+        <button class="btn btn-danger" (click)="confirmarRestore()">🔄 Iniciar Restauración</button>
+      </div>
+    </div>
+  }
+
+  <!-- ══ PASO 5: Progreso ══ -->
+  @if (paso() === 'progreso') {
+    <div class="card">
+      <div class="card-title">
+        <span class="step-num">5</span> Restauración en Progreso
+      </div>
+      <div class="progress-wrapper">
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill"></div>
+        </div>
+        <div class="progress-label">
+          {{ backupSeleccionado?.fuente === 'DRIVE' ? 'Descargando desde Google Drive...' : 'Leyendo archivo local...' }}
+        </div>
+      </div>
+      <div class="alert alert-warn mt-1">⏳ Ejecutando pg_restore... esto puede tardar varios minutos.</div>
+    </div>
+  }
+
+  <!-- ══ Resultado ══ -->
+  @if (paso() === 'resultado') {
+    <div class="card">
+      @if (resultado?.exitoso) {
+        <div class="alert alert-success">✅ Restauración completada exitosamente</div>
+        <div class="resultado-info">
+          <strong>BD restaurada:</strong> {{ resultado.bdRestaurada }}<br>
+          <strong>Duración:</strong> {{ resultado.duracionSegundos }}s<br>
+          <strong>Archivo:</strong> {{ backupSeleccionado?.nombre }}
+        </div>
+      } @else {
+        <div class="alert alert-error">❌ Error: {{ resultado?.mensaje }}</div>
+      }
+
+      @if (logRestore) {
+        <hr class="divider" />
+        <div class="log-label">Log de pg_restore:</div>
+        <div class="log-box">{{ logRestore }}</div>
+      }
+
+      <hr class="divider" />
+      <div class="row">
+        <button class="btn btn-ghost" (click)="reiniciar()">🔄 Nueva recuperación</button>
+        <button class="btn btn-success" (click)="irAlSistema()">🏠 Ir al sistema</button>
+      </div>
+    </div>
+  }
+
+  <div class="footer">
+    Sistema de Titulación UTEQ — Recovery Mode &nbsp;|&nbsp; {{ horaActual }}
+  </div>
+
+</div>

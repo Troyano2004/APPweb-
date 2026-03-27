@@ -205,6 +205,49 @@ public class RecoveryService {
         }).collect(Collectors.toList());
     }
 
+
+    // ── Listar backups en carpeta local ───────────────────────────────────────
+
+    @Value("${recovery.local.backup-path:C:\\backups}")
+    private String localBackupPath;
+
+    public List<Map<String, Object>> listarBackupsLocales(Long idJob) throws Exception {
+        Path carpeta = Paths.get(localBackupPath);
+
+        if (!Files.exists(carpeta) || !Files.isDirectory(carpeta)) {
+            throw new RuntimeException(
+                    "Carpeta de backups no encontrada: " + localBackupPath +
+                            ". Configura recovery.local.backup-path en application.properties");
+        }
+
+        return Files.list(carpeta)
+                .filter(p -> p.getFileName().toString().endsWith(".zip"))
+                .filter(p -> {
+                    String n = p.getFileName().toString();
+                    return n.contains("backup_full_") || n.contains("backup_dif_");
+                })
+                .sorted((a, b) -> {
+                    try { return Files.getLastModifiedTime(b).compareTo(Files.getLastModifiedTime(a)); }
+                    catch (Exception e) { return 0; }
+                })
+                .map(p -> {
+                    Map<String, Object> item = new LinkedHashMap<>();
+                    String nombre = p.getFileName().toString();
+                    try {
+                        item.put("fileId",        p.toAbsolutePath().toString()); // ruta completa como ID
+                        item.put("nombre",        nombre);
+                        item.put("tamano",        String.valueOf(p.toFile().length()));
+                        item.put("fechaCreacion", Files.getLastModifiedTime(p).toInstant().toString());
+                        item.put("tipo",          nombre.contains("backup_full_") ? "FULL" : "DIFERENCIAL");
+                        item.put("fuente",        "LOCAL");
+                    } catch (Exception e) {
+                        log.warn("Error leyendo metadata de {}: {}", nombre, e.getMessage());
+                    }
+                    return item;
+                })
+                .collect(Collectors.toList());
+    }
+
     // ── Ejecutar restauración ──────────────────────────────────────────────────
 
     public Map<String, Object> ejecutarRestore(Long idJob, String fileId,
@@ -248,16 +291,26 @@ public class RecoveryService {
 
         long inicio = System.currentTimeMillis();
 
-        // 1. Descargar archivo de Drive
-        String accessToken  = oauthService.obtenerAccessToken(refreshToken);
-        Path   archivoLocal = descargarDeDrive(fileId, nombreArchivo, accessToken);
-        log.info("Archivo descargado: {}", archivoLocal);
+        // 1. Obtener archivo — desde Drive o desde carpeta local
+        // Si fileId es una ruta absoluta que existe en disco → LOCAL, si no → DRIVE
+        Path archivoLocal;
+        boolean esLocal = Paths.get(fileId).toFile().exists();
+
+        if (esLocal) {
+            archivoLocal = Paths.get(fileId);
+            log.info("Usando archivo local: {}", archivoLocal);
+        } else {
+            String accessToken = oauthService.obtenerAccessToken(refreshToken);
+            archivoLocal = descargarDeDrive(fileId, nombreArchivo, accessToken);
+            log.info("Archivo descargado de Drive: {}", archivoLocal);
+        }
 
         // 2. Descomprimir si es ZIP
         Path archivoRestore = archivoLocal;
         if (nombreArchivo.endsWith(".zip")) {
             archivoRestore = descomprimirZip(archivoLocal);
-            Files.deleteIfExists(archivoLocal);
+            // Solo borrar el ZIP descargado si vino de Drive (el local lo conservamos)
+            if (!esLocal) Files.deleteIfExists(archivoLocal);
             log.info("Archivo descomprimido: {}", archivoRestore);
         }
 
@@ -281,7 +334,8 @@ public class RecoveryService {
         String logRestore   = ejecutarPgRestore(pgRestoreCmd, pgHost, pgPort,
                 pgUsuario, pgPassword, dbDestino, archivoRestore);
 
-        Files.deleteIfExists(archivoRestore);
+        // Solo borrar el dump temporal si NO era el archivo local original
+        if (!esLocal || nombreArchivo.endsWith(".zip")) Files.deleteIfExists(archivoRestore);
 
         long duracion = (System.currentTimeMillis() - inicio) / 1000;
         log.info("Recovery completado en {}s — BD: {}", duracion, dbDestino);

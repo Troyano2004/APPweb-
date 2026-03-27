@@ -682,7 +682,9 @@ export class BackupJobsComponent implements OnInit {
 
   private formVacio(): BackupJobRequest {
     return {
-      nombre: '', pgDumpPath: '', pgHost: 'localhost', pgPort: 5432,
+      // ⚠️ Ajusta la versión (18) si tu instalación de PostgreSQL es diferente
+      nombre: '', pgDumpPath: 'C:\\Program Files\\PostgreSQL\\18\\bin\\pg_dump.exe',
+      pgHost: 'localhost', pgPort: 5432,
       pgUsuario: '', pgPassword: '', databases: '', comprimir: true,
       cronFull: '0 0 2 * * 0', cronDiferencial: '',
       diferencialActivo: false, zonaHoraria: 'America/Guayaquil',
