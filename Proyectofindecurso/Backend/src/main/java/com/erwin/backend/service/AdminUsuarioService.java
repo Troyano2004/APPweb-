@@ -5,6 +5,11 @@ import com.erwin.backend.dtos.UsuarioAdminDto;
 import com.erwin.backend.dtos.UsuarioCreateRequest;
 import com.erwin.backend.dtos.UsuarioEstadoRequest;
 import com.erwin.backend.dtos.UsuarioUpdateRequest;
+import com.erwin.backend.entities.Docente;
+import com.erwin.backend.entities.RolSistema;
+import com.erwin.backend.entities.Usuario;
+import com.erwin.backend.repository.DocenteRepository;
+import com.erwin.backend.repository.RolesSistemaRepository;
 import com.erwin.backend.repository.UsuarioRepository;
 import com.erwin.backend.repository.UsuarioSpRepository;
 import com.erwin.backend.security.CryptoUtil;
@@ -22,6 +27,8 @@ public class AdminUsuarioService {
     private final UsuarioRepository usuarioRepo;
     private final UsuarioSpRepository usuarioSpRepo;
     private final PasswordEncoder passwordEncoder;
+    private final DocenteRepository docenteRepo;
+    private final RolesSistemaRepository rolSistemaRepo;
 
     //---------------------------------------------------
     // CONSTRUCTOR
@@ -29,11 +36,13 @@ public class AdminUsuarioService {
     public AdminUsuarioService(
             UsuarioRepository usuarioRepo,
             UsuarioSpRepository usuarioSpRepo,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder, DocenteRepository docenteRepo, RolesSistemaRepository rolAppRepo) {
 
         this.usuarioRepo = usuarioRepo;
         this.usuarioSpRepo = usuarioSpRepo;
         this.passwordEncoder = passwordEncoder;
+        this.docenteRepo = docenteRepo;
+        this.rolSistemaRepo = rolAppRepo;
     }
 
     //---------------------------------------------------
@@ -97,7 +106,7 @@ public class AdminUsuarioService {
                 idsRolApp,
                 usernameDb,
                 passwordDbEncrypted,
-                passwordDbPlain   // ✅ NUEVO
+                passwordDbPlain   
         );
 
         UsuarioAdminDto dto =
@@ -106,6 +115,8 @@ public class AdminUsuarioService {
         if (dto == null) {
             throw new RuntimeException("Usuario no existe");
         }
+
+
 
         return dto;
     }
@@ -229,7 +240,15 @@ public class AdminUsuarioService {
 
         return sb.toString();
     }
+    private boolean esDocente(Integer[] idsRolApp) {
 
+        if (idsRolApp == null) return false;
+        for (Integer id : idsRolApp) {
+            RolSistema rol = rolSistemaRepo.findById(id).orElse(null);
+            if (rol != null && "ROLE_DOCENTE".equalsIgnoreCase(rol.getNombreRol())) return true;
+        }
+        return false;
+    }
     //---------------------------------------------------
     private boolean vacio(String s) {
         return s == null || s.trim().isEmpty();

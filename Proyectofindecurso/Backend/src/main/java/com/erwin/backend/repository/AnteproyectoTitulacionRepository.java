@@ -14,6 +14,8 @@ import java.util.Optional;
 public interface AnteproyectoTitulacionRepository extends JpaRepository<AnteproyectoTitulacion, Integer> {
     Optional<AnteproyectoTitulacion> findByPropuesta_IdPropuesta(Integer IdpPropuesta);
 
+    Optional<AnteproyectoTitulacion>findByEstudiante_IdEstudiante(Integer IdEstudiante);
+
     List<AnteproyectoTitulacion> findByCarrera_IdCarreraAndEleccion_Periodo_IdPeriodoAndEstadoIgnoreCase(
             Integer idCarrera,
             Integer idPeriodo,

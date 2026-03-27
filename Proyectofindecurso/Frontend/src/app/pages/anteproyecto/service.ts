@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Anteproyecto, AnteproyectoVersion, AnteproyectoVersionRequest } from './model';
+import { Anteproyecto, AnteproyectoVersion, AnteproyectoVersionRequest, AnalizarRequest,
+  AnalizarResponse } from './model';
 
 @Injectable({ providedIn: 'root' })
 export class AnteproyectoService {
@@ -30,6 +31,16 @@ export class AnteproyectoService {
   }
   ultimaRevision(idAnteproyecto: number): Observable<{decision: string, observacion: string}> {
     return this.http.get<any>(`${this.base}/${idAnteproyecto}/ultima-revision`);
+  }
+
+  analizarSeccion(req: AnalizarRequest): Observable<AnalizarResponse> {
+    return this.http.post<AnalizarResponse>('http://localhost:8080/api/ia/analizar', req);
+  }
+
+  generarPdf(idEstudiante: number): Observable<Blob> {
+    return this.http.get(`http://localhost:8080/api/anteproyectos/pdf/${idEstudiante}`, {
+      responseType: 'blob'
+    });
   }
 
 }

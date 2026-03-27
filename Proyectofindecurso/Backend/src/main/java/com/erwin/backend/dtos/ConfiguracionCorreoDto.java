@@ -15,4 +15,8 @@ public class ConfiguracionCorreoDto {
     private String usuario;
     private String password; // en texto plano al recibir/enviar, se encripta al guardar
     private Boolean activo;
+    // OAuth2 Outlook
+    private String clientId;
+    private String clientSecret;
+    private Boolean autorizado;
 }

@@ -62,6 +62,14 @@ export class Actadirector {
     const raw = localStorage.getItem('director_idTutoria');
     this.idTutoria = Number(raw || 0);
     if (!this.idTutoria) { this.mensaje = 'No hay tutoría seleccionada'; return; }
+    const titulo = localStorage.getItem('director_tituloProyecto') || '';
+
+    const nombre = localStorage.getItem('director_estudianteNombre') || ''
+
+    this.form.patchValue({
+      tituloProyecto: titulo
+
+    }, { emitEvent: false });
 
     this.cargarSiExiste();
   }

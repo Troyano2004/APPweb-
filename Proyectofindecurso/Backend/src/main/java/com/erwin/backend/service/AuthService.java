@@ -2,6 +2,8 @@ package com.erwin.backend.service;
 
 import com.erwin.backend.config.DbSessionFilter;
 import com.erwin.backend.config.SessionStore;
+import com.erwin.backend.dtos.CambiarClaveRequest;
+import com.erwin.backend.dtos.CambiarClaveResponse;
 import com.erwin.backend.dtos.LoginRequest;
 import com.erwin.backend.dtos.LoginResponse;
 import com.erwin.backend.entities.SesionActiva;
@@ -12,6 +14,7 @@ import com.erwin.backend.security.CryptoUtil;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -23,12 +26,13 @@ public class AuthService {
     private final UsuarioRepository usuarioRepo;
     private final PasswordEncoder passwordEncoder;
     private final SesionActivaRepository sesionActivaRepo;
+    private final JdbcTemplate jdbcTemplate;
 
-    public AuthService(UsuarioRepository usuarioRepo, PasswordEncoder passwordEncoder,     SesionActivaRepository sesionActivaRepo) {
+    public AuthService(UsuarioRepository usuarioRepo, PasswordEncoder passwordEncoder, SesionActivaRepository sesionActivaRepo, JdbcTemplate jdbcTemplate) {
         this.usuarioRepo = usuarioRepo;
         this.passwordEncoder = passwordEncoder;
         this.sesionActivaRepo = sesionActivaRepo;
-
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     public LoginResponse login(LoginRequest req, HttpSession session,  HttpServletRequest request) {
@@ -96,7 +100,31 @@ public class AuthService {
                 usuario.getApellidos()
         );
     }
+    public void cambiarClave(CambiarClaveRequest req) {
+        if (req.getIdUsuario() == null || req == null) {
+            throw new RuntimeException("FALTAN DATOS REQUERIDOS");
+        }
+        if (req.getClaveActual() == null || req.getClaveActual().isBlank())
+            throw new RuntimeException("CLAVE_ACTUAL_REQUERIDA");
+        if (req.getClaveNueva() == null || req.getClaveNueva().isBlank())
+            throw new RuntimeException("CLAVE_NUEVA_REQUERIDA");
 
+        Usuario u = usuarioRepo.findById(req.getIdUsuario()).orElseThrow(() -> new RuntimeException("Usuario no existe"));
+
+        validarPasswordMixto(req.getClaveActual(), u.getPasswordHash());
+
+        String nuevaHash = passwordEncoder.encode(req.getClaveNueva().trim());
+
+        jdbcTemplate.update(
+                "CALL public.sp_cambio_contraseña(?, ?, ?)",
+                req.getIdUsuario(),
+                req.getClaveActual(),
+                nuevaHash
+        );
+
+
+
+    }
     /**
      * Permite login con passwordHash BCrypt o en texto plano (solo pruebas).
      */

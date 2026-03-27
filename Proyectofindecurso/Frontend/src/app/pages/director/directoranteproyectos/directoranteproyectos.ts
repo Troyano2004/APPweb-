@@ -62,5 +62,7 @@ export class DirectorMisAnteproyectosComponent implements OnInit{
   }
   abrir(item: AnteDirectorItem) {
     localStorage.setItem('director_idAnteproyecto', String(item.idAnteproyecto));
+    localStorage.setItem('director_tituloProyecto', item.tituloProyecto || '');
+    localStorage.setItem('director_estudianteNombre', item.estudianteNombre || '');
     this.router.navigate(['/app/director/tutorias']); }
 }

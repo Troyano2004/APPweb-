@@ -36,6 +36,7 @@ public class CoordinadorService {
 
     private final CoordinadorRepository coordinadorRepo;
     private final DocenteCarreraRepository docenteCarreraRepo;
+    private final EmailService emailService;
 
     // ✅ Para llamar los SPs
     private final JdbcTemplate jdbcTemplate;
@@ -55,7 +56,7 @@ public class CoordinadorService {
             PeriodoTitulacionRepository periodoRepo,
             CoordinadorRepository coordinadorRepo,
             DocenteCarreraRepository docenteCarreraRepo,
-            JdbcTemplate jdbcTemplate, UsuarioRepository usuarioRepo
+            JdbcTemplate jdbcTemplate, UsuarioRepository usuarioRepo, EmailService emailService
     ) {
         this.proyectoRepo          = proyectoRepo;
         this.documentoRepo         = documentoRepo;
@@ -73,6 +74,7 @@ public class CoordinadorService {
         this.docenteCarreraRepo    = docenteCarreraRepo;
         this.jdbcTemplate          = jdbcTemplate;
         this.usuarioRepo = usuarioRepo;
+        this.emailService = emailService;
     }
 
     // ==========================================================
@@ -165,6 +167,7 @@ public class CoordinadorService {
             obs.setDetalle(request.getMotivo() != null ? request.getMotivo() : "Asignación de director");
             obs.setCreadoPor("Coordinación");
             observacionRepo.save(obs);
+
         }
     }
 
@@ -398,6 +401,7 @@ public class CoordinadorService {
             throw new RuntimeException("Datos incompletos");
         }
 
+
         Map<String, Object> result = jdbcTemplate.queryForMap(
                 "CALL sp_habilitar_docente_dt1(?, ?, ?, ?, NULL, NULL, NULL)",
                 req.getIdUsuario(), req.getIdDocente(),
@@ -413,6 +417,19 @@ public class CoordinadorService {
         r.setIdCarrera(req.getIdCarrera());
         r.setIdPeriodo(req.getIdPeriodo());
         r.setActivo(true);
+
+        try {
+            Docente docente = docenteRepo.findById(req.getIdDocente()).orElse(null);
+            Carrera carrera = carreraRepo.findById(req.getIdCarrera()).orElse(null);
+            PeriodoTitulacion periodo = periodoRepo.findById(req.getIdPeriodo()).orElse(null);
+
+            if (docente != null && carrera != null && periodo != null) {
+                String correo = docente.getUsuario().getCorreoInstitucional();
+                String nombre = docente.getUsuario().getNombres() + " " + docente.getUsuario().getApellidos();
+                emailService.notificarAsignacionDt1(correo, nombre, carrera.getNombre(), periodo.getDescripcion());
+            }
+        } catch (Exception ignored) {}
+
         return r;
     }
 

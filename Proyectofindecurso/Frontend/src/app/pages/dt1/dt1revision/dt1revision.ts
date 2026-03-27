@@ -38,7 +38,7 @@ export class Dt1RevisionComponent implements OnInit {
     const user = getSessionUser();
     this.idDocente = Number(user?.['idUsuario'] || 0);
 
-    // Si tienes ruta con :id úsalo, si no, usa localStorage
+
     const idUrl = Number(this.route.snapshot.paramMap.get('id') || 0);
     const idLocal = Number(localStorage.getItem('dt1_idAnteproyecto') || 0);
     this.idAnteproyecto = idUrl || idLocal;

@@ -3,6 +3,7 @@ package com.erwin.backend.controller;
 import com.erwin.backend.dtos.*;
 import com.erwin.backend.service.AnteproyectoService;
 import com.erwin.backend.service.Dt1Service;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -48,5 +49,13 @@ public class AnteproyectoController {
     @GetMapping("/{idAnteproyecto}/ultima-revision")
     public Dt1UltimaRevisionResponse ultimaRevision(@PathVariable Integer idAnteproyecto) {
         return dt1Service.ultimaRevision(idAnteproyecto);
+    }
+    @GetMapping("/pdf/{idEstudiante}")
+    public ResponseEntity<byte[]> pdf(@PathVariable Integer idEstudiante) {
+        byte[] bytes = service.generarPdf(idEstudiante);
+        return ResponseEntity.ok()
+                .header("Content-Type", "application/pdf")
+                .header("Content-Disposition", "inline; filename=anteproyecto.pdf")
+                .body(bytes);
     }
 }

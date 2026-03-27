@@ -19,14 +19,16 @@ public class AnteproyectoService {
     private final AnteproyectoTitulacionRepository anteRepo;
     private final JdbcTemplate jdbcTemplate;
 
+    private final Dt1PdfService pdf;
 
     public AnteproyectoService(AnteproyectoVersionRepository verRepo,
                                PropuestaRepository propRepo,
-                               AnteproyectoTitulacionRepository anteRepo,  JdbcTemplate jdbcTemplate) {
+                               AnteproyectoTitulacionRepository anteRepo,  JdbcTemplate jdbcTemplate,  Dt1PdfService pdf) {
         this.verRepo = verRepo;
         this.propRepo = propRepo;
         this.anteRepo = anteRepo;
         this.jdbcTemplate = jdbcTemplate;
+        this.pdf               = pdf;
     }
 
     /**
@@ -202,6 +204,39 @@ public class AnteproyectoService {
 
         return toDto(guardada);
     }
+    public byte[] generarPdf(Integer idEstudiante) {
+        if (idEstudiante == null)
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "ESTUDIANTE NO ENCONTRADO");
+
+        AnteproyectoTitulacion ante = anteRepo.findByEstudiante_IdEstudiante(idEstudiante)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "SIN ANTEPROYECTO"));
+
+        Anteproyectotitulacionversion version = verRepo
+                .findTopByAnteproyecto_IdAnteproyectoOrderByNumeroVersionDesc(ante.getIdAnteproyecto())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "SIN_VERSIONES"));
+
+        String html = pdf.leerHtml("dt1pdf.html");
+
+        html = html
+                .replace("{{ESTUDIANTE}}",      pdf.seguro(ante.getEstudiante().getUsuario().getNombres() + " " + ante.getEstudiante().getUsuario().getApellidos()))
+                .replace("{{PERIODO}}",          pdf.seguro(ante.getEleccion().getPeriodo().getDescripcion()))
+                .replace("{{ESTADO}}",           pdf.seguro(ante.getEstado()))
+                .replace("{{VERSION}}",          pdf.seguro(version.getNumeroVersion()))
+                .replace("{{FECHA_ENVIO}}",      pdf.seguro(version.getFechaEnvio()))
+                .replace("{{ID_ANTEPROYECTO}}", pdf.seguro(ante.getIdAnteproyecto()))
+                .replace("{{TITULO}}",           pdf.seguro(version.getTitulo()))
+                .replace("{{TEMA}}",             pdf.seguro(version.getTemaInvestigacion()))
+                .replace("{{PROBLEMA}}",         pdf.seguro(version.getPlanteamientoProblema()))
+                .replace("{{OBJ_GEN}}",          pdf.seguro(version.getObjetivosGenerales()))
+                .replace("{{OBJ_ESP}}",          pdf.seguro(version.getObjetivosEspecificos()))
+                .replace("{{MARCO}}",            pdf.seguro(version.getMarcoTeorico()))
+                .replace("{{METODO}}",           pdf.seguro(version.getMetodologia()))
+                .replace("{{RESULTADOS}}",       pdf.seguro(version.getResultadosEsperados()))
+                .replace("{{BIBLIO}}",           pdf.seguro(version.getBibliografia()));
+
+        return pdf.aPdf(html);
+    }
+
 
     // ===================== helpers =====================
 
@@ -210,6 +245,11 @@ public class AnteproyectoService {
         String e = estado.toUpperCase();
         // Ajusta según tu regla real
         return e.equals("APROBADA") || e.equals("RECHAZADA") || e.equals("EN_REVISION");
+    }
+
+
+    private String safe(Object o) {
+        return o == null ? "" : o.toString().trim();
     }
 
     private Anteproyectotitulacionversion crearVersion(AnteproyectoTitulacion a, AnteproyectoVersionRequest req) {

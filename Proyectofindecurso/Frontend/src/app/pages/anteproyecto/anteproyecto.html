@@ -1,6 +1,5 @@
 <div class="ap-page">
 
-  <!-- HEADER VERDE -->
   <div class="ap-header">
     <div class="ap-header-left">
       <div class="ap-header-title">Registrar / Editar Anteproyecto</div>
@@ -9,15 +8,12 @@
     <div class="ap-header-right"></div>
   </div>
 
-  <!-- CUERPO -->
   <div class="ap-body">
 
-    <!-- LOADING -->
     <div *ngIf="cargando" class="ap-alert warning">
       ⏳ Cargando información del anteproyecto...
     </div>
 
-    <!-- MENSAJE -->
     <div class="ap-alert"
          [class.danger]="mensaje.startsWith('Error') || mensaje.startsWith('No puedes') || mensaje.startsWith('Completa')"
          [class.success]="mensaje.startsWith('Borrador') || mensaje.startsWith('Enviado') || mensaje.startsWith('Recargada') || mensaje.startsWith('Se copiaron')"
@@ -26,10 +22,8 @@
       {{ mensaje }}
     </div>
 
-    <!-- CARD PRINCIPAL -->
     <div class="ap-card" *ngIf="!cargando">
 
-      <!-- META DEL ESTUDIANTE -->
       <div class="ap-meta">
         <div class="ap-meta-info">
           <span class="ap-meta-label">Estudiante:</span>
@@ -47,10 +41,10 @@
           <button class="ap-btn ghost" type="button" (click)="copiarDesdePropuesta()" [disabled]="!puedeEditar || cargando">⎘ Copiar propuesta</button>
           <button class="ap-btn save" type="button" (click)="guardarBorrador()" [disabled]="!puedeEditar || form.invalid || cargando">✓ Guardar</button>
           <button class="ap-btn primary" type="button" (click)="enviarARevision()" [disabled]="!puedeEditar || form.invalid || cargando">→ Enviar a revisión</button>
+          <button class="ap-btn ghost" type="button" (click)="verPdf()" [disabled]="cargando">📄 Ver PDF</button>
         </div>
       </div>
 
-      <!-- MOTIVO DE RECHAZO -->
       <div class="ap-rechazo"
            *ngIf="mostrarRechazo && anteproyecto?.ultimaVersion?.estadoVersion?.toUpperCase() === 'RECHAZADO'">
         <div class="ap-rechazo-icon">⚠️</div>
@@ -63,21 +57,52 @@
         </div>
       </div>
 
-      <!-- TABS -->
       <div class="ap-tabs">
-        <button class="ap-tab" [class.active]="tab==='portada'" (click)="tab='portada'">Portada</button>
-        <button class="ap-tab" [class.active]="tab==='introduccion'" (click)="tab='introduccion'">Introducción</button>
-        <button class="ap-tab" [class.active]="tab==='marco'" (click)="tab='marco'">Marco Teórico</button>
-        <button class="ap-tab" [class.active]="tab==='resultados'" (click)="tab='resultados'">Metodología / Resultados</button>
-        <button class="ap-tab" [class.active]="tab==='biblio'" (click)="tab='biblio'">Bibliografía</button>
+        <button class="ap-tab" [class.active]="tab==='portada'" (click)="tab='portada'; limpiarIa()">Portada</button>
+        <button class="ap-tab" [class.active]="tab==='introduccion'" (click)="tab='introduccion'; limpiarIa()">Introducción</button>
+        <button class="ap-tab" [class.active]="tab==='marco'" (click)="tab='marco'; limpiarIa()">Marco Teórico</button>
+        <button class="ap-tab" [class.active]="tab==='resultados'" (click)="tab='resultados'; limpiarIa()">Metodología / Resultados</button>
+        <button class="ap-tab" [class.active]="tab==='biblio'" (click)="tab='biblio'; limpiarIa()">Bibliografía</button>
       </div>
 
-      <!-- FORM -->
+      <!-- PANEL IA -->
+      <div class="ia-panel" *ngIf="iaResultado || iaAnalizando">
+        <div class="ia-panel-header">
+          <span class="ia-panel-icon">🤖</span>
+          <span class="ia-panel-title">Análisis IA — {{ iaSeccion }}</span>
+          <div class="ia-estado"
+               [class.bien]="iaEstado === 'BIEN'"
+               [class.mejoras]="iaEstado === 'NECESITA MEJORAS'"
+               [class.incompleto]="iaEstado === 'INCOMPLETO'"
+               *ngIf="iaEstado">
+            {{ iaEstado }}
+          </div>
+          <button class="ia-cerrar" (click)="limpiarIa()">✕</button>
+        </div>
+        <div class="ia-panel-body">
+          <div *ngIf="iaAnalizando" class="ia-loading">
+            <span class="ia-spinner"></span> Analizando con IA...
+          </div>
+
+          <ng-container *ngIf="!iaAnalizando && iaResultado">
+            <div class="ia-bloque" *ngFor="let bloque of parsearResultado()">
+              <div class="ia-bloque-titulo">{{ bloque.titulo }}</div>
+              <div class="ia-bloque-texto">{{ bloque.texto }}</div>
+            </div>
+          </ng-container>
+        </div>
+      </div>
+
       <form class="ap-form" [formGroup]="form">
 
         <!-- PORTADA -->
         <div class="ap-section" *ngIf="tab==='portada'">
-          <div class="ap-section-title">Portada</div>
+          <div class="ap-section-header">
+            <div class="ap-section-title">Portada</div>
+            <button class="ia-btn" type="button" (click)="analizarTabActual()" [disabled]="iaAnalizando">
+              🤖 Analizar {{ nombreTab() }} con IA
+            </button>
+          </div>
           <div class="ap-field">
             <label>Título</label>
             <input formControlName="titulo" placeholder="Ingrese el título del anteproyecto" />
@@ -92,7 +117,12 @@
 
         <!-- INTRODUCCIÓN -->
         <div class="ap-section" *ngIf="tab==='introduccion'">
-          <div class="ap-section-title">Introducción</div>
+          <div class="ap-section-header">
+            <div class="ap-section-title">Introducción</div>
+            <button class="ia-btn" type="button" (click)="analizarTabActual()" [disabled]="iaAnalizando">
+              🤖 Analizar {{ nombreTab() }} con IA
+            </button>
+          </div>
           <div class="ap-field">
             <label>Planteamiento del problema</label>
             <textarea rows="8" formControlName="planteamientoProblema" placeholder="Describe el planteamiento del problema..."></textarea>
@@ -112,7 +142,12 @@
 
         <!-- MARCO TEÓRICO -->
         <div class="ap-section" *ngIf="tab==='marco'">
-          <div class="ap-section-title">Marco Teórico</div>
+          <div class="ap-section-header">
+            <div class="ap-section-title">Marco Teórico</div>
+            <button class="ia-btn" type="button" (click)="analizarTabActual()" [disabled]="iaAnalizando">
+              🤖 Analizar {{ nombreTab() }} con IA
+            </button>
+          </div>
           <div class="ap-field">
             <label>Marco teórico</label>
             <textarea rows="14" formControlName="marcoTeorico" placeholder="Desarrolle el marco teórico de su investigación..."></textarea>
@@ -122,7 +157,12 @@
 
         <!-- METODOLOGÍA / RESULTADOS -->
         <div class="ap-section" *ngIf="tab==='resultados'">
-          <div class="ap-section-title">Metodología / Resultados</div>
+          <div class="ap-section-header">
+            <div class="ap-section-title">Metodología / Resultados</div>
+            <button class="ia-btn" type="button" (click)="analizarTabActual()" [disabled]="iaAnalizando">
+              🤖 Analizar {{ nombreTab() }} con IA
+            </button>
+          </div>
           <div class="ap-field">
             <label>Metodología</label>
             <textarea rows="8" formControlName="metodologia" placeholder="Describe la metodología utilizada..."></textarea>
@@ -137,7 +177,12 @@
 
         <!-- BIBLIOGRAFÍA -->
         <div class="ap-section" *ngIf="tab==='biblio'">
-          <div class="ap-section-title">Bibliografía</div>
+          <div class="ap-section-header">
+            <div class="ap-section-title">Bibliografía</div>
+            <button class="ia-btn" type="button" (click)="analizarTabActual()" [disabled]="iaAnalizando">
+              🤖 Analizar {{ nombreTab() }} con IA
+            </button>
+          </div>
           <div class="ap-field">
             <label>Bibliografía</label>
             <textarea rows="10" formControlName="bibliografia" placeholder="Lista las referencias bibliográficas..."></textarea>
@@ -151,7 +196,6 @@
 
       </form>
 
-      <!-- BASE CARD - PROPUESTA APROBADA -->
       <div class="ap-base-card" *ngIf="anteproyecto?.propuesta">
         <div class="ap-base-header">
           <span class="ap-base-badge">Base</span>

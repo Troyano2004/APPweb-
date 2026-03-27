@@ -44,3 +44,14 @@ export interface AnteproyectoVersion {
 }
 
 export type AnteproyectoVersionRequest = Omit<AnteproyectoVersion, 'idVersion' | 'fechaCreacion'>;
+
+
+export interface AnalizarRequest {
+  seccion: string;
+  contenido: string;
+  idEstudiante: number;
+}
+
+export interface AnalizarResponse {
+  resultado: string;
+}

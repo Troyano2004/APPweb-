@@ -3,53 +3,383 @@
 <head>
     <meta charset="UTF-8" />
     <style>
-        body{font-family:Arial, sans-serif; font-size:12px; color:#111; padding:22px}
-        .box{border:1px solid #333; padding:18px}
-        .title{font-size:16px; font-weight:700; text-align:center; margin-bottom:10px}
-        .sub{font-size:12px; text-align:center; margin-bottom:16px}
-        .meta{margin-bottom:12px}
-        .meta div{margin-bottom:4px}
-        .label{font-weight:700}
-        table{width:100%; border-collapse:collapse; margin-top:10px}
-        th,td{border:1px solid #333; padding:8px; vertical-align:top}
-        th{background:#f2f2f2}
-        .text{white-space:pre-wrap}
-        .footer{margin-top:14px; font-size:11px; color:#333}
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 11px;
+            color: #1a1008;
+            padding: 28px 36px;
+            background: #fff;
+        }
+
+        /* ── ENCABEZADO INSTITUCIONAL ── */
+        .inst-header {
+            border-bottom: 2px solid #1a1008;
+            padding-bottom: 10px;
+            margin-bottom: 6px;
+            display: table;
+            width: 100%;
+        }
+        .inst-left {
+            display: table-cell;
+            vertical-align: middle;
+        }
+        .inst-right {
+            display: table-cell;
+            vertical-align: middle;
+            text-align: right;
+            font-family: "Courier New", monospace;
+            font-size: 9px;
+            color: #7a6a58;
+            line-height: 1.8;
+        }
+        .inst-name {
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #1a1008;
+            line-height: 1.6;
+        }
+        .inst-sub {
+            font-size: 9px;
+            color: #7a6a58;
+            letter-spacing: 0.5px;
+        }
+        .doc-num {
+            color: #8b1a1a;
+            font-weight: bold;
+            font-size: 10px;
+        }
+
+        /* ── TÍTULO DOCUMENTO ── */
+        .doc-title-block {
+            text-align: center;
+            padding: 18px 0 14px;
+            border-bottom: 1px solid #c8bfaa;
+            margin-bottom: 12px;
+        }
+        .doc-type {
+            font-size: 8px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: #7a6a58;
+            margin-bottom: 6px;
+        }
+        .doc-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #1a1008;
+            line-height: 1.3;
+            margin-bottom: 4px;
+        }
+        .doc-subtitle {
+            font-size: 10px;
+            font-style: italic;
+            color: #7a6a58;
+        }
+        .title-rule {
+            margin-top: 10px;
+            color: #8b1a1a;
+            font-size: 12px;
+            letter-spacing: 8px;
+        }
+
+        /* ── METADATA ── */
+        .meta-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 16px;
+            border: 1px solid #c8bfaa;
+        }
+        .meta-table td {
+            padding: 6px 10px;
+            border: 1px solid #e2dcd0;
+            font-size: 10px;
+            vertical-align: top;
+        }
+        .meta-label {
+            font-size: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #7a6a58;
+            font-family: "Courier New", monospace;
+            background: #faf8f3;
+            width: 120px;
+        }
+        .meta-value {
+            color: #1a1008;
+            font-weight: bold;
+        }
+        .estado-badge {
+            background: #fef9e7;
+            color: #b8960c;
+            padding: 2px 8px;
+            border: 1px solid #f0d060;
+            font-size: 9px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* ── SECCIONES ── */
+        .section {
+            margin-bottom: 14px;
+            page-break-inside: avoid;
+        }
+        .section-header {
+            display: table;
+            width: 100%;
+            border-bottom: 1px solid #e2dcd0;
+            padding-bottom: 4px;
+            margin-bottom: 6px;
+        }
+        .section-num {
+            display: table-cell;
+            width: 30px;
+            font-family: "Courier New", monospace;
+            font-size: 9px;
+            color: #8b1a1a;
+            font-weight: bold;
+            vertical-align: middle;
+        }
+        .section-title {
+            display: table-cell;
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #1a1008;
+            vertical-align: middle;
+        }
+        .section-body {
+            font-size: 11px;
+            line-height: 1.7;
+            color: #3d2e1e;
+            text-align: justify;
+            padding-left: 30px;
+            white-space: pre-wrap;
+            font-style: italic;
+        }
+
+        /* ── DIVISOR ── */
+        .divider {
+            text-align: center;
+            color: #c8bfaa;
+            font-size: 10px;
+            letter-spacing: 6px;
+            margin: 10px 0;
+        }
+
+        /* ── FIRMAS ── */
+        .firma-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 24px;
+        }
+        .firma-table td {
+            width: 50%;
+            text-align: center;
+            padding: 0 30px;
+            vertical-align: bottom;
+        }
+        .firma-line {
+            border-top: 1px solid #1a1008;
+            margin-bottom: 4px;
+            margin-top: 36px;
+        }
+        .firma-label {
+            font-size: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #7a6a58;
+        }
+        .firma-name {
+            font-size: 10px;
+            color: #1a1008;
+            font-weight: bold;
+            margin-top: 2px;
+        }
+
+        /* ── PIE ── */
+        .footer {
+            margin-top: 20px;
+            padding-top: 8px;
+            border-top: 2px solid #1a1008;
+            display: table;
+            width: 100%;
+        }
+        .footer-left {
+            display: table-cell;
+            font-size: 8px;
+            color: #7a6a58;
+            font-family: "Courier New", monospace;
+            line-height: 1.7;
+            vertical-align: bottom;
+        }
+        .footer-right {
+            display: table-cell;
+            text-align: right;
+            font-size: 8px;
+            color: #7a6a58;
+            vertical-align: bottom;
+        }
+        .page-num {
+            font-size: 12px;
+            font-weight: bold;
+            color: #1a1008;
+            font-family: Georgia, serif;
+        }
     </style>
 </head>
 <body>
-<div class="box">
-    <div class="title">ANTEPROYECTO – DESARROLLO DE TITULACIÓN I</div>
-    <div class="sub">Documento de revisión para aprobación / rechazo</div>
 
-    <div class="meta">
-        <div><span class="label">Estudiante:</span> {{ESTUDIANTE}}</div>
-        <div><span class="label">Período:</span> {{PERIODO}}</div>
-        <div><span class="label">Estado:</span> {{ESTADO}}</div>
-        <div><span class="label">Versión:</span> v{{VERSION}}</div>
-        <div><span class="label">Fecha envío:</span> {{FECHA_ENVIO}}</div>
-        <div><span class="label">Anteproyecto:</span> #{{ID_ANTEPROYECTO}}</div>
+<!-- ENCABEZADO INSTITUCIONAL -->
+<div class="inst-header">
+    <div class="inst-left">
+        <img src="file:///C:/Users/ASUS/Downloads/LOGO_UTEQ.png"
+             style="height:50px; width:auto; vertical-align:middle;" alt="UTEQ" />
+        <div style="display:inline-block; vertical-align:middle; margin-left:10px;">
+            <div class="inst-name">Universidad Técnica Estatal de Quevedo</div>
+            <div class="inst-sub">Facultad de Ciencias de la Ingeniería — Sistema de Titulación DT1</div>
+        </div>
     </div>
-
-    <table>
-        <tr>
-            <th style="width:220px">Sección</th>
-            <th>Contenido</th>
-        </tr>
-        <tr><td class="label">Título</td><td class="text">{{TITULO}}</td></tr>
-        <tr><td class="label">Tema de investigación</td><td class="text">{{TEMA}}</td></tr>
-        <tr><td class="label">Planteamiento del problema</td><td class="text">{{PROBLEMA}}</td></tr>
-        <tr><td class="label">Objetivo general</td><td class="text">{{OBJ_GEN}}</td></tr>
-        <tr><td class="label">Objetivos específicos</td><td class="text">{{OBJ_ESP}}</td></tr>
-        <tr><td class="label">Marco teórico</td><td class="text">{{MARCO}}</td></tr>
-        <tr><td class="label">Metodología</td><td class="text">{{METODO}}</td></tr>
-        <tr><td class="label">Resultados esperados</td><td class="text">{{RESULTADOS}}</td></tr>
-        <tr><td class="label">Bibliografía</td><td class="text">{{BIBLIO}}</td></tr>
-    </table>
-
-    <div class="footer">
-        Este documento se genera automáticamente para la revisión del docente DT1.
+    <div class="inst-right">
+        <span class="doc-num">ANTEPROYECTO #{{ID_ANTEPROYECTO}}</span><br/>
+        Versión: v{{VERSION}}<br/>
+        Enviado: {{FECHA_ENVIO}}<br/>
+        Estado: {{ESTADO}}
     </div>
 </div>
+
+<!-- TÍTULO -->
+<div class="doc-title-block">
+    <div class="doc-type">Desarrollo de Titulación I — Documento de Revisión</div>
+    <div class="doc-title">{{TITULO}}</div>
+    <div class="doc-subtitle">Anteproyecto presentado para aprobación del Director de Titulación I</div>
+    <div class="title-rule">* * *</div>
+</div>
+
+<!-- METADATA -->
+<table class="meta-table">
+    <tr>
+        <td class="meta-label">Estudiante</td>
+        <td class="meta-value">{{ESTUDIANTE}}</td>
+        <td class="meta-label">Período</td>
+        <td class="meta-value">{{PERIODO}}</td>
+    </tr>
+    <tr>
+        <td class="meta-label">Estado</td>
+        <td class="meta-value"><span class="estado-badge">{{ESTADO}}</span></td>
+        <td class="meta-label">Fecha envío</td>
+        <td class="meta-value">{{FECHA_ENVIO}}</td>
+    </tr>
+</table>
+
+<!-- SECCIÓN 1 -->
+<div class="section">
+    <div class="section-header">
+        <span class="section-num">§1</span>
+        <span class="section-title">Tema de Investigación</span>
+    </div>
+    <div class="section-body">{{TEMA}}</div>
+</div>
+
+<!-- SECCIÓN 2 -->
+<div class="section">
+    <div class="section-header">
+        <span class="section-num">§2</span>
+        <span class="section-title">Planteamiento del Problema</span>
+    </div>
+    <div class="section-body">{{PROBLEMA}}</div>
+</div>
+
+<!-- SECCIÓN 3 -->
+<div class="section">
+    <div class="section-header">
+        <span class="section-num">§3</span>
+        <span class="section-title">Objetivo General</span>
+    </div>
+    <div class="section-body">{{OBJ_GEN}}</div>
+</div>
+
+<!-- SECCIÓN 4 -->
+<div class="section">
+    <div class="section-header">
+        <span class="section-num">§4</span>
+        <span class="section-title">Objetivos Específicos</span>
+    </div>
+    <div class="section-body">{{OBJ_ESP}}</div>
+</div>
+
+<div class="divider">- - - - - - - - - -</div>
+
+<!-- SECCIÓN 5 -->
+<div class="section">
+    <div class="section-header">
+        <span class="section-num">§5</span>
+        <span class="section-title">Marco Teórico</span>
+    </div>
+    <div class="section-body">{{MARCO}}</div>
+</div>
+
+<!-- SECCIÓN 6 -->
+<div class="section">
+    <div class="section-header">
+        <span class="section-num">§6</span>
+        <span class="section-title">Metodología</span>
+    </div>
+    <div class="section-body">{{METODO}}</div>
+</div>
+
+<!-- SECCIÓN 7 -->
+<div class="section">
+    <div class="section-header">
+        <span class="section-num">§7</span>
+        <span class="section-title">Resultados Esperados</span>
+    </div>
+    <div class="section-body">{{RESULTADOS}}</div>
+</div>
+
+<div class="divider">- - - - - - - - - -</div>
+
+<!-- SECCIÓN 8 -->
+<div class="section">
+    <div class="section-header">
+        <span class="section-num">§8</span>
+        <span class="section-title">Referencias Bibliográficas</span>
+    </div>
+    <div class="section-body">{{BIBLIO}}</div>
+</div>
+
+<!-- FIRMAS -->
+<table class="firma-table">
+    <tr>
+        <td>
+            <div class="firma-line"></div>
+            <div class="firma-label">Firma del Estudiante</div>
+            <div class="firma-name">{{ESTUDIANTE}}</div>
+        </td>
+        <td>
+            <div class="firma-line"></div>
+            <div class="firma-label">Director de Titulación I</div>
+            <div class="firma-name">_______________________</div>
+        </td>
+    </tr>
+</table>
+
+<!-- PIE -->
+<div class="footer">
+    <div class="footer-left">
+        Sistema de Titulación UTEQ — Documento generado automáticamente<br/>
+        Este documento es de uso interno para revisión académica
+    </div>
+    <div class="footer-right">
+        <span class="page-num">1</span><br/>
+        Pág. 1 de 1
+    </div>
+</div>
+
 </body>
 </html>

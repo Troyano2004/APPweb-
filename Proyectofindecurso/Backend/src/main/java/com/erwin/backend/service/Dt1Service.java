@@ -24,6 +24,7 @@ public class Dt1Service {
     private final Dt1PdfService                    pdf;
     private final JdbcTemplate                     jdbcTemplate;
     private final Dt1RevisionRepository           dt1RevisionRepo;
+    private final IaEjemploRepository              iaEjemploRepo;
 
     // revisionRepo y docenteRepo eliminados: el SP maneja el INSERT en dt1_revision
 
@@ -34,7 +35,8 @@ public class Dt1Service {
             PeriodoTitulacionRepository      periodoRepo,
             Dt1PdfService                    pdf,
             JdbcTemplate                     jdbcTemplate,
-            Dt1RevisionRepository           dt1RevisionRepo
+            Dt1RevisionRepository           dt1RevisionRepo,
+            IaEjemploRepository             iaEjemploRepo
     ) {
         this.anteRepo          = anteRepo;
         this.verRepo           = verRepo;
@@ -43,6 +45,7 @@ public class Dt1Service {
         this.pdf               = pdf;
         this.jdbcTemplate      = jdbcTemplate;
         this.dt1RevisionRepo   = dt1RevisionRepo;
+        this.iaEjemploRepo  = iaEjemploRepo;
     }
 
     // =========================================================
@@ -193,6 +196,32 @@ public class Dt1Service {
             };
             throw new ResponseStatusException(status, msg);
         }
+        try{
+            IaEjemplo ejemplo = new IaEjemplo();
+            AnteproyectoTitulacion ant = anteRepo.findById(req.getIdAnteproyecto()).orElse(null);
+            if(ant != null)
+            {
+                Anteproyectotitulacionversion v = verRepo.findTopByAnteproyecto_IdAnteproyectoOrderByNumeroVersionDesc(ant.getIdAnteproyecto()).orElse(null);
+                if(v != null)
+                {
+                    ejemplo.setIdEstudiante(ant.getEstudiante().getIdEstudiante());
+                    ejemplo.setSeccion("revision_final");
+                    ejemplo.setObservacion(req.getObservacion());
+                    ejemplo.setFuente("REVISION_FINAL");
+                    ejemplo.setDecision(safe(req.getDecision()).toUpperCase());
+                    ejemplo.setContenido(  "TÍTULO: " + safe(v.getTitulo()) +
+                            "\nOBJETIVO GENERAL: " + safe(v.getObjetivosGenerales()) +
+                            "\nPROBLEMA: " + safe(v.getPlanteamientoProblema()) +
+                            "\nMETODOLOGÍA: " + safe(v.getMetodologia()));
+
+                }
+                iaEjemploRepo.save(ejemplo);
+            }
+
+
+        }catch (Exception ignored){
+
+        }
     }
     @Transactional(readOnly = true)
     public Dt1UltimaRevisionResponse ultimaRevision(Integer idAnteproyecto) {
@@ -216,6 +245,7 @@ public class Dt1Service {
         Dt1DetalleResponse d = detalle(idAnteproyecto, idDocente);
 
         String html = pdf.leerHtml("dt1pdf.html");
+
 
         html = html
                 .replace("{{ESTUDIANTE}}",      pdf.seguro(d.getEstudiante()))

@@ -24,6 +24,7 @@ public class Dt1TutoriasService {
     private final Dt1TutorEstudianteRepository dt1TutorRepo;
     private final ZoomService zoomService;
     private final EmailService emailService;
+    private final IaEjemploRepository iaEjemploRepo;
 
     public Dt1TutoriasService(
             Dt1AsignacionRepository asigRepo,
@@ -33,7 +34,7 @@ public class Dt1TutoriasService {
             DocenteRepository docenteRepo,
             Dt1TutorEstudianteRepository dt1TutorRepo,
             ZoomService zoomService,
-            EmailService emailService
+            EmailService emailService,  IaEjemploRepository iaEjemploRepo
     ) {
         this.asigRepo = asigRepo;
         this.anteRepo = anteRepo;
@@ -43,6 +44,7 @@ public class Dt1TutoriasService {
         this.dt1TutorRepo = dt1TutorRepo;
         this.zoomService = zoomService;
         this.emailService = emailService;
+        this.iaEjemploRepo  = iaEjemploRepo;
     }
 
     // ==========================
@@ -207,33 +209,47 @@ public class Dt1TutoriasService {
     // ==========================
     @Transactional
     public ActaRevisionTutorResponse guardarActa(Integer idTutoria, Integer idDocente, ActaRevisionTutorRequest req) {
-
         if (req == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "DATOS_REQUERIDOS");
 
         TutoriaAnteproyecto t = validarTutoriaExiste(idTutoria);
-
-        // Debe ser el dueño de la tutoría
         validarDocenteEsDuenioDeTutoria(t, idDocente);
-
-        // ✅ además debe tener permiso (DT1 + tutor del estudiante)
         validarPermisoTutor(t.getAnteproyecto(), idDocente);
-
         validarAnteproyectoEnBorrador(t.getAnteproyecto());
         validarTutoriaParaGuardarActa(t);
         validarCamposMinimosActa(req);
 
-        ActaRevisionTutor acta = actaRepo.findByTutoria_IdTutoria(idTutoria)
-                .orElse(new ActaRevisionTutor());
-
+        ActaRevisionTutor acta = actaRepo.findByTutoria_IdTutoria(idTutoria).orElse(new ActaRevisionTutor());
         llenarActa(acta, t, req);
         acta = actaRepo.save(acta);
 
         t.setEstado("REALIZADA");
         tutRepo.save(t);
 
+        // ── Guardar en ia_ejemplos ──
+        try {
+            AnteproyectoTitulacion ante = anteRepo.findById(t.getAnteproyecto().getIdAnteproyecto()).orElse(null);
+            if(ante != null) {
+                IaEjemplo ej = new IaEjemplo();
+                ej.setIdEstudiante(ante.getEstudiante().getIdEstudiante());
+                ej.setSeccion("tutoria");
+                ej.setContenido(
+                        "TÍTULO: "            + textoSeguro(req.getTituloProyecto()) +
+                                "\nOBJETIVO: "        + textoSeguro(req.getObjetivo()) +
+                                "\nDETALLE REVISIÓN: "+ textoSeguro(req.getDetalleRevision())
+                );
+                ej.setDecision(textoSeguro(req.getCumplimiento()));
+                ej.setObservacion(
+                        textoSeguro(req.getObservaciones()) + " " + textoSeguro(req.getConclusion())
+                );
+                ej.setFuente("TUTORIA");
+                iaEjemploRepo.save(ej);
+            }
+        } catch (Exception ignored) {
+            // Silenciamos errores de IA para que no detengan el guardado del acta
+        }
+
         return mapActa(acta, t);
     }
-
     @Transactional(readOnly = true)
     public List<TutoriaCalendarioResponse> calendarioTutorias(Integer idDocente) {
         validarDocenteExiste(idDocente);

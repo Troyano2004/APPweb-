@@ -25,8 +25,19 @@ public class ConfiguracionCorreo {
     @Column(nullable = false, length = 100)
     private String usuario;
 
-    @Column(nullable = false, length = 255)
+    @Column(nullable = true, length = 255)
     private String password; // guardado encriptado con CryptoUtil
+
+    // === NUEVOS CAMPOS PARA OAUTH2 (Nulos por defecto) ===
+    @Column(name = "client_id", nullable = true, length = 255)
+    private String clientId;
+
+    @Column(name = "client_secret", nullable = true, length = 500)
+    private String clientSecret;
+
+    // Los refresh tokens de Microsoft pueden ser bastante largos, le damos más longitud
+    @Column(name = "refresh_token", nullable = true, length = 2000)
+    private String refreshToken;
 
     @Column(nullable = false)
     private Boolean activo = true;

@@ -97,11 +97,29 @@
             </svg>
             {{ cfg.usuario }}
           </div>
+          <!-- BADGE NO AUTORIZADO OUTLOOK -->
+          <span class="badge-no-auth" *ngIf="cfg.proveedor === 'OUTLOOK' && !cfg.autorizado">
+            ⚠ No autorizado
+          </span>
+          <!-- BADGE AUTORIZADO OUTLOOK -->
+          <span class="badge-auth" *ngIf="cfg.proveedor === 'OUTLOOK' && cfg.autorizado">
+            ✓ Autorizado
+          </span>
         </div>
       </div>
 
       <!-- ACCIONES -->
       <div class="config-actions">
+
+        <!-- Botón autorizar Outlook -->
+        <button
+          class="btn-accion btn-auth"
+          *ngIf="cfg.proveedor === 'OUTLOOK' && !cfg.autorizado"
+          [disabled]="procesando === cfg.id"
+          (click)="autorizarOutlook(cfg.id!)">
+          🔑 Autorizar
+        </button>
+
         <button
           class="btn-accion btn-activar"
           *ngIf="!cfg.activo"
@@ -113,6 +131,7 @@
           </svg>
           Activar
         </button>
+
         <button
           class="btn-accion btn-editar"
           [disabled]="procesando === cfg.id"
@@ -123,6 +142,7 @@
           </svg>
           Editar
         </button>
+
         <button
           class="btn-accion btn-eliminar"
           [disabled]="procesando === cfg.id"
@@ -136,6 +156,7 @@
             <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
           </svg>
         </button>
+
       </div>
     </div>
   </div>
@@ -181,9 +202,7 @@
 
 </div>
 
-<!-- ================================================
-     MODAL
-     ================================================ -->
+<!-- MODAL -->
 <div class="modal-overlay" *ngIf="mostrarFormulario" (click)="cerrarFormulario()">
   <div class="modal-box" (click)="$event.stopPropagation()">
 
@@ -243,67 +262,122 @@
           <span class="section-num">02</span> Credenciales
         </div>
 
-        <div class="form-group">
-          <label class="form-label">Correo de envío <span class="req">*</span></label>
-          <div class="input-wrap">
-            <span class="input-prefix">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                <polyline points="22,6 12,13 2,6"/>
-              </svg>
-            </span>
-            <input type="email" formControlName="usuario" placeholder="sistema@gmail.com"
-                   class="form-input" [class.input-error]="invalido('usuario')">
+        <!-- GMAIL / YAHOO -->
+        <ng-container *ngIf="!esOutlook">
+          <div class="form-group">
+            <label class="form-label">Correo de envío <span class="req">*</span></label>
+            <div class="input-wrap">
+              <span class="input-prefix">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                  <polyline points="22,6 12,13 2,6"/>
+                </svg>
+              </span>
+              <input type="email" formControlName="usuario" placeholder="sistema@gmail.com"
+                     class="form-input" [class.input-error]="invalido('usuario')">
+            </div>
+            <span class="campo-error" *ngIf="invalido('usuario') && form.get('usuario')?.errors?.['required']">El correo es obligatorio.</span>
+            <span class="campo-error" *ngIf="invalido('usuario') && form.get('usuario')?.errors?.['email']">Ingresa un correo válido.</span>
           </div>
-          <span class="campo-error" *ngIf="invalido('usuario') && form.get('usuario')?.errors?.['required']">El correo es obligatorio.</span>
-          <span class="campo-error" *ngIf="invalido('usuario') && form.get('usuario')?.errors?.['email']">Ingresa un correo válido.</span>
-        </div>
 
-        <div class="form-group">
-          <label class="form-label">
-            Contraseña / App Password
-            <span class="req" *ngIf="!editandoId">*</span>
-            <span class="tag-opcional" *ngIf="editandoId">opcional</span>
-          </label>
-          <div class="input-wrap">
-            <span class="input-prefix">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-              </svg>
-            </span>
-            <input
-              [type]="mostrarPassword ? 'text' : 'password'"
-              formControlName="password"
-              placeholder="{{ editandoId ? 'Dejar vacío para no cambiar' : 'xxxx xxxx xxxx xxxx' }}"
-              class="form-input" [class.input-error]="invalido('password')">
-            <button type="button" class="btn-toggle-pass" (click)="togglePassword()">
-              <svg *ngIf="!mostrarPassword" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
-              </svg>
-              <svg *ngIf="mostrarPassword" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
-                <line x1="1" y1="1" x2="23" y2="23"/>
-              </svg>
-            </button>
+          <div class="form-group">
+            <label class="form-label">
+              Contraseña / App Password
+              <span class="req" *ngIf="!editandoId">*</span>
+              <span class="tag-opcional" *ngIf="editandoId">opcional</span>
+            </label>
+            <div class="input-wrap">
+              <span class="input-prefix">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+              </span>
+              <input [type]="mostrarPassword ? 'text' : 'password'"
+                     formControlName="password"
+                     placeholder="{{ editandoId ? 'Dejar vacío para no cambiar' : 'xxxx xxxx xxxx xxxx' }}"
+                     class="form-input" [class.input-error]="invalido('password')">
+              <button type="button" class="btn-toggle-pass" (click)="togglePassword()">
+                <svg *ngIf="!mostrarPassword" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                </svg>
+                <svg *ngIf="mostrarPassword" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                  <line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>
+              </button>
+            </div>
+            <span class="campo-error" *ngIf="invalido('password')">La contraseña es obligatoria.</span>
           </div>
-          <span class="campo-error" *ngIf="invalido('password')">La contraseña es obligatoria.</span>
-        </div>
 
-        <div class="hint-box hint-gmail" *ngIf="form.get('proveedor')?.value === 'GMAIL'">
-          <span>💡</span>
-          <div>
-            <strong>Gmail requiere App Password</strong>
-            <p>Ve a <em>Cuenta Google → Seguridad → Verificación en 2 pasos → Contraseñas de aplicación</em>.</p>
+          <div class="hint-box hint-gmail" *ngIf="form.get('proveedor')?.value === 'GMAIL'">
+            <span>💡</span>
+            <div>
+              <strong>Gmail requiere App Password</strong>
+              <p>Ve a <em>Cuenta Google → Seguridad → Verificación en 2 pasos → Contraseñas de aplicación</em>.</p>
+            </div>
           </div>
-        </div>
-        <div class="hint-box hint-outlook" *ngIf="form.get('proveedor')?.value === 'OUTLOOK'">
-          <span>💡</span>
-          <div>
-            <strong>Outlook requiere configuración adicional</strong>
-            <p>Habilita SMTP en tu cuenta Microsoft. Usa contraseña de aplicación si tienes MFA.</p>
+        </ng-container>
+
+        <!-- OUTLOOK OAuth2 -->
+        <ng-container *ngIf="esOutlook">
+          <div class="form-group">
+            <label class="form-label">Correo Outlook <span class="req">*</span></label>
+            <div class="input-wrap">
+              <span class="input-prefix">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                  <polyline points="22,6 12,13 2,6"/>
+                </svg>
+              </span>
+              <input type="email" formControlName="usuario" placeholder="cuenta@hotmail.com"
+                     class="form-input" [class.input-error]="invalido('usuario')">
+            </div>
+            <span class="campo-error" *ngIf="invalido('usuario')">El correo es obligatorio.</span>
           </div>
-        </div>
+
+          <div class="form-group">
+            <label class="form-label">Client ID (Azure) <span class="req">*</span></label>
+            <div class="input-wrap">
+              <input type="text" formControlName="clientId"
+                     placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                     class="form-input" [class.input-error]="invalido('clientId')">
+            </div>
+            <span class="campo-error" *ngIf="invalido('clientId')">El Client ID es obligatorio.</span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">
+              Client Secret (Azure)
+              <span class="req" *ngIf="!editandoId">*</span>
+              <span class="tag-opcional" *ngIf="editandoId">opcional — dejar vacío para no cambiar</span>
+            </label>
+            <div class="input-wrap">
+              <input [type]="mostrarPassword ? 'text' : 'password'"
+                     formControlName="clientSecret"
+                     placeholder="{{ editandoId ? 'Dejar vacío para no cambiar' : 'Client Secret de Azure' }}"
+                     class="form-input" [class.input-error]="invalido('clientSecret')">
+              <button type="button" class="btn-toggle-pass" (click)="togglePassword()">
+                <svg *ngIf="!mostrarPassword" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                </svg>
+                <svg *ngIf="mostrarPassword" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                  <line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>
+              </button>
+            </div>
+            <span class="campo-error" *ngIf="invalido('clientSecret')">El Client Secret es obligatorio.</span>
+          </div>
+
+          <div class="hint-box hint-outlook">
+            <span>💡</span>
+            <div>
+              <strong>Outlook usa OAuth2</strong>
+              <p>Al guardar se abrirá una ventana para que autorices la cuenta con Microsoft. Solo se hace una vez por cuenta.</p>
+            </div>
+          </div>
+        </ng-container>
 
       </form>
     </div>
@@ -323,4 +397,3 @@
 
   </div>
 </div>
-

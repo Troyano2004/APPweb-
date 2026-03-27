@@ -6,7 +6,7 @@ import { ConfiguracionCorreoDto } from './model';
 @Injectable({ providedIn: 'root' })
 export class ConfiguracionCorreoService {
 
-  private readonly base = 'http://localhost:8080/api/configuracion-correo';
+  private readonly base = 'http://localhost:8080/api/correo';
 
   constructor(private http: HttpClient) {}
 
@@ -16,6 +16,9 @@ export class ConfiguracionCorreoService {
 
   obtenerActiva(): Observable<ConfiguracionCorreoDto> {
     return this.http.get<ConfiguracionCorreoDto>(`${this.base}/activa`);
+  }
+  autorizarOutlook(id: number): Observable<{ url: string }> {
+    return this.http.get<{ url: string }>(`${this.base}/${id}/outlook/autorizar`);
   }
 
   crear(dto: ConfiguracionCorreoDto): Observable<ConfiguracionCorreoDto> {
