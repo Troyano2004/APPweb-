@@ -3,6 +3,7 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../../environments/environment';
 
 // ── Interfaces ───────────────────────────────────────────────────────────────
 interface ResumenReporte {
@@ -350,7 +351,7 @@ interface RespuestaCompleta {
 })
 export class ReportePropuestasComponent implements OnInit {
 
-  private readonly API = 'http://localhost:8080/api/reportes/propuestas';
+  private readonly API = `${environment.apiUrl}/api/reportes/propuestas`;
 
   datos: RespuestaCompleta | null = null;
   propuestasFiltradas: ItemReporte[] = [];

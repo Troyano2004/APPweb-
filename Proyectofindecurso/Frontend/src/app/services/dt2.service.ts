@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 // ── M1 ────────────────────────────────────────────────────────────────────────
 export interface ProyectoPendienteConfiguracionDto {
@@ -252,7 +253,7 @@ export interface MensajeDto {
 // ── Service ───────────────────────────────────────────────────────────────────
 @Injectable({ providedIn: 'root' })
 export class Dt2Service {
-  private readonly base = 'http://localhost:8080/api/dt2';
+  private readonly base = `${environment.apiUrl}/api/dt2`;
 
   constructor(private http: HttpClient) {}
 

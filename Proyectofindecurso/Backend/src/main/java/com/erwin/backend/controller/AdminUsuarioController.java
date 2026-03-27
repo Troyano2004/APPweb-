@@ -15,7 +15,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/admin/usuarios")
-@CrossOrigin(origins = "http://localhost:4200")
+@CrossOrigin(origins = {"http://localhost:4200","http://26.102.176.187:4200","http://26.122.106.219:4200"})
 public class AdminUsuarioController {
 
     private final AdminUsuarioService service;
@@ -25,8 +25,14 @@ public class AdminUsuarioController {
     }
 
     @GetMapping
-    public ResponseEntity<List<UsuarioAdminDto>> listar() {
-        return ResponseEntity.ok(service.listar());
+    public ResponseEntity<?> listar() {
+        try {
+            return ResponseEntity.ok(service.listar());
+        } catch (Exception e) {
+            System.err.println("[USUARIOS ERROR] " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Error interno"));
+        }
     }
 
     // ── FIX Error 1: capturar excepciones del SP y retornar HTTP correcto ──

@@ -2,6 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 
 interface ReporteConfig {
   id: number;
@@ -32,7 +33,7 @@ export class ParametrosComponent implements OnInit {
   constructor() {}
 
   ngOnInit() {
-    this.http.get<ReporteConfig[]>('http://localhost:8080/api/reporte-config')
+    this.http.get<ReporteConfig[]>(`${environment.apiUrl}/api/reporte-config`)
       .subscribe({
         next: (data) => {
           console.log('Configs cargadas:', data);
@@ -44,7 +45,7 @@ export class ParametrosComponent implements OnInit {
 
   guardar(config: ReporteConfig) {
     this.guardando[config.id] = true;
-    this.http.put(`http://localhost:8080/api/reporte-config/${config.id}`,
+    this.http.put(`${environment.apiUrl}/api/reporte-config/${config.id}`,
       { valor: config.valor }).subscribe({
       next: () => {
         this.guardando[config.id] = false;

@@ -20,7 +20,9 @@ public class BackupEncryptionUtil {
 
     @Value("${backup.encryption.key}")
     private String base64Key;
-
+    public void setKey(String key){
+        this.base64Key = key;
+    }
     public String encrypt(String plainText) {
         if (plainText == null || plainText.isBlank()) return plainText;
         try {

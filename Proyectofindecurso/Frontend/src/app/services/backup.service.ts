@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
 export type TipoDestino     = 'LOCAL' | 'AZURE' | 'GOOGLE_DRIVE' | 'S3';
@@ -188,7 +189,7 @@ export interface TimelineResponseDto {
 @Injectable({ providedIn: 'root' })
 export class BackupService {
 
-  private readonly API_URL = 'http://localhost:8080/api/backup';
+  private readonly API_URL = `${environment.apiUrl}/api/backup`;
 
   constructor(private readonly http: HttpClient) {}
 

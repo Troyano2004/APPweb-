@@ -1,11 +1,12 @@
 import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
+import { environment } from '../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class RecoveryModeService {
 
-  private readonly API = 'http://localhost:8080/api/recovery';
+  private readonly API = `${environment.apiUrl}/api/recovery`;
 
   readonly bdCaida = signal(false);
 

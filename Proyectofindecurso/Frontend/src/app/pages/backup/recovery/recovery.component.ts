@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
+import { environment } from '../../../../environments/environment';
 
 interface BackupItem {
   fileId:        string;
@@ -33,7 +34,7 @@ type Fuente = 'DRIVE' | 'LOCAL';
 })
 export class RecoveryComponent implements OnInit {
 
-  private readonly API = 'http://localhost:8080/api/recovery';
+  private readonly API = `${environment.apiUrl}/api/recovery`;
 
   // ── Estado ──────────────────────────────────────────────────────
   paso   = signal<Paso>('auth');

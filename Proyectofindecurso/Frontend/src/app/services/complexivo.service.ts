@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface EstadoComplexivoEstudianteDto {
   tieneComplexivo: boolean; idComplexivo: number | null;
@@ -65,7 +66,7 @@ export interface PropuestaComplexivoDto {
 
 @Injectable({ providedIn: 'root' })
 export class ComplexivoService {
-  private readonly BASE = 'http://localhost:8080/api/complexivo';
+  private readonly BASE = `${environment.apiUrl}/api/complexivo`;
 
   constructor(private http: HttpClient) {}
 

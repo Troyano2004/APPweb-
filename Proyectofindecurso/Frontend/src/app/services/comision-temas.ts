@@ -2,6 +2,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface TemaBancoDto {
   idTema: number;
@@ -119,8 +120,8 @@ export interface RevisionPropuestaPreviaRequest {
 @Injectable({ providedIn: 'root' })
 export class ComisionTemasService {
 
-  private readonly API_URL    = 'http://localhost:8080/api/comision-temas';
-  private readonly IA_API_URL = 'http://localhost:8080/api/revision-ia';
+  private readonly API_URL    = `${environment.apiUrl}/api/comision-temas`;
+  private readonly IA_API_URL = `${environment.apiUrl}/api/revision-ia`;
 
   constructor(private readonly http: HttpClient) {}
 

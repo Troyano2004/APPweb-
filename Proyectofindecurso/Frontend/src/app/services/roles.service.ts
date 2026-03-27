@@ -2,6 +2,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 /* ========= DTOs ========= */
 
@@ -54,7 +55,7 @@ export interface RolPermisosRequest {
 @Injectable({ providedIn: 'root' })
 export class RolesService {
 
-  private readonly baseUrl = 'http://localhost:8080';
+  private readonly baseUrl = environment.apiUrl;
 
   private readonly rolAppUrl     = `${this.baseUrl}/rol-app`;
   private readonly permisosUrl   = `${this.baseUrl}/permisos`;

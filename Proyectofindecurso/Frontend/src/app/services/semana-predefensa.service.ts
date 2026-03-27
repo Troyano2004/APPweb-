@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface GuardarSemanaRequest {
   fechaInicio:      string;
@@ -76,7 +77,7 @@ export interface ExtenderSemanaRequest {
 @Injectable({ providedIn: 'root' })
 export class SemanaPredefensaService {
 
-  private readonly API = 'http://localhost:8080/api/dt2/semana-predefensa';
+  private readonly API = `${environment.apiUrl}/api/dt2/semana-predefensa`;
 
   constructor(private http: HttpClient) {}
 

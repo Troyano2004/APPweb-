@@ -2,8 +2,9 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { SolicitudPendiente } from './model';
+import { environment } from '../../../environments/environment';
 
-const BASE = 'http://localhost:8080/api/solicitud-registro';
+const BASE = `${environment.apiUrl}/api/solicitud-registro`;
 
 @Injectable({ providedIn: 'root' })
 export class GestionSolicitudesService {

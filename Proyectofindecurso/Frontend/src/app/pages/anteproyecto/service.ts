@@ -2,10 +2,11 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Anteproyecto, AnteproyectoVersion, AnteproyectoVersionRequest } from './model';
+import { environment } from '../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class AnteproyectoService {
-  private base = 'http://localhost:8080/api/anteproyectos';
+  private base = `${environment.apiUrl}/api/anteproyectos`;
 
   constructor(private http: HttpClient) {}
 

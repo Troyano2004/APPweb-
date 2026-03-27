@@ -6,9 +6,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
-@CrossOrigin(origins = "http://localhost:4200")
+@CrossOrigin(origins = {"http://localhost:4200","http://26.102.176.187:4200","http://26.122.106.219:4200"})
 public class RolAppController {
 
     private final RolAppService service;
@@ -18,8 +19,14 @@ public class RolAppController {
     }
 
     @GetMapping("/rol-app")
-    public ResponseEntity<List<RolAppDto>> listar() {
-        return ResponseEntity.ok(service.listar());
+    public ResponseEntity<?> listar() {
+        try {
+            return ResponseEntity.ok(service.listar());
+        } catch (Exception e) {
+            System.err.println("[ROLES ERROR] " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Error interno"));
+        }
     }
 
     @PostMapping("/rol-app")

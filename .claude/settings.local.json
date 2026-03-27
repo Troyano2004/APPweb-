@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(netstat -ano)",
+      "Bash(findstr :4200)",
+      "Bash(findstr \":8080 \")",
+      "Bash(findstr \"LISTENING\")",
+      "Bash(findstr :8080)"
+    ]
+  }
+}

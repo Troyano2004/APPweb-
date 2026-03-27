@@ -3,6 +3,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 /* ========= DTOs ========= */
 
@@ -47,7 +48,7 @@ export interface UsuarioUpdateRequest {
 
 @Injectable({ providedIn: 'root' })
 export class AdminUsuariosService {
-  private baseUrl = 'http://localhost:8080';
+  private baseUrl = environment.apiUrl;
 
   constructor(private http: HttpClient) {}
 

@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 import {
   EnviarCodigoRequest,
   VerificarCodigoRequest,
@@ -11,7 +12,7 @@ import {
 
 @Injectable({ providedIn: 'root' })
 export class SolicitudRegistroService {
-  private readonly baseUrl = 'http://localhost:8080/api/solicitud-registro';
+  private readonly baseUrl = `${environment.apiUrl}/api/solicitud-registro`;
 
   constructor(private http: HttpClient) {}
 
@@ -34,6 +35,6 @@ export class SolicitudRegistroService {
   // (Opcional) cargar carreras si tienes endpoint de catálogo
   // Ajusta la URL a tu backend real
   listarCarreras(): Observable<CarreraItem[]> {
-    return this.http.get<CarreraItem[]>('http://localhost:8080/api/catalogos/carreras');
+    return this.http.get<CarreraItem[]>(`${environment.apiUrl}/api/catalogos/carreras`);
   }
 }

@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, ElementRef, EventEmitter, forwardRef, Input, Output, ViewChild } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-rich-text-editor',
@@ -25,7 +26,7 @@ export class RichTextEditorComponent implements ControlValueAccessor {
   @ViewChild('imageInput', { static: true }) imageInputRef!: ElementRef<HTMLInputElement>;
 
   disabled = false;
-  private readonly API_URL = 'http://localhost:8080';
+  private readonly API_URL = environment.apiUrl;
   private innerValue = '';
 
   constructor(private http: HttpClient) {}

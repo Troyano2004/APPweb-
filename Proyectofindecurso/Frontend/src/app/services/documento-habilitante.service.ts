@@ -2,6 +2,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface HabilitanteDto {
   id?: number;
@@ -64,7 +65,7 @@ export interface SubirAntiplagioPorDirectorRequest {
   providedIn: 'root'
 })
 export class DocumentoHabilitanteService {
-  private readonly API_URL = 'http://localhost:8080';
+  private readonly API_URL = environment.apiUrl;
   private readonly base = `${this.API_URL}/api/habilitantes`;
 
   constructor(private http: HttpClient) {}
