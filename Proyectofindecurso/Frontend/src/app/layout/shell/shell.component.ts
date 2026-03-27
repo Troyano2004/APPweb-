@@ -84,7 +84,7 @@ export class ShellComponent implements OnInit, OnDestroy {
         { label: 'Resumen general', path: '/app/dashboard', roles: ['ADMIN', 'COORDINADOR', 'DIRECTOR_ADMINISTRATIVO'] },
         { label: 'Mi panel docente', path: '/app/dashboard', roles: ['DOCENTE', 'DOCENTE_TITULADO'] },
         { label: 'Mi panel', path: '/app/dashboard', roles: ['ESTUDIANTE', 'SECRETARIO', 'ABOGADO'] },
-        { label: 'Mi progreso', path: '/app/mi-progreso', roles: ['ESTUDIANTE'] },
+
       ],
     },
     {
@@ -269,6 +269,14 @@ export class ShellComponent implements OnInit, OnDestroy {
         { label: 'Config. Auditoría', path: '/app/admin/auditoria/config' },
         { label: 'Respaldos BD', path: '/app/admin/backup', roles: ['ADMIN'] },
         { label: 'Restaurar BD', path: '/app/admin/backup/restaurar', roles: ['ADMIN'] },
+      ],
+    },
+    {
+      title: 'Mi progreso',
+      icon: '📈',
+      roles: ['ESTUDIANTE'],
+      items: [
+        { label: 'Mi progreso', path: '/app/mi-progreso', roles: ['ESTUDIANTE'] },
       ],
     },
   ];
