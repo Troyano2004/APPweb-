@@ -82,7 +82,7 @@ import { MiProgresoComponent } from './pages/mi-progreso/mi-progreso.component';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'login' },
-  { path: 'mi-progreso', component: MiProgresoComponent, data: { title: 'Mi progreso' } },
+
 
   { path: 'login', component: LoginComponent, canActivate: [loginGuard], data: { title: 'Login' } },
   { path: 'registro-estudiante', component: RegistroEstudianteComponent, data: { title: 'Registro Estudiante' } },
@@ -93,7 +93,7 @@ export const routes: Routes = [
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
       { path: 'dashboard', component: DashboardComponent, data: { title: 'Dashboard' } },
-
+      { path: 'mi-progreso', component: MiProgresoComponent, data: { title: 'Mi progreso' } },
       // ── Estudiante / Anteproyecto ──────────────────────────────────────────
       { path: 'anteproyecto/nuevo', component: AnteproyectoComponent, data: { title: 'Registrar anteproyecto' } },
       { path: 'tutorias/historial', component: Historialtutorias,     data: { title: 'Historial de Tutorías' } },
