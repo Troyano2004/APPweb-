@@ -1,6 +1,7 @@
 
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { ComisionTemasService } from '../../services/comision-temas';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import {
   ActivatedRoute,
   NavigationEnd,
@@ -9,9 +10,10 @@ import {
   RouterLinkActive,
   RouterOutlet,
 } from '@angular/router';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { filter, Subscription } from 'rxjs';
+
+import { ComisionTemasService } from '../../services/comision-temas';
+import { NotificacionesService, NotificacionDto } from '../../services/notificaciones.service';
 import { getSessionEntityId, getSessionUser, getUserRoles } from '../../services/session';
 
 type AppRole =
@@ -73,6 +75,11 @@ export class ShellComponent implements OnInit, OnDestroy {
   searchFocused = false;
   searchResults: SearchResult[] = [];
 
+  notifOpen = false;
+  notifCargando = false;
+  notifCount = 0;
+  notificaciones: NotificacionDto[] = [];
+
   private readonly subscriptions = new Subscription();
 
   private readonly ALL_SECTIONS: MenuSection[] = [
@@ -84,7 +91,6 @@ export class ShellComponent implements OnInit, OnDestroy {
         { label: 'Resumen general', path: '/app/dashboard', roles: ['ADMIN', 'COORDINADOR', 'DIRECTOR_ADMINISTRATIVO'] },
         { label: 'Mi panel docente', path: '/app/dashboard', roles: ['DOCENTE', 'DOCENTE_TITULADO'] },
         { label: 'Mi panel', path: '/app/dashboard', roles: ['ESTUDIANTE', 'SECRETARIO', 'ABOGADO'] },
-
       ],
     },
     {
@@ -286,7 +292,8 @@ export class ShellComponent implements OnInit, OnDestroy {
   constructor(
     private readonly router: Router,
     private readonly route: ActivatedRoute,
-    private readonly comisionTemasService: ComisionTemasService
+    private readonly comisionTemasService: ComisionTemasService,
+    private readonly notifService: NotificacionesService
   ) {}
 
   ngOnInit(): void {
@@ -303,10 +310,40 @@ export class ShellComponent implements OnInit, OnDestroy {
     this.subscriptions.add(sub);
 
     this.cargarModalidadSiEsEstudiante();
+    this.cargarNotificaciones();
   }
 
   ngOnDestroy(): void {
     this.subscriptions.unsubscribe();
+  }
+
+  toggleNotif(): void {
+    this.notifOpen = !this.notifOpen;
+    if (this.notifOpen && this.notificaciones.length === 0) {
+      this.cargarNotificaciones();
+    }
+  }
+
+  cerrarNotif(): void {
+    this.notifOpen = false;
+  }
+
+  private cargarNotificaciones(): void {
+    const user = getSessionUser();
+    const idEst = getSessionEntityId(user, 'estudiante');
+    if (!idEst) return;
+
+    this.notifCargando = true;
+    this.notifService.obtener(idEst).subscribe({
+      next: data => {
+        this.notificaciones = data;
+        this.notifCount = data.filter(n => n.tipo === 'ALERTA' || n.tipo === 'EXITO').length;
+        this.notifCargando = false;
+      },
+      error: () => {
+        this.notifCargando = false;
+      }
+    });
   }
 
   esComplexivo(): boolean {
@@ -464,6 +501,7 @@ export class ShellComponent implements OnInit, OnDestroy {
         ...sec,
         items: sec.items.filter(it => {
           if (it.roles && !it.roles.some(r => userRoles.includes(r))) return false;
+          if (it.soloComplexivo && !this.esComplexivo()) return false;
           if (it.soloNoComplexivo && this.esComplexivo()) return false;
           return true;
         }),
