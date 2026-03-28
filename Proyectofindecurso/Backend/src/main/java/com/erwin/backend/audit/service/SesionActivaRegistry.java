@@ -172,7 +172,7 @@ public class SesionActivaRegistry {
     public List<SesionActivaInfo> getSesionesActivas() {
         System.out.println("[REGISTRY] getSesionesActivas - total=" + sesiones.size());
 
-        LocalDateTime limite = LocalDateTime.now().minusMinutes(30);
+        LocalDateTime limite = LocalDateTime.now().minusMinutes(2);
         sesiones.entrySet().removeIf(e -> {
             boolean expirada = e.getValue().getUltimaActividad().isBefore(limite);
             if (expirada) System.out.println("[REGISTRY] Eliminando expirada: "

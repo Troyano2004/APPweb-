@@ -1,5 +1,5 @@
 
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { ComisionTemasService } from '../../services/comision-temas';
 import {
   ActivatedRoute,
@@ -14,6 +14,7 @@ import { FormsModule } from '@angular/forms';
 import { filter, Subscription } from 'rxjs';
 import { getSessionEntityId, getSessionUser, getUserRoles } from '../../services/session';
 import { AuthService } from '../../services/auth';
+import { environment } from '../../../environments/environment';
 
 type AppRole =
   | 'ADMIN'
@@ -75,6 +76,14 @@ export class ShellComponent implements OnInit, OnDestroy {
   searchResults: SearchResult[] = [];
 
   private readonly subscriptions = new Subscription();
+  private heartbeatInterval: ReturnType<typeof setInterval> | null = null;
+
+  // Referencia guardada para poder remover el listener en ngOnDestroy
+  private readonly onVisibilityChange = (): void => {
+    if (document.visibilityState === 'hidden') {
+      this.enviarBeaconLogout();
+    }
+  };
 
   private readonly ALL_SECTIONS: MenuSection[] = [
     {
@@ -298,10 +307,17 @@ export class ShellComponent implements OnInit, OnDestroy {
     this.subscriptions.add(sub);
 
     this.cargarModalidadSiEsEstudiante();
+
+    this.heartbeatInterval = setInterval(() => this.enviarHeartbeat(), 30000);
+    document.addEventListener('visibilitychange', this.onVisibilityChange);
   }
 
   ngOnDestroy(): void {
     this.subscriptions.unsubscribe();
+    if (this.heartbeatInterval !== null) {
+      clearInterval(this.heartbeatInterval);
+    }
+    document.removeEventListener('visibilitychange', this.onVisibilityChange);
   }
 
   esComplexivo(): boolean {
@@ -339,6 +355,32 @@ export class ShellComponent implements OnInit, OnDestroy {
       next: () => this.ejecutarLogoutLocal(),
       error: () => this.ejecutarLogoutLocal()
     });
+  }
+
+  @HostListener('window:beforeunload')
+  onBeforeUnload(): void {
+    this.enviarBeaconLogout();
+    localStorage.clear();
+    sessionStorage.clear();
+  }
+
+  private enviarHeartbeat(): void {
+    this.authService.heartbeat().subscribe({ error: () => {} });
+  }
+
+  private enviarBeaconLogout(): void {
+    const token = localStorage.getItem('token');
+    const raw = localStorage.getItem('usuario');
+    let username: string | null = null;
+    try { username = raw ? (JSON.parse(raw)?.username ?? null) : null; } catch { /* noop */ }
+
+    if (token && username) {
+      const blob = new Blob(
+        [JSON.stringify({ username })],
+        { type: 'application/json' }
+      );
+      navigator.sendBeacon(`${environment.apiUrl}/api/auth/logout-beacon`, blob);
+    }
   }
 
   private ejecutarLogoutLocal(): void {

@@ -23,6 +23,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/login").permitAll()
                         .requestMatchers("/api/auth/logout").permitAll()
+                        .requestMatchers("/api/auth/logout-beacon").permitAll()
+                        .requestMatchers("/api/auth/heartbeat").permitAll()
                         .requestMatchers("/debug/**").permitAll()
                         // ── Recovery: accesible aunque la BD esté caída ──────────
                         // La seguridad la maneja RecoveryService con contraseña maestra

@@ -30,4 +30,16 @@ export class AuthService {
       }
     );
   }
+
+  heartbeat() {
+    const token = localStorage.getItem('token');
+    return this.http.post(
+      `${this.baseUrl}/heartbeat`,
+      {},
+      {
+        withCredentials: true,
+        headers: token ? { 'Authorization': 'Bearer ' + token } : {}
+      }
+    );
+  }
 }

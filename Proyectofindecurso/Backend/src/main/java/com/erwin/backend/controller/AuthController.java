@@ -10,10 +10,13 @@ import com.erwin.backend.security.JwtService;
 import com.erwin.backend.service.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -41,7 +44,10 @@ public class AuthController {
         return authService.login(req, session, request);
     }
 
-    @PostMapping("/logout")
+    @PostMapping(value = "/logout",
+                 consumes = {MediaType.APPLICATION_JSON_VALUE,
+                             MediaType.TEXT_PLAIN_VALUE,
+                             MediaType.ALL_VALUE})
     public ResponseEntity<Void> logout(HttpSession session,
                                        HttpServletRequest request) {
         System.out.println("=== LOGOUT ENDPOINT ALCANZADO ===");
@@ -117,6 +123,59 @@ public class AuthController {
             System.err.println("[LOGOUT] Error: " + e.getMessage());
         }
 
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping(value = "/logout-beacon",
+                 consumes = {MediaType.APPLICATION_JSON_VALUE,
+                             MediaType.TEXT_PLAIN_VALUE,
+                             MediaType.ALL_VALUE})
+    public ResponseEntity<Void> logoutBeacon(
+            @RequestBody(required = false) Map<String, String> body,
+            HttpServletRequest request) {
+        try {
+            String username = body != null ? body.get("username") : null;
+            System.out.println("[LOGOUT-BEACON] username=" + username);
+
+            if (username != null && !username.isBlank()) {
+                auditService.registrar(AuditEventDto.builder()
+                        .entidad("Login")
+                        .accion("LOGOUT")
+                        .entidadId(null)
+                        .username(username)
+                        .idUsuario(null)
+                        .correoUsuario(null)
+                        .ipAddress(AuditService.extractIp(request))
+                        .estadoAnterior(null)
+                        .estadoNuevo(null)
+                        .metadata(null)
+                        .build());
+                sesionRegistry.cerrarSesionesPorUsername(username);
+                System.out.println("[LOGOUT-BEACON] Sesion cerrada para: " + username);
+            }
+        } catch (Exception e) {
+            System.err.println("[LOGOUT-BEACON] Error: " + e.getMessage());
+        }
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/heartbeat")
+    public ResponseEntity<Void> heartbeat(HttpServletRequest request,
+                                          Authentication authentication) {
+        if (authentication != null && !"anonymousUser".equals(authentication.getName())) {
+            sesionRegistry.actualizarActividadPorUsername(authentication.getName());
+        } else {
+            // Fallback: extraer username del JWT si Spring no lo resolvió
+            String authHeader = request.getHeader("Authorization");
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                try {
+                    String username = jwtService.extractUsername(authHeader.substring(7));
+                    if (username != null) {
+                        sesionRegistry.actualizarActividadPorUsername(username);
+                    }
+                } catch (Exception ignored) {}
+            }
+        }
         return ResponseEntity.ok().build();
     }
 }
