@@ -31,11 +31,6 @@ public class Dt2Controller {
         return service.listarProyectosPendientesConfiguracion();
     }
 
-    /**
-     * GET /api/dt2/proyectos/todos-configuracion
-     * Devuelve TODOS los proyectos (pendientes Y completos) para el coordinador.
-     * Útil para ver el estado global sin filtrar por configuración incompleta.
-     */
     @GetMapping("/proyectos/todos-configuracion")
     public List<Dt2Dtos.ProyectoPendienteConfiguracionDto> listarTodosConfiguracion() {
         return service.listarTodosProyectosConfiguracion();
@@ -137,6 +132,59 @@ public class Dt2Controller {
     @GetMapping("/proyectos/{idProyecto}/antiplagio")
     public Dt2Dtos.CertificadoAntiplacioDto getCertificado(@PathVariable Integer idProyecto) {
         return service.getCertificadoAntiplagio(idProyecto);
+    }
+
+
+    /**
+     * POST /api/dt2/proyectos/{idProyecto}/antiplagio-ia
+     * Registra el resultado antiplagio calculado automáticamente por IA.
+     * No requiere archivo PDF — el porcentaje proviene de WasItAIGenerated.
+     */
+    @PostMapping("/proyectos/{idProyecto}/antiplagio-ia")
+    public Dt2Dtos.CertificadoAntiplacioDto registrarAntiplacioIA(
+            @PathVariable Integer idProyecto,
+            @RequestBody Dt2Dtos.RegistrarAntiplacioIaRequest req) {
+        req.setIdProyecto(idProyecto);
+        return service.registrarAntiplacioIA(req);
+    }
+
+    // =========================================================
+    // MÓDULO 3B — Revisión IA del contenido del documento
+    // =========================================================
+
+    /**
+     * GET /api/dt2/proyectos/{idProyecto}/documento-texto
+     * Devuelve todos los campos de texto del DocumentoTitulacion
+     * para que el frontend los analice con WasItAIGenerated.
+     */
+    @GetMapping("/proyectos/{idProyecto}/documento-texto")
+    public Dt2Dtos.DocumentoTitulacionTextoDto getDocumentoTexto(@PathVariable Integer idProyecto) {
+        return service.getDocumentoTexto(idProyecto);
+    }
+
+    /**
+     * POST /api/dt2/proyectos/{idProyecto}/revision-ia
+     * Recibe el resultado del análisis IA desde el frontend
+     * y lo persiste en feedbackIa + estadoRevisionIa del documento.
+     */
+    @PostMapping("/proyectos/{idProyecto}/revision-ia")
+    public Dt2Dtos.MensajeDto guardarRevisionIa(
+            @PathVariable Integer idProyecto,
+            @RequestBody Dt2Dtos.GuardarRevisionIaRequest req) {
+        req.setIdProyecto(idProyecto);
+        return service.guardarRevisionIa(req);
+    }
+
+
+    /**
+     * POST /api/dt2/wasitai/detect
+     * Proxy hacia WasItAIGenerated — evita CORS del navegador.
+     * La API key vive en application.properties: wasitai.api.key=tu-key
+     */
+    @PostMapping("/wasitai/detect")
+    public Dt2Dtos.WasItAiResponse detectarConWasItAI(
+            @RequestBody Dt2Dtos.WasItAiRequest req) {
+        return service.detectarConWasItAI(req);
     }
 
     // =========================================================

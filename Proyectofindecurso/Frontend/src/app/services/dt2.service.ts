@@ -139,6 +139,84 @@ export interface CertificadoAntiplacioDto {
   historial: AntiplacioIntentoDto[];
 }
 
+// ── M3B — Revisión IA ─────────────────────────────────────────────────────────
+
+/** Todos los campos de texto del documento de titulación */
+export interface DocumentoTitulacionTextoDto {
+  idDocumento: number;
+  idProyecto: number;
+  titulo: string;
+  nombreEstudiante: string;
+  carreraEstudiante: string;
+  estadoDocumento: string;
+  estadoRevisionIa: string | null;
+  feedbackIa: string | null;
+  resumen: string | null;
+  abstractText: string | null;
+  introduccion: string | null;
+  planteamientoProblema: string | null;
+  justificacion: string | null;
+  objetivoGeneral: string | null;
+  objetivosEspecificos: string | null;
+  marcoTeorico: string | null;
+  metodologia: string | null;
+  resultados: string | null;
+  discusion: string | null;
+  conclusiones: string | null;
+  recomendaciones: string | null;
+  bibliografia: string | null;
+  anexos: string | null;
+}
+
+/** Request para guardar el resultado del análisis IA en BD */
+export interface GuardarRevisionIaRequest {
+  /** Porcentaje promedio de probabilidad IA (0–100) */
+  porcentajePromedioIa: number;
+  /** BAJO | MEDIO | ALTO */
+  nivelRiesgo: string;
+  /** Detalle por sección en texto */
+  feedbackIa: string;
+  /** LIMPIO | SOSPECHOSO | ANALIZADO */
+  estadoRevisionIa: string;
+}
+
+
+/** Request para registrar antiplagio automático desde análisis IA (sin PDF) */
+export interface RegistrarAntiplacioIaRequest {
+  idDocenteDt2: number;
+  /** Porcentaje calculado por WasItAIGenerated (0–100) */
+  porcentajeCoincidencia: number;
+  /** BAJO | MEDIO | ALTO */
+  nivelRiesgo: string;
+  observaciones?: string;
+}
+
+/** Request al proxy WasItAIGenerated */
+export interface WasItAiRequest {
+  content: string;
+}
+
+export interface WasItAiAnalysis {
+  likelihood: string;
+  reasoning: string;
+}
+
+export interface WasItAiSentence {
+  text: string;
+  isAI: boolean;
+  confidence: number;
+  scores: { ai: number; human: number };
+}
+
+/** Respuesta del proxy WasItAIGenerated (espejo del JSON externo) */
+export interface WasItAiResponse {
+  isAI: boolean;
+  confidence: number;
+  patterns: string[];
+  analysis: WasItAiAnalysis;
+  sentences: WasItAiSentence[];
+}
+
 // ── M4 ────────────────────────────────────────────────────────────────────────
 export interface EvaluacionMiembroDto {
   idDocente: number;
@@ -261,10 +339,9 @@ export class Dt2Service {
   listarPendientesConfiguracion(): Observable<ProyectoPendienteConfiguracionDto[]> {
     return this.http.get<ProyectoPendienteConfiguracionDto[]>(`${this.base}/proyectos/pendientes-configuracion`);
   }
+
   listarTodosConfiguracion(): Observable<ProyectoPendienteConfiguracionDto[]> {
-    return this.http.get<ProyectoPendienteConfiguracionDto[]>(
-      `${this.base}/proyectos/todos-configuracion`
-    );
+    return this.http.get<ProyectoPendienteConfiguracionDto[]>(`${this.base}/proyectos/todos-configuracion`);
   }
 
   getConfiguracion(idProyecto: number): Observable<ConfiguracionProyectoDto> {
@@ -288,9 +365,6 @@ export class Dt2Service {
     return this.http.get<ProyectoPendienteConfiguracionDto[]>(`${this.base}/director/${idDirector}/proyectos`);
   }
 
-  // ✅ NUEVO: proyectos asignados al Docente DT2 con documento en APROBADO_POR_DIRECTOR
-
-  // ✅ NUEVO: proyectos en estado PREDEFENSA (para coordinador)
   listarProyectosEnPredefensa(): Observable<ProyectoPendienteConfiguracionDto[]> {
     return this.http.get<ProyectoPendienteConfiguracionDto[]>(`${this.base}/proyectos/en-predefensa`);
   }
@@ -299,7 +373,6 @@ export class Dt2Service {
     return this.http.get<ProyectoPendienteConfiguracionDto[]>(`${this.base}/docente-dt2/${idDocenteDt2}/proyectos`);
   }
 
-  // ✅ NUEVO: proyectos en PREDEFENSA donde el docente es tribunal
   listarProyectosTribunal(idDocente: number): Observable<ProyectoPendienteConfiguracionDto[]> {
     return this.http.get<ProyectoPendienteConfiguracionDto[]>(`${this.base}/tribunal/${idDocente}/proyectos`);
   }
@@ -327,6 +400,54 @@ export class Dt2Service {
 
   getCertificado(idProyecto: number): Observable<CertificadoAntiplacioDto> {
     return this.http.get<CertificadoAntiplacioDto>(`${this.base}/proyectos/${idProyecto}/antiplagio`);
+  }
+
+
+  /**
+   * POST /api/dt2/proyectos/{idProyecto}/antiplagio-ia
+   * Registra el resultado antiplagio calculado automáticamente por IA.
+   * No requiere PDF — el porcentaje viene de WasItAIGenerated.
+   */
+  registrarAntiplacioIA(idProyecto: number, req: RegistrarAntiplacioIaRequest): Observable<CertificadoAntiplacioDto> {
+    return this.http.post<CertificadoAntiplacioDto>(
+      `${this.base}/proyectos/${idProyecto}/antiplagio-ia`,
+      req
+    );
+  }
+
+  // ── M3B — Revisión IA ────────────────────────────────────────────────────────
+
+  /**
+   * GET /api/dt2/proyectos/{idProyecto}/documento-texto
+   * Trae todos los campos de texto del documento para analizarlos con IA.
+   */
+  getDocumentoTexto(idProyecto: number): Observable<DocumentoTitulacionTextoDto> {
+    return this.http.get<DocumentoTitulacionTextoDto>(
+      `${this.base}/proyectos/${idProyecto}/documento-texto`
+    );
+  }
+
+  /**
+   * POST /api/dt2/proyectos/{idProyecto}/revision-ia
+   * Guarda el resultado del análisis IA en feedbackIa y estadoRevisionIa del documento.
+   */
+  guardarRevisionIa(idProyecto: number, req: GuardarRevisionIaRequest): Observable<MensajeDto> {
+    return this.http.post<MensajeDto>(
+      `${this.base}/proyectos/${idProyecto}/revision-ia`,
+      req
+    );
+  }
+
+  /**
+   * POST /api/dt2/wasitai/detect
+   * Proxy hacia WasItAIGenerated — la API key vive en el backend,
+   * evitando el bloqueo CORS del navegador.
+   */
+  detectarConWasItAI(req: WasItAiRequest): Observable<WasItAiResponse> {
+    return this.http.post<WasItAiResponse>(
+      `${this.base}/wasitai/detect`,
+      req
+    );
   }
 
   // ── M4 ──────────────────────────────────────────────────────────────────────

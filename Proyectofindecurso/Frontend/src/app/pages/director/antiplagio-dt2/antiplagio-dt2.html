@@ -1,15 +1,17 @@
 <div class="antiplagio-dt2">
   <h2>Certificación Antiplagio — Titulación II</h2>
-  <p class="subtitle">Sube el informe COMPILATIO (PDF). Umbral: &lt;10% = Favorable / ≥10% = Bloqueado.</p>
+  <p class="subtitle">El análisis se realiza automáticamente sobre el contenido del documento usando IA.</p>
 
   <div class="alert error" *ngIf="error()">{{ error() }}</div>
-  <div class="alert ok" *ngIf="ok()">{{ ok() }}</div>
+  <div class="alert ok"    *ngIf="ok()">{{ ok() }}</div>
 
   <div class="layout">
-    <!-- Lista proyectos -->
+
+    <!-- ══ LISTA DE PROYECTOS ══════════════════════════════════════ -->
     <div class="panel-lista">
       <h3>Mis proyectos</h3>
       <div *ngIf="loading() && proyectos().length === 0" class="loading">Cargando...</div>
+
       <div class="proyecto-card"
            *ngFor="let p of proyectos()"
            [class.activo]="proyectoSeleccionado()?.idProyecto === p.idProyecto"
@@ -18,76 +20,193 @@
         <div class="proyecto-meta">{{ p.estudiante }}</div>
         <span class="badge {{ p.estadoProyecto }}">{{ p.estadoProyecto }}</span>
       </div>
-      <div *ngIf="!loading() && proyectos().length === 0" class="empty">Sin proyectos en desarrollo.</div>
+
+      <div *ngIf="!loading() && proyectos().length === 0" class="empty">
+        Sin proyectos disponibles.
+      </div>
     </div>
 
-    <!-- Detalle -->
+    <!-- ══ PANEL DETALLE ═══════════════════════════════════════════ -->
     <div class="panel-detalle" *ngIf="proyectoSeleccionado(); else sinSeleccion">
-      <h3>{{ proyectoSeleccionado()!.titulo }}</h3>
 
-      <!-- Estado actual del certificado -->
-      <div class="cert-estado" *ngIf="certificado()">
-        <div class="estado-badge" [class]="certificado()!.certificadoFavorable ? 'favorable' : 'rechazado'">
-          {{ certificado()!.certificadoFavorable ? '✓ FAVORABLE' : '✗ RECHAZADO' }}
+      <div class="detalle-header">
+        <div>
+          <h3>{{ proyectoSeleccionado()!.titulo }}</h3>
+          <span class="estudiante-nombre">{{ proyectoSeleccionado()!.estudiante }}</span>
         </div>
-        <div class="cert-info">
-          <span>Intentos: <strong>{{ certificado()!.totalIntentos }}</strong></span>
-          <span *ngIf="certificado()!.ultimoPorcentaje !== null">
-            Último: <strong>{{ certificado()!.ultimoPorcentaje }}%</strong>
+        <!-- Badge de resultado previo guardado en BD -->
+        <div class="estado-ia-badge" *ngIf="documentoTexto()?.estadoRevisionIa && promedioConfianzaIA() === null">
+          <span class="ia-chip" [class]="documentoTexto()!.estadoRevisionIa!.toLowerCase()">
+            🤖 {{ documentoTexto()!.estadoRevisionIa }}
           </span>
-          <a *ngIf="certificado()!.urlUltimoInforme" [href]="certificado()!.urlUltimoInforme" target="_blank" class="link">
-            Ver último informe
-          </a>
         </div>
+      </div>
 
-        <!-- Historial intentos -->
+      <!-- Certificado vigente -->
+      <div class="cert-vigente" *ngIf="certificado() && certificado()!.totalIntentos > 0">
+        <div class="cert-estado-row">
+          <span class="estado-chip" [class]="certificado()!.certificadoFavorable ? 'favorable' : 'rechazado'">
+            {{ certificado()!.certificadoFavorable ? '✓ FAVORABLE' : '✗ RECHAZADO' }}
+          </span>
+          <span class="cert-meta">
+            {{ certificado()!.totalIntentos }} análisis · Último: <strong>{{ certificado()!.ultimoPorcentaje }}%</strong>
+          </span>
+        </div>
+        <!-- Historial -->
         <div class="historial" *ngIf="certificado()!.historial?.length">
-          <h4>Historial de intentos</h4>
           <div class="intento-row" *ngFor="let i of certificado()!.historial">
             <span class="fecha">{{ i.fechaIntento | date: 'dd/MM/yyyy HH:mm' }}</span>
             <span class="pct" [class]="i.favorable ? 'ok' : 'fail'">{{ i.porcentajeCoincidencia }}%</span>
             <span class="resultado">{{ i.resultado }}</span>
-            <a *ngIf="i.urlInforme" [href]="i.urlInforme" target="_blank" class="link-small">PDF</a>
           </div>
         </div>
       </div>
 
-      <div class="no-cert" *ngIf="!certificado()">
-        <p>No se ha registrado ningún informe antiplagio para este proyecto.</p>
+      <!-- Cargando documento -->
+      <div class="estado-doc" *ngIf="cargandoDocumento()">
+        <span class="spinner"></span> Cargando documento...
       </div>
 
-      <!-- Formulario subida -->
-      <div class="form-subida">
-        <h4>Registrar nuevo informe COMPILATIO</h4>
-        <form [formGroup]="formAntiplagio" (ngSubmit)="subirAntiplagio()">
-          <div class="form-row">
-            <label>Informe COMPILATIO (PDF, máx. 50MB)</label>
-            <input type="file" accept="application/pdf" (change)="onArchivoChange($event)" />
-            <small *ngIf="archivoSeleccionado" class="archivo-ok">✓ {{ archivoSeleccionado.name }}</small>
-          </div>
-          <div class="form-row">
-            <label>Porcentaje de coincidencia (%)</label>
-            <input type="number" formControlName="porcentajeCoincidencia" min="0" max="100" step="0.01"
-                   placeholder="Ej: 7.5" />
-            <small class="umbral-hint">
-              &lt;10% → Favorable (habilita Predefensa) · ≥10% → Bloqueado
-            </small>
-          </div>
-          <div class="form-row">
-            <label>Observaciones <small>(opcional)</small></label>
-            <textarea formControlName="observaciones" rows="2" placeholder="Comentarios del director..."></textarea>
-          </div>
-          <button type="submit" [disabled]="loading()">
-            {{ loading() ? 'Subiendo...' : 'Registrar informe antiplagio' }}
-          </button>
-        </form>
+      <!-- Sin documento -->
+      <div class="estado-doc warn" *ngIf="!documentoTexto() && !cargandoDocumento()">
+        ⚠ No se encontró documento de titulación para este proyecto.
       </div>
+
+      <!-- Documento cargado — sin análisis aún -->
+      <div *ngIf="documentoTexto() && !cargandoDocumento() && seccionesAnalizadas().length === 0 && !analizandoIA()">
+
+        <!-- Feedback previo en BD -->
+        <div class="feedback-previo" *ngIf="documentoTexto()!.feedbackIa">
+          <strong>Último análisis guardado:</strong>
+          <p>{{ documentoTexto()!.feedbackIa }}</p>
+        </div>
+
+        <div class="ia-intro">
+          <span class="ia-intro-icon">🤖</span>
+          <div>
+            <strong>Análisis automático de contenido IA</strong>
+            <p>
+              Se analizarán las secciones completadas del documento usando
+              <strong>WasItAIGenerated</strong>. El resultado se registrará
+              automáticamente como certificado antiplagio.
+            </p>
+            <p class="ia-nota">
+              Umbral: &lt;10% = Favorable · ≥10% = Bloqueado.
+              Solo se analizan secciones con contenido real.
+            </p>
+          </div>
+        </div>
+
+        <button class="btn-analizar" (click)="analizarYRegistrar()">
+          🔍 Analizar y registrar resultado
+        </button>
+      </div>
+
+      <!-- En progreso o terminado -->
+      <div *ngIf="analizandoIA() || registrandoIA() || guardandoIA() || seccionesAnalizadas().length > 0">
+
+        <!-- Barra de progreso global -->
+        <div class="progreso-global" *ngIf="analizandoIA()">
+          <span class="spinner"></span>
+          Analizando secciones...
+          <span class="progreso-cuenta">
+            {{ seccionesCompletadas() }} / {{ seccionesAnalizadas().length }}
+          </span>
+        </div>
+
+        <div class="progreso-global guardando" *ngIf="guardandoIA() && !analizandoIA()">
+          <span class="spinner"></span> Guardando análisis IA...
+        </div>
+
+        <div class="progreso-global registrando" *ngIf="registrandoIA() && !analizandoIA() && !guardandoIA()">
+          <span class="spinner"></span> Registrando resultado antiplagio...
+        </div>
+
+        <!-- Resumen cuando termina todo -->
+        <div class="ia-resumen" *ngIf="promedioConfianzaIA() !== null && !analizandoIA() && !registrandoIA() && !guardandoIA()">
+          <div class="resumen-score" [class]="getNivelRiesgo()">
+            <span class="score-num">{{ promedioConfianzaIA() }}%</span>
+            <span class="score-label">probabilidad IA</span>
+          </div>
+          <div class="resumen-info">
+            <div class="riesgo-label" [class]="getNivelRiesgo()">
+              Riesgo
+              <strong>{{
+                  getNivelRiesgo() === 'bajo'  ? 'BAJO'  :
+                    getNivelRiesgo() === 'medio' ? 'MEDIO' : 'ALTO'
+                }}</strong>
+            </div>
+            <p class="resumen-desc">
+              <ng-container *ngIf="getNivelRiesgo() === 'bajo'">
+                Bajo índice de contenido IA. Resultado registrado como FAVORABLE.
+              </ng-container>
+              <ng-container *ngIf="getNivelRiesgo() === 'medio'">
+                Índice moderado de IA. Se recomienda revisión antes de aprobar.
+              </ng-container>
+              <ng-container *ngIf="getNivelRiesgo() === 'alto'">
+                Alto índice de IA. Resultado registrado como RECHAZADO. El estudiante debe corregir el documento.
+              </ng-container>
+            </p>
+            <button class="btn-reanalizar" (click)="reanalizar()"
+                    [disabled]="analizandoIA() || registrandoIA() || guardandoIA()">
+              🔄 Volver a analizar
+            </button>
+          </div>
+        </div>
+
+        <!-- Secciones -->
+        <div class="secciones-lista">
+          <div class="seccion-item" *ngFor="let s of seccionesAnalizadas()">
+
+            <div class="seccion-header">
+              <span class="seccion-nombre">{{ s.label }}</span>
+
+              <span class="seccion-analizando" *ngIf="s.analizando">
+                <span class="spinner-sm"></span>
+              </span>
+
+              <span class="seccion-error" *ngIf="s.error && !s.analizando">
+                ⚠ {{ s.error }}
+              </span>
+
+              <div class="seccion-resultado" *ngIf="s.resultado && !s.analizando">
+                <span class="resultado-chip"
+                      [style.background]="s.resultado.isAI ? '#fed7d7' : '#c6f6d5'"
+                      [style.color]="s.resultado.isAI ? '#c53030' : '#276749'">
+                  {{ s.resultado.isAI ? '🤖 IA' : '✍️ Humano' }}
+                </span>
+                <span class="resultado-pct" [style.color]="getBarraColor(s.resultado.confidence)">
+                  {{ (s.resultado.confidence * 100).toFixed(1) }}%
+                </span>
+              </div>
+            </div>
+
+            <div class="barra-wrap" *ngIf="s.resultado && !s.analizando">
+              <div class="barra-bg">
+                <div class="barra-fill"
+                     [style.width.%]="s.resultado.confidence * 100"
+                     [style.background]="getBarraColor(s.resultado.confidence)">
+                </div>
+              </div>
+            </div>
+
+            <div class="seccion-reasoning" *ngIf="s.resultado?.analysis?.reasoning && !s.analizando">
+              {{ s.resultado!.analysis.reasoning }}
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
     </div>
+    <!-- /panel-detalle -->
 
     <ng-template #sinSeleccion>
       <div class="panel-detalle empty-panel">
-        <p>Selecciona un proyecto para gestionar el antiplagio.</p>
+        <p>Selecciona un proyecto para analizar el documento.</p>
       </div>
     </ng-template>
+
   </div>
 </div>

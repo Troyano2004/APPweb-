@@ -9,17 +9,14 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Map;
 
-/**
- * DTOs para los 5 módulos del sistema de Titulación II.
- */
 public class Dt2Dtos {
 
     // =========================================================
     // MÓDULO 1 — Configuración inicial de Titulación II
     // =========================================================
 
-    /** Lista de proyectos con anteproyecto APROBADO pendientes de configurar DT2. */
     @Data @NoArgsConstructor @AllArgsConstructor
     public static class ProyectoPendienteConfiguracionDto {
         private Integer idProyecto;
@@ -34,7 +31,6 @@ public class Dt2Dtos {
         private Boolean configuracionCompleta;
     }
 
-    /** Request para asignar el docente DT2. */
     @Data @NoArgsConstructor @AllArgsConstructor
     public static class AsignarDocenteDt2Request {
         private Integer idProyecto;
@@ -44,7 +40,6 @@ public class Dt2Dtos {
         private String observacion;
     }
 
-    /** Request para asignar/cambiar el Director del TIC. */
     @Data @NoArgsConstructor @AllArgsConstructor
     public static class AsignarDirectorRequest {
         private Integer idProyecto;
@@ -54,14 +49,12 @@ public class Dt2Dtos {
         private String periodo;
     }
 
-    /** Request para registrar miembro del tribunal. */
     @Data @NoArgsConstructor @AllArgsConstructor
     public static class MiembroTribunalRequest {
         private Integer idDocente;
-        private String cargo; // PRESIDENTE | VOCAL | SUPLENTE
+        private String cargo;
     }
 
-    /** Request para asignar todo el tribunal de una vez. */
     @Data @NoArgsConstructor @AllArgsConstructor
     public static class AsignarTribunalDt2Request {
         private Integer idProyecto;
@@ -70,7 +63,6 @@ public class Dt2Dtos {
         private List<MiembroTribunalRequest> miembros;
     }
 
-    /** Respuesta de configuración del proyecto. */
     @Data @NoArgsConstructor @AllArgsConstructor
     public static class ConfiguracionProyectoDto {
         private Integer idProyecto;
@@ -107,7 +99,6 @@ public class Dt2Dtos {
     // MÓDULO 2 — Seguimiento de avances
     // =========================================================
 
-    /** Request para registrar una asesoría. */
     @Data @NoArgsConstructor @AllArgsConstructor
     public static class RegistrarAsesoriaRequest {
         private Integer idProyecto;
@@ -116,11 +107,10 @@ public class Dt2Dtos {
         private String observaciones;
         private String evidenciaUrl;
         private BigDecimal porcentajeAvance;
-        private Integer numeroCorte; // 1 o 2
-        private BigDecimal calificacion; // opcional
+        private Integer numeroCorte;
+        private BigDecimal calificacion;
     }
 
-    /** DTO de una asesoría registrada. */
     @Data @NoArgsConstructor @AllArgsConstructor
     public static class AsesoriaDto {
         private Integer idAsesoria;
@@ -132,7 +122,6 @@ public class Dt2Dtos {
         private BigDecimal calificacion;
     }
 
-    /** Request para cerrar un corte y generar el acta. */
     @Data @NoArgsConstructor @AllArgsConstructor
     public static class CerrarCorteRequest {
         private Integer idProyecto;
@@ -142,7 +131,6 @@ public class Dt2Dtos {
         private String observaciones;
     }
 
-    /** DTO del acta de corte. */
     @Data @NoArgsConstructor @AllArgsConstructor
     public static class ActaCorteDto {
         private Integer idActaCorte;
@@ -153,10 +141,9 @@ public class Dt2Dtos {
         private BigDecimal notaCorte;
         private String observaciones;
         private String urlActaPdf;
-        private String advertencia; // si no se alcanzaron las 5 asesorías mínimas
+        private String advertencia;
     }
 
-    /** Resumen de seguimiento para una vista. */
     @Data @NoArgsConstructor @AllArgsConstructor
     public static class SeguimientoDto {
         private Integer idProyecto;
@@ -174,7 +161,6 @@ public class Dt2Dtos {
     // MÓDULO 3 — Certificación antiplagio
     // =========================================================
 
-    /** DTO de un intento de antiplagio. */
     @Data @NoArgsConstructor @AllArgsConstructor
     public static class AntiplacioIntentoDto {
         private Integer idIntento;
@@ -183,10 +169,9 @@ public class Dt2Dtos {
         private String urlInforme;
         private Boolean favorable;
         private String observaciones;
-        private String resultado; // "APROBADO (<10%)" o "RECHAZADO (>=10%)"
+        private String resultado;
     }
 
-    /** Respuesta del estado del certificado antiplagio. */
     @Data @NoArgsConstructor @AllArgsConstructor
     public static class CertificadoAntiplacioDto {
         private Integer idProyecto;
@@ -199,10 +184,105 @@ public class Dt2Dtos {
     }
 
     // =========================================================
+    // MÓDULO 3B — Revisión IA del contenido del documento
+    // =========================================================
+
+    /**
+     * Todos los campos de texto del DocumentoTitulacion para
+     * enviarlos al frontend y analizarlos con WasItAIGenerated.
+     */
+    @Data @NoArgsConstructor @AllArgsConstructor
+    public static class DocumentoTitulacionTextoDto {
+        private Integer idDocumento;
+        private Integer idProyecto;
+        private String titulo;
+        private String nombreEstudiante;
+        private String carreraEstudiante;
+        private String estadoDocumento;
+        private String estadoRevisionIa;
+        private String feedbackIa;
+        private String resumen;
+        private String abstractText;
+        private String introduccion;
+        private String planteamientoProblema;
+        private String justificacion;
+        private String objetivoGeneral;
+        private String objetivosEspecificos;
+        private String marcoTeorico;
+        private String metodologia;
+        private String resultados;
+        private String discusion;
+        private String conclusiones;
+        private String recomendaciones;
+        private String bibliografia;
+        private String anexos;
+    }
+
+    /**
+     * El frontend manda este request tras analizar con WasItAIGenerated.
+     * El backend lo persiste en feedbackIa + estadoRevisionIa.
+     */
+    @Data @NoArgsConstructor @AllArgsConstructor
+    public static class GuardarRevisionIaRequest {
+        private Integer idProyecto;
+        private Integer porcentajePromedioIa;
+        private String nivelRiesgo;
+        private String feedbackIa;
+        private String estadoRevisionIa;
+    }
+
+    /**
+     * Registra antiplagio automático desde el análisis IA (sin PDF).
+     * El porcentaje viene de WasItAIGenerated calculado en el frontend.
+     */
+    @Data @NoArgsConstructor @AllArgsConstructor
+    public static class RegistrarAntiplacioIaRequest {
+        private Integer idProyecto;
+        private Integer idDocenteDt2;
+        private BigDecimal porcentajeCoincidencia;
+        private String nivelRiesgo;
+        private String observaciones;
+    }
+
+    /**
+     * Request al proxy WasItAIGenerated — el backend hace la llamada HTTP
+     * para evitar CORS en el navegador.
+     */
+    @Data @NoArgsConstructor @AllArgsConstructor
+    public static class WasItAiRequest {
+        private String content;
+    }
+
+    @Data @NoArgsConstructor @AllArgsConstructor
+    public static class WasItAiAnalysis {
+        private String likelihood;
+        private String reasoning;
+    }
+
+    @Data @NoArgsConstructor @AllArgsConstructor
+    public static class WasItAiSentence {
+        private String text;
+        private Boolean isAI;
+        private Double confidence;
+        private Map<String, Double> scores;
+    }
+
+    /**
+     * Respuesta del proxy WasItAIGenerated (espejo del JSON externo).
+     */
+    @Data @NoArgsConstructor @AllArgsConstructor
+    public static class WasItAiResponse {
+        private Boolean isAI;
+        private Double confidence;
+        private List<String> patterns;
+        private WasItAiAnalysis analysis;
+        private List<WasItAiSentence> sentences;
+    }
+
+    // =========================================================
     // MÓDULO 4 — Predefensa
     // =========================================================
 
-    /** Request para programar la predefensa. */
     @Data @NoArgsConstructor @AllArgsConstructor
     public static class ProgramarPredefensaRequest {
         private Integer idProyecto;
@@ -213,36 +293,33 @@ public class Dt2Dtos {
         private String observaciones;
     }
 
-    /** Request para que el docente DT2 registre su calificación (60%). */
     @Data @NoArgsConstructor @AllArgsConstructor
     public static class CalificarPredefensaDocenteRequest {
         private Integer idProyecto;
         private Integer idDocenteDt2;
-        private BigDecimal nota; // sobre 10
+        private BigDecimal nota;
         private String observaciones;
     }
 
-    /** Request para que un miembro del tribunal califique la predefensa (su parte = 40% promedio). */
     @Data @NoArgsConstructor @AllArgsConstructor
     public static class CalificarPredefensaTribunalRequest {
         private Integer idProyecto;
-        private Integer idDocente; // miembro del tribunal
-        private BigDecimal nota; // sobre 10
+        private Integer idDocente;
+        private BigDecimal nota;
         private String observaciones;
-        private Boolean solicitudCorrecciones; // true si el tribunal pide correcciones
+        private Boolean solicitudCorrecciones;
     }
 
-    /** Respuesta del estado de la predefensa. */
     @Data @NoArgsConstructor @AllArgsConstructor
     public static class PredefensaDto {
         private Integer idSustentacion;
         private LocalDate fecha;
         private LocalTime hora;
         private String lugar;
-        private String estado; // PENDIENTE | EN_PROCESO | APROBADA | CON_OBSERVACIONES
-        private BigDecimal notaDocenteDt2;        // 60%
-        private BigDecimal promedioTribunal;      // 40%
-        private BigDecimal notaFinalPonderada;    // 60% * notaDT2 + 40% * promedio tribunal
+        private String estado;
+        private BigDecimal notaDocenteDt2;
+        private BigDecimal promedioTribunal;
+        private BigDecimal notaFinalPonderada;
         private List<EvaluacionMiembroDto> evaluacionesTribunal;
         private Boolean solicitudCorrecciones;
         private String observacionesTribunal;
@@ -264,7 +341,6 @@ public class Dt2Dtos {
     // MÓDULO 5 — Sustentación final
     // =========================================================
 
-    /** Request para registrar/actualizar el checklist de documentos previos. */
     @Data @NoArgsConstructor @AllArgsConstructor
     public static class DocumentosPreviosRequest {
         private Integer idProyecto;
@@ -276,7 +352,6 @@ public class Dt2Dtos {
         private String observaciones;
     }
 
-    /** DTO del checklist de documentos previos. */
     @Data @NoArgsConstructor @AllArgsConstructor
     public static class DocumentosPreviosDto {
         private Boolean ejemplarImpreso;
@@ -287,7 +362,6 @@ public class Dt2Dtos {
         private String observaciones;
     }
 
-    /** Request para programar la sustentación final. */
     @Data @NoArgsConstructor @AllArgsConstructor
     public static class ProgramarSustentacionRequest {
         private Integer idProyecto;
@@ -298,48 +372,32 @@ public class Dt2Dtos {
         private String observaciones;
     }
 
-    /** Request para que un miembro del tribunal califique la sustentación con los 4 criterios. */
     @Data @NoArgsConstructor @AllArgsConstructor
     public static class CalificarSustentacionRequest {
         private Integer idProyecto;
-        private Integer idDocente; // miembro del tribunal
-        /**
-         * Calidad del trabajo y metodología: 20% → máximo 2 puntos.
-         * Se registra sobre 10 y el sistema aplica el peso.
-         */
+        private Integer idDocente;
         private BigDecimal calidadTrabajo;
-        /**
-         * Originalidad e independencia: 20% → máximo 2 puntos.
-         */
         private BigDecimal originalidad;
-        /**
-         * Dominio del tema en la exposición: 30% → máximo 3 puntos.
-         */
         private BigDecimal dominioTema;
-        /**
-         * Pertinencia de respuestas: 30% → máximo 3 puntos.
-         */
         private BigDecimal preguntas;
         private String observaciones;
     }
 
-    /** Respuesta del resultado de la sustentación final. */
     @Data @NoArgsConstructor @AllArgsConstructor
     public static class ResultadoSustentacionDto {
         private Integer idProyecto;
         private String titulo;
         private String estudiante;
         private LocalDate fechaSustentacion;
-        private String resultado; // APROBADO | REPROBADO | SEGUNDA_OPORTUNIDAD
-        private BigDecimal promedioTribunal;     // promedio de los miembros
-        private BigDecimal notaGradoFinal;       // 80% promedioRecord + 20% notaSustentacion
+        private String resultado;
+        private BigDecimal promedioTribunal;
+        private BigDecimal notaGradoFinal;
         private BigDecimal promedioRecordAcademico;
         private List<EvaluacionMiembroDto> evaluaciones;
         private Boolean habilitadoSegundaOportunidad;
         private LocalDate fechaLimiteSegundaOportunidad;
     }
 
-    /** Request para habilitar la segunda oportunidad. */
     @Data @NoArgsConstructor @AllArgsConstructor
     public static class SegundaOportunidadRequest {
         private Integer idProyecto;

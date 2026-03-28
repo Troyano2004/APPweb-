@@ -6,8 +6,15 @@ import com.erwin.backend.entities.*;
 import com.erwin.backend.enums.EstadoDocumento;
 import com.erwin.backend.repository.*;
 import jakarta.transaction.Transactional;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -26,6 +33,12 @@ public class Dt2Service {
     private static final BigDecimal UMBRAL_ANTIPLAGIO = new BigDecimal("10.00");
     private static final BigDecimal NOTA_APROBATORIA_SUSTENTACION = new BigDecimal("7.00");
     private static final int DIAS_SEGUNDA_OPORTUNIDAD = 15;
+
+    private static final String WASITAI_ENDPOINT = "https://www.wasitaigenerated.com/api/v1/detect/text";
+
+    // Configura en application.properties:  wasitai.api.key=tu-key-aqui
+    @Value("${wasitai.api.key:}")
+    private String wasitaiApiKey;
 
     private final ProyectoTitulacionRepository proyectoRepo;
     private final AnteproyectoTitulacionRepository anteproyectoRepo;
@@ -138,7 +151,6 @@ public class Dt2Service {
                 })
                 .map(p -> toProyectoDto(p))
                 .sorted((a, b) -> {
-                    // Pendientes primero, completos al final
                     boolean ac = Boolean.TRUE.equals(a.getConfiguracionCompleta());
                     boolean bc = Boolean.TRUE.equals(b.getConfiguracionCompleta());
                     if (ac == bc) return 0;
@@ -447,7 +459,7 @@ public class Dt2Service {
         Docente director = getDocente(req.getIdDirector());
         if (proyecto.getDirector() == null
                 || !proyecto.getDirector().getIdDocente().equals(req.getIdDirector())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Solo el Director asignado puede registrar asesorías");
         }
         if (req.getNumeroCorte() == null || (req.getNumeroCorte() != 1 && req.getNumeroCorte() != 2)) {
@@ -540,12 +552,9 @@ public class Dt2Service {
 
     /**
      * Sube el informe COMPILATIO y registra el intento.
-     *
-     * ✅ REFACTOR: ahora valida documento.estado = APROBADO_POR_DIRECTOR
-     *    (antes validaba estado del proyecto).
-     * ✅ REFACTOR: quien sube el antiplagio es el Docente DT2 (no el director).
-     * ✅ REFACTOR: si favorable → documento pasa a ANTIPLAGIO_APROBADO.
-     *    El proyecto cambia a PREDEFENSA como efecto secundario.
+     * Valida documento.estado = APROBADO_POR_DIRECTOR.
+     * Quien sube el antiplagio es el Docente DT2.
+     * Si favorable → documento pasa a ANTIPLAGIO_APROBADO y proyecto a PREDEFENSA.
      */
     @Auditable(entidad = "AntiplacioIntento", accion = "CREATE", capturarArgs = false)
     @Transactional
@@ -607,16 +616,189 @@ public class Dt2Service {
         return buildCertificadoDto(idProyecto);
     }
 
+
+    /**
+     * Registra el resultado antiplagio calculado automáticamente por WasItAIGenerated.
+     * No requiere archivo PDF — el porcentaje viene del análisis IA del frontend.
+     * Reutiliza la misma lógica de umbral (<10% = favorable) y transición de estados.
+     */
+    @Transactional
+    public Dt2Dtos.CertificadoAntiplacioDto registrarAntiplacioIA(Dt2Dtos.RegistrarAntiplacioIaRequest req) {
+        ProyectoTitulacion proyecto = getProyecto(req.getIdProyecto());
+
+        DocumentoTitulacion documento = documentoRepo.findByProyecto_IdProyecto(req.getIdProyecto())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "No existe documento de titulación para este proyecto"));
+
+        // Permite el análisis en cualquier estado activo del documento
+        if (documento.getEstado() == EstadoDocumento.BORRADOR
+                || documento.getEstado() == EstadoDocumento.CERRADO_APROBADO
+                || documento.getEstado() == EstadoDocumento.CERRADO_REPROBADO) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "El documento no está en un estado válido para análisis antiplagio. Estado actual: " + documento.getEstado());
+        }
+
+        Dt2Asignacion dt2 = dt2AsignacionRepo.findByProyecto_IdProyectoAndActivoTrue(req.getIdProyecto())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "No hay docente DT2 asignado al proyecto"));
+
+        if (!dt2.getDocenteDt2().getIdDocente().equals(req.getIdDocenteDt2())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Solo el Docente DT2 asignado puede registrar el análisis antiplagio");
+        }
+
+        Docente docenteDt2 = dt2.getDocenteDt2();
+        boolean favorable  = req.getPorcentajeCoincidencia().compareTo(UMBRAL_ANTIPLAGIO) < 0;
+
+        String observaciones = req.getObservaciones() != null
+                ? req.getObservaciones()
+                : "Análisis automático IA (WasItAIGenerated)";
+
+        AntiplacioIntento intento = new AntiplacioIntento();
+        intento.setProyecto(proyecto);
+        intento.setDirector(docenteDt2);
+        intento.setPorcentajeCoincidencia(req.getPorcentajeCoincidencia());
+        intento.setUrlInforme("");          // sin PDF — valor vacío para respetar NOT NULL
+        intento.setFavorable(favorable);
+        intento.setObservaciones(observaciones);
+        antiplacioRepo.save(intento);
+
+        proyecto.setPorcentajeAntiplagio(req.getPorcentajeCoincidencia());
+        proyecto.setFechaVerificacionAntiplagio(LocalDate.now());
+
+        if (favorable) {
+            documento.setEstado(EstadoDocumento.ANTIPLAGIO_APROBADO);
+            documentoRepo.save(documento);
+            proyecto.setEstado("PREDEFENSA");
+        }
+        proyectoRepo.save(proyecto);
+
+        return buildCertificadoDto(req.getIdProyecto());
+    }
+
+    // =========================================================
+    // MÓDULO 3B — Revisión IA del contenido del documento
+    // =========================================================
+
+    /**
+     * Devuelve todos los campos de texto del DocumentoTitulacion
+     * para que el frontend los envíe sección por sección al proxy WasItAIGenerated.
+     */
+    @Transactional
+    public Dt2Dtos.DocumentoTitulacionTextoDto getDocumentoTexto(Integer idProyecto) {
+        DocumentoTitulacion doc = documentoRepo.findByProyecto_IdProyecto(idProyecto)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "No existe documento de titulación para el proyecto: " + idProyecto));
+
+        ProyectoTitulacion proyecto = doc.getProyecto();
+
+        Dt2Dtos.DocumentoTitulacionTextoDto dto = new Dt2Dtos.DocumentoTitulacionTextoDto();
+        dto.setIdDocumento(doc.getId());
+        dto.setIdProyecto(idProyecto);
+        dto.setTitulo(doc.getTitulo());
+        dto.setEstadoDocumento(doc.getEstado() != null ? doc.getEstado().name() : null);
+        dto.setEstadoRevisionIa(doc.getEstadoRevisionIa());
+        dto.setFeedbackIa(doc.getFeedbackIa());
+
+        if (doc.getEstudiante() != null && doc.getEstudiante().getUsuario() != null) {
+            dto.setNombreEstudiante(fullName(doc.getEstudiante().getUsuario()));
+        }
+        if (proyecto != null
+                && proyecto.getPropuesta() != null
+                && proyecto.getPropuesta().getCarrera() != null) {
+            dto.setCarreraEstudiante(proyecto.getPropuesta().getCarrera().getNombre());
+        }
+
+        dto.setResumen(doc.getResumen());
+        dto.setAbstractText(doc.getAbstractText());
+        dto.setIntroduccion(doc.getIntroduccion());
+        dto.setPlanteamientoProblema(doc.getPlanteamientoProblema());
+        dto.setJustificacion(doc.getJustificacion());
+        dto.setObjetivoGeneral(doc.getObjetivoGeneral());
+        dto.setObjetivosEspecificos(doc.getObjetivosEspecificos());
+        dto.setMarcoTeorico(doc.getMarcoTeorico());
+        dto.setMetodologia(doc.getMetodologia());
+        dto.setResultados(doc.getResultados());
+        dto.setDiscusion(doc.getDiscusion());
+        dto.setConclusiones(doc.getConclusiones());
+        dto.setRecomendaciones(doc.getRecomendaciones());
+        dto.setBibliografia(doc.getBibliografia());
+        dto.setAnexos(doc.getAnexos());
+
+        return dto;
+    }
+
+    /**
+     * Persiste el resultado del análisis IA en feedbackIa + estadoRevisionIa
+     * del DocumentoTitulacion correspondiente al proyecto.
+     */
+    @Transactional
+    public Dt2Dtos.MensajeDto guardarRevisionIa(Dt2Dtos.GuardarRevisionIaRequest req) {
+        DocumentoTitulacion doc = documentoRepo.findByProyecto_IdProyecto(req.getIdProyecto())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "No existe documento de titulación para el proyecto: " + req.getIdProyecto()));
+
+        String feedbackCompleto = String.format(
+                "Porcentaje promedio IA: %d%% | Nivel de riesgo: %s | Detalle: %s",
+                req.getPorcentajePromedioIa(),
+                req.getNivelRiesgo(),
+                req.getFeedbackIa() != null ? req.getFeedbackIa() : "Sin detalle"
+        );
+
+        doc.setFeedbackIa(feedbackCompleto);
+        doc.setEstadoRevisionIa(req.getEstadoRevisionIa());
+        doc.setFechaRevisionIa(LocalDateTime.now());
+        documentoRepo.save(doc);
+
+        return new Dt2Dtos.MensajeDto(
+                "Análisis IA guardado correctamente. Nivel: " + req.getNivelRiesgo(),
+                doc.getEstado().name(),
+                true
+        );
+    }
+
+    /**
+     * Proxy hacia WasItAIGenerated — la llamada HTTP se hace desde el servidor
+     * para evitar el bloqueo CORS del navegador.
+     * La API key se configura en application.properties: wasitai.api.key=tu-key
+     */
+    public Dt2Dtos.WasItAiResponse detectarConWasItAI(Dt2Dtos.WasItAiRequest req) {
+        if (wasitaiApiKey == null || wasitaiApiKey.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                    "La API key de WasItAIGenerated no está configurada. " +
+                            "Agrega 'wasitai.api.key=tu-key' en application.properties");
+        }
+
+        RestTemplate restTemplate = new RestTemplate();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Bearer " + wasitaiApiKey);
+
+        HttpEntity<Dt2Dtos.WasItAiRequest> entity = new HttpEntity<>(req, headers);
+
+        try {
+            ResponseEntity<Dt2Dtos.WasItAiResponse> response = restTemplate.exchange(
+                    WASITAI_ENDPOINT,
+                    HttpMethod.POST,
+                    entity,
+                    Dt2Dtos.WasItAiResponse.class
+            );
+            return response.getBody();
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                    "Error al conectar con WasItAIGenerated: " + e.getMessage());
+        }
+    }
+
     // =========================================================
     // MÓDULO 4 — Predefensa
     // =========================================================
 
     /**
      * Programa la fecha de predefensa.
-     *
-     * ✅ REFACTOR: valida documento.estado = ANTIPLAGIO_APROBADO
-     *    (antes validaba estado del proyecto = PREDEFENSA).
-     * ✅ El Coordinador es quien programa la fecha.
+     * Valida documento.estado = ANTIPLAGIO_APROBADO.
+     * El Coordinador es quien programa la fecha.
      */
     @Auditable(entidad = "Sustentacion", accion = "PROGRAMAR_PREDEFENSA", capturarArgs = false)
     @Transactional
@@ -654,7 +836,7 @@ public class Dt2Service {
 
     /**
      * El docente DT2 registra su calificación de predefensa (60%).
-     * ✅ REFACTOR: valida documento.estado = EN_PREDEFENSA
+     * Valida documento.estado = EN_PREDEFENSA.
      */
     @Auditable(entidad = "Sustentacion", accion = "CALIFICAR_PREDEFENSA_DOCENTE", capturarArgs = false)
     @Transactional
@@ -675,7 +857,7 @@ public class Dt2Service {
 
         validarNota(req.getNota(), "nota del docente DT2");
 
-        Sustentacion sus    = getPredefensa(req.getIdProyecto());
+        Sustentacion sus     = getPredefensa(req.getIdProyecto());
         Docente      docente = getDocente(req.getIdDocenteDt2());
 
         EvaluacionSustentacion eval = evaluacionRepo
@@ -695,8 +877,8 @@ public class Dt2Service {
 
     /**
      * Un miembro del tribunal registra su calificación de predefensa (40%).
-     * ✅ REFACTOR: valida documento.estado = EN_PREDEFENSA
-     * ✅ Si solicita correcciones → documento regresa a CORRECCION_REQUERIDA
+     * Valida documento.estado = EN_PREDEFENSA.
+     * Si solicita correcciones → documento regresa a CORRECCION_REQUERIDA.
      */
     @Auditable(entidad = "Sustentacion", accion = "CALIFICAR_PREDEFENSA_TRIBUNAL", capturarArgs = false)
     @Transactional
@@ -713,7 +895,7 @@ public class Dt2Service {
 
         validarNota(req.getNota(), "nota del tribunal");
 
-        Sustentacion sus    = getPredefensa(req.getIdProyecto());
+        Sustentacion sus     = getPredefensa(req.getIdProyecto());
         Docente      docente = getDocente(req.getIdDocente());
 
         EvaluacionSustentacion eval = evaluacionRepo
@@ -753,8 +935,8 @@ public class Dt2Service {
 
     /**
      * Registra/actualiza el checklist de documentos previos.
-     * ✅ REFACTOR: valida documento.estado = EN_PREDEFENSA o LISTO_SUSTENTACION
-     *    Si completo → documento avanza a LISTO_SUSTENTACION
+     * Valida documento.estado = EN_PREDEFENSA o LISTO_SUSTENTACION.
+     * Si completo → documento avanza a LISTO_SUSTENTACION.
      */
     @Auditable(entidad = "DocumentoPrevioSustentacion", accion = "CREATE", capturarArgs = false)
     @Transactional
@@ -801,7 +983,7 @@ public class Dt2Service {
 
     /**
      * Programa la fecha de sustentación final.
-     * ✅ REFACTOR: valida documento.estado = LISTO_SUSTENTACION
+     * Valida documento.estado = LISTO_SUSTENTACION.
      */
     @Auditable(entidad = "Sustentacion", accion = "PROGRAMAR", capturarArgs = false)
     @Transactional
@@ -863,7 +1045,7 @@ public class Dt2Service {
                 .add(req.getPreguntas().multiply(new BigDecimal("0.30")))
                 .setScale(2, RoundingMode.HALF_UP);
 
-        Sustentacion sus    = getDefensaFinal(req.getIdProyecto());
+        Sustentacion sus     = getDefensaFinal(req.getIdProyecto());
         Docente      docente = getDocente(req.getIdDocente());
 
         EvaluacionSustentacion eval = evaluacionRepo
@@ -896,9 +1078,9 @@ public class Dt2Service {
                     "El documento debe estar en LISTO_SUSTENTACION para consolidar.");
         }
 
-        Sustentacion sus          = getDefensaFinal(idProyecto);
-        long totalMiembros        = tribunalRepo.countByProyecto_IdProyecto(idProyecto);
-        long miembrosCalificaron  = evaluacionRepo.countBySustentacion_IdSustentacionAndTipo(
+        Sustentacion sus         = getDefensaFinal(idProyecto);
+        long totalMiembros       = tribunalRepo.countByProyecto_IdProyecto(idProyecto);
+        long miembrosCalificaron = evaluacionRepo.countBySustentacion_IdSustentacionAndTipo(
                 sus.getIdSustentacion(), "SUSTENTACION");
 
         if (miembrosCalificaron < totalMiembros) {
@@ -911,7 +1093,7 @@ public class Dt2Service {
         BigDecimal notaSustentacion = resultado.getPromedioTribunal();
         boolean    aprobado         = notaSustentacion.compareTo(NOTA_APROBATORIA_SUSTENTACION) >= 0;
 
-        Estudiante estudiante    = proyecto.getPropuesta().getEstudiante();
+        Estudiante estudiante     = proyecto.getPropuesta().getEstudiante();
         BigDecimal promedioRecord = estudiante.getPromedioRecord80() != null
                 ? estudiante.getPromedioRecord80() : BigDecimal.ZERO;
         BigDecimal notaGrado = promedioRecord.multiply(new BigDecimal("0.80"))
@@ -1057,15 +1239,15 @@ public class Dt2Service {
             });
 
             try {
-                Estudiante est       = proyecto.getPropuesta().getEstudiante();
-                String     emailEst  = est != null && est.getUsuario() != null
+                Estudiante est      = proyecto.getPropuesta().getEstudiante();
+                String     emailEst = est != null && est.getUsuario() != null
                         ? est.getUsuario().getCorreoInstitucional() : null;
                 if (emailEst != null && !emailEst.isBlank()) {
-                    String nombreEst    = fullName(est.getUsuario());
-                    String periodo      = proyecto.getPeriodo() != null ? proyecto.getPeriodo().getDescripcion() : "";
+                    String nombreEst      = fullName(est.getUsuario());
+                    String periodo        = proyecto.getPeriodo() != null ? proyecto.getPeriodo().getDescripcion() : "";
                     String nombreDirector = proyecto.getDirector() != null
                             ? fullName(proyecto.getDirector().getUsuario()) : null;
-                    String nombreDt2  = dt2AsignacionRepo
+                    String nombreDt2 = dt2AsignacionRepo
                             .findByProyecto_IdProyectoAndActivoTrue(proyecto.getIdProyecto())
                             .map(a -> fullName(a.getDocenteDt2().getUsuario()))
                             .orElse(null);
